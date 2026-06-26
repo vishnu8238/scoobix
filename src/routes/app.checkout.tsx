@@ -73,6 +73,7 @@ function CheckoutPage() {
 
   const handlePlace = () => {
     setPlacing(true);
+    const instructionLabel = INSTRUCTION_OPTIONS.find((i) => i.id === instructionId)?.label;
     setTimeout(() => {
       const orderId = placeOrder({
         items,
@@ -87,11 +88,21 @@ function CheckoutPage() {
         addressLabel: address.label,
         addressLine: `${address.line1}, ${address.line2}`,
         paymentLabel: payObj.label,
+        deliveryInstructions: instructionLabel,
+        contactless,
+        notes: notes.trim() || undefined,
+        couponCode: coupon?.code,
       });
       clear();
       toast.success("Order placed!", { description: `Tracking #${orderId}` });
       navigate({ to: "/track/$orderId", params: { orderId } });
     }, 700);
+  };
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) return;
+    const res = applyCoupon(couponCode);
+    if (res.ok) { toast.success(res.message); setCouponCode(""); } else { toast.error(res.message); }
   };
 
   return (
