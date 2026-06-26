@@ -250,6 +250,11 @@ export type Order = {
   paymentLabel: string;
   driver: { name: string; vehicle: string; rating: number; phone: string };
   etaMins: number;
+  // Customer preferences captured at checkout (ready for backend persistence)
+  deliveryInstructions?: string;
+  contactless?: boolean;
+  notes?: string;
+  couponCode?: string;
 };
 
 type OrdersCtx = {
@@ -261,6 +266,10 @@ type OrdersCtx = {
     addressLabel: string;
     addressLine: string;
     paymentLabel: string;
+    deliveryInstructions?: string;
+    contactless?: boolean;
+    notes?: string;
+    couponCode?: string;
   }) => string;
   getOrder: (id: string) => Order | undefined;
   reorder: (id: string) => CartItem[] | null;
