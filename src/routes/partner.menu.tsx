@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/partner/menu")({
   head: () => ({ meta: [{ title: "Cravio Partner · Menu" }] }),
-  component: PartnerMenu;
+  component: PartnerMenu,
 });
 
 const CATEGORIES = ["All", "Starters", "Main Course", "Drinks", "Desserts"] as const;
