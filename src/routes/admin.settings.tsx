@@ -23,8 +23,8 @@ function AdminSettings() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card icon={Globe} title="General">
           <Row label="Platform name" value="Cravio" />
-          <Row label="Default region" value="North Europe" />
-          <Row label="Currency" value="USD" />
+          <Row label="Default region" value="India" />
+          <Row label="Currency" value="INR" />
           <Toggle label="Maintenance mode" desc="Disable new orders across all apps" value={maintenance} onChange={setMaintenance} />
         </Card>
 
@@ -37,7 +37,7 @@ function AdminSettings() {
         <Card icon={CreditCard} title="Payouts">
           <Row label="Payout cadence" value="Weekly · Monday 9 AM" />
           <Row label="Commission" value="18% per order" />
-          <Row label="Driver bonus pool" value="$12,400 / week" />
+          <Row label="Driver bonus pool" value="₹10,24,000 / week" />
         </Card>
 
         <Card icon={Shield} title="Security">

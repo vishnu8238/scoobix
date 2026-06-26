@@ -21,7 +21,7 @@ export type Coupon = { code: string; label: string; kind: "pct" | "freeship"; va
 
 const COUPONS: Coupon[] = [
   { code: "CRAVIO10", label: "10% off your order", kind: "pct", value: 0.1 },
-  { code: "CRAVIO50", label: "50% off (max $10)", kind: "pct", value: 0.5 },
+  { code: "CRAVIO50", label: "50% off (max ₹800)", kind: "pct", value: 0.5 },
   { code: "FREESHIP", label: "Free delivery", kind: "freeship", value: 0 },
   { code: "NIGHT20", label: "20% off late-night", kind: "pct", value: 0.2 },
 ];

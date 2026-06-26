@@ -88,7 +88,7 @@ function RiderEarnings() {
 
       <div className="flex items-center gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
         <Gift className="h-5 w-5 text-amber-700" />
-        <p className="text-xs font-medium text-amber-900">Complete <span className="font-bold">3 more trips</span> today to unlock a <span className="font-bold">$15 bonus</span>.</p>
+        <p className="text-xs font-medium text-amber-900">Complete <span className="font-bold">3 more trips</span> today to unlock a <span className="font-bold">₹1,250 bonus</span>.</p>
       </div>
     </div>
   );
