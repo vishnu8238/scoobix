@@ -42,7 +42,7 @@ function LiveOrders() {
             o.rider,
             o.eta,
             formatPrice(o.total),
-            <StatusBadge status={o.status} />,
+            <StatusBadge label={o.status} />,
           ])}
         />
       </div>
