@@ -73,7 +73,7 @@ function SearchPage() {
     return dishes.filter((d) => `${d.name} ${d.description} ${d.cuisineTag}`.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
   }, [dishes, q]);
 
-  const activeFiltersCount = (cuisine !== "All" ? 1 : 0) + (minRating > 0 ? 1 : 0) + (maxMins < 60 ? 1 : 0) + (maxPrice !== "$$$" ? 1 : 0);
+  const activeFiltersCount = (cuisine !== "All" ? 1 : 0) + (minRating > 0 ? 1 : 0) + (maxMins < 60 ? 1 : 0) + (maxPrice !== "₹₹₹" ? 1 : 0);
 
   return (
     <div className="min-h-svh">
@@ -134,7 +134,7 @@ function SearchPage() {
 
               <FilterGroup label="Max price">
                 <div className="grid grid-cols-3 gap-2">
-                  {(["$", "$$", "$$$"] as const).map((p) => (
+                  {(["₹", "₹₹", "₹₹₹"] as const).map((p) => (
                     <button key={p} onClick={() => setMaxPrice(p)} className={cn("rounded-2xl border-2 py-2 text-sm font-bold", maxPrice === p ? "border-primary bg-primary-soft text-primary" : "border-border")}>{p}</button>
                   ))}
                 </div>
@@ -143,7 +143,7 @@ function SearchPage() {
               <div className="mt-6 flex gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => { setCuisine("All"); setMinRating(0); setMaxMins(60); setMaxPrice("$$$"); setSort("rating"); }}
+                  onClick={() => { setCuisine("All"); setMinRating(0); setMaxMins(60); setMaxPrice("₹₹₹"); setSort("rating"); }}
                   className="flex-1 rounded-full"
                 >Reset</Button>
                 <Button onClick={() => setFilterOpen(false)} className="flex-1 rounded-full gradient-primary text-primary-foreground">Show results</Button>
