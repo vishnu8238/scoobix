@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, MapPin } from "lucide-react";
+import { Bell, ChevronDown, MapPin, Navigation, Loader2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
@@ -6,6 +6,7 @@ import { useAppUI } from "@/lib/stores";
 import { notifications } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const SUGGESTED_LOCATIONS = [
   "Westside · Apt 4",
