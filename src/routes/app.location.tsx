@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { savedLocations } from "@/lib/mock-extras";
 import { useAppUI } from "@/lib/stores";
 import { toast } from "sonner";
-import { MapStylized } from "@/components/cravio/MapStylized";
+
 
 export const Route = createFileRoute("/app/location")({
   head: () => ({ meta: [{ title: "Cravio · Set delivery location" }] }),
@@ -32,8 +32,11 @@ function LocationPicker() {
     <div className="min-h-svh pb-10">
       <PageHeader title="Delivery location" subtitle={location} />
 
-      <div className="relative mx-4 mt-3 overflow-hidden rounded-3xl shadow-soft ring-1 ring-border/60">
-        <MapStylized className="h-44 w-full" />
+      <div className="relative mx-4 mt-3 h-44 overflow-hidden rounded-3xl shadow-soft ring-1 ring-border/60 bg-[radial-gradient(circle_at_30%_30%,_oklch(0.9_0.08_148_/_0.6),_oklch(0.97_0.02_140))]">
+        <svg viewBox="0 0 320 180" className="absolute inset-0 h-full w-full opacity-60">
+          <path d="M0 60 L320 60 M0 120 L320 120 M80 0 L80 180 M220 0 L220 180" stroke="currentColor" strokeWidth="0.5" className="text-foreground/15" />
+          <path d="M30 150 Q120 80 200 90 T300 30" stroke="hsl(var(--primary))" strokeWidth="3" fill="none" strokeDasharray="6 4" />
+          <circle cx="300" cy="30" r="6" fill="hsl(var(--primary))" /></svg>
         <button
           onClick={() => select("Current location · Auto-detected")}
           className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 text-[12px] font-bold shadow-pop ring-1 ring-border/60"
