@@ -160,6 +160,13 @@ type Snapshot = {
   sections: HomeSectionConfig[];
   filters: FilterGroup[];
   coupons: CmsCoupon[];
+  commissions: Record<string, number>;
+};
+
+const seedCommissions = (): Record<string, number> => {
+  const out: Record<string, number> = {};
+  seedRestaurants.forEach((r, i) => { out[r.id] = [15, 18, 20, 15, 17, 22, 16, 19][i % 8]; });
+  return out;
 };
 
 function defaultSnapshot(): Snapshot {
@@ -169,6 +176,7 @@ function defaultSnapshot(): Snapshot {
     sections: seedSections(),
     filters: seedFilters(),
     coupons: seedCoupons(),
+    commissions: seedCommissions(),
   };
 }
 
