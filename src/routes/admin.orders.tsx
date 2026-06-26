@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { adminOrdersRecent } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
-import { DataTable, StatusBadge } from "./admin.index";
+import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 
 export const Route = createFileRoute("/admin/orders")({
   head: () => ({ meta: [{ title: "Cravio Admin · Orders" }] }),

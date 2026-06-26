@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { adminDrivers } from "@/lib/role-data";
-import { DataTable, StatusBadge } from "./admin.index";
+import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Star, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/admin/drivers")({
