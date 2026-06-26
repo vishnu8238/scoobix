@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { IMAGES, categories as seedCategories, offers as seedOffers } from "./mock-data";
+import { IMAGES, categories as seedCategories, offers as seedOffers, restaurants as seedRestaurants } from "./mock-data";
 
 /* ============================================================
    CMS STORE — Admin-controlled content for the Customer App.
