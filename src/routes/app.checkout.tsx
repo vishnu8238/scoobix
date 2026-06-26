@@ -175,7 +175,7 @@ function CheckoutPage() {
         </section>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[480px] glass border-t border-border/60 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-30 mx-auto max-w-[460px] px-4">
         <Button
           onClick={handlePlace}
           disabled={placing}
