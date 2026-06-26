@@ -39,6 +39,8 @@ function RestaurantPage() {
   const navigate = useNavigate();
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const { items, totals } = useCart();
+  const { closedRestaurants } = useCms();
+  const closed = !!closedRestaurants[r.id];
   const fav = isRestaurantFav(r.id);
   const [cat, setCat] = useState<(typeof CATS)[number]>("Starters");
   const [query, setQuery] = useState("");
