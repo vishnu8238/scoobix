@@ -95,7 +95,8 @@ function CheckoutPage() {
       });
       clear();
       toast.success("Order placed!", { description: `Tracking #${orderId}` });
-      navigate({ to: "/track/$orderId", params: { orderId } });
+      if (pay === "cash") navigate({ to: "/track/$orderId", params: { orderId } });
+      else navigate({ to: "/app/success" });
     }, 700);
   };
 
