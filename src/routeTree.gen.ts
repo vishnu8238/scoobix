@@ -9,13 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RiderRouteImport } from './routes/rider'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RiderIndexRouteImport } from './routes/rider.index'
 import { Route as PartnerIndexRouteImport } from './routes/partner.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
+import { Route as RiderRequestsRouteImport } from './routes/rider.requests'
+import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
+import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
 import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
 import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
@@ -26,6 +31,11 @@ import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppCheckoutRouteImport } from './routes/app.checkout'
 import { Route as AppCartRouteImport } from './routes/app.cart'
 
+const RiderRoute = RiderRouteImport.update({
+  id: '/rider',
+  path: '/rider',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
   path: '/portal',
@@ -46,6 +56,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RiderIndexRoute = RiderIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RiderRoute,
+} as any)
 const PartnerIndexRoute = PartnerIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -60,6 +75,21 @@ const TrackOrderIdRoute = TrackOrderIdRouteImport.update({
   id: '/track/$orderId',
   path: '/track/$orderId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const RiderRequestsRoute = RiderRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderEarningsRoute = RiderEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderActiveRoute = RiderActiveRouteImport.update({
+  id: '/active',
+  path: '/active',
+  getParentRoute: () => RiderRoute,
 } as any)
 const RestaurantIdRoute = RestaurantIdRouteImport.update({
   id: '/restaurant/$id',
@@ -112,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRoute
+  '/rider': typeof RiderRouteWithChildren
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
   '/app/orders': typeof AppOrdersRoute
@@ -121,9 +152,13 @@ export interface FileRoutesByFullPath {
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
+  '/rider/active': typeof RiderActiveRoute
+  '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/requests': typeof RiderRequestsRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app/': typeof AppIndexRoute
   '/partner/': typeof PartnerIndexRoute
+  '/rider/': typeof RiderIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -137,9 +172,13 @@ export interface FileRoutesByTo {
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
+  '/rider/active': typeof RiderActiveRoute
+  '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/requests': typeof RiderRequestsRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app': typeof AppIndexRoute
   '/partner': typeof PartnerIndexRoute
+  '/rider': typeof RiderIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -147,6 +186,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRoute
+  '/rider': typeof RiderRouteWithChildren
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
   '/app/orders': typeof AppOrdersRoute
@@ -156,9 +196,13 @@ export interface FileRoutesById {
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
+  '/rider/active': typeof RiderActiveRoute
+  '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/requests': typeof RiderRequestsRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app/': typeof AppIndexRoute
   '/partner/': typeof PartnerIndexRoute
+  '/rider/': typeof RiderIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,6 +211,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/partner'
     | '/portal'
+    | '/rider'
     | '/app/cart'
     | '/app/checkout'
     | '/app/orders'
@@ -176,9 +221,13 @@ export interface FileRouteTypes {
     | '/partner/orders'
     | '/partner/profile'
     | '/restaurant/$id'
+    | '/rider/active'
+    | '/rider/earnings'
+    | '/rider/requests'
     | '/track/$orderId'
     | '/app/'
     | '/partner/'
+    | '/rider/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -192,15 +241,20 @@ export interface FileRouteTypes {
     | '/partner/orders'
     | '/partner/profile'
     | '/restaurant/$id'
+    | '/rider/active'
+    | '/rider/earnings'
+    | '/rider/requests'
     | '/track/$orderId'
     | '/app'
     | '/partner'
+    | '/rider'
   id:
     | '__root__'
     | '/'
     | '/app'
     | '/partner'
     | '/portal'
+    | '/rider'
     | '/app/cart'
     | '/app/checkout'
     | '/app/orders'
@@ -210,9 +264,13 @@ export interface FileRouteTypes {
     | '/partner/orders'
     | '/partner/profile'
     | '/restaurant/$id'
+    | '/rider/active'
+    | '/rider/earnings'
+    | '/rider/requests'
     | '/track/$orderId'
     | '/app/'
     | '/partner/'
+    | '/rider/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -220,12 +278,20 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
   PortalRoute: typeof PortalRoute
+  RiderRoute: typeof RiderRouteWithChildren
   RestaurantIdRoute: typeof RestaurantIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/rider': {
+      id: '/rider'
+      path: '/rider'
+      fullPath: '/rider'
+      preLoaderRoute: typeof RiderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portal': {
       id: '/portal'
       path: '/portal'
@@ -254,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rider/': {
+      id: '/rider/'
+      path: '/'
+      fullPath: '/rider/'
+      preLoaderRoute: typeof RiderIndexRouteImport
+      parentRoute: typeof RiderRoute
+    }
     '/partner/': {
       id: '/partner/'
       path: '/'
@@ -274,6 +347,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/track/$orderId'
       preLoaderRoute: typeof TrackOrderIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/rider/requests': {
+      id: '/rider/requests'
+      path: '/requests'
+      fullPath: '/rider/requests'
+      preLoaderRoute: typeof RiderRequestsRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/earnings': {
+      id: '/rider/earnings'
+      path: '/earnings'
+      fullPath: '/rider/earnings'
+      preLoaderRoute: typeof RiderEarningsRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/active': {
+      id: '/rider/active'
+      path: '/active'
+      fullPath: '/rider/active'
+      preLoaderRoute: typeof RiderActiveRouteImport
+      parentRoute: typeof RiderRoute
     }
     '/restaurant/$id': {
       id: '/restaurant/$id'
@@ -378,11 +472,28 @@ const PartnerRouteChildren: PartnerRouteChildren = {
 const PartnerRouteWithChildren =
   PartnerRoute._addFileChildren(PartnerRouteChildren)
 
+interface RiderRouteChildren {
+  RiderActiveRoute: typeof RiderActiveRoute
+  RiderEarningsRoute: typeof RiderEarningsRoute
+  RiderRequestsRoute: typeof RiderRequestsRoute
+  RiderIndexRoute: typeof RiderIndexRoute
+}
+
+const RiderRouteChildren: RiderRouteChildren = {
+  RiderActiveRoute: RiderActiveRoute,
+  RiderEarningsRoute: RiderEarningsRoute,
+  RiderRequestsRoute: RiderRequestsRoute,
+  RiderIndexRoute: RiderIndexRoute,
+}
+
+const RiderRouteWithChildren = RiderRoute._addFileChildren(RiderRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
   PortalRoute: PortalRoute,
+  RiderRoute: RiderRouteWithChildren,
   RestaurantIdRoute: RestaurantIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
 }
