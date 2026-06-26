@@ -279,10 +279,6 @@ export function CmsProvider({ children }: { children: ReactNode }) {
 
     resetAll: () => setState(defaultSnapshot()),
   };
-    deleteCoupon: (id) => setState((s) => ({ ...s, coupons: s.coupons.filter((x) => x.id !== id) })),
-
-    resetAll: () => setState(defaultSnapshot()),
-  };
 
   return <CmsContext.Provider value={ctx}>{children}</CmsContext.Provider>;
 }
