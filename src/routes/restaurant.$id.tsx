@@ -83,7 +83,13 @@ function RestaurantPage() {
           <span className="h-1 w-1 rounded-full bg-border" />
           <span className="flex items-center gap-1"><Bike className="h-3.5 w-3.5" />{r.distanceKm} km</span>
         </div>
-        {r.offer && (
+        {closed && (
+          <div className="mt-3 flex items-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 p-2.5 text-xs">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground">!</span>
+            <span className="font-semibold text-destructive">Closed right now — ordering is paused</span>
+          </div>
+        )}
+        {!closed && r.offer && (
           <div className="mt-3 flex items-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary-soft/60 p-2.5 text-xs">
             <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground">%</span>
             <span className="font-semibold text-primary">{r.offer}</span>
