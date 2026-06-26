@@ -273,6 +273,14 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, coupons: s.coupons.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
     deleteCoupon: (id) => setState((s) => ({ ...s, coupons: s.coupons.filter((x) => x.id !== id) })),
 
+    commissions: state.commissions,
+    setCommission: (restaurantId, pct) =>
+      setState((s) => ({ ...s, commissions: { ...s.commissions, [restaurantId]: Math.max(0, Math.min(100, pct)) } })),
+
+    resetAll: () => setState(defaultSnapshot()),
+  };
+    deleteCoupon: (id) => setState((s) => ({ ...s, coupons: s.coupons.filter((x) => x.id !== id) })),
+
     resetAll: () => setState(defaultSnapshot()),
   };
 
