@@ -142,6 +142,20 @@ function TrackPage() {
             Order again
           </Button>
         )}
+
+        {canCancel && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              const res = cancelOrder(order.id);
+              if (res.ok) { toast.success(res.message); navigate({ to: "/app/orders" }); }
+              else toast.error(res.message);
+            }}
+            className="h-12 w-full rounded-full text-sm font-bold text-destructive border-destructive/40 hover:bg-destructive/5"
+          >
+            <X className="mr-1.5 h-4 w-4" /> Cancel order
+          </Button>
+        )}
       </div>
     </div>
   );
