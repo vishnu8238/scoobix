@@ -17,7 +17,7 @@ export function BottomNav() {
   const { totals } = useCart();
   return (
     <nav className="sticky bottom-0 left-0 right-0 z-40 mt-auto">
-      <div className="glass border-t border-border/60 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="glass border-t border-border/60 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <ul className="grid grid-cols-5 gap-1">
           {tabs.map((t) => {
             const active = t.exact ? pathname === t.to : pathname === t.to || pathname.startsWith(t.to + "/");
@@ -27,17 +27,21 @@ export function BottomNav() {
                 <Link
                   to={t.to}
                   className={cn(
-                    "relative flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-all",
-                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                    "relative flex flex-col items-center gap-1 rounded-2xl py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] transition-all",
+                    active ? "text-primary" : "text-muted-foreground/70 hover:text-foreground",
                   )}
                 >
-                  <span className={cn(
-                    "relative grid h-9 w-12 place-items-center rounded-full transition-all",
-                    active && "bg-primary-soft",
-                  )}>
-                    <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.4 : 2} />
+                  {active && (
+                    <span className="absolute -top-0.5 h-1 w-1 rounded-full bg-primary" />
+                  )}
+                  <span className="relative grid h-9 w-9 place-items-center">
+                    <Icon
+                      className={cn("transition-all", active ? "h-[22px] w-[22px]" : "h-[20px] w-[20px]")}
+                      strokeWidth={active ? 2.6 : 2}
+                      fill={active && t.to === "/app" ? "currentColor" : "none"}
+                    />
                     {t.badge && totals.itemCount > 0 && (
-                      <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-soft animate-fade-up">
+                      <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-[10px] font-extrabold text-primary-foreground ring-2 ring-surface animate-fade-up">
                         {totals.itemCount}
                       </span>
                     )}
