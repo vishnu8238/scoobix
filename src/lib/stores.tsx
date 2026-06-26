@@ -318,12 +318,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         const next = prev.map((o) => {
           if (o.status === "DELIVERED" || o.status === "CANCELLED") return o;
           const ageSec = (Date.now() - o.placedAt) / 1000;
-          // PLACED -> PREPARING @ 6s, -> PICKED_UP @ 18s, -> ON_THE_WAY @ 30s, -> DELIVERED @ 55s
+          // PLACED → ACCEPTED → PREPARING → READY → PICKED_UP → ON_THE_WAY → DELIVERED
           let target: OrderStatus = "PLACED";
-          if (ageSec >= 55) target = "DELIVERED";
-          else if (ageSec >= 30) target = "ON_THE_WAY";
-          else if (ageSec >= 18) target = "PICKED_UP";
-          else if (ageSec >= 6) target = "PREPARING";
+          if (ageSec >= 60) target = "DELIVERED";
+          else if (ageSec >= 42) target = "ON_THE_WAY";
+          else if (ageSec >= 32) target = "PICKED_UP";
+          else if (ageSec >= 22) target = "READY";
+          else if (ageSec >= 10) target = "PREPARING";
+          else if (ageSec >= 4) target = "ACCEPTED";
           if (target !== o.status) { changed = true; return { ...o, status: target }; }
           return o;
         });
