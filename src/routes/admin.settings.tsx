@@ -23,8 +23,8 @@ function AdminSettings() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card icon={Globe} title="General">
           <Row label="Platform name" value="Cravio" />
-          <Row label="Default region" value="North Europe" />
-          <Row label="Currency" value="USD" />
+          <Row label="Default region" value="India" />
+          <Row label="Currency" value="INR" />
           <Toggle label="Maintenance mode" desc="Disable new orders across all apps" value={maintenance} onChange={setMaintenance} />
         </Card>
 
