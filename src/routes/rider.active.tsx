@@ -17,7 +17,7 @@ function RiderActive() {
   return (
     <div className="animate-fade-up pb-8">
       <div className="relative h-64 w-full overflow-hidden">
-        <MapStylized />
+        <MapStylized status="ON_THE_WAY" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute left-5 right-5 top-7">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/70">Active delivery</p>
