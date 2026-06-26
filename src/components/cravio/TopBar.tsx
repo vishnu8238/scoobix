@@ -16,10 +16,20 @@ const SUGGESTED_LOCATIONS = [
 ];
 
 export function TopBar() {
-  const { location, setLocation } = useAppUI();
+  const { location, setLocation, detectLocation, detectingLocation, locationPermission } = useAppUI();
   const [locOpen, setLocOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [customLoc, setCustomLoc] = useState("");
+
+  const handleDetect = async () => {
+    const res = await detectLocation();
+    if (res.ok) {
+      toast.success("Location updated", { description: res.message });
+      setLocOpen(false);
+    } else {
+      toast.error(res.message);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 glass px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3.5">
