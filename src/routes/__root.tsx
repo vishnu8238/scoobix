@@ -4,6 +4,7 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Scripts,
+  useRouterState,
 } from "@tanstack/react-router";
 import { type ReactNode } from "react";
 
@@ -54,12 +55,20 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isDesktop = pathname.startsWith("/admin");
+  const isPortal = pathname === "/portal";
+
   return (
     <QueryClientProvider client={queryClient}>
       <CravioProviders>
-        <PhoneShell>
+        {isDesktop || isPortal ? (
           <Outlet />
-        </PhoneShell>
+        ) : (
+          <PhoneShell>
+            <Outlet />
+          </PhoneShell>
+        )}
         <Toaster position="top-center" richColors closeButton={false} />
       </CravioProviders>
     </QueryClientProvider>
