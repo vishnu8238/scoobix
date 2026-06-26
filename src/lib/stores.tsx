@@ -209,18 +209,28 @@ export const useFavorites = () => {
    ORDERS
    ============================================================ */
 
-export type OrderStatus = "PLACED" | "PREPARING" | "PICKED_UP" | "ON_THE_WAY" | "DELIVERED" | "CANCELLED";
+export type OrderStatus =
+  | "PLACED"
+  | "ACCEPTED"
+  | "PREPARING"
+  | "READY"
+  | "PICKED_UP"
+  | "ON_THE_WAY"
+  | "DELIVERED"
+  | "CANCELLED";
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
   PLACED: "Order placed",
+  ACCEPTED: "Accepted",
   PREPARING: "Preparing",
+  READY: "Ready for pickup",
   PICKED_UP: "Picked up",
   ON_THE_WAY: "On the way",
   DELIVERED: "Delivered",
   CANCELLED: "Cancelled",
 };
 
-export const STATUS_FLOW: OrderStatus[] = ["PLACED", "PREPARING", "PICKED_UP", "ON_THE_WAY", "DELIVERED"];
+export const STATUS_FLOW: OrderStatus[] = ["PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "ON_THE_WAY", "DELIVERED"];
 
 export type Order = {
   id: string;
