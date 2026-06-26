@@ -1,0 +1,46 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag } from "lucide-react";
+import { PageHeader } from "@/components/cravio/PageHeader";
+
+export const Route = createFileRoute("/app/more")({
+  head: () => ({ meta: [{ title: "Cravio · More" }] }),
+  component: MoreHub,
+});
+
+const ITEMS = [
+  { to: "/app/onboarding", icon: Sparkles, label: "Welcome tour",         desc: "Take the intro again" },
+  { to: "/app/location",   icon: MapPin,   label: "Delivery location",     desc: "Manage saved places" },
+  { to: "/app/favorites",  icon: Heart,    label: "Favorites",             desc: "Restaurants & dishes you love" },
+  { to: "/app/recent",     icon: Clock,    label: "Recently viewed",       desc: "Quick reorder & history" },
+  { to: "/app/notifications", icon: Bell,  label: "Notifications",         desc: "Order updates and offers" },
+  { to: "/app/coupons",    icon: Tag,      label: "Coupons & offers",      desc: "Active promo codes" },
+  { to: "/app/cart",       icon: ShoppingBag, label: "Cart & empty states", desc: "Preview empty cart" },
+  { to: "/app/failed",     icon: AlertOctagon, label: "Order failed demo",  desc: "Error state preview" },
+  { to: "/terms",          icon: FileText, label: "Terms of service",      desc: "Legal · last updated 2026" },
+  { to: "/privacy",        icon: Shield,   label: "Privacy policy",        desc: "How we handle your data" },
+];
+
+function MoreHub() {
+  return (
+    <div className="min-h-svh pb-24">
+      <PageHeader title="More" subtitle="Account, preferences & legal" />
+
+      <ul className="mt-3 divide-y divide-border/60 rounded-3xl bg-card mx-4 shadow-soft ring-1 ring-border/60">
+        {ITEMS.map((i) => (
+          <li key={i.to}>
+            <Link to={i.to} className="flex items-center gap-3 px-4 py-3.5 transition active:bg-muted/40">
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-soft text-primary"><i.icon className="h-5 w-5" strokeWidth={2.4} /></span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold">{i.label}</div>
+                <div className="truncate text-xs text-muted-foreground">{i.desc}</div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-6 px-6 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Cravio v1.0 · Crave it. Get it.</p>
+    </div>
+  );
+}
