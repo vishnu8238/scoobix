@@ -138,7 +138,7 @@ function RestaurantPage() {
         </div>
       </div>
 
-      <div className="px-4">
+      <div className={cn("px-4", closed && "pointer-events-none opacity-60")}>
         {dishes.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
             <p className="text-sm font-semibold">Nothing here yet</p>
@@ -149,7 +149,7 @@ function RestaurantPage() {
         )}
       </div>
 
-      {hasCart && (
+      {hasCart && !closed && (
         <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[480px] glass border-t border-border/60 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button onClick={() => navigate({ to: "/app/cart" })} className="h-13 w-full rounded-full gradient-primary text-base font-bold text-primary-foreground shadow-glow">
             View cart · {totals.itemCount} item{totals.itemCount === 1 ? "" : "s"} · {currency(totals.total)}
