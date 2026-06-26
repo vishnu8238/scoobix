@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, MessageSquare, Phone, Star, MapPin, Clock, ShieldCheck, StickyNote } from "lucide-react";
-import { useOrders, STATUS_LABEL } from "@/lib/stores";
-import { MapStylized } from "@/components/cravio/MapStylized";
+import { useOrders, useAppUI, STATUS_LABEL } from "@/lib/stores";
+import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { TimelineStepper } from "@/components/cravio/TimelineStepper";
 import { Button } from "@/components/ui/button";
 import { currency } from "@/lib/format";
+import { addressCoords, restaurantCoords, statusToProgress } from "@/lib/geo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/track/$orderId")({
