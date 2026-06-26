@@ -111,7 +111,7 @@ function PartnerOrders() {
                   <div className="mt-4 flex gap-2">
                     {o.status === "PLACED" ? (
                       <>
-                        <button onClick={() => update(o.id, "REJECTED")} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive transition active:scale-95">
+                        <button onClick={() => reject(o)} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive transition active:scale-95">
                           <X className="h-4 w-4" /> Reject
                         </button>
                         <button onClick={() => update(o.id, "ACCEPTED")} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">
