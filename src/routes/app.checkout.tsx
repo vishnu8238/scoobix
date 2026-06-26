@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, CreditCard, Wallet, Banknote, Smartphone, MapPin, Zap, Check } from "lucide-react";
+import { ArrowLeft, ChevronRight, CreditCard, Wallet, Banknote, Smartphone, MapPin, Zap, Check, ShieldCheck, Tag, X, MessageSquareText } from "lucide-react";
 import { useState } from "react";
 import { useCart, useOrders } from "@/lib/stores";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { currency, cn } from "@/lib/format";
 import { savedAddresses, paymentMethods } from "@/lib/mock-data";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -25,9 +28,17 @@ const PAY_OPTIONS = [
   { id: "cash",  label: "Cash on delivery",    icon: Banknote },
 ];
 
+const INSTRUCTION_OPTIONS = [
+  { id: "door", label: "Leave at door" },
+  { id: "hand", label: "Hand to me" },
+  { id: "call", label: "Call on arrival" },
+  { id: "guard", label: "Hand to security" },
+  { id: "avoid_bell", label: "Don't ring bell" },
+];
+
 function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, totals, restaurant, clear } = useCart();
+  const { items, totals, restaurant, clear, coupon, applyCoupon, removeCoupon } = useCart();
   const { placeOrder } = useOrders();
 
   const [addressId, setAddressId] = useState(savedAddresses.find((a) => a.default)!.id);
@@ -35,6 +46,10 @@ function CheckoutPage() {
   const [pay, setPay] = useState("card");
   const [addrOpen, setAddrOpen] = useState(false);
   const [placing, setPlacing] = useState(false);
+  const [instructionId, setInstructionId] = useState<string | null>(null);
+  const [contactless, setContactless] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [couponCode, setCouponCode] = useState("");
 
   const address = savedAddresses.find((a) => a.id === addressId)!;
   const deliveryObj = DELIVERY_OPTIONS.find((d) => d.id === delivery)!;
@@ -58,6 +73,7 @@ function CheckoutPage() {
 
   const handlePlace = () => {
     setPlacing(true);
+    const instructionLabel = INSTRUCTION_OPTIONS.find((i) => i.id === instructionId)?.label;
     setTimeout(() => {
       const orderId = placeOrder({
         items,
@@ -72,11 +88,21 @@ function CheckoutPage() {
         addressLabel: address.label,
         addressLine: `${address.line1}, ${address.line2}`,
         paymentLabel: payObj.label,
+        deliveryInstructions: instructionLabel,
+        contactless,
+        notes: notes.trim() || undefined,
+        couponCode: coupon?.code,
       });
       clear();
       toast.success("Order placed!", { description: `Tracking #${orderId}` });
       navigate({ to: "/track/$orderId", params: { orderId } });
     }, 700);
+  };
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) return;
+    const res = applyCoupon(couponCode);
+    if (res.ok) { toast.success(res.message); setCouponCode(""); } else { toast.error(res.message); }
   };
 
   return (
@@ -153,6 +179,75 @@ function CheckoutPage() {
             })}
           </div>
         </section>
+
+        {/* Delivery instructions */}
+        <section>
+          <h3 className="px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Delivery instructions</h3>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {INSTRUCTION_OPTIONS.map((opt) => {
+              const active = instructionId === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setInstructionId(active ? null : opt.id)}
+                  className={cn(
+                    "rounded-full border-2 px-3 py-1.5 text-xs font-bold transition active:scale-95",
+                    active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Contactless delivery */}
+        <section className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary"><ShieldCheck className="h-4 w-4" /></span>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-bold">Contactless delivery</div>
+            <div className="text-xs text-muted-foreground">Rider will leave your order at the door.</div>
+          </div>
+          <Switch checked={contactless} onCheckedChange={setContactless} />
+        </section>
+
+        {/* Order notes */}
+        <section>
+          <h3 className="px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Notes for the restaurant</h3>
+          <div className="mt-2 rounded-2xl bg-card p-2 shadow-soft ring-1 ring-border/60">
+            <div className="flex items-start gap-2 px-2 pt-2">
+              <MessageSquareText className="mt-0.5 h-4 w-4 text-muted-foreground" />
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value.slice(0, 240))}
+                placeholder="Allergies, less spicy, no onions… (optional)"
+                className="min-h-[64px] border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+              />
+            </div>
+            <div className="px-2 pb-1 text-right text-[10px] text-muted-foreground">{notes.length}/240</div>
+          </div>
+        </section>
+
+        {/* Coupon */}
+        <section>
+          <h3 className="flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground"><Tag className="h-3.5 w-3.5" /> Coupon</h3>
+          {coupon ? (
+            <div className="mt-2 flex items-center justify-between rounded-2xl bg-primary-soft p-3 ring-1 ring-primary/30">
+              <div>
+                <div className="text-sm font-bold text-primary">{coupon.code}</div>
+                <div className="text-xs text-primary/80">{coupon.label}</div>
+              </div>
+              <button onClick={removeCoupon} className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary"><X className="h-3.5 w-3.5" /></button>
+            </div>
+          ) : (
+            <div className="mt-2 flex gap-2">
+              <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter coupon code" className="rounded-full" />
+              <Button onClick={handleApplyCoupon} className="rounded-full">Apply</Button>
+            </div>
+          )}
+        </section>
+
 
         {/* Summary */}
         <section className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">

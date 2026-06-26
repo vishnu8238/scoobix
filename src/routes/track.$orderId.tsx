@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, MessageSquare, Phone, Star, MapPin, Clock } from "lucide-react";
+import { ArrowLeft, MessageSquare, Phone, Star, MapPin, Clock, ShieldCheck, StickyNote } from "lucide-react";
 import { useOrders, STATUS_LABEL } from "@/lib/stores";
 import { MapStylized } from "@/components/cravio/MapStylized";
 import { TimelineStepper } from "@/components/cravio/TimelineStepper";
@@ -88,6 +88,24 @@ function TrackPage() {
             <Clock className="mt-0.5 h-3.5 w-3.5 text-primary" />
             <span>Placed {new Date(order.placedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · Paid with {order.paymentLabel}</span>
           </div>
+          {order.deliveryInstructions && (
+            <div className="mt-1 flex items-start gap-2 text-xs text-muted-foreground">
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-primary" />
+              <span>{order.deliveryInstructions}{order.contactless ? " · Contactless" : ""}</span>
+            </div>
+          )}
+          {!order.deliveryInstructions && order.contactless && (
+            <div className="mt-1 flex items-start gap-2 text-xs text-muted-foreground">
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-primary" />
+              <span>Contactless delivery</span>
+            </div>
+          )}
+          {order.notes && (
+            <div className="mt-1 flex items-start gap-2 text-xs text-muted-foreground">
+              <StickyNote className="mt-0.5 h-3.5 w-3.5 text-primary" />
+              <span>"{order.notes}"</span>
+            </div>
+          )}
         </div>
 
         <div className="rounded-3xl bg-card p-4 shadow-soft ring-1 ring-border/60 text-sm">

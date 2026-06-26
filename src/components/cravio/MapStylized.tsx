@@ -9,9 +9,11 @@ export function MapStylized({ status }: { status: OrderStatus }) {
   // progress 0..1
   const target =
     status === "PLACED" ? 0.05 :
-    status === "PREPARING" ? 0.15 :
-    status === "PICKED_UP" ? 0.4 :
-    status === "ON_THE_WAY" ? 0.75 :
+    status === "ACCEPTED" ? 0.1 :
+    status === "PREPARING" ? 0.18 :
+    status === "READY" ? 0.32 :
+    status === "PICKED_UP" ? 0.5 :
+    status === "ON_THE_WAY" ? 0.8 :
     status === "DELIVERED" ? 1 :
     0;
 

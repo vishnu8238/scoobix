@@ -209,18 +209,28 @@ export const useFavorites = () => {
    ORDERS
    ============================================================ */
 
-export type OrderStatus = "PLACED" | "PREPARING" | "PICKED_UP" | "ON_THE_WAY" | "DELIVERED" | "CANCELLED";
+export type OrderStatus =
+  | "PLACED"
+  | "ACCEPTED"
+  | "PREPARING"
+  | "READY"
+  | "PICKED_UP"
+  | "ON_THE_WAY"
+  | "DELIVERED"
+  | "CANCELLED";
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
   PLACED: "Order placed",
+  ACCEPTED: "Accepted",
   PREPARING: "Preparing",
+  READY: "Ready for pickup",
   PICKED_UP: "Picked up",
   ON_THE_WAY: "On the way",
   DELIVERED: "Delivered",
   CANCELLED: "Cancelled",
 };
 
-export const STATUS_FLOW: OrderStatus[] = ["PLACED", "PREPARING", "PICKED_UP", "ON_THE_WAY", "DELIVERED"];
+export const STATUS_FLOW: OrderStatus[] = ["PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "ON_THE_WAY", "DELIVERED"];
 
 export type Order = {
   id: string;
@@ -240,6 +250,11 @@ export type Order = {
   paymentLabel: string;
   driver: { name: string; vehicle: string; rating: number; phone: string };
   etaMins: number;
+  // Customer preferences captured at checkout (ready for backend persistence)
+  deliveryInstructions?: string;
+  contactless?: boolean;
+  notes?: string;
+  couponCode?: string;
 };
 
 type OrdersCtx = {
@@ -251,6 +266,10 @@ type OrdersCtx = {
     addressLabel: string;
     addressLine: string;
     paymentLabel: string;
+    deliveryInstructions?: string;
+    contactless?: boolean;
+    notes?: string;
+    couponCode?: string;
   }) => string;
   getOrder: (id: string) => Order | undefined;
   reorder: (id: string) => CartItem[] | null;
@@ -299,12 +318,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         const next = prev.map((o) => {
           if (o.status === "DELIVERED" || o.status === "CANCELLED") return o;
           const ageSec = (Date.now() - o.placedAt) / 1000;
-          // PLACED -> PREPARING @ 6s, -> PICKED_UP @ 18s, -> ON_THE_WAY @ 30s, -> DELIVERED @ 55s
+          // PLACED → ACCEPTED → PREPARING → READY → PICKED_UP → ON_THE_WAY → DELIVERED
           let target: OrderStatus = "PLACED";
-          if (ageSec >= 55) target = "DELIVERED";
-          else if (ageSec >= 30) target = "ON_THE_WAY";
-          else if (ageSec >= 18) target = "PICKED_UP";
-          else if (ageSec >= 6) target = "PREPARING";
+          if (ageSec >= 60) target = "DELIVERED";
+          else if (ageSec >= 42) target = "ON_THE_WAY";
+          else if (ageSec >= 32) target = "PICKED_UP";
+          else if (ageSec >= 22) target = "READY";
+          else if (ageSec >= 10) target = "PREPARING";
+          else if (ageSec >= 4) target = "ACCEPTED";
           if (target !== o.status) { changed = true; return { ...o, status: target }; }
           return o;
         });
@@ -314,7 +335,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(t);
   }, []);
 
-  const placeOrder: OrdersCtx["placeOrder"] = ({ items, totals, restaurant, addressLabel, addressLine, paymentLabel }) => {
+  const placeOrder: OrdersCtx["placeOrder"] = ({ items, totals, restaurant, addressLabel, addressLine, paymentLabel, deliveryInstructions, contactless, notes, couponCode }) => {
     const id = `CRV${Math.floor(100000 + Math.random() * 900000)}`;
     const driver = DRIVERS[Math.floor(Math.random() * DRIVERS.length)];
     const order: Order = {
@@ -329,6 +350,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       addressLabel, addressLine, paymentLabel,
       driver,
       etaMins: restaurant.deliveryMins,
+      deliveryInstructions,
+      contactless,
+      notes,
+      couponCode,
     };
     setOrders((prev) => [order, ...prev]);
     return id;
@@ -362,20 +387,42 @@ export const useOrders = () => {
    APP UI STATE (location, etc.)
    ============================================================ */
 
+type LocationPermission = "unknown" | "prompt" | "granted" | "denied" | "unsupported";
+
 type AppUICtx = {
   location: string;
   setLocation: (l: string) => void;
   recentSearches: string[];
   pushRecent: (s: string) => void;
   clearRecent: () => void;
+  locationPermission: LocationPermission;
+  detectingLocation: boolean;
+  detectLocation: () => Promise<{ ok: boolean; message: string }>;
 };
 
 const AppUIContext = createContext<AppUICtx | null>(null);
 const UI_KEY = "cravio_ui_v1";
 
+// Tiny mock reverse-geocoder: turns coords into a nice-looking area name.
+// Backend swap point: replace with a real geocoding call later.
+function mockReverseGeocode(lat: number, lng: number): string {
+  const areas = [
+    "Indiranagar, Bengaluru",
+    "Bandra West, Mumbai",
+    "Connaught Place, Delhi",
+    "Koramangala, Bengaluru",
+    "Powai, Mumbai",
+    "HSR Layout, Bengaluru",
+  ];
+  const idx = Math.abs(Math.round(lat * 7 + lng * 3)) % areas.length;
+  return `${areas[idx]} · Current location`;
+}
+
 export function AppUIProvider({ children }: { children: ReactNode }) {
   const [location, setLocationState] = useState("Westside · Apt 4");
   const [recentSearches, setRecent] = useState<string[]>([]);
+  const [locationPermission, setLocationPermission] = useState<LocationPermission>("unknown");
+  const [detectingLocation, setDetecting] = useState(false);
 
   useEffect(() => {
     try {
@@ -386,6 +433,9 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(o.recentSearches)) setRecent(o.recentSearches);
       }
     } catch {/* */}
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setLocationPermission("unsupported");
+    }
   }, []);
 
   useEffect(() => {
@@ -400,8 +450,37 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
   };
   const clearRecent = () => setRecent([]);
 
+  const detectLocation: AppUICtx["detectLocation"] = () =>
+    new Promise((resolve) => {
+      if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+        setLocationPermission("unsupported");
+        resolve({ ok: false, message: "Geolocation isn't supported on this device" });
+        return;
+      }
+      setDetecting(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const label = mockReverseGeocode(pos.coords.latitude, pos.coords.longitude);
+          setLocationState(label);
+          setLocationPermission("granted");
+          setDetecting(false);
+          resolve({ ok: true, message: label });
+        },
+        (err) => {
+          setDetecting(false);
+          if (err.code === err.PERMISSION_DENIED) {
+            setLocationPermission("denied");
+            resolve({ ok: false, message: "Location permission denied" });
+          } else {
+            resolve({ ok: false, message: "Couldn't fetch your location" });
+          }
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },
+      );
+    });
+
   return (
-    <AppUIContext.Provider value={{ location, setLocation, recentSearches, pushRecent, clearRecent }}>
+    <AppUIContext.Provider value={{ location, setLocation, recentSearches, pushRecent, clearRecent, locationPermission, detectingLocation, detectLocation }}>
       {children}
     </AppUIContext.Provider>
   );

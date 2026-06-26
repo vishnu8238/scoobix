@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, MapPin } from "lucide-react";
+import { Bell, ChevronDown, MapPin, Navigation, Loader2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
@@ -6,6 +6,7 @@ import { useAppUI } from "@/lib/stores";
 import { notifications } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const SUGGESTED_LOCATIONS = [
   "Westside · Apt 4",
@@ -15,10 +16,20 @@ const SUGGESTED_LOCATIONS = [
 ];
 
 export function TopBar() {
-  const { location, setLocation } = useAppUI();
+  const { location, setLocation, detectLocation, detectingLocation, locationPermission } = useAppUI();
   const [locOpen, setLocOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [customLoc, setCustomLoc] = useState("");
+
+  const handleDetect = async () => {
+    const res = await detectLocation();
+    if (res.ok) {
+      toast.success("Location updated", { description: res.message });
+      setLocOpen(false);
+    } else {
+      toast.error(res.message);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 glass px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3.5">
@@ -39,6 +50,27 @@ export function TopBar() {
               <SheetDescription>Pick a saved address or type a new one.</SheetDescription>
             </SheetHeader>
             <div className="mt-4 space-y-2">
+              <button
+                onClick={handleDetect}
+                disabled={detectingLocation || locationPermission === "unsupported"}
+                className="flex w-full items-center gap-3 rounded-2xl border-2 border-primary/40 bg-primary-soft/60 p-3.5 text-left transition active:scale-[0.99] disabled:opacity-60"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+                  {detectingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-bold text-primary">
+                    {detectingLocation ? "Detecting your location…" : "Use current location"}
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {locationPermission === "denied"
+                      ? "Permission denied — enable in browser settings"
+                      : locationPermission === "unsupported"
+                      ? "Not available on this device"
+                      : "We'll ask your browser for permission"}
+                  </span>
+                </span>
+              </button>
               {SUGGESTED_LOCATIONS.map((l) => (
                 <button
                   key={l}
