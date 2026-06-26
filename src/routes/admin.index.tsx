@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { adminStats, adminOrdersRecent, adminRestaurants } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { Users, Store, Bike, ClipboardList, DollarSign, TrendingUp, ArrowUpRight } from "lucide-react";
+import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({ meta: [{ title: "Cravio Admin · Dashboard" }] }),
