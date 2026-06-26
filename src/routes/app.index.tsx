@@ -24,16 +24,16 @@ function Home() {
   const recommended = recommendedDishIds.map((id) => dishes.find((d) => d.id === id)!).filter(Boolean);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-up">
       <TopBar />
 
-      <div className="px-4 -mt-2 animate-fade-up">
+      <div className="px-5 -mt-3">
         <button
           onClick={() => navigate({ to: "/app/search" })}
-          className="flex w-full items-center gap-3 rounded-full bg-secondary px-4 py-3.5 text-left shadow-soft ring-1 ring-border/60 transition hover:bg-muted"
+          className="group flex w-full items-center gap-3 rounded-2xl bg-surface px-5 py-4 text-left shadow-soft ring-1 ring-border/70 transition active:scale-[0.99]"
         >
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <span className="truncate text-sm text-muted-foreground">Search restaurants, dishes and cuisines</span>
+          <Search className="h-5 w-5 text-muted-foreground group-focus-within:text-primary" strokeWidth={2.5} />
+          <span className="truncate text-[14px] font-medium text-muted-foreground">What are you craving?</span>
         </button>
       </div>
 
@@ -42,39 +42,48 @@ function Home() {
       <CategoryRail />
       <QuickOffers />
 
-      <section className="space-y-3">
-        <SectionHeader title="Top restaurants near you" action={{ label: "See all", to: "/app/search" }} />
-        <div className="space-y-3.5 px-4">
-          {restaurants.slice(0, 4).map((r) => (
+      <section className="space-y-4">
+        <SectionHeader title="Chef's selection" action={{ label: "See all", to: "/app/search" }} />
+        <div className="space-y-7 px-5">
+          {restaurants.slice(0, 2).map((r) => (
             <RestaurantCard key={r.id} r={r} />
           ))}
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
         <SectionHeader title="Recommended for you" />
-        <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2">
+        <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
           {recommended.map((d) => <DishCard key={d.id} dish={d} />)}
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-4">
+        <SectionHeader title="Top restaurants near you" action={{ label: "See all", to: "/app/search" }} />
+        <div className="space-y-7 px-5">
+          {restaurants.slice(2, 4).map((r) => (
+            <RestaurantCard key={r.id} r={r} />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-4">
         <SectionHeader title="Popular dishes" />
-        <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2">
+        <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
           {trending.map((d) => <DishCard key={d.id} dish={d} />)}
         </div>
       </section>
 
-      <section className="space-y-3 pb-6">
+      <section className="space-y-4 pb-8">
         <SectionHeader title="More places to explore" action={{ label: "See all", to: "/app/search" }} />
-        <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-2">
+        <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
           {restaurants.slice(4).map((r) => <RestaurantCard key={r.id} r={r} variant="compact" />)}
         </div>
       </section>
 
-      <p className="px-6 pb-4 text-center text-[11px] text-muted-foreground">
+      <p className="px-6 pb-4 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
         Cravio · Crave it. Get it.{" "}
-        <Link to="/" className="font-semibold text-primary">Back to splash</Link>
+        <Link to="/" className="font-bold text-primary">Splash</Link>
       </p>
     </div>
   );
