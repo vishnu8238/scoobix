@@ -37,7 +37,7 @@ function AdminSettings() {
         <Card icon={CreditCard} title="Payouts">
           <Row label="Payout cadence" value="Weekly · Monday 9 AM" />
           <Row label="Commission" value="18% per order" />
-          <Row label="Driver bonus pool" value="$12,400 / week" />
+          <Row label="Driver bonus pool" value="₹10,24,000 / week" />
         </Card>
 
         <Card icon={Shield} title="Security">
