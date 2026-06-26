@@ -503,15 +503,19 @@ export const useAppUI = () => {
    ROOT PROVIDER STACK
    ============================================================ */
 
+import { CmsProvider } from "./cms-store";
+
 export function CravioProviders({ children }: { children: ReactNode }) {
   return (
-    <AppUIProvider>
-      <FavoritesProvider>
-        <OrdersProvider>
-          <CartProvider>{children}</CartProvider>
-        </OrdersProvider>
-      </FavoritesProvider>
-    </AppUIProvider>
+    <CmsProvider>
+      <AppUIProvider>
+        <FavoritesProvider>
+          <OrdersProvider>
+            <CartProvider>{children}</CartProvider>
+          </OrdersProvider>
+        </FavoritesProvider>
+      </AppUIProvider>
+    </CmsProvider>
   );
 }
 
