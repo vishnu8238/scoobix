@@ -10,11 +10,16 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/portal'
+import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PartnerIndexRouteImport } from './routes/partner.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
+import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
+import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
+import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as AppSearchRouteImport } from './routes/app.search'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
@@ -26,6 +31,11 @@ const PortalRoute = PortalRouteImport.update({
   path: '/portal',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PartnerRoute = PartnerRouteImport.update({
+  id: '/partner',
+  path: '/partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -35,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerIndexRoute = PartnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PartnerRoute,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
@@ -50,6 +65,21 @@ const RestaurantIdRoute = RestaurantIdRouteImport.update({
   id: '/restaurant/$id',
   path: '/restaurant/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerProfileRoute = PartnerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerOrdersRoute = PartnerOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerMenuRoute = PartnerMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => PartnerRoute,
 } as any)
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
@@ -80,15 +110,20 @@ const AppCartRoute = AppCartRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/search': typeof AppSearchRoute
+  '/partner/menu': typeof PartnerMenuRoute
+  '/partner/orders': typeof PartnerOrdersRoute
+  '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app/': typeof AppIndexRoute
+  '/partner/': typeof PartnerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,38 +133,52 @@ export interface FileRoutesByTo {
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/search': typeof AppSearchRoute
+  '/partner/menu': typeof PartnerMenuRoute
+  '/partner/orders': typeof PartnerOrdersRoute
+  '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app': typeof AppIndexRoute
+  '/partner': typeof PartnerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/search': typeof AppSearchRoute
+  '/partner/menu': typeof PartnerMenuRoute
+  '/partner/orders': typeof PartnerOrdersRoute
+  '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/app/': typeof AppIndexRoute
+  '/partner/': typeof PartnerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/app'
+    | '/partner'
     | '/portal'
     | '/app/cart'
     | '/app/checkout'
     | '/app/orders'
     | '/app/profile'
     | '/app/search'
+    | '/partner/menu'
+    | '/partner/orders'
+    | '/partner/profile'
     | '/restaurant/$id'
     | '/track/$orderId'
     | '/app/'
+    | '/partner/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -139,27 +188,37 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/profile'
     | '/app/search'
+    | '/partner/menu'
+    | '/partner/orders'
+    | '/partner/profile'
     | '/restaurant/$id'
     | '/track/$orderId'
     | '/app'
+    | '/partner'
   id:
     | '__root__'
     | '/'
     | '/app'
+    | '/partner'
     | '/portal'
     | '/app/cart'
     | '/app/checkout'
     | '/app/orders'
     | '/app/profile'
     | '/app/search'
+    | '/partner/menu'
+    | '/partner/orders'
+    | '/partner/profile'
     | '/restaurant/$id'
     | '/track/$orderId'
     | '/app/'
+    | '/partner/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  PartnerRoute: typeof PartnerRouteWithChildren
   PortalRoute: typeof PortalRoute
   RestaurantIdRoute: typeof RestaurantIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
@@ -172,6 +231,13 @@ declare module '@tanstack/react-router' {
       path: '/portal'
       fullPath: '/portal'
       preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partner': {
+      id: '/partner'
+      path: '/partner'
+      fullPath: '/partner'
+      preLoaderRoute: typeof PartnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -187,6 +253,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/partner/': {
+      id: '/partner/'
+      path: '/'
+      fullPath: '/partner/'
+      preLoaderRoute: typeof PartnerIndexRouteImport
+      parentRoute: typeof PartnerRoute
     }
     '/app/': {
       id: '/app/'
@@ -208,6 +281,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/restaurant/$id'
       preLoaderRoute: typeof RestaurantIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/partner/profile': {
+      id: '/partner/profile'
+      path: '/profile'
+      fullPath: '/partner/profile'
+      preLoaderRoute: typeof PartnerProfileRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/orders': {
+      id: '/partner/orders'
+      path: '/orders'
+      fullPath: '/partner/orders'
+      preLoaderRoute: typeof PartnerOrdersRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/menu': {
+      id: '/partner/menu'
+      path: '/menu'
+      fullPath: '/partner/menu'
+      preLoaderRoute: typeof PartnerMenuRouteImport
+      parentRoute: typeof PartnerRoute
     }
     '/app/search': {
       id: '/app/search'
@@ -267,9 +361,27 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface PartnerRouteChildren {
+  PartnerMenuRoute: typeof PartnerMenuRoute
+  PartnerOrdersRoute: typeof PartnerOrdersRoute
+  PartnerProfileRoute: typeof PartnerProfileRoute
+  PartnerIndexRoute: typeof PartnerIndexRoute
+}
+
+const PartnerRouteChildren: PartnerRouteChildren = {
+  PartnerMenuRoute: PartnerMenuRoute,
+  PartnerOrdersRoute: PartnerOrdersRoute,
+  PartnerProfileRoute: PartnerProfileRoute,
+  PartnerIndexRoute: PartnerIndexRoute,
+}
+
+const PartnerRouteWithChildren =
+  PartnerRoute._addFileChildren(PartnerRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  PartnerRoute: PartnerRouteWithChildren,
   PortalRoute: PortalRoute,
   RestaurantIdRoute: RestaurantIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
