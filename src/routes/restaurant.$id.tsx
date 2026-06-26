@@ -32,7 +32,7 @@ export const Route = createFileRoute("/restaurant/$id")({
 });
 
 function RestaurantPage() {
-  const r = Route.useLoaderData();
+  const r = Route.useLoaderData() as Restaurant;
   const navigate = useNavigate();
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const { items, totals } = useCart();
