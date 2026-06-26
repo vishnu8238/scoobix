@@ -15,17 +15,37 @@ export const Route = createFileRoute("/rider/active")({
 function RiderActive() {
   const d = riderActiveDelivery;
   const navigate = useNavigate();
+  const pickup = restaurantCoords(d.restaurant);
+  const drop = addressCoords(d.customerAddress);
+
+  // Animate the rider along the route while screen is open.
+  const [progress, setProgress] = useState(0.4);
+  useEffect(() => {
+    const t = setInterval(() => setProgress((p) => (p >= 0.95 ? 0.95 : +(p + 0.08).toFixed(2))), 2200);
+    return () => clearInterval(t);
+  }, []);
 
   return (
     <div className="animate-fade-up pb-8">
       <div className="relative h-64 w-full overflow-hidden">
-        <MapStylized status="ON_THE_WAY" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <LeafletMap
+          height="100%"
+          interactive={false}
+          route={{ from: pickup, to: drop }}
+          riderProgress={progress}
+          riderLabel="You"
+          markers={[
+            { id: "p", kind: "pickup", label: d.restaurant, ...pickup },
+            { id: "c", kind: "drop", label: d.customer, ...drop },
+          ]}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute left-5 right-5 top-7">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/70">Active delivery</p>
           <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">{d.id}</h1>
         </div>
       </div>
+
 
       <div className="-mt-8 space-y-4 px-5">
         <div className="rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-5 text-primary-foreground shadow-pop">
