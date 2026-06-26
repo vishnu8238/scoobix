@@ -17,6 +17,7 @@ function TrackPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate();
   const { getOrder } = useOrders();
+  const { userCoords } = useAppUI();
   const order = getOrder(orderId);
 
   if (!order) {
@@ -34,6 +35,8 @@ function TrackPage() {
   }
 
   const delivered = order.status === "DELIVERED";
+  const pickup = restaurantCoords(order.restaurantId);
+  const drop = userCoords ?? addressCoords(order.addressLine || order.addressLabel);
 
   return (
     <div className="min-h-svh pb-8">
@@ -47,7 +50,17 @@ function TrackPage() {
 
       <div className="space-y-4 p-4">
         <div className="rounded-3xl bg-card shadow-card ring-1 ring-border/60 overflow-hidden">
-          <MapStylized status={order.status} />
+          <LeafletMap
+            height={260}
+            interactive={false}
+            route={{ from: pickup, to: drop }}
+            riderProgress={statusToProgress(order.status)}
+            riderLabel={order.driver.name}
+            markers={[
+              { id: "r", kind: "restaurant", label: order.restaurantName, ...pickup },
+              { id: "c", kind: "customer", label: "Delivery here", ...drop },
+            ]}
+          />
           <div className="p-4">
             <div className="text-xs font-bold uppercase tracking-wider text-primary">{STATUS_LABEL[order.status]}</div>
             <h2 className="mt-1 font-display text-lg font-bold leading-tight">
