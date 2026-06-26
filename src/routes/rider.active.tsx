@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { riderActiveDelivery } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { Phone, Navigation, MapPin, Store, User, CheckCircle2 } from "lucide-react";
-import { MapStylized } from "@/components/cravio/MapStylized";
+import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { addressCoords, restaurantCoords } from "@/lib/geo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/rider/active")({
