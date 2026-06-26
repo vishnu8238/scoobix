@@ -3,37 +3,45 @@ import { Star, Clock, Bike, Heart } from "lucide-react";
 import type { Restaurant } from "@/lib/mock-data";
 import { useFavorites } from "@/lib/stores";
 import { cn } from "@/lib/format";
+import { useState } from "react";
 
 export function RestaurantCard({ r, variant = "full" }: { r: Restaurant; variant?: "full" | "compact" }) {
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const fav = isRestaurantFav(r.id);
+  const [pop, setPop] = useState(0);
+
+  const onFav = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toggleRestaurant(r.id);
+    setPop((p) => p + 1);
+  };
 
   if (variant === "compact") {
     return (
       <Link to="/restaurant/$id" params={{ id: r.id }} className="group block w-[260px] shrink-0">
-        <div className="relative h-36 overflow-hidden rounded-2xl shadow-card">
-          <img src={r.cover} alt={r.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+        <div className="relative h-40 overflow-hidden rounded-[28px] shadow-card">
+          <img src={r.cover} alt={r.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
           {r.offer && (
-            <span className="absolute left-2 top-2 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground shadow-soft">
+            <span className="absolute left-3 bottom-3 rounded-full glass-dark px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest">
               {r.offer}
             </span>
           )}
+          <span className="absolute right-3 top-3 glass flex items-center gap-1 rounded-full px-2.5 py-1 shadow-soft">
+            <Star className="h-3 w-3 fill-primary text-primary" />
+            <span className="text-[11px] font-extrabold">{r.rating.toFixed(1)}</span>
+          </span>
           <button
-            onClick={(e) => { e.preventDefault(); toggleRestaurant(r.id); }}
+            onClick={onFav}
             aria-label={fav ? "Remove from favorites" : "Add to favorites"}
-            className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-foreground backdrop-blur transition hover:scale-110"
+            className="absolute left-3 top-3 grid h-8 w-8 place-items-center rounded-full glass shadow-soft transition active:scale-90"
           >
-            <Heart className={cn("h-4 w-4", fav && "fill-primary text-primary")} />
+            <Heart key={pop} className={cn("h-4 w-4 transition-colors", fav ? "fill-primary text-primary animate-pop" : "text-foreground")} />
           </button>
         </div>
-        <div className="mt-2 px-1">
-          <div className="flex items-center justify-between gap-2">
-            <h4 className="truncate text-sm font-bold">{r.name}</h4>
-            <span className="flex items-center gap-0.5 text-xs font-semibold">
-              <Star className="h-3 w-3 fill-primary text-primary" /> {r.rating.toFixed(1)}
-            </span>
-          </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">{r.cuisine}</p>
+        <div className="mt-2.5 px-1">
+          <h4 className="truncate font-display text-[15px] font-bold tracking-tight">{r.name}</h4>
+          <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{r.cuisine} · {r.deliveryMins} min</p>
         </div>
       </Link>
     );
@@ -41,40 +49,53 @@ export function RestaurantCard({ r, variant = "full" }: { r: Restaurant; variant
 
   return (
     <Link to="/restaurant/$id" params={{ id: r.id }} className="group block">
-      <div className="overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60 transition-transform hover:scale-[1.01]">
-        <div className="relative h-44">
-          <img src={r.cover} alt={r.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/55 to-transparent" />
-          {r.offer && (
-            <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-primary-foreground shadow-soft">
-              {r.offer}
-            </span>
-          )}
+      <div className="relative">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-[32px] shadow-card">
+          <img src={r.cover} alt={r.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+
+          {/* Rating glass pill */}
+          <span className="absolute right-4 top-4 glass flex items-center gap-1.5 rounded-full px-3 py-1.5 shadow-soft">
+            <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+            <span className="font-display text-[13px] font-extrabold">{r.rating.toFixed(1)}</span>
+          </span>
+
+          {/* Favorite */}
           <button
-            onClick={(e) => { e.preventDefault(); toggleRestaurant(r.id); }}
+            onClick={onFav}
             aria-label={fav ? "Remove from favorites" : "Add to favorites"}
-            className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-foreground backdrop-blur transition hover:scale-110"
+            className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full glass shadow-soft transition active:scale-90"
           >
-            <Heart className={cn("h-[18px] w-[18px]", fav && "fill-primary text-primary")} />
+            <Heart key={pop} className={cn("h-4.5 w-4.5 transition-colors", fav ? "fill-primary text-primary animate-pop" : "text-foreground")} />
           </button>
-          <div className="absolute bottom-3 left-3 flex items-center gap-2">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-white shadow-soft">
-              <img src={r.logo} alt="" className="h-full w-full rounded-xl object-cover" loading="lazy" />
+
+          {/* Bottom tag pills */}
+          <div className="absolute bottom-4 left-4 flex gap-2">
+            <span className="glass-dark rounded-2xl px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest">
+              {r.deliveryMins} min
             </span>
+            {r.offer ? (
+              <span className="rounded-2xl bg-primary px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-primary-foreground shadow-glow">
+                {r.offer}
+              </span>
+            ) : (
+              <span className="glass rounded-2xl px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-foreground">
+                Free delivery
+              </span>
+            )}
           </div>
         </div>
-        <div className="p-3.5">
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="text-[15px] font-bold leading-tight">{r.name}</h4>
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
-              <Star className="h-3 w-3 fill-primary" /> {r.rating.toFixed(1)}
-            </span>
-          </div>
-          <p className="mt-1 text-[12px] text-muted-foreground">{r.cuisine} · {r.priceLevel}</p>
-          <div className="mt-2 flex items-center gap-3 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{r.deliveryMins} min</span>
-            <span className="h-1 w-1 rounded-full bg-border" />
-            <span className="flex items-center gap-1"><Bike className="h-3.5 w-3.5" />{r.distanceKm} km</span>
+
+        <div className="mt-4 flex items-start justify-between gap-3 px-1">
+          <div className="min-w-0">
+            <h4 className="truncate font-display text-[18px] font-extrabold leading-tight tracking-tight">{r.name}</h4>
+            <p className="mt-1 truncate text-[13px] font-medium text-muted-foreground">
+              {r.cuisine} · {r.priceLevel}
+            </p>
+            <div className="mt-2 flex items-center gap-3 text-[12px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{r.deliveryMins} min</span>
+              <span className="h-1 w-1 rounded-full bg-border" />
+              <span className="inline-flex items-center gap-1"><Bike className="h-3.5 w-3.5" />{r.distanceKm} km</span>
+            </div>
           </div>
         </div>
       </div>

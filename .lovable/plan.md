@@ -1,48 +1,68 @@
-# Cravio — Premium Customer Food Delivery App (UI only)
+# Cravio premium refinement plan
 
-Mobile-first, no backend. All state is local (React context + localStorage). Every button has a real flow.
+Goal: lift the existing Cravio customer app to the **Luxe Discovery Feed** direction the user picked. No page is removed, no feature changed — only visual system, components, motion, and states.
 
-## Scope guardrails
-- Customer-facing only. No partner/driver/admin, no backend, no auth, no InsForge.
-- Phone-frame layout that also looks great on desktop (centered shell, max-w ~480px, soft surrounding gradient).
+## 1. Design tokens (`src/styles.css`)
 
-## Design system (`src/styles.css`)
-- Primary `#28a156` as `--primary` in oklch, light-green gradient tokens, soft-gray surfaces, charcoal text.
-- Tokens for `--shadow-soft`, `--shadow-card`, `--shadow-float`, `--gradient-primary`, `--gradient-hero`, `--radius` 1rem.
-- Glass utility for sticky headers and bottom nav.
-- Plus Jakarta Sans (display) + Inter (body), loaded via `<link>` in `__root.tsx`.
-- Animations: fade-up, slide-in, pulse-soft, shimmer skeleton, page transitions on route change.
+Lock the chosen system as CSS variables and `@theme inline` tokens:
 
-## Mock data (`src/lib/mock-data.ts`)
-Realistic restaurants (8–10), menus per restaurant (Starters / Mains / Drinks / Desserts), trending dishes, categories, offers, saved addresses, payment methods, past orders. Premium AI-generated food + restaurant imagery.
+- `--background` cream `#fbf7ef`, `--surface` white, `--ink` `#1a1a1a`, `--ink-soft` 50% ink
+- `--primary` `#28a156` (Cravio green), `--primary-strong` `#0f3d24` (deep forest)
+- `--accent-glow` for soft green halos: `0 8px 20px rgba(40,161,86,0.12)`
+- Shadow tokens: `--shadow-card` `0 20px 40px rgba(0,0,0,0.08)`, `--shadow-soft` `0 8px 24px rgba(0,0,0,0.04)`, `--shadow-pop` `0 32px 64px -12px rgba(0,0,0,0.15)`
+- Radii: `--radius-xs 12`, `--radius-sm 16`, `--radius-md 24`, `--radius-lg 32`, `--radius-xl 40`, `--radius-2xl 56`
+- Add `@utility glass` (white/80 + `backdrop-filter: blur(24px) saturate(140%)`) and `@utility glass-dark` (forest/80)
+- Keyframes: `cravio-fade-up`, `cravio-pop` (heart), `cravio-shimmer` (skeleton), `cravio-press` (0.96 scale)
 
-## State (`src/lib/`)
-- `cart-store.tsx` — context + localStorage. Add/remove/qty/clear, coupon, totals.
-- `favorites-store.tsx` — favorited restaurants + dishes.
-- `orders-store.tsx` — places order from cart, advances status on a timer to drive tracking UI.
+## 2. Typography
 
-## Routes
-- `/` Splash → animated Cravio mark, premium food bg, auto-routes to `/app` after ~1.6s (also tap-to-skip).
-- `/app` layout: top bar (location selector sheet, profile avatar → `/app/profile`, notifications sheet), sticky glass bottom nav (Home / Search / Cart / Orders / Profile) with animated active pill + cart badge.
-- `/app` Home: search bar (routes to /app/search on focus), auto-sliding hero carousel (3 promos, green gradient), horizontal category rail, quick-offer cards (Free delivery / Best deals / Discounts), "Top restaurants near you" list, "Recommended for you" food cards, "Popular dishes" trending rail.
-- `/app/search`: live filter, recent searches (persisted), popular chips, filter sheet (rating, delivery time, price range, cuisine).
-- `/restaurant/$id`: parallax cover, info header (rating, ETA, distance, cuisine, offer badge), sticky category tabs, item cards. Tap item → customization sheet (size, extras, spice, qty) → add to cart with toast.
-- `/app/cart`: line items with qty steppers, swipe/tap remove, coupon input (`CRAVIO10`, `FREESHIP` work), bill summary, large "Proceed to checkout" CTA.
-- `/app/checkout`: address card (switchable via sheet), delivery options (Standard / Priority), payment options (Card / UPI / Cash / Wallet), order summary, "Place order" → creates order, routes to tracking.
-- `/track/$orderId`: stylized SVG map with animated route + moving driver pin, driver card (photo, name, vehicle, call/message buttons), 5-step timeline (Placed → Preparing → Picked up → On the way → Delivered) that advances on a timer.
-- `/app/orders`: tabs Active / Past. Cards with restaurant, items, price, status pill, "Track" or "Reorder" (reorder repopulates cart and routes to checkout).
-- `/app/profile`: avatar header, sections My account, Saved addresses, Favorites, Payments, Help, Settings — each opens a real sub-sheet/page with editable mock data.
+Load **Space Grotesk** (display, 700/800) + **DM Sans** (body, 400/500/600) via `<link>` in `src/routes/__root.tsx` head. Map `--font-display` and `--font-sans` in `@theme`. Headings → display, body/labels → sans. Tighten tracking on h1/h2 (`-0.02em`), uppercase eyebrows at `tracking-[0.2em]`.
 
-## States on every screen
-- Skeleton shimmer on initial mount (~400ms simulated).
-- Empty states with illustration + CTA (empty cart, no orders, no favorites, no search results).
-- Toast on every mutation (sonner).
-- Route transition: subtle fade-up.
+## 3. Component refresh (all existing, no removals)
 
-## Components (`src/components/cravio/`)
-TopBar, BottomNav, LocationSheet, NotificationsSheet, HeroCarousel, CategoryRail, OfferCard, RestaurantCard, DishCard, QtyStepper, CustomizationSheet, CouponInput, BillSummary, TimelineStepper, MapStylized, OrderCard, SectionHeader, EmptyState, Skeleton.
+- **TopBar** — Eyebrow "Delivering to" + bold address with caret; right side rounded-2xl avatar in white well with subtle border. Notification bell keeps badge.
+- **Search input** — h-14, white surface on cream, soft shadow, focus ring `primary/20`.
+- **HeroCarousel** — Taller (h-56), `rounded-[2.5rem]`, deep-forest base with overlaid food image at `opacity-70 mix-blend-overlay`, vertical gradient, "Limited Offer" pill, display headline `text-3xl font-extrabold leading-[0.9]`, subcopy with code.
+- **CategoryRail** — 72×72 rounded-[2rem] white tiles, active tile gets 2px green border + green glow shadow, inactive gets hairline border + soft shadow. Label uppercase tracking-wider, muted when inactive.
+- **RestaurantCard** — `rounded-[3rem]`, 4:3 cover image (taller, larger), `group-hover:scale-105` parallax on cover, floating glass rating pill top-right, two glass tag pills bottom-left (ETA + Free Delivery / Offer), heart in white circle below card image, title in Space Grotesk extrabold, meta line muted.
+- **DishCard** — 180×220 vertical card with image and floating green add button (rounded-2xl, shadow-xl), title 15px bold, price in primary green.
+- **BottomNav** — `glass` bar, active icon green with tiny dot indicator above, cart badge as small green pill with white border.
+- **Buttons** — Premium variants: `primary` (solid green, shadow-md, active:scale-95), `dark` (deep forest), `ghost-pill` (white/80 glass). All get 180ms transitions and press scale.
+- **QtyStepper** — Morphs from add-button on first tap (Framer-like spring via Tailwind transitions on width).
+- **Heart/Favorite** — Pop animation (`cravio-pop`) and color swap on toggle.
 
-## Out of scope
-Anything backend, real auth, real maps, real payments. Real-feeling flows simulated client-side.
+## 4. States
 
-I'll build straight through once approved.
+- **Loading skeletons** — Shimmer blocks matching card silhouettes (hero, restaurant, dish, order). Use `cravio-shimmer` keyframe over `bg-muted`.
+- **Empty states** — Centered illustration block (emoji + soft cream circle background), display headline, soft caption, primary CTA. Variants: empty cart, no favorites, no orders, no search results.
+- **Page transitions** — Wrap route outlet with `cravio-fade-up` (200ms ease-out) on mount.
+
+## 5. Per-page application (keep all current routes & flows)
+
+- `/app` Home — hero + categories + Chef's Selection (premium restaurant card) + Popular Dishes rail per direction.
+- `/app/search` — same hero-less layout, applies new chips/cards.
+- `/restaurant/$id` — parallax cover ratio `aspect-[1.4/1]`, sticky glass tab bar, dish list uses refined DishCard layout.
+- `/app/cart` — line items as soft cream cards with rounded steppers; bill summary as elevated white card; sticky primary CTA on glass bar above BottomNav.
+- `/app/checkout` — address/payment cards same surface system; place-order CTA premium primary.
+- `/track/$orderId` — TimelineStepper uses primary dot + forest line; driver card glass.
+- `/app/orders` — Order cards in new card style; tab pills use active glow border.
+- `/app/profile` — Section rows as cream cards with right chevron; avatar header reuses primary tile pattern.
+
+## 6. Imagery
+
+Reuse existing AI-generated assets in `src/assets/`. No new asset generation unless something is missing; existing food photography already fits the appetite-forward direction.
+
+## 7. Out of scope
+
+- No backend / auth / data changes
+- No new pages, no removed pages
+- No copy changes beyond what's needed to match the direction's hero
+- No emoji-only icons in production — replace category emoji from prototype with the existing AI food images already in `src/assets`
+
+## Technical notes
+
+- Tailwind v4: tokens in `@theme inline`, custom utilities via `@utility`, fonts via `<link>` in `__root.tsx` head (never `@import` URL).
+- All color usage via semantic tokens (`bg-background`, `text-primary`, `bg-primary`) — no hardcoded hex in components.
+- Glass uses Tailwind `backdrop-blur-*` utilities, not hand-written `-webkit-backdrop-filter`.
+- Animations: prefer Tailwind `transition-*` + `active:scale-*` for press; CSS keyframes for shimmer/fade-up/pop.
+- Edits scoped to `src/styles.css`, `src/routes/__root.tsx`, components under `src/components/cravio/`, and per-route files. No route-tree edits.
