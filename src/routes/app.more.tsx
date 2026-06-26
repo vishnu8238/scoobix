@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag, LogIn, LogOut, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
+import { useAuth } from "@/lib/auth-store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/more")({
   head: () => ({ meta: [{ title: "Cravio · More" }] }),
@@ -15,12 +17,16 @@ const ITEMS = [
   { to: "/app/notifications", icon: Bell,  label: "Notifications",         desc: "Order updates and offers" },
   { to: "/app/coupons",    icon: Tag,      label: "Coupons & offers",      desc: "Active promo codes" },
   { to: "/app/cart",       icon: ShoppingBag, label: "Cart & empty states", desc: "Preview empty cart" },
+  { to: "/app/success",    icon: CheckCircle2, label: "Payment success demo", desc: "Confirmation state preview" },
   { to: "/app/failed",     icon: AlertOctagon, label: "Order failed demo",  desc: "Error state preview" },
   { to: "/terms",          icon: FileText, label: "Terms of service",      desc: "Legal · last updated 2026" },
   { to: "/privacy",        icon: Shield,   label: "Privacy policy",        desc: "How we handle your data" },
-];
+] as const;
 
 function MoreHub() {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
   return (
     <div className="min-h-svh pb-24">
       <PageHeader title="More" subtitle="Account, preferences & legal" />
@@ -38,6 +44,30 @@ function MoreHub() {
             </Link>
           </li>
         ))}
+        <li>
+          {user ? (
+            <button
+              onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/auth/login" }); }}
+              className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-muted/40"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-100 text-rose-700"><LogOut className="h-5 w-5" strokeWidth={2.4} /></span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold">Sign out</div>
+                <div className="truncate text-xs text-muted-foreground">{user.email} · {user.role}</div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          ) : (
+            <Link to="/auth/login" className="flex items-center gap-3 px-4 py-3.5 transition active:bg-muted/40">
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-soft text-primary"><LogIn className="h-5 w-5" strokeWidth={2.4} /></span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold">Sign in</div>
+                <div className="truncate text-xs text-muted-foreground">Customer, partner, rider or admin</div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          )}
+        </li>
       </ul>
 
       <p className="mt-6 px-6 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Cravio v1.0 · Crave it. Get it.</p>

@@ -14,6 +14,7 @@ import { Route as RiderRouteImport } from './routes/rider'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PartnerRouteImport } from './routes/partner'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -26,6 +27,7 @@ import { Route as RiderVehicleRouteImport } from './routes/rider.vehicle'
 import { Route as RiderRequestsRouteImport } from './routes/rider.requests'
 import { Route as RiderProfileRouteImport } from './routes/rider.profile'
 import { Route as RiderOtpRouteImport } from './routes/rider.otp'
+import { Route as RiderOnboardingRouteImport } from './routes/rider.onboarding'
 import { Route as RiderNotificationsRouteImport } from './routes/rider.notifications'
 import { Route as RiderMoreRouteImport } from './routes/rider.more'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
@@ -42,6 +44,10 @@ import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
+import { Route as AuthSignupRouteImport } from './routes/auth.signup'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
+import { Route as AppSuccessRouteImport } from './routes/app.success'
 import { Route as AppSearchRouteImport } from './routes/app.search'
 import { Route as AppRecentRouteImport } from './routes/app.recent'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
@@ -90,6 +96,11 @@ const PortalRoute = PortalRouteImport.update({
 const PartnerRoute = PartnerRouteImport.update({
   id: '/partner',
   path: '/partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -150,6 +161,11 @@ const RiderProfileRoute = RiderProfileRouteImport.update({
 const RiderOtpRoute = RiderOtpRouteImport.update({
   id: '/otp',
   path: '/otp',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderOnboardingRoute = RiderOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => RiderRoute,
 } as any)
 const RiderNotificationsRoute = RiderNotificationsRouteImport.update({
@@ -231,6 +247,26 @@ const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
   id: '/addons',
   path: '/addons',
   getParentRoute: () => PartnerRoute,
+} as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotRoute = AuthForgotRouteImport.update({
+  id: '/forgot',
+  path: '/forgot',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AppSuccessRoute = AppSuccessRouteImport.update({
+  id: '/success',
+  path: '/success',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
@@ -357,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
@@ -386,6 +423,10 @@ export interface FileRoutesByFullPath {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
+  '/app/success': typeof AppSuccessRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -402,6 +443,7 @@ export interface FileRoutesByFullPath {
   '/rider/history': typeof RiderHistoryRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
+  '/rider/onboarding': typeof RiderOnboardingRoute
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
@@ -414,6 +456,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
   '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
@@ -441,6 +484,10 @@ export interface FileRoutesByTo {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
+  '/app/success': typeof AppSuccessRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -457,6 +504,7 @@ export interface FileRoutesByTo {
   '/rider/history': typeof RiderHistoryRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
+  '/rider/onboarding': typeof RiderOnboardingRoute
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
@@ -472,6 +520,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
@@ -501,6 +550,10 @@ export interface FileRoutesById {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
+  '/app/success': typeof AppSuccessRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -517,6 +570,7 @@ export interface FileRoutesById {
   '/rider/history': typeof RiderHistoryRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
+  '/rider/onboarding': typeof RiderOnboardingRoute
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
@@ -533,6 +587,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/auth'
     | '/partner'
     | '/portal'
     | '/privacy'
@@ -562,6 +617,10 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/search'
+    | '/app/success'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
     | '/partner/addons'
     | '/partner/analytics'
     | '/partner/hours'
@@ -578,6 +637,7 @@ export interface FileRouteTypes {
     | '/rider/history'
     | '/rider/more'
     | '/rider/notifications'
+    | '/rider/onboarding'
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
@@ -590,6 +650,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/portal'
     | '/privacy'
     | '/terms'
@@ -617,6 +678,10 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/search'
+    | '/app/success'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
     | '/partner/addons'
     | '/partner/analytics'
     | '/partner/hours'
@@ -633,6 +698,7 @@ export interface FileRouteTypes {
     | '/rider/history'
     | '/rider/more'
     | '/rider/notifications'
+    | '/rider/onboarding'
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
@@ -647,6 +713,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/auth'
     | '/partner'
     | '/portal'
     | '/privacy'
@@ -676,6 +743,10 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/search'
+    | '/app/success'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
     | '/partner/addons'
     | '/partner/analytics'
     | '/partner/hours'
@@ -692,6 +763,7 @@ export interface FileRouteTypes {
     | '/rider/history'
     | '/rider/more'
     | '/rider/notifications'
+    | '/rider/onboarding'
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
@@ -707,6 +779,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
   PortalRoute: typeof PortalRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -751,6 +824,13 @@ declare module '@tanstack/react-router' {
       path: '/partner'
       fullPath: '/partner'
       preLoaderRoute: typeof PartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -835,6 +915,13 @@ declare module '@tanstack/react-router' {
       path: '/otp'
       fullPath: '/rider/otp'
       preLoaderRoute: typeof RiderOtpRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/onboarding': {
+      id: '/rider/onboarding'
+      path: '/onboarding'
+      fullPath: '/rider/onboarding'
+      preLoaderRoute: typeof RiderOnboardingRouteImport
       parentRoute: typeof RiderRoute
     }
     '/rider/notifications': {
@@ -948,6 +1035,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/addons'
       preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/forgot': {
+      id: '/auth/forgot'
+      path: '/forgot'
+      fullPath: '/auth/forgot'
+      preLoaderRoute: typeof AuthForgotRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/app/success': {
+      id: '/app/success'
+      path: '/success'
+      fullPath: '/app/success'
+      preLoaderRoute: typeof AppSuccessRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/search': {
       id: '/app/search'
@@ -1166,6 +1281,7 @@ interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppRecentRoute: typeof AppRecentRoute
   AppSearchRoute: typeof AppSearchRoute
+  AppSuccessRoute: typeof AppSuccessRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -1183,10 +1299,25 @@ const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppRecentRoute: AppRecentRoute,
   AppSearchRoute: AppSearchRoute,
+  AppSuccessRoute: AppSuccessRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+interface AuthRouteChildren {
+  AuthForgotRoute: typeof AuthForgotRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthForgotRoute: AuthForgotRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthSignupRoute: AuthSignupRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface PartnerRouteChildren {
   PartnerAddonsRoute: typeof PartnerAddonsRoute
@@ -1225,6 +1356,7 @@ interface RiderRouteChildren {
   RiderHistoryRoute: typeof RiderHistoryRoute
   RiderMoreRoute: typeof RiderMoreRoute
   RiderNotificationsRoute: typeof RiderNotificationsRoute
+  RiderOnboardingRoute: typeof RiderOnboardingRoute
   RiderOtpRoute: typeof RiderOtpRoute
   RiderProfileRoute: typeof RiderProfileRoute
   RiderRequestsRoute: typeof RiderRequestsRoute
@@ -1238,6 +1370,7 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderHistoryRoute: RiderHistoryRoute,
   RiderMoreRoute: RiderMoreRoute,
   RiderNotificationsRoute: RiderNotificationsRoute,
+  RiderOnboardingRoute: RiderOnboardingRoute,
   RiderOtpRoute: RiderOtpRoute,
   RiderProfileRoute: RiderProfileRoute,
   RiderRequestsRoute: RiderRequestsRoute,
@@ -1251,6 +1384,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
   PortalRoute: PortalRoute,
   PrivacyRoute: PrivacyRoute,

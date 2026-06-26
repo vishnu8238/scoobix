@@ -504,18 +504,21 @@ export const useAppUI = () => {
    ============================================================ */
 
 import { CmsProvider } from "./cms-store";
+import { AuthProvider } from "./auth-store";
 
 export function CravioProviders({ children }: { children: ReactNode }) {
   return (
-    <CmsProvider>
-      <AppUIProvider>
-        <FavoritesProvider>
-          <OrdersProvider>
-            <CartProvider>{children}</CartProvider>
-          </OrdersProvider>
-        </FavoritesProvider>
-      </AppUIProvider>
-    </CmsProvider>
+    <AuthProvider>
+      <CmsProvider>
+        <AppUIProvider>
+          <FavoritesProvider>
+            <OrdersProvider>
+              <CartProvider>{children}</CartProvider>
+            </OrdersProvider>
+          </FavoritesProvider>
+        </AppUIProvider>
+      </CmsProvider>
+    </AuthProvider>
   );
 }
 

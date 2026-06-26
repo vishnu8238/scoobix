@@ -3,7 +3,7 @@ import { useState } from "react";
 import { adminRestaurants } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { Star, Plus, Percent, Pencil, Save, X } from "lucide-react";
+import { Star, Plus, Percent, Pencil, Save, X, Check, Ban } from "lucide-react";
 import { useCms } from "@/lib/cms-store";
 import { toast } from "sonner";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -13,7 +13,16 @@ export const Route = createFileRoute("/admin/restaurants")({
   component: AdminRestaurants,
 });
 
+type RowStatus = "Live" | "Pending" | "Suspended" | "Rejected" | string;
+
 function AdminRestaurants() {
+  // Local status overlay — replace with backend mutation later.
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, RowStatus>>({});
+  const updateStatus = (id: string, next: RowStatus, msg: string) => {
+    setStatusOverrides((p) => ({ ...p, [id]: next }));
+    toast.success(msg);
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -28,23 +37,41 @@ function AdminRestaurants() {
 
       <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
         <DataTable
-          columns={["Restaurant", "Cuisine", "Rating", "Orders", "Revenue", "Commission %", "Status", ""]}
-          rows={adminRestaurants.map((r) => [
-            <div className="flex items-center gap-3" key={r.id + "name"}>
-              <img src={r.image} alt="" className="h-10 w-10 rounded-xl object-cover" />
-              <span className="font-bold">{r.name}</span>
-            </div>,
-            <span key={r.id + "cuisine"} className="text-muted-foreground">{r.cuisine}</span>,
-            <span key={r.id + "rating"} className="flex items-center gap-1 font-bold"><Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" /> {r.rating.toFixed(1)}</span>,
-            <span key={r.id + "orders"}>{r.orders}</span>,
-            <span key={r.id + "revenue"} className="font-display font-extrabold text-primary">{formatPrice(r.revenue)}</span>,
-            <CommissionCell key={r.id + "comm"} id={r.id} />,
-            <StatusBadge key={r.id + "status"} label={r.status} />,
-            <button key={r.id + "view"} className="text-[12px] font-bold text-primary">View</button>,
-          ])}
+          columns={["Restaurant", "Cuisine", "Rating", "Orders", "Revenue", "Commission %", "Status", "Actions"]}
+          rows={adminRestaurants.map((r) => {
+            const status = statusOverrides[r.id] ?? r.status;
+            return [
+              <div className="flex items-center gap-3" key={r.id + "name"}>
+                <img src={r.image} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                <span className="font-bold">{r.name}</span>
+              </div>,
+              <span key={r.id + "cuisine"} className="text-muted-foreground">{r.cuisine}</span>,
+              <span key={r.id + "rating"} className="flex items-center gap-1 font-bold"><Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" /> {r.rating.toFixed(1)}</span>,
+              <span key={r.id + "orders"}>{r.orders}</span>,
+              <span key={r.id + "revenue"} className="font-display font-extrabold text-primary">{formatPrice(r.revenue)}</span>,
+              <CommissionCell key={r.id + "comm"} id={r.id} />,
+              <StatusBadge key={r.id + "status"} label={status} />,
+              <div key={r.id + "act"} className="flex items-center gap-1.5">
+                <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => updateStatus(r.id, "Live", `${r.name} approved`)} />
+                <ActionButton tone="warn"    icon={Ban}   label="Suspend" onClick={() => updateStatus(r.id, "Suspended", `${r.name} suspended`)} />
+                <ActionButton tone="danger"  icon={X}     label="Reject"  onClick={() => updateStatus(r.id, "Rejected", `${r.name} rejected`)} />
+              </div>,
+            ];
+          })}
         />
       </section>
     </div>
+  );
+}
+
+function ActionButton({ icon: Icon, label, onClick, tone }: { icon: typeof Check; label: string; onClick: () => void; tone: "primary" | "warn" | "danger" }) {
+  const cls = tone === "primary" ? "bg-primary-soft text-primary"
+    : tone === "warn" ? "bg-amber-100 text-amber-700"
+    : "bg-rose-100 text-rose-700";
+  return (
+    <button onClick={onClick} title={label} className={`grid h-7 w-7 place-items-center rounded-full transition active:scale-90 ${cls}`}>
+      <Icon className="h-3.5 w-3.5" />
+    </button>
   );
 }
 
