@@ -57,7 +57,7 @@ export type Restaurant = {
   reviews: number;
   deliveryMins: number;
   distanceKm: number;
-  priceLevel: "$" | "$$" | "$$$";
+  priceLevel: "₹" | "₹₹" | "₹₹₹";
   cover: string;
   logo: string;
   offer?: string;
@@ -77,7 +77,7 @@ export const restaurants: Restaurant[] = [
     cuisine: "Healthy · Bowls",
     rating: 4.8, reviews: 2143,
     deliveryMins: 22, distanceKm: 1.2,
-    priceLevel: "$$",
+    priceLevel: "₹₹",
     cover: r1, logo: healthy,
     offer: "Free delivery",
     tags: ["Vegan", "Gluten-free", "Organic"],
@@ -95,7 +95,7 @@ export const restaurants: Restaurant[] = [
     cuisine: "Italian · Wood-fired",
     rating: 4.7, reviews: 3890,
     deliveryMins: 28, distanceKm: 1.8,
-    priceLevel: "$$",
+    priceLevel: "₹₹",
     cover: r2, logo: pizza,
     offer: "20% OFF over $25",
     tags: ["Italian", "Pizza", "Pasta"],
@@ -113,7 +113,7 @@ export const restaurants: Restaurant[] = [
     cuisine: "Japanese · Omakase",
     rating: 4.9, reviews: 1567,
     deliveryMins: 32, distanceKm: 2.4,
-    priceLevel: "$$$",
+    priceLevel: "₹₹₹",
     cover: r3, logo: sushi,
     offer: "Free miso soup",
     tags: ["Japanese", "Sushi", "Premium"],
@@ -131,7 +131,7 @@ export const restaurants: Restaurant[] = [
     cuisine: "Indian · Tandoor",
     rating: 4.7, reviews: 4321,
     deliveryMins: 30, distanceKm: 2.1,
-    priceLevel: "$$",
+    priceLevel: "₹₹",
     cover: r4, logo: biryani,
     offer: "Buy 1 Get 1 on Biryani",
     tags: ["Indian", "Spicy", "Tandoor"],
@@ -149,7 +149,7 @@ export const restaurants: Restaurant[] = [
     cuisine: "Burgers · Smashed",
     rating: 4.6, reviews: 5210,
     deliveryMins: 18, distanceKm: 0.9,
-    priceLevel: "$$",
+    priceLevel: "₹₹",
     cover: burger, logo: burger,
     offer: "Free fries on $15+",
     tags: ["Burgers", "Smash", "American"],
@@ -167,7 +167,7 @@ export const restaurants: Restaurant[] = [
     cuisine: "BBQ · Wings",
     rating: 4.5, reviews: 1980,
     deliveryMins: 25, distanceKm: 1.6,
-    priceLevel: "$$",
+    priceLevel: "₹₹",
     cover: wings, logo: wings,
     offer: "10% OFF first order",
     tags: ["BBQ", "Wings", "Spicy"],
@@ -185,7 +185,7 @@ export const restaurants: Restaurant[] = [
     cuisine: "Mexican · Street",
     rating: 4.7, reviews: 2670,
     deliveryMins: 24, distanceKm: 1.4,
-    priceLevel: "$",
+    priceLevel: "₹",
     cover: tacos, logo: tacos,
     offer: "3 tacos for $10",
     tags: ["Mexican", "Tacos", "Street food"],
@@ -203,7 +203,7 @@ export const restaurants: Restaurant[] = [
     cuisine: "Desserts · Patisserie",
     rating: 4.9, reviews: 1245,
     deliveryMins: 20, distanceKm: 0.7,
-    priceLevel: "$$",
+    priceLevel: "₹₹",
     cover: dessert, logo: dessert,
     offer: "Free cookie with order",
     tags: ["Desserts", "Bakery", "Sweet"],
