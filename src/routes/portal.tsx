@@ -55,7 +55,12 @@ function Portal() {
           ))}
         </div>
 
-        <p className="mt-10 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+        <div className="mt-8 flex items-center justify-center gap-3 text-[12px] font-bold uppercase tracking-wider">
+          <Link to="/auth/login" className="rounded-full bg-card px-4 py-2 text-foreground shadow-soft ring-1 ring-border/60 transition hover:-translate-y-0.5">Sign in</Link>
+          <Link to="/auth/signup" className="rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-glow transition hover:-translate-y-0.5">Create account</Link>
+        </div>
+
+        <p className="mt-8 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
           Cravio · Mock environment · No backend required
         </p>
       </div>
