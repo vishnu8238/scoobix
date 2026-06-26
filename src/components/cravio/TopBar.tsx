@@ -50,6 +50,27 @@ export function TopBar() {
               <SheetDescription>Pick a saved address or type a new one.</SheetDescription>
             </SheetHeader>
             <div className="mt-4 space-y-2">
+              <button
+                onClick={handleDetect}
+                disabled={detectingLocation || locationPermission === "unsupported"}
+                className="flex w-full items-center gap-3 rounded-2xl border-2 border-primary/40 bg-primary-soft/60 p-3.5 text-left transition active:scale-[0.99] disabled:opacity-60"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+                  {detectingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                </span>
+                <span className="flex-1">
+                  <span className="block text-sm font-bold text-primary">
+                    {detectingLocation ? "Detecting your location…" : "Use current location"}
+                  </span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {locationPermission === "denied"
+                      ? "Permission denied — enable in browser settings"
+                      : locationPermission === "unsupported"
+                      ? "Not available on this device"
+                      : "We'll ask your browser for permission"}
+                  </span>
+                </span>
+              </button>
               {SUGGESTED_LOCATIONS.map((l) => (
                 <button
                   key={l}
