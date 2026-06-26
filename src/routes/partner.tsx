@@ -8,12 +8,12 @@ export const Route = createFileRoute("/partner")({
   component: PartnerLayout,
 });
 
-const NAV = [
+const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/partner", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/partner/orders", label: "Orders", icon: ClipboardList },
   { to: "/partner/menu", label: "Menu", icon: UtensilsCrossed },
   { to: "/partner/profile", label: "Profile", icon: Store },
-] as const;
+];
 
 function PartnerLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
