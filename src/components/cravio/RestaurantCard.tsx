@@ -5,7 +5,7 @@ import { useFavorites } from "@/lib/stores";
 import { cn } from "@/lib/format";
 import { useState } from "react";
 
-export function RestaurantCard({ r, variant = "full" }: { r: Restaurant; variant?: "full" | "compact" }) {
+export function RestaurantCard({ r, variant = "full", closed = false }: { r: Restaurant; variant?: "full" | "compact"; closed?: boolean }) {
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const fav = isRestaurantFav(r.id);
   const [pop, setPop] = useState(0);

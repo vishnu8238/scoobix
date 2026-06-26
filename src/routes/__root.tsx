@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { CravioProviders } from "@/lib/stores";
 import { PhoneShell } from "@/components/cravio/PhoneShell";
 import { Toaster } from "@/components/ui/sonner";
+import { CartConflictDialog } from "@/components/cravio/CartConflictDialog";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -75,6 +76,7 @@ function RootComponent() {
           </PhoneShell>
         )}
         <Toaster position="top-center" richColors closeButton={false} />
+        <CartConflictDialog />
       </CravioProviders>
     </QueryClientProvider>
   );
