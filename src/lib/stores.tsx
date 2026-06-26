@@ -387,20 +387,42 @@ export const useOrders = () => {
    APP UI STATE (location, etc.)
    ============================================================ */
 
+type LocationPermission = "unknown" | "prompt" | "granted" | "denied" | "unsupported";
+
 type AppUICtx = {
   location: string;
   setLocation: (l: string) => void;
   recentSearches: string[];
   pushRecent: (s: string) => void;
   clearRecent: () => void;
+  locationPermission: LocationPermission;
+  detectingLocation: boolean;
+  detectLocation: () => Promise<{ ok: boolean; message: string }>;
 };
 
 const AppUIContext = createContext<AppUICtx | null>(null);
 const UI_KEY = "cravio_ui_v1";
 
+// Tiny mock reverse-geocoder: turns coords into a nice-looking area name.
+// Backend swap point: replace with a real geocoding call later.
+function mockReverseGeocode(lat: number, lng: number): string {
+  const areas = [
+    "Indiranagar, Bengaluru",
+    "Bandra West, Mumbai",
+    "Connaught Place, Delhi",
+    "Koramangala, Bengaluru",
+    "Powai, Mumbai",
+    "HSR Layout, Bengaluru",
+  ];
+  const idx = Math.abs(Math.round(lat * 7 + lng * 3)) % areas.length;
+  return `${areas[idx]} · Current location`;
+}
+
 export function AppUIProvider({ children }: { children: ReactNode }) {
   const [location, setLocationState] = useState("Westside · Apt 4");
   const [recentSearches, setRecent] = useState<string[]>([]);
+  const [locationPermission, setLocationPermission] = useState<LocationPermission>("unknown");
+  const [detectingLocation, setDetecting] = useState(false);
 
   useEffect(() => {
     try {
@@ -411,6 +433,9 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(o.recentSearches)) setRecent(o.recentSearches);
       }
     } catch {/* */}
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setLocationPermission("unsupported");
+    }
   }, []);
 
   useEffect(() => {
@@ -425,8 +450,37 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
   };
   const clearRecent = () => setRecent([]);
 
+  const detectLocation: AppUICtx["detectLocation"] = () =>
+    new Promise((resolve) => {
+      if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+        setLocationPermission("unsupported");
+        resolve({ ok: false, message: "Geolocation isn't supported on this device" });
+        return;
+      }
+      setDetecting(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const label = mockReverseGeocode(pos.coords.latitude, pos.coords.longitude);
+          setLocationState(label);
+          setLocationPermission("granted");
+          setDetecting(false);
+          resolve({ ok: true, message: label });
+        },
+        (err) => {
+          setDetecting(false);
+          if (err.code === err.PERMISSION_DENIED) {
+            setLocationPermission("denied");
+            resolve({ ok: false, message: "Location permission denied" });
+          } else {
+            resolve({ ok: false, message: "Couldn't fetch your location" });
+          }
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },
+      );
+    });
+
   return (
-    <AppUIContext.Provider value={{ location, setLocation, recentSearches, pushRecent, clearRecent }}>
+    <AppUIContext.Provider value={{ location, setLocation, recentSearches, pushRecent, clearRecent, locationPermission, detectingLocation, detectLocation }}>
       {children}
     </AppUIContext.Provider>
   );
