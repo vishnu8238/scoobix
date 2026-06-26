@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useCart, useOrders, STATUS_LABEL } from "@/lib/stores";
-import { ReceiptText, RotateCcw, ArrowLeft } from "lucide-react";
+import { ReceiptText, RotateCcw, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { currency, cn } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
