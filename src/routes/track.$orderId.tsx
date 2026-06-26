@@ -16,9 +16,10 @@ export const Route = createFileRoute("/track/$orderId")({
 function TrackPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate();
-  const { getOrder } = useOrders();
+  const { getOrder, cancelOrder } = useOrders();
   const { userCoords } = useAppUI();
   const order = getOrder(orderId);
+  const canCancel = order && !["PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"].includes(order.status);
 
   if (!order) {
     return (
