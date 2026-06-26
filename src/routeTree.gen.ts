@@ -26,7 +26,14 @@ import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
 import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
 import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
+import { Route as PartnerOnboardingRouteImport } from './routes/partner.onboarding'
+import { Route as PartnerNotificationsRouteImport } from './routes/partner.notifications'
+import { Route as PartnerMoreRouteImport } from './routes/partner.more'
 import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
+import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
+import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
+import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
+import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
 import { Route as AppSearchRouteImport } from './routes/app.search'
 import { Route as AppRecentRouteImport } from './routes/app.recent'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
@@ -133,9 +140,44 @@ const PartnerOrdersRoute = PartnerOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => PartnerRoute,
 } as any)
+const PartnerOnboardingRoute = PartnerOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerNotificationsRoute = PartnerNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerMoreRoute = PartnerMoreRouteImport.update({
+  id: '/more',
+  path: '/more',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const PartnerMenuRoute = PartnerMenuRouteImport.update({
   id: '/menu',
   path: '/menu',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerInvoiceRoute = PartnerInvoiceRouteImport.update({
+  id: '/invoice',
+  path: '/invoice',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerHoursRoute = PartnerHoursRouteImport.update({
+  id: '/hours',
+  path: '/hours',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerAnalyticsRoute = PartnerAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
+  id: '/addons',
+  path: '/addons',
   getParentRoute: () => PartnerRoute,
 } as any)
 const AppSearchRoute = AppSearchRouteImport.update({
@@ -266,7 +308,14 @@ export interface FileRoutesByFullPath {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
+  '/partner/addons': typeof PartnerAddonsRoute
+  '/partner/analytics': typeof PartnerAnalyticsRoute
+  '/partner/hours': typeof PartnerHoursRoute
+  '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/menu': typeof PartnerMenuRoute
+  '/partner/more': typeof PartnerMoreRoute
+  '/partner/notifications': typeof PartnerNotificationsRoute
+  '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
@@ -302,7 +351,14 @@ export interface FileRoutesByTo {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
+  '/partner/addons': typeof PartnerAddonsRoute
+  '/partner/analytics': typeof PartnerAnalyticsRoute
+  '/partner/hours': typeof PartnerHoursRoute
+  '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/menu': typeof PartnerMenuRoute
+  '/partner/more': typeof PartnerMoreRoute
+  '/partner/notifications': typeof PartnerNotificationsRoute
+  '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
@@ -343,7 +399,14 @@ export interface FileRoutesById {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
+  '/partner/addons': typeof PartnerAddonsRoute
+  '/partner/analytics': typeof PartnerAnalyticsRoute
+  '/partner/hours': typeof PartnerHoursRoute
+  '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/menu': typeof PartnerMenuRoute
+  '/partner/more': typeof PartnerMoreRoute
+  '/partner/notifications': typeof PartnerNotificationsRoute
+  '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
   '/restaurant/$id': typeof RestaurantIdRoute
@@ -385,7 +448,14 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/search'
+    | '/partner/addons'
+    | '/partner/analytics'
+    | '/partner/hours'
+    | '/partner/invoice'
     | '/partner/menu'
+    | '/partner/more'
+    | '/partner/notifications'
+    | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
     | '/restaurant/$id'
@@ -421,7 +491,14 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/search'
+    | '/partner/addons'
+    | '/partner/analytics'
+    | '/partner/hours'
+    | '/partner/invoice'
     | '/partner/menu'
+    | '/partner/more'
+    | '/partner/notifications'
+    | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
     | '/restaurant/$id'
@@ -461,7 +538,14 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/search'
+    | '/partner/addons'
+    | '/partner/analytics'
+    | '/partner/hours'
+    | '/partner/invoice'
     | '/partner/menu'
+    | '/partner/more'
+    | '/partner/notifications'
+    | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
     | '/restaurant/$id'
@@ -607,11 +691,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerOrdersRouteImport
       parentRoute: typeof PartnerRoute
     }
+    '/partner/onboarding': {
+      id: '/partner/onboarding'
+      path: '/onboarding'
+      fullPath: '/partner/onboarding'
+      preLoaderRoute: typeof PartnerOnboardingRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/notifications': {
+      id: '/partner/notifications'
+      path: '/notifications'
+      fullPath: '/partner/notifications'
+      preLoaderRoute: typeof PartnerNotificationsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/more': {
+      id: '/partner/more'
+      path: '/more'
+      fullPath: '/partner/more'
+      preLoaderRoute: typeof PartnerMoreRouteImport
+      parentRoute: typeof PartnerRoute
+    }
     '/partner/menu': {
       id: '/partner/menu'
       path: '/menu'
       fullPath: '/partner/menu'
       preLoaderRoute: typeof PartnerMenuRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/invoice': {
+      id: '/partner/invoice'
+      path: '/invoice'
+      fullPath: '/partner/invoice'
+      preLoaderRoute: typeof PartnerInvoiceRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/hours': {
+      id: '/partner/hours'
+      path: '/hours'
+      fullPath: '/partner/hours'
+      preLoaderRoute: typeof PartnerHoursRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/analytics': {
+      id: '/partner/analytics'
+      path: '/analytics'
+      fullPath: '/partner/analytics'
+      preLoaderRoute: typeof PartnerAnalyticsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/addons': {
+      id: '/partner/addons'
+      path: '/addons'
+      fullPath: '/partner/addons'
+      preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/app/search': {
@@ -818,14 +951,28 @@ const AppRouteChildren: AppRouteChildren = {
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface PartnerRouteChildren {
+  PartnerAddonsRoute: typeof PartnerAddonsRoute
+  PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
+  PartnerHoursRoute: typeof PartnerHoursRoute
+  PartnerInvoiceRoute: typeof PartnerInvoiceRoute
   PartnerMenuRoute: typeof PartnerMenuRoute
+  PartnerMoreRoute: typeof PartnerMoreRoute
+  PartnerNotificationsRoute: typeof PartnerNotificationsRoute
+  PartnerOnboardingRoute: typeof PartnerOnboardingRoute
   PartnerOrdersRoute: typeof PartnerOrdersRoute
   PartnerProfileRoute: typeof PartnerProfileRoute
   PartnerIndexRoute: typeof PartnerIndexRoute
 }
 
 const PartnerRouteChildren: PartnerRouteChildren = {
+  PartnerAddonsRoute: PartnerAddonsRoute,
+  PartnerAnalyticsRoute: PartnerAnalyticsRoute,
+  PartnerHoursRoute: PartnerHoursRoute,
+  PartnerInvoiceRoute: PartnerInvoiceRoute,
   PartnerMenuRoute: PartnerMenuRoute,
+  PartnerMoreRoute: PartnerMoreRoute,
+  PartnerNotificationsRoute: PartnerNotificationsRoute,
+  PartnerOnboardingRoute: PartnerOnboardingRoute,
   PartnerOrdersRoute: PartnerOrdersRoute,
   PartnerProfileRoute: PartnerProfileRoute,
   PartnerIndexRoute: PartnerIndexRoute,
