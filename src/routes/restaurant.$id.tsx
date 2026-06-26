@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Bike, Clock, Heart, Search, Share2, Star } from "lucide-react";
 import { useMemo, useState } from "react";
-import { findRestaurant } from "@/lib/mock-data";
+import { findRestaurant, type Restaurant } from "@/lib/mock-data";
 import { useCart, useFavorites } from "@/lib/stores";
 import { DishCard } from "@/components/cravio/DishCard";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 const CATS = ["Starters", "Main Course", "Drinks", "Desserts"] as const;
 
 export const Route = createFileRoute("/restaurant/$id")({
-  loader: ({ params }) => {
+  loader: ({ params }): Restaurant => {
     const r = findRestaurant(params.id);
     if (!r) throw notFound();
     return r;
