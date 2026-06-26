@@ -3,6 +3,7 @@ import { ArrowLeft, Bike, Clock, Heart, MapPin, Search, Share2, Star } from "luc
 import { useMemo, useState } from "react";
 import { findRestaurant, type Restaurant } from "@/lib/mock-data";
 import { useCart, useFavorites } from "@/lib/stores";
+import { useCms } from "@/lib/cms-store";
 import { DishCard } from "@/components/cravio/DishCard";
 import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { Button } from "@/components/ui/button";
