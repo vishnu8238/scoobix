@@ -391,7 +391,8 @@ type LocationPermission = "unknown" | "prompt" | "granted" | "denied" | "unsuppo
 
 type AppUICtx = {
   location: string;
-  setLocation: (l: string) => void;
+  setLocation: (l: string, coords?: { lat: number; lng: number }) => void;
+  userCoords: { lat: number; lng: number } | null;
   recentSearches: string[];
   pushRecent: (s: string) => void;
   clearRecent: () => void;
@@ -420,6 +421,7 @@ function mockReverseGeocode(lat: number, lng: number): string {
 
 export function AppUIProvider({ children }: { children: ReactNode }) {
   const [location, setLocationState] = useState("Westside · Apt 4");
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [recentSearches, setRecent] = useState<string[]>([]);
   const [locationPermission, setLocationPermission] = useState<LocationPermission>("unknown");
   const [detectingLocation, setDetecting] = useState(false);
@@ -430,6 +432,7 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const o = JSON.parse(raw);
         if (o.location) setLocationState(o.location);
+        if (o.userCoords) setUserCoords(o.userCoords);
         if (Array.isArray(o.recentSearches)) setRecent(o.recentSearches);
       }
     } catch {/* */}
@@ -439,10 +442,13 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(UI_KEY, JSON.stringify({ location, recentSearches }));
-  }, [location, recentSearches]);
+    localStorage.setItem(UI_KEY, JSON.stringify({ location, userCoords, recentSearches }));
+  }, [location, userCoords, recentSearches]);
 
-  const setLocation = (l: string) => setLocationState(l);
+  const setLocation: AppUICtx["setLocation"] = (l, coords) => {
+    setLocationState(l);
+    if (coords) setUserCoords(coords);
+  };
   const pushRecent = (s: string) => {
     const v = s.trim();
     if (!v) return;
@@ -462,6 +468,7 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
         (pos) => {
           const label = mockReverseGeocode(pos.coords.latitude, pos.coords.longitude);
           setLocationState(label);
+          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           setLocationPermission("granted");
           setDetecting(false);
           resolve({ ok: true, message: label });
@@ -480,7 +487,7 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
     });
 
   return (
-    <AppUIContext.Provider value={{ location, setLocation, recentSearches, pushRecent, clearRecent, locationPermission, detectingLocation, detectLocation }}>
+    <AppUIContext.Provider value={{ location, setLocation, userCoords, recentSearches, pushRecent, clearRecent, locationPermission, detectingLocation, detectLocation }}>
       {children}
     </AppUIContext.Provider>
   );
