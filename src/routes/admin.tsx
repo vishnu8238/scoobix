@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search } from "lucide-react";
+import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles } from "lucide-react";
 import { CravioMark } from "@/components/cravio/CravioLogo";
 import { cn } from "@/lib/format";
 
@@ -10,6 +10,7 @@ export const Route = createFileRoute("/admin")({
 
 const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/cms", label: "CMS Studio", icon: Sparkles },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/restaurants", label: "Restaurants", icon: Store },
   { to: "/admin/drivers", label: "Drivers", icon: Bike },
