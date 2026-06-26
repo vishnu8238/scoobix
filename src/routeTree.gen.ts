@@ -64,6 +64,7 @@ import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
+import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 
 const TermsRoute = TermsRouteImport.update({
@@ -341,6 +342,11 @@ const AdminCommissionRoute = AdminCommissionRouteImport.update({
   path: '/commission',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCmsRoute = AdminCmsRouteImport.update({
+  id: '/cms',
+  path: '/cms',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
   id: '/approvals',
   path: '/approvals',
@@ -357,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
@@ -411,6 +418,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
@@ -470,6 +478,7 @@ export interface FileRoutesById {
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
@@ -530,6 +539,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/admin/approvals'
+    | '/admin/cms'
     | '/admin/commission'
     | '/admin/drivers'
     | '/admin/live'
@@ -584,6 +594,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/approvals'
+    | '/admin/cms'
     | '/admin/commission'
     | '/admin/drivers'
     | '/admin/live'
@@ -642,6 +653,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/admin/approvals'
+    | '/admin/cms'
     | '/admin/commission'
     | '/admin/drivers'
     | '/admin/live'
@@ -1091,6 +1103,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCommissionRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/cms': {
+      id: '/admin/cms'
+      path: '/cms'
+      fullPath: '/admin/cms'
+      preLoaderRoute: typeof AdminCmsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/approvals': {
       id: '/admin/approvals'
       path: '/approvals'
@@ -1103,6 +1122,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminApprovalsRoute: typeof AdminApprovalsRoute
+  AdminCmsRoute: typeof AdminCmsRoute
   AdminCommissionRoute: typeof AdminCommissionRoute
   AdminDriversRoute: typeof AdminDriversRoute
   AdminLiveRoute: typeof AdminLiveRoute
@@ -1117,6 +1137,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminApprovalsRoute: AdminApprovalsRoute,
+  AdminCmsRoute: AdminCmsRoute,
   AdminCommissionRoute: AdminCommissionRoute,
   AdminDriversRoute: AdminDriversRoute,
   AdminLiveRoute: AdminLiveRoute,
