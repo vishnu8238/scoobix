@@ -180,6 +180,75 @@ function CheckoutPage() {
           </div>
         </section>
 
+        {/* Delivery instructions */}
+        <section>
+          <h3 className="px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Delivery instructions</h3>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {INSTRUCTION_OPTIONS.map((opt) => {
+              const active = instructionId === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setInstructionId(active ? null : opt.id)}
+                  className={cn(
+                    "rounded-full border-2 px-3 py-1.5 text-xs font-bold transition active:scale-95",
+                    active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Contactless delivery */}
+        <section className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary"><ShieldCheck className="h-4 w-4" /></span>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-bold">Contactless delivery</div>
+            <div className="text-xs text-muted-foreground">Rider will leave your order at the door.</div>
+          </div>
+          <Switch checked={contactless} onCheckedChange={setContactless} />
+        </section>
+
+        {/* Order notes */}
+        <section>
+          <h3 className="px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Notes for the restaurant</h3>
+          <div className="mt-2 rounded-2xl bg-card p-2 shadow-soft ring-1 ring-border/60">
+            <div className="flex items-start gap-2 px-2 pt-2">
+              <MessageSquareText className="mt-0.5 h-4 w-4 text-muted-foreground" />
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value.slice(0, 240))}
+                placeholder="Allergies, less spicy, no onions… (optional)"
+                className="min-h-[64px] border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+              />
+            </div>
+            <div className="px-2 pb-1 text-right text-[10px] text-muted-foreground">{notes.length}/240</div>
+          </div>
+        </section>
+
+        {/* Coupon */}
+        <section>
+          <h3 className="flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground"><Tag className="h-3.5 w-3.5" /> Coupon</h3>
+          {coupon ? (
+            <div className="mt-2 flex items-center justify-between rounded-2xl bg-primary-soft p-3 ring-1 ring-primary/30">
+              <div>
+                <div className="text-sm font-bold text-primary">{coupon.code}</div>
+                <div className="text-xs text-primary/80">{coupon.label}</div>
+              </div>
+              <button onClick={removeCoupon} className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary"><X className="h-3.5 w-3.5" /></button>
+            </div>
+          ) : (
+            <div className="mt-2 flex gap-2">
+              <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter coupon code" className="rounded-full" />
+              <Button onClick={handleApplyCoupon} className="rounded-full">Apply</Button>
+            </div>
+          )}
+        </section>
+
+
         {/* Summary */}
         <section className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">
           <h3 className="text-sm font-bold">Order summary</h3>
