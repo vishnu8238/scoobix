@@ -27,8 +27,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:title", content: "Cravio — Crave it. Get it." },
       { name: "twitter:description", content: "Premium food delivery. Fresh meals from the best restaurants near you, fast." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3559336b-8e6f-495f-ac3d-2cf3b1e4b0f2/id-preview-453acba4--022038e5-5def-46ed-a7bd-9439cae1ea1d.lovable.app-1782465063822.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3559336b-8e6f-495f-ac3d-2cf3b1e4b0f2/id-preview-453acba4--022038e5-5def-46ed-a7bd-9439cae1ea1d.lovable.app-1782465063822.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/29ab52d4-15cf-48f4-a85c-b7a1c89bcc41" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/29ab52d4-15cf-48f4-a85c-b7a1c89bcc41" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
