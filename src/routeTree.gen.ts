@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RiderRouteImport } from './routes/rider'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as AppRouteImport } from './routes/app'
@@ -59,11 +61,24 @@ import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
+import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
+import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RiderRoute = RiderRouteImport.update({
   id: '/rider',
   path: '/rider',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortalRoute = PortalRouteImport.update({
@@ -311,9 +326,24 @@ const AdminOrdersRoute = AdminOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLiveRoute = AdminLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDriversRoute = AdminDriversRouteImport.update({
   id: '/drivers',
   path: '/drivers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCommissionRoute = AdminCommissionRouteImport.update({
+  id: '/commission',
+  path: '/commission',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
   getParentRoute: () => AdminRoute,
 } as any)
 
@@ -323,8 +353,13 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRoute
+  '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
+  '/terms': typeof TermsRoute
+  '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/commission': typeof AdminCommissionRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -373,7 +408,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/portal': typeof PortalRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/commission': typeof AdminCommissionRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -426,8 +466,13 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/portal': typeof PortalRoute
+  '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
+  '/terms': typeof TermsRoute
+  '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/commission': typeof AdminCommissionRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -481,8 +526,13 @@ export interface FileRouteTypes {
     | '/app'
     | '/partner'
     | '/portal'
+    | '/privacy'
     | '/rider'
+    | '/terms'
+    | '/admin/approvals'
+    | '/admin/commission'
     | '/admin/drivers'
+    | '/admin/live'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/reports'
@@ -531,7 +581,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/portal'
+    | '/privacy'
+    | '/terms'
+    | '/admin/approvals'
+    | '/admin/commission'
     | '/admin/drivers'
+    | '/admin/live'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/reports'
@@ -583,8 +638,13 @@ export interface FileRouteTypes {
     | '/app'
     | '/partner'
     | '/portal'
+    | '/privacy'
     | '/rider'
+    | '/terms'
+    | '/admin/approvals'
+    | '/admin/commission'
     | '/admin/drivers'
+    | '/admin/live'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/reports'
@@ -637,18 +697,34 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
   PortalRoute: typeof PortalRoute
+  PrivacyRoute: typeof PrivacyRoute
   RiderRoute: typeof RiderRouteWithChildren
+  TermsRoute: typeof TermsRoute
   RestaurantIdRoute: typeof RestaurantIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rider': {
       id: '/rider'
       path: '/rider'
       fullPath: '/rider'
       preLoaderRoute: typeof RiderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portal': {
@@ -994,6 +1070,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/live': {
+      id: '/admin/live'
+      path: '/live'
+      fullPath: '/admin/live'
+      preLoaderRoute: typeof AdminLiveRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/drivers': {
       id: '/admin/drivers'
       path: '/drivers'
@@ -1001,11 +1084,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDriversRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/commission': {
+      id: '/admin/commission'
+      path: '/commission'
+      fullPath: '/admin/commission'
+      preLoaderRoute: typeof AdminCommissionRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/approvals': {
+      id: '/admin/approvals'
+      path: '/approvals'
+      fullPath: '/admin/approvals'
+      preLoaderRoute: typeof AdminApprovalsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminApprovalsRoute: typeof AdminApprovalsRoute
+  AdminCommissionRoute: typeof AdminCommissionRoute
   AdminDriversRoute: typeof AdminDriversRoute
+  AdminLiveRoute: typeof AdminLiveRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminReportsRoute: typeof AdminReportsRoute
@@ -1016,7 +1116,10 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminApprovalsRoute: AdminApprovalsRoute,
+  AdminCommissionRoute: AdminCommissionRoute,
   AdminDriversRoute: AdminDriversRoute,
+  AdminLiveRoute: AdminLiveRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminReportsRoute: AdminReportsRoute,
@@ -1129,7 +1232,9 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
   PortalRoute: PortalRoute,
+  PrivacyRoute: PrivacyRoute,
   RiderRoute: RiderRouteWithChildren,
+  TermsRoute: TermsRoute,
   RestaurantIdRoute: RestaurantIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
 }
