@@ -2,10 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search, MapPin, Navigation, Plus, Check } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
+import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { savedLocations } from "@/lib/mock-extras";
 import { useAppUI } from "@/lib/stores";
+import { DEFAULT_CUSTOMER, addressCoords, type LatLng } from "@/lib/geo";
 import { toast } from "sonner";
 
 
@@ -16,13 +18,20 @@ export const Route = createFileRoute("/app/location")({
 
 function LocationPicker() {
   const navigate = useNavigate();
-  const { location, setLocation } = useAppUI();
+  const { location, setLocation, userCoords, detectLocation, detectingLocation } = useAppUI();
   const [q, setQ] = useState("");
+  const [picked, setPicked] = useState<LatLng | null>(userCoords ?? null);
 
-  const select = (line: string) => {
-    setLocation(line);
+  const select = (line: string, coords?: LatLng) => {
+    setLocation(line, coords ?? addressCoords(line));
     toast.success("Delivery location updated");
     navigate({ to: "/app" });
+  };
+
+  const useCurrent = async () => {
+    const r = await detectLocation();
+    if (r.ok) { toast.success(r.message); navigate({ to: "/app" }); }
+    else toast.error(r.message);
   };
 
   const suggestions = ["Westside · Apt 4", "MG Road, Bengaluru", "Bandra West, Mumbai", "Connaught Place, Delhi", "Indiranagar 100ft Rd"]
@@ -32,18 +41,35 @@ function LocationPicker() {
     <div className="min-h-svh pb-10">
       <PageHeader title="Delivery location" subtitle={location} />
 
-      <div className="relative mx-4 mt-3 h-44 overflow-hidden rounded-3xl shadow-soft ring-1 ring-border/60 bg-[radial-gradient(circle_at_30%_30%,_oklch(0.9_0.08_148_/_0.6),_oklch(0.97_0.02_140))]">
-        <svg viewBox="0 0 320 180" className="absolute inset-0 h-full w-full opacity-60">
-          <path d="M0 60 L320 60 M0 120 L320 120 M80 0 L80 180 M220 0 L220 180" stroke="currentColor" strokeWidth="0.5" className="text-foreground/15" />
-          <path d="M30 150 Q120 80 200 90 T300 30" stroke="hsl(var(--primary))" strokeWidth="3" fill="none" strokeDasharray="6 4" />
-          <circle cx="300" cy="30" r="6" fill="hsl(var(--primary))" /></svg>
-        <button
-          onClick={() => select("Current location · Auto-detected")}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 text-[12px] font-bold shadow-pop ring-1 ring-border/60"
-        >
-          <Navigation className="h-4 w-4 text-primary" strokeWidth={2.5} /> Use current location
-        </button>
+      <div className="relative mx-4 mt-3">
+        <LeafletMap
+          height={200}
+          zoom={14}
+          center={picked ?? userCoords ?? DEFAULT_CUSTOMER}
+          pickedAt={picked}
+          onPick={(c) => setPicked(c)}
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 flex items-center justify-center gap-2 px-3">
+          <button
+            onClick={useCurrent}
+            disabled={detectingLocation}
+            className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 text-[12px] font-bold shadow-pop ring-1 ring-border/60 disabled:opacity-60"
+          >
+            <Navigation className="h-4 w-4 text-primary" strokeWidth={2.5} />
+            {detectingLocation ? "Locating…" : "Use current location"}
+          </button>
+          {picked && (
+            <button
+              onClick={() => select("Pinned on map", picked)}
+              className="pointer-events-auto inline-flex items-center gap-2 rounded-full gradient-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-glow"
+            >
+              <Check className="h-4 w-4" strokeWidth={2.5} /> Use this pin
+            </button>
+          )}
+        </div>
       </div>
+      <p className="mt-2 px-5 text-[11px] text-muted-foreground">Tap the map to drop a pin, then drag it to fine-tune.</p>
+
 
       <div className="mt-5 px-4">
         <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-3 shadow-soft ring-1 ring-border/60">
