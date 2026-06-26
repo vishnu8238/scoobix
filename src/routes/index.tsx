@@ -19,13 +19,13 @@ function Splash() {
 
   useEffect(() => {
     const t = setTimeout(() => setExiting(true), 1500);
-    const t2 = setTimeout(() => navigate({ to: "/app" }), 2100);
+    const t2 = setTimeout(() => navigate({ to: "/portal" }), 2100);
     return () => { clearTimeout(t); clearTimeout(t2); };
   }, [navigate]);
 
   return (
     <button
-      onClick={() => navigate({ to: "/app" })}
+      onClick={() => navigate({ to: "/portal" })}
       className="relative block h-full min-h-svh w-full overflow-hidden text-left"
       aria-label="Enter Cravio"
     >
