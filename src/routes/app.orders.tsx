@@ -101,6 +101,19 @@ function OrdersPage() {
                     <Button size="sm" className="h-8 rounded-full px-3 text-xs font-bold gradient-primary text-primary-foreground">Track</Button>
                   </Link>
                 )}
+                {o.status !== "DELIVERED" && o.status !== "CANCELLED" && o.status !== "PICKED_UP" && o.status !== "ON_THE_WAY" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const res = cancelOrder(o.id);
+                      res.ok ? toast.success(res.message) : toast.error(res.message);
+                    }}
+                    className="h-8 rounded-full px-3 text-xs font-bold text-destructive"
+                  >
+                    <X className="mr-1 h-3 w-3" /> Cancel
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" onClick={() => handleReorder(o.id)} className="h-8 rounded-full px-3 text-xs font-bold">
                   <RotateCcw className="mr-1 h-3 w-3" /> Reorder
                 </Button>
