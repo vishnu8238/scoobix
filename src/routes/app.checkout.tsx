@@ -28,9 +28,17 @@ const PAY_OPTIONS = [
   { id: "cash",  label: "Cash on delivery",    icon: Banknote },
 ];
 
+const INSTRUCTION_OPTIONS = [
+  { id: "door", label: "Leave at door" },
+  { id: "hand", label: "Hand to me" },
+  { id: "call", label: "Call on arrival" },
+  { id: "guard", label: "Hand to security" },
+  { id: "avoid_bell", label: "Don't ring bell" },
+];
+
 function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, totals, restaurant, clear } = useCart();
+  const { items, totals, restaurant, clear, coupon, applyCoupon, removeCoupon } = useCart();
   const { placeOrder } = useOrders();
 
   const [addressId, setAddressId] = useState(savedAddresses.find((a) => a.default)!.id);
@@ -38,6 +46,10 @@ function CheckoutPage() {
   const [pay, setPay] = useState("card");
   const [addrOpen, setAddrOpen] = useState(false);
   const [placing, setPlacing] = useState(false);
+  const [instructionId, setInstructionId] = useState<string | null>(null);
+  const [contactless, setContactless] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [couponCode, setCouponCode] = useState("");
 
   const address = savedAddresses.find((a) => a.id === addressId)!;
   const deliveryObj = DELIVERY_OPTIONS.find((d) => d.id === delivery)!;
