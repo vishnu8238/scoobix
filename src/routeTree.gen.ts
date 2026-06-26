@@ -28,8 +28,16 @@ import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
 import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
 import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as AppSearchRouteImport } from './routes/app.search'
+import { Route as AppRecentRouteImport } from './routes/app.recent'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
+import { Route as AppOnboardingRouteImport } from './routes/app.onboarding'
+import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
+import { Route as AppMoreRouteImport } from './routes/app.more'
+import { Route as AppLocationRouteImport } from './routes/app.location'
+import { Route as AppFavoritesRouteImport } from './routes/app.favorites'
+import { Route as AppFailedRouteImport } from './routes/app.failed'
+import { Route as AppCouponsRouteImport } from './routes/app.coupons'
 import { Route as AppCheckoutRouteImport } from './routes/app.checkout'
 import { Route as AppCartRouteImport } from './routes/app.cart'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
@@ -135,6 +143,11 @@ const AppSearchRoute = AppSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRecentRoute = AppRecentRouteImport.update({
+  id: '/recent',
+  path: '/recent',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -143,6 +156,41 @@ const AppProfileRoute = AppProfileRouteImport.update({
 const AppOrdersRoute = AppOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMoreRoute = AppMoreRouteImport.update({
+  id: '/more',
+  path: '/more',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLocationRoute = AppLocationRouteImport.update({
+  id: '/location',
+  path: '/location',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFavoritesRoute = AppFavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFailedRoute = AppFailedRouteImport.update({
+  id: '/failed',
+  path: '/failed',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCouponsRoute = AppCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCheckoutRoute = AppCheckoutRouteImport.update({
@@ -207,8 +255,16 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
+  '/app/coupons': typeof AppCouponsRoute
+  '/app/failed': typeof AppFailedRoute
+  '/app/favorites': typeof AppFavoritesRoute
+  '/app/location': typeof AppLocationRoute
+  '/app/more': typeof AppMoreRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/onboarding': typeof AppOnboardingRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/orders': typeof PartnerOrdersRoute
@@ -235,8 +291,16 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
+  '/app/coupons': typeof AppCouponsRoute
+  '/app/failed': typeof AppFailedRoute
+  '/app/favorites': typeof AppFavoritesRoute
+  '/app/location': typeof AppLocationRoute
+  '/app/more': typeof AppMoreRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/onboarding': typeof AppOnboardingRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/orders': typeof PartnerOrdersRoute
@@ -268,8 +332,16 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
+  '/app/coupons': typeof AppCouponsRoute
+  '/app/failed': typeof AppFailedRoute
+  '/app/favorites': typeof AppFavoritesRoute
+  '/app/location': typeof AppLocationRoute
+  '/app/more': typeof AppMoreRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/onboarding': typeof AppOnboardingRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/orders': typeof PartnerOrdersRoute
@@ -302,8 +374,16 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/app/cart'
     | '/app/checkout'
+    | '/app/coupons'
+    | '/app/failed'
+    | '/app/favorites'
+    | '/app/location'
+    | '/app/more'
+    | '/app/notifications'
+    | '/app/onboarding'
     | '/app/orders'
     | '/app/profile'
+    | '/app/recent'
     | '/app/search'
     | '/partner/menu'
     | '/partner/orders'
@@ -330,8 +410,16 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/app/cart'
     | '/app/checkout'
+    | '/app/coupons'
+    | '/app/failed'
+    | '/app/favorites'
+    | '/app/location'
+    | '/app/more'
+    | '/app/notifications'
+    | '/app/onboarding'
     | '/app/orders'
     | '/app/profile'
+    | '/app/recent'
     | '/app/search'
     | '/partner/menu'
     | '/partner/orders'
@@ -362,8 +450,16 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/app/cart'
     | '/app/checkout'
+    | '/app/coupons'
+    | '/app/failed'
+    | '/app/favorites'
+    | '/app/location'
+    | '/app/more'
+    | '/app/notifications'
+    | '/app/onboarding'
     | '/app/orders'
     | '/app/profile'
+    | '/app/recent'
     | '/app/search'
     | '/partner/menu'
     | '/partner/orders'
@@ -525,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSearchRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/recent': {
+      id: '/app/recent'
+      path: '/recent'
+      fullPath: '/app/recent'
+      preLoaderRoute: typeof AppRecentRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/profile': {
       id: '/app/profile'
       path: '/profile'
@@ -537,6 +640,55 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/app/orders'
       preLoaderRoute: typeof AppOrdersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/onboarding': {
+      id: '/app/onboarding'
+      path: '/onboarding'
+      fullPath: '/app/onboarding'
+      preLoaderRoute: typeof AppOnboardingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/notifications': {
+      id: '/app/notifications'
+      path: '/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/more': {
+      id: '/app/more'
+      path: '/more'
+      fullPath: '/app/more'
+      preLoaderRoute: typeof AppMoreRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/location': {
+      id: '/app/location'
+      path: '/location'
+      fullPath: '/app/location'
+      preLoaderRoute: typeof AppLocationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/favorites': {
+      id: '/app/favorites'
+      path: '/favorites'
+      fullPath: '/app/favorites'
+      preLoaderRoute: typeof AppFavoritesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/failed': {
+      id: '/app/failed'
+      path: '/failed'
+      fullPath: '/app/failed'
+      preLoaderRoute: typeof AppFailedRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/coupons': {
+      id: '/app/coupons'
+      path: '/coupons'
+      fullPath: '/app/coupons'
+      preLoaderRoute: typeof AppCouponsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/checkout': {
@@ -632,8 +784,16 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface AppRouteChildren {
   AppCartRoute: typeof AppCartRoute
   AppCheckoutRoute: typeof AppCheckoutRoute
+  AppCouponsRoute: typeof AppCouponsRoute
+  AppFailedRoute: typeof AppFailedRoute
+  AppFavoritesRoute: typeof AppFavoritesRoute
+  AppLocationRoute: typeof AppLocationRoute
+  AppMoreRoute: typeof AppMoreRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
+  AppOnboardingRoute: typeof AppOnboardingRoute
   AppOrdersRoute: typeof AppOrdersRoute
   AppProfileRoute: typeof AppProfileRoute
+  AppRecentRoute: typeof AppRecentRoute
   AppSearchRoute: typeof AppSearchRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -641,8 +801,16 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppCartRoute: AppCartRoute,
   AppCheckoutRoute: AppCheckoutRoute,
+  AppCouponsRoute: AppCouponsRoute,
+  AppFailedRoute: AppFailedRoute,
+  AppFavoritesRoute: AppFavoritesRoute,
+  AppLocationRoute: AppLocationRoute,
+  AppMoreRoute: AppMoreRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
+  AppOnboardingRoute: AppOnboardingRoute,
   AppOrdersRoute: AppOrdersRoute,
   AppProfileRoute: AppProfileRoute,
+  AppRecentRoute: AppRecentRoute,
   AppSearchRoute: AppSearchRoute,
   AppIndexRoute: AppIndexRoute,
 }
