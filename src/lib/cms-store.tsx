@@ -79,6 +79,9 @@ type CmsCtx = {
   updateCoupon: (id: string, patch: Partial<CmsCoupon>) => void;
   deleteCoupon: (id: string) => void;
 
+  commissions: Record<string, number>; // restaurantId -> %
+  setCommission: (restaurantId: string, pct: number) => void;
+
   resetAll: () => void;
 };
 
