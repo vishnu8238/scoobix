@@ -95,7 +95,6 @@ export function LeafletMap({
         doubleClickZoom: interactive,
         touchZoom: interactive,
         keyboard: interactive,
-        tap: interactive,
       });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
