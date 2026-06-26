@@ -28,6 +28,13 @@ function PartnerOrders() {
     toast.success(`Order ${id} → ${status}`);
   };
 
+  const reject = (o: PartnerOrder) => {
+    const reason = typeof window !== "undefined" ? window.prompt(`Reject ${o.id} — reason?`, "Out of stock") : null;
+    if (reason === null) return; // cancelled
+    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: "REJECTED" } : x)));
+    toast.success(`${o.id} rejected · ${reason || "no reason given"}`);
+  };
+
   const next = (o: PartnerOrder) => {
     const idx = PARTNER_STATUS_FLOW.indexOf(o.status);
     if (idx >= 0 && idx < PARTNER_STATUS_FLOW.length - 1) update(o.id, PARTNER_STATUS_FLOW[idx + 1]);
