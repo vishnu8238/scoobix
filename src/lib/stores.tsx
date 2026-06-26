@@ -335,7 +335,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(t);
   }, []);
 
-  const placeOrder: OrdersCtx["placeOrder"] = ({ items, totals, restaurant, addressLabel, addressLine, paymentLabel }) => {
+  const placeOrder: OrdersCtx["placeOrder"] = ({ items, totals, restaurant, addressLabel, addressLine, paymentLabel, deliveryInstructions, contactless, notes, couponCode }) => {
     const id = `CRV${Math.floor(100000 + Math.random() * 900000)}`;
     const driver = DRIVERS[Math.floor(Math.random() * DRIVERS.length)];
     const order: Order = {
@@ -350,6 +350,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       addressLabel, addressLine, paymentLabel,
       driver,
       etaMins: restaurant.deliveryMins,
+      deliveryInstructions,
+      contactless,
+      notes,
+      couponCode,
     };
     setOrders((prev) => [order, ...prev]);
     return id;
