@@ -14,7 +14,7 @@ export const Route = createFileRoute("/app/orders")({
 
 function OrdersPage() {
   const navigate = useNavigate();
-  const { orders, reorder } = useOrders();
+  const { orders, reorder, cancelOrder } = useOrders();
   const { addItem, clear } = useCart();
   const [tab, setTab] = useState<"active" | "past">("active");
 
