@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { IMAGES, categories as seedCategories, offers as seedOffers } from "./mock-data";
+import { IMAGES, categories as seedCategories, offers as seedOffers, restaurants as seedRestaurants } from "./mock-data";
 
 /* ============================================================
    CMS STORE — Admin-controlled content for the Customer App.
@@ -79,6 +79,9 @@ type CmsCtx = {
   updateCoupon: (id: string, patch: Partial<CmsCoupon>) => void;
   deleteCoupon: (id: string) => void;
 
+  commissions: Record<string, number>; // restaurantId -> %
+  setCommission: (restaurantId: string, pct: number) => void;
+
   resetAll: () => void;
 };
 
@@ -157,6 +160,13 @@ type Snapshot = {
   sections: HomeSectionConfig[];
   filters: FilterGroup[];
   coupons: CmsCoupon[];
+  commissions: Record<string, number>;
+};
+
+const seedCommissions = (): Record<string, number> => {
+  const out: Record<string, number> = {};
+  seedRestaurants.forEach((r, i) => { out[r.id] = [15, 18, 20, 15, 17, 22, 16, 19][i % 8]; });
+  return out;
 };
 
 function defaultSnapshot(): Snapshot {
@@ -166,6 +176,7 @@ function defaultSnapshot(): Snapshot {
     sections: seedSections(),
     filters: seedFilters(),
     coupons: seedCoupons(),
+    commissions: seedCommissions(),
   };
 }
 
@@ -261,6 +272,10 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     updateCoupon: (id, patch) =>
       setState((s) => ({ ...s, coupons: s.coupons.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
     deleteCoupon: (id) => setState((s) => ({ ...s, coupons: s.coupons.filter((x) => x.id !== id) })),
+
+    commissions: state.commissions,
+    setCommission: (restaurantId, pct) =>
+      setState((s) => ({ ...s, commissions: { ...s.commissions, [restaurantId]: Math.max(0, Math.min(100, pct)) } })),
 
     resetAll: () => setState(defaultSnapshot()),
   };
