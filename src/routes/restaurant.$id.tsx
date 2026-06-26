@@ -1,11 +1,13 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Bike, Clock, Heart, Search, Share2, Star } from "lucide-react";
+import { ArrowLeft, Bike, Clock, Heart, MapPin, Search, Share2, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { findRestaurant, type Restaurant } from "@/lib/mock-data";
 import { useCart, useFavorites } from "@/lib/stores";
 import { DishCard } from "@/components/cravio/DishCard";
+import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { Button } from "@/components/ui/button";
 import { currency, cn } from "@/lib/format";
+import { restaurantCoords } from "@/lib/geo";
 import { toast } from "sonner";
 
 const CATS = ["Starters", "Main Course", "Drinks", "Desserts"] as const;
@@ -85,6 +87,21 @@ function RestaurantPage() {
           </div>
         )}
       </div>
+
+      <div className="mt-4 px-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Location</h3>
+          <span className="flex items-center gap-1 text-[11px] font-bold text-primary"><MapPin className="h-3 w-3" /> {r.distanceKm} km away</span>
+        </div>
+        <LeafletMap
+          height={160}
+          interactive={false}
+          zoom={15}
+          center={restaurantCoords(r.id)}
+          markers={[{ id: r.id, kind: "restaurant", label: r.name, ...restaurantCoords(r.id) }]}
+        />
+      </div>
+
 
       <div className="sticky top-0 z-30 mt-4 glass border-b border-border/60">
         <div className="px-4 py-2.5">
