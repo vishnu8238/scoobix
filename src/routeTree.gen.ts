@@ -20,7 +20,13 @@ import { Route as PartnerIndexRouteImport } from './routes/partner.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
+import { Route as RiderVehicleRouteImport } from './routes/rider.vehicle'
 import { Route as RiderRequestsRouteImport } from './routes/rider.requests'
+import { Route as RiderProfileRouteImport } from './routes/rider.profile'
+import { Route as RiderOtpRouteImport } from './routes/rider.otp'
+import { Route as RiderNotificationsRouteImport } from './routes/rider.notifications'
+import { Route as RiderMoreRouteImport } from './routes/rider.more'
+import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
@@ -110,9 +116,39 @@ const TrackOrderIdRoute = TrackOrderIdRouteImport.update({
   path: '/track/$orderId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RiderVehicleRoute = RiderVehicleRouteImport.update({
+  id: '/vehicle',
+  path: '/vehicle',
+  getParentRoute: () => RiderRoute,
+} as any)
 const RiderRequestsRoute = RiderRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderProfileRoute = RiderProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderOtpRoute = RiderOtpRouteImport.update({
+  id: '/otp',
+  path: '/otp',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderNotificationsRoute = RiderNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderMoreRoute = RiderMoreRouteImport.update({
+  id: '/more',
+  path: '/more',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderHistoryRoute = RiderHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => RiderRoute,
 } as any)
 const RiderEarningsRoute = RiderEarningsRouteImport.update({
@@ -321,7 +357,13 @@ export interface FileRoutesByFullPath {
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/history': typeof RiderHistoryRoute
+  '/rider/more': typeof RiderMoreRoute
+  '/rider/notifications': typeof RiderNotificationsRoute
+  '/rider/otp': typeof RiderOtpRoute
+  '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -364,7 +406,13 @@ export interface FileRoutesByTo {
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/history': typeof RiderHistoryRoute
+  '/rider/more': typeof RiderMoreRoute
+  '/rider/notifications': typeof RiderNotificationsRoute
+  '/rider/otp': typeof RiderOtpRoute
+  '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
@@ -412,7 +460,13 @@ export interface FileRoutesById {
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/history': typeof RiderHistoryRoute
+  '/rider/more': typeof RiderMoreRoute
+  '/rider/notifications': typeof RiderNotificationsRoute
+  '/rider/otp': typeof RiderOtpRoute
+  '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -461,7 +515,13 @@ export interface FileRouteTypes {
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
+    | '/rider/history'
+    | '/rider/more'
+    | '/rider/notifications'
+    | '/rider/otp'
+    | '/rider/profile'
     | '/rider/requests'
+    | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
@@ -504,7 +564,13 @@ export interface FileRouteTypes {
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
+    | '/rider/history'
+    | '/rider/more'
+    | '/rider/notifications'
+    | '/rider/otp'
+    | '/rider/profile'
     | '/rider/requests'
+    | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin'
     | '/app'
@@ -551,7 +617,13 @@ export interface FileRouteTypes {
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
+    | '/rider/history'
+    | '/rider/more'
+    | '/rider/notifications'
+    | '/rider/otp'
+    | '/rider/profile'
     | '/rider/requests'
+    | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
@@ -649,11 +721,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrackOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rider/vehicle': {
+      id: '/rider/vehicle'
+      path: '/vehicle'
+      fullPath: '/rider/vehicle'
+      preLoaderRoute: typeof RiderVehicleRouteImport
+      parentRoute: typeof RiderRoute
+    }
     '/rider/requests': {
       id: '/rider/requests'
       path: '/requests'
       fullPath: '/rider/requests'
       preLoaderRoute: typeof RiderRequestsRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/profile': {
+      id: '/rider/profile'
+      path: '/profile'
+      fullPath: '/rider/profile'
+      preLoaderRoute: typeof RiderProfileRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/otp': {
+      id: '/rider/otp'
+      path: '/otp'
+      fullPath: '/rider/otp'
+      preLoaderRoute: typeof RiderOtpRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/notifications': {
+      id: '/rider/notifications'
+      path: '/notifications'
+      fullPath: '/rider/notifications'
+      preLoaderRoute: typeof RiderNotificationsRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/more': {
+      id: '/rider/more'
+      path: '/more'
+      fullPath: '/rider/more'
+      preLoaderRoute: typeof RiderMoreRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/history': {
+      id: '/rider/history'
+      path: '/history'
+      fullPath: '/rider/history'
+      preLoaderRoute: typeof RiderHistoryRouteImport
       parentRoute: typeof RiderRoute
     }
     '/rider/earnings': {
@@ -984,14 +1098,26 @@ const PartnerRouteWithChildren =
 interface RiderRouteChildren {
   RiderActiveRoute: typeof RiderActiveRoute
   RiderEarningsRoute: typeof RiderEarningsRoute
+  RiderHistoryRoute: typeof RiderHistoryRoute
+  RiderMoreRoute: typeof RiderMoreRoute
+  RiderNotificationsRoute: typeof RiderNotificationsRoute
+  RiderOtpRoute: typeof RiderOtpRoute
+  RiderProfileRoute: typeof RiderProfileRoute
   RiderRequestsRoute: typeof RiderRequestsRoute
+  RiderVehicleRoute: typeof RiderVehicleRoute
   RiderIndexRoute: typeof RiderIndexRoute
 }
 
 const RiderRouteChildren: RiderRouteChildren = {
   RiderActiveRoute: RiderActiveRoute,
   RiderEarningsRoute: RiderEarningsRoute,
+  RiderHistoryRoute: RiderHistoryRoute,
+  RiderMoreRoute: RiderMoreRoute,
+  RiderNotificationsRoute: RiderNotificationsRoute,
+  RiderOtpRoute: RiderOtpRoute,
+  RiderProfileRoute: RiderProfileRoute,
   RiderRequestsRoute: RiderRequestsRoute,
+  RiderVehicleRoute: RiderVehicleRoute,
   RiderIndexRoute: RiderIndexRoute,
 }
 
