@@ -26,6 +26,8 @@ const COUPONS: Coupon[] = [
   { code: "NIGHT20", label: "20% off late-night", kind: "pct", value: 0.2 },
 ];
 
+export type PendingAdd = { item: Omit<CartItem, "lineId" | "qty">; qty: number };
+
 type CartCtx = {
   items: CartItem[];
   coupon: Coupon | null;
@@ -45,6 +47,10 @@ type CartCtx = {
     itemCount: number;
   };
   restaurant: Restaurant | null;
+  /** Multi-restaurant conflict popup state. */
+  pendingConflict: PendingAdd | null;
+  confirmReplaceCart: () => void;
+  dismissConflict: () => void;
 };
 
 const CartContext = createContext<CartCtx | null>(null);
@@ -66,6 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [pendingConflict, setPendingConflict] = useState<PendingAdd | null>(null);
 
   useEffect(() => {
     const saved = loadCart();
@@ -79,22 +86,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CART_KEY, JSON.stringify({ items, coupon, restaurantId }));
   }, [items, coupon, restaurantId]);
 
-  const addItem: CartCtx["addItem"] = (item, qty = 1) => {
-    if (restaurantId && restaurantId !== item.restaurantId && items.length > 0) {
-      return { ok: false, reason: "different-restaurant" };
-    }
+  const insertItem = (item: Omit<CartItem, "lineId" | "qty">, qty: number) => {
     setRestaurantId(item.restaurantId);
     setItems((prev) => {
-      // merge identical lines (same dish + customizations)
       const sig = `${item.dishId}|${item.customizations.join(",")}`;
       const existing = prev.find((p) => `${p.dishId}|${p.customizations.join(",")}` === sig);
-      if (existing) {
-        return prev.map((p) => (p === existing ? { ...p, qty: p.qty + qty } : p));
-      }
+      if (existing) return prev.map((p) => (p === existing ? { ...p, qty: p.qty + qty } : p));
       return [...prev, { ...item, qty, lineId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }];
     });
+  };
+
+  const addItem: CartCtx["addItem"] = (item, qty = 1) => {
+    if (restaurantId && restaurantId !== item.restaurantId && items.length > 0) {
+      setPendingConflict({ item, qty });
+      return { ok: false, reason: "different-restaurant" };
+    }
+    insertItem(item, qty);
     return { ok: true };
   };
+
+  const confirmReplaceCart = () => {
+    if (!pendingConflict) return;
+    const p = pendingConflict;
+    setItems([]); setCoupon(null); setRestaurantId(p.item.restaurantId);
+    // queue insert after state settles
+    setTimeout(() => insertItem(p.item, p.qty), 0);
+    setPendingConflict(null);
+  };
+  const dismissConflict = () => setPendingConflict(null);
 
   const removeItem: CartCtx["removeItem"] = (lineId) => {
     setItems((prev) => {
@@ -109,11 +128,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.map((p) => (p.lineId === lineId ? { ...p, qty } : p)));
   };
 
-  const clear = () => {
-    setItems([]);
-    setCoupon(null);
-    setRestaurantId(null);
-  };
+  const clear = () => { setItems([]); setCoupon(null); setRestaurantId(null); };
 
   const applyCoupon: CartCtx["applyCoupon"] = (code) => {
     const found = COUPONS.find((c) => c.code.toUpperCase() === code.toUpperCase().trim());
@@ -142,7 +157,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const restaurant = restaurantId ? findRestaurant(restaurantId) ?? null : null;
 
   return (
-    <CartContext.Provider value={{ items, coupon, restaurantId, addItem, removeItem, setQty, clear, applyCoupon, removeCoupon, totals, restaurant }}>
+    <CartContext.Provider value={{ items, coupon, restaurantId, addItem, removeItem, setQty, clear, applyCoupon, removeCoupon, totals, restaurant, pendingConflict, confirmReplaceCart, dismissConflict }}>
       {children}
     </CartContext.Provider>
   );
@@ -273,6 +288,9 @@ type OrdersCtx = {
   }) => string;
   getOrder: (id: string) => Order | undefined;
   reorder: (id: string) => CartItem[] | null;
+  cancelOrder: (id: string, reason?: string) => { ok: boolean; message: string };
+  refunds: Record<string, "none" | "pending" | "refunded">;
+  setRefundStatus: (id: string, status: "none" | "pending" | "refunded") => void;
 };
 
 const OrdersContext = createContext<OrdersCtx | null>(null);
@@ -299,16 +317,28 @@ function advance(status: OrderStatus): OrderStatus {
   return STATUS_FLOW[idx + 1];
 }
 
+const REFUNDS_KEY = "cravio_refunds_v1";
+
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [refunds, setRefunds] = useState<Record<string, "none" | "pending" | "refunded">>({});
 
   useEffect(() => {
     setOrders(loadOrders());
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(REFUNDS_KEY) : null;
+      if (raw) setRefunds(JSON.parse(raw));
+    } catch { /* */ }
   }, []);
 
   useEffect(() => {
     localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
   }, [orders]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(REFUNDS_KEY, JSON.stringify(refunds));
+  }, [refunds]);
 
   // Auto-advance any active orders periodically for the demo
   useEffect(() => {
@@ -318,7 +348,6 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         const next = prev.map((o) => {
           if (o.status === "DELIVERED" || o.status === "CANCELLED") return o;
           const ageSec = (Date.now() - o.placedAt) / 1000;
-          // PLACED → ACCEPTED → PREPARING → READY → PICKED_UP → ON_THE_WAY → DELIVERED
           let target: OrderStatus = "PLACED";
           if (ageSec >= 60) target = "DELIVERED";
           else if (ageSec >= 42) target = "ON_THE_WAY";
@@ -339,39 +368,37 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     const id = `CRV${Math.floor(100000 + Math.random() * 900000)}`;
     const driver = DRIVERS[Math.floor(Math.random() * DRIVERS.length)];
     const order: Order = {
-      id,
-      restaurantId: restaurant.id,
-      restaurantName: restaurant.name,
-      restaurantImage: restaurant.cover,
-      items,
-      ...totals,
-      status: "PLACED",
-      placedAt: Date.now(),
-      addressLabel, addressLine, paymentLabel,
-      driver,
+      id, restaurantId: restaurant.id, restaurantName: restaurant.name,
+      restaurantImage: restaurant.cover, items, ...totals,
+      status: "PLACED", placedAt: Date.now(),
+      addressLabel, addressLine, paymentLabel, driver,
       etaMins: restaurant.deliveryMins,
-      deliveryInstructions,
-      contactless,
-      notes,
-      couponCode,
+      deliveryInstructions, contactless, notes, couponCode,
     };
     setOrders((prev) => [order, ...prev]);
     return id;
   };
 
   const getOrder = (id: string) => orders.find((o) => o.id === id);
+  const reorder = (id: string) => orders.find((x) => x.id === id)?.items ?? null;
 
-  const reorder = (id: string) => {
+  const cancelOrder: OrdersCtx["cancelOrder"] = (id, reason) => {
     const o = orders.find((x) => x.id === id);
-    if (!o) return null;
-    return o.items;
+    if (!o) return { ok: false, message: "Order not found" };
+    // Allow cancel only before pickup
+    const lockedAfter: OrderStatus[] = ["PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
+    if (lockedAfter.includes(o.status)) return { ok: false, message: "Too late to cancel — the rider is on the way" };
+    setOrders((prev) => prev.map((x) => (x.id === id ? { ...x, status: "CANCELLED", notes: reason ? `Cancelled: ${reason}` : x.notes } : x)));
+    return { ok: true, message: "Order cancelled" };
   };
 
-  // expose a helper to manually advance status (used by tracking dev controls — none surfaced)
+  const setRefundStatus: OrdersCtx["setRefundStatus"] = (id, status) =>
+    setRefunds((p) => ({ ...p, [id]: status }));
+
   void advance;
 
   return (
-    <OrdersContext.Provider value={{ orders, placeOrder, getOrder, reorder }}>
+    <OrdersContext.Provider value={{ orders, placeOrder, getOrder, reorder, cancelOrder, refunds, setRefundStatus }}>
       {children}
     </OrdersContext.Provider>
   );

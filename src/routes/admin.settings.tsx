@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Shield, Bell, Globe, CreditCard, Users } from "lucide-react";
+import { Shield, Bell, Globe, CreditCard, Users, LifeBuoy, Save } from "lucide-react";
+import { useCms } from "@/lib/cms-store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/settings")({
   head: () => ({ meta: [{ title: "Cravio Admin · Settings" }] }),
@@ -8,9 +10,18 @@ export const Route = createFileRoute("/admin/settings")({
 });
 
 function AdminSettings() {
+  const { settings, updateSettings } = useCms();
   const [maintenance, setMaintenance] = useState(false);
   const [notifs, setNotifs] = useState(true);
   const [auto, setAuto] = useState(true);
+
+  const [draft, setDraft] = useState(settings);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(settings);
+
+  const save = () => {
+    updateSettings(draft);
+    toast.success("Platform settings saved");
+  };
 
   return (
     <div className="space-y-6">
@@ -21,6 +32,45 @@ function AdminSettings() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <Card icon={CreditCard} title="Order economics">
+          <NumberField
+            label="Delivery fee (₹)"
+            value={draft.deliveryFee}
+            onChange={(v) => setDraft({ ...draft, deliveryFee: v })}
+          />
+          <NumberField
+            label="Tax %"
+            value={draft.taxPct}
+            step={0.5}
+            onChange={(v) => setDraft({ ...draft, taxPct: v })}
+          />
+          <NumberField
+            label="Minimum order value (₹)"
+            value={draft.minOrder}
+            onChange={(v) => setDraft({ ...draft, minOrder: v })}
+          />
+        </Card>
+
+        <Card icon={LifeBuoy} title="Support contact">
+          <TextField
+            label="Support phone"
+            value={draft.supportPhone}
+            onChange={(v) => setDraft({ ...draft, supportPhone: v })}
+          />
+          <TextField
+            label="Support email"
+            value={draft.supportEmail}
+            onChange={(v) => setDraft({ ...draft, supportEmail: v })}
+          />
+          <button
+            disabled={!dirty}
+            onClick={save}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-40"
+          >
+            <Save className="h-4 w-4" /> Save platform settings
+          </button>
+        </Card>
+
         <Card icon={Globe} title="General">
           <Row label="Platform name" value="Cravio" />
           <Row label="Default region" value="India" />
@@ -32,12 +82,6 @@ function AdminSettings() {
           <Toggle label="Daily ops digest" desc="Sent to operators each morning" value={notifs} onChange={setNotifs} />
           <Toggle label="Auto-approve restaurants" desc="Skip manual review for high-trust accounts" value={auto} onChange={setAuto} />
           <Row label="Escalation channel" value="#ops-incidents" />
-        </Card>
-
-        <Card icon={CreditCard} title="Payouts">
-          <Row label="Payout cadence" value="Weekly · Monday 9 AM" />
-          <Row label="Commission" value="18% per order" />
-          <Row label="Driver bonus pool" value="₹10,24,000 / week" />
         </Card>
 
         <Card icon={Shield} title="Security">
@@ -88,6 +132,34 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-sm font-medium text-muted-foreground">{label}</span>
       <span className="text-sm font-bold">{value}</span>
     </div>
+  );
+}
+
+function NumberField({ label, value, step = 1, onChange }: { label: string; value: number; step?: number; onChange: (v: number) => void }) {
+  return (
+    <label className="flex items-center justify-between gap-3 rounded-2xl bg-muted/40 px-4 py-3">
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <input
+        type="number"
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-28 rounded-xl bg-background px-3 py-1.5 text-right text-sm font-bold outline-none ring-1 ring-border/60 focus:ring-2 focus:ring-primary/40 tabular-nums"
+      />
+    </label>
+  );
+}
+
+function TextField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block rounded-2xl bg-muted/40 px-4 py-3">
+      <span className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full bg-transparent text-sm font-bold outline-none"
+      />
+    </label>
   );
 }
 

@@ -35,9 +35,25 @@ export type HomeSectionConfig = {
   active: boolean;
 };
 
-export type FilterGroupKey = "cuisine" | "price" | "rating" | "delivery";
+export type FilterGroupKey = "cuisine" | "price" | "rating" | "delivery" | "home";
 
-export type FilterOption = { id: string; label: string; active: boolean };
+/**
+ * Home chip predicate keys. Chips on the customer home use these IDs to
+ * select which restaurants to keep when toggled on.
+ */
+export type HomeFilterKind =
+  | "under_price" | "fast" | "top_rated" | "offers" | "new" | "nearest" | "rating_min" | "veg";
+
+export type FilterOption = {
+  id: string;
+  label: string;
+  active: boolean;
+  /** Used for "home" filter chips — controls how the predicate is interpreted. */
+  kind?: HomeFilterKind;
+  /** Numeric threshold for the predicate (e.g. price ≤ value, rating ≥ value). */
+  value?: number;
+  order?: number;
+};
 
 export type FilterGroup = { key: FilterGroupKey; label: string; options: FilterOption[] };
 
@@ -82,11 +98,36 @@ type CmsCtx = {
   commissions: Record<string, number>; // restaurantId -> %
   setCommission: (restaurantId: string, pct: number) => void;
 
+  // Restaurant availability (admin/partner controlled)
+  closedRestaurants: Record<string, boolean>;
+  toggleRestaurantClosed: (restaurantId: string) => void;
+  setRestaurantClosed: (restaurantId: string, closed: boolean) => void;
+
+  // Platform settings (backend-ready)
+  settings: PlatformSettings;
+  updateSettings: (patch: Partial<PlatformSettings>) => void;
+
   resetAll: () => void;
 };
 
+export type PlatformSettings = {
+  deliveryFee: number;
+  taxPct: number;
+  minOrder: number;
+  supportPhone: string;
+  supportEmail: string;
+};
+
+const DEFAULT_SETTINGS: PlatformSettings = {
+  deliveryFee: 30,
+  taxPct: 5,
+  minOrder: 99,
+  supportPhone: "+91 80000 12345",
+  supportEmail: "support@cravio.app",
+};
+
 const CmsContext = createContext<CmsCtx | null>(null);
-const KEY = "cravio_cms_v1";
+const KEY = "cravio_cms_v2";
 
 const seedBanners = (): Banner[] =>
   seedOffers.map((o, i) => ({
@@ -161,6 +202,8 @@ type Snapshot = {
   filters: FilterGroup[];
   coupons: CmsCoupon[];
   commissions: Record<string, number>;
+  closedRestaurants: Record<string, boolean>;
+  settings: PlatformSettings;
 };
 
 const seedCommissions = (): Record<string, number> => {
@@ -169,14 +212,31 @@ const seedCommissions = (): Record<string, number> => {
   return out;
 };
 
+const seedHomeChips = (): FilterGroup => ({
+  key: "home",
+  label: "Home chips",
+  options: [
+    { id: "under250", label: "Under ₹250", active: true, kind: "under_price", value: 250 },
+    { id: "fast",     label: "Fast delivery", active: true, kind: "fast", value: 25 },
+    { id: "top",      label: "Top rated", active: true, kind: "top_rated", value: 4.7 },
+    { id: "offers",   label: "Offers", active: true, kind: "offers" },
+    { id: "new",      label: "New restaurants", active: true, kind: "new" },
+    { id: "nearest",  label: "Nearest", active: true, kind: "nearest", value: 1.5 },
+    { id: "rating4",  label: "Rating 4+", active: true, kind: "rating_min", value: 4 },
+    { id: "veg",      label: "Veg options", active: true, kind: "veg" },
+  ],
+});
+
 function defaultSnapshot(): Snapshot {
   return {
     banners: seedBanners(),
     categories: seedCats(),
     sections: seedSections(),
-    filters: seedFilters(),
+    filters: [...seedFilters(), seedHomeChips()],
     coupons: seedCoupons(),
     commissions: seedCommissions(),
+    closedRestaurants: {},
+    settings: DEFAULT_SETTINGS,
   };
 }
 
@@ -276,6 +336,16 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     commissions: state.commissions,
     setCommission: (restaurantId, pct) =>
       setState((s) => ({ ...s, commissions: { ...s.commissions, [restaurantId]: Math.max(0, Math.min(100, pct)) } })),
+
+    closedRestaurants: state.closedRestaurants,
+    toggleRestaurantClosed: (restaurantId) =>
+      setState((s) => ({ ...s, closedRestaurants: { ...s.closedRestaurants, [restaurantId]: !s.closedRestaurants[restaurantId] } })),
+    setRestaurantClosed: (restaurantId, closed) =>
+      setState((s) => ({ ...s, closedRestaurants: { ...s.closedRestaurants, [restaurantId]: closed } })),
+
+    settings: state.settings,
+    updateSettings: (patch) =>
+      setState((s) => ({ ...s, settings: { ...s.settings, ...patch } })),
 
     resetAll: () => setState(defaultSnapshot()),
   };

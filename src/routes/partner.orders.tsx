@@ -28,6 +28,13 @@ function PartnerOrders() {
     toast.success(`Order ${id} → ${status}`);
   };
 
+  const reject = (o: PartnerOrder) => {
+    const reason = typeof window !== "undefined" ? window.prompt(`Reject ${o.id} — reason?`, "Out of stock") : null;
+    if (reason === null) return; // cancelled
+    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: "REJECTED" } : x)));
+    toast.success(`${o.id} rejected · ${reason || "no reason given"}`);
+  };
+
   const next = (o: PartnerOrder) => {
     const idx = PARTNER_STATUS_FLOW.indexOf(o.status);
     if (idx >= 0 && idx < PARTNER_STATUS_FLOW.length - 1) update(o.id, PARTNER_STATUS_FLOW[idx + 1]);
@@ -104,7 +111,7 @@ function PartnerOrders() {
                   <div className="mt-4 flex gap-2">
                     {o.status === "PLACED" ? (
                       <>
-                        <button onClick={() => update(o.id, "REJECTED")} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive transition active:scale-95">
+                        <button onClick={() => reject(o)} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive transition active:scale-95">
                           <X className="h-4 w-4" /> Reject
                         </button>
                         <button onClick={() => update(o.id, "ACCEPTED")} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">

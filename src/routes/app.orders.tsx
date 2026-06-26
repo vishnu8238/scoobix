@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useCart, useOrders, STATUS_LABEL } from "@/lib/stores";
-import { ReceiptText, RotateCcw, ArrowLeft } from "lucide-react";
+import { ReceiptText, RotateCcw, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { currency, cn } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/app/orders")({
 
 function OrdersPage() {
   const navigate = useNavigate();
-  const { orders, reorder } = useOrders();
+  const { orders, reorder, cancelOrder } = useOrders();
   const { addItem, clear } = useCart();
   const [tab, setTab] = useState<"active" | "past">("active");
 
@@ -100,6 +100,19 @@ function OrdersPage() {
                   <Link to="/track/$orderId" params={{ orderId: o.id }}>
                     <Button size="sm" className="h-8 rounded-full px-3 text-xs font-bold gradient-primary text-primary-foreground">Track</Button>
                   </Link>
+                )}
+                {o.status !== "DELIVERED" && o.status !== "CANCELLED" && o.status !== "PICKED_UP" && o.status !== "ON_THE_WAY" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const res = cancelOrder(o.id);
+                      res.ok ? toast.success(res.message) : toast.error(res.message);
+                    }}
+                    className="h-8 rounded-full px-3 text-xs font-bold text-destructive"
+                  >
+                    <X className="mr-1 h-3 w-3" /> Cancel
+                  </Button>
                 )}
                 <Button size="sm" variant="outline" onClick={() => handleReorder(o.id)} className="h-8 rounded-full px-3 text-xs font-bold">
                   <RotateCcw className="mr-1 h-3 w-3" /> Reorder

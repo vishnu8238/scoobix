@@ -37,7 +37,7 @@ function AdminRestaurants() {
 
       <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
         <DataTable
-          columns={["Restaurant", "Cuisine", "Rating", "Orders", "Revenue", "Commission %", "Status", "Actions"]}
+          columns={["Restaurant", "Cuisine", "Rating", "Orders", "Revenue", "Commission %", "Open", "Status", "Actions"]}
           rows={adminRestaurants.map((r) => {
             const status = statusOverrides[r.id] ?? r.status;
             return [
@@ -50,6 +50,7 @@ function AdminRestaurants() {
               <span key={r.id + "orders"}>{r.orders}</span>,
               <span key={r.id + "revenue"} className="font-display font-extrabold text-primary">{formatPrice(r.revenue)}</span>,
               <CommissionCell key={r.id + "comm"} id={r.id} />,
+              <OpenToggle key={r.id + "open"} id={r.id} />,
               <StatusBadge key={r.id + "status"} label={status} />,
               <div key={r.id + "act"} className="flex items-center gap-1.5">
                 <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => updateStatus(r.id, "Live", `${r.name} approved`)} />
@@ -61,6 +62,19 @@ function AdminRestaurants() {
         />
       </section>
     </div>
+  );
+}
+
+function OpenToggle({ id }: { id: string }) {
+  const { closedRestaurants, toggleRestaurantClosed } = useCms();
+  const closed = !!closedRestaurants[id];
+  return (
+    <button
+      onClick={() => { toggleRestaurantClosed(id); toast.success(closed ? "Restaurant marked open" : "Restaurant marked closed"); }}
+      className={`rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider transition active:scale-95 ${closed ? "bg-zinc-200 text-zinc-700" : "bg-primary-soft text-primary"}`}
+    >
+      {closed ? "Closed" : "Open"}
+    </button>
   );
 }
 

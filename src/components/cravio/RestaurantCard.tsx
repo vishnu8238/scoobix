@@ -5,7 +5,7 @@ import { useFavorites } from "@/lib/stores";
 import { cn } from "@/lib/format";
 import { useState } from "react";
 
-export function RestaurantCard({ r, variant = "full" }: { r: Restaurant; variant?: "full" | "compact" }) {
+export function RestaurantCard({ r, variant = "full", closed = false }: { r: Restaurant; variant?: "full" | "compact"; closed?: boolean }) {
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const fav = isRestaurantFav(r.id);
   const [pop, setPop] = useState(0);
@@ -18,11 +18,14 @@ export function RestaurantCard({ r, variant = "full" }: { r: Restaurant; variant
 
   if (variant === "compact") {
     return (
-      <Link to="/restaurant/$id" params={{ id: r.id }} className="group block w-[260px] shrink-0">
+      <Link to="/restaurant/$id" params={{ id: r.id }} className={cn("group block w-[260px] shrink-0", closed && "pointer-events-none opacity-70")}>
         <div className="relative h-40 overflow-hidden rounded-[28px] shadow-card">
-          <img src={r.cover} alt={r.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
+          <img src={r.cover} alt={r.name} className={cn("h-full w-full object-cover transition-transform duration-700 group-hover:scale-110", closed && "grayscale")} loading="lazy" />
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
-          {r.offer && (
+          {closed && (
+            <span className="absolute left-3 top-3 rounded-full bg-foreground/85 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white">Closed</span>
+          )}
+          {!closed && r.offer && (
             <span className="absolute left-3 bottom-3 rounded-full glass-dark px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest">
               {r.offer}
             </span>
@@ -31,13 +34,15 @@ export function RestaurantCard({ r, variant = "full" }: { r: Restaurant; variant
             <Star className="h-3 w-3 fill-primary text-primary" />
             <span className="text-[11px] font-extrabold">{r.rating.toFixed(1)}</span>
           </span>
-          <button
-            onClick={onFav}
-            aria-label={fav ? "Remove from favorites" : "Add to favorites"}
-            className="absolute left-3 top-3 grid h-8 w-8 place-items-center rounded-full glass shadow-soft transition active:scale-90"
-          >
-            <Heart key={pop} className={cn("h-4 w-4 transition-colors", fav ? "fill-primary text-primary animate-pop" : "text-foreground")} />
-          </button>
+          {!closed && (
+            <button
+              onClick={onFav}
+              aria-label={fav ? "Remove from favorites" : "Add to favorites"}
+              className="absolute left-3 top-3 grid h-8 w-8 place-items-center rounded-full glass shadow-soft transition active:scale-90"
+            >
+              <Heart key={pop} className={cn("h-4 w-4 transition-colors", fav ? "fill-primary text-primary animate-pop" : "text-foreground")} />
+            </button>
+          )}
         </div>
         <div className="mt-2.5 px-1">
           <h4 className="truncate font-display text-[15px] font-bold tracking-tight">{r.name}</h4>
@@ -48,10 +53,16 @@ export function RestaurantCard({ r, variant = "full" }: { r: Restaurant; variant
   }
 
   return (
-    <Link to="/restaurant/$id" params={{ id: r.id }} className="group block">
+    <Link to="/restaurant/$id" params={{ id: r.id }} className={cn("group block", closed && "pointer-events-none opacity-70")}>
       <div className="relative">
         <div className="relative aspect-[4/3] overflow-hidden rounded-[32px] shadow-card">
-          <img src={r.cover} alt={r.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+          <img src={r.cover} alt={r.name} className={cn("h-full w-full object-cover transition-transform duration-700 group-hover:scale-105", closed && "grayscale")} loading="lazy" />
+
+          {closed && (
+            <div className="absolute inset-0 grid place-items-center bg-foreground/30">
+              <span className="rounded-full bg-foreground/90 px-4 py-1.5 text-[11px] font-extrabold uppercase tracking-widest text-white">Currently closed</span>
+            </div>
+          )}
 
           {/* Rating glass pill */}
           <span className="absolute right-4 top-4 glass flex items-center gap-1.5 rounded-full px-3 py-1.5 shadow-soft">

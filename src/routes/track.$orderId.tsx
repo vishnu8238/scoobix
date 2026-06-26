@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, MessageSquare, Phone, Star, MapPin, Clock, ShieldCheck, StickyNote } from "lucide-react";
+import { ArrowLeft, MessageSquare, Phone, Star, MapPin, Clock, ShieldCheck, StickyNote, X } from "lucide-react";
 import { useOrders, useAppUI, STATUS_LABEL } from "@/lib/stores";
 import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { TimelineStepper } from "@/components/cravio/TimelineStepper";
@@ -16,9 +16,10 @@ export const Route = createFileRoute("/track/$orderId")({
 function TrackPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate();
-  const { getOrder } = useOrders();
+  const { getOrder, cancelOrder } = useOrders();
   const { userCoords } = useAppUI();
   const order = getOrder(orderId);
+  const canCancel = order && !["PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"].includes(order.status);
 
   if (!order) {
     return (
@@ -139,6 +140,20 @@ function TrackPage() {
         {delivered && (
           <Button onClick={() => navigate({ to: "/app" })} className="h-14 w-full rounded-full gradient-primary text-base font-bold text-primary-foreground shadow-glow">
             Order again
+          </Button>
+        )}
+
+        {canCancel && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              const res = cancelOrder(order.id);
+              if (res.ok) { toast.success(res.message); navigate({ to: "/app/orders" }); }
+              else toast.error(res.message);
+            }}
+            className="h-12 w-full rounded-full text-sm font-bold text-destructive border-destructive/40 hover:bg-destructive/5"
+          >
+            <X className="mr-1.5 h-4 w-4" /> Cancel order
           </Button>
         )}
       </div>

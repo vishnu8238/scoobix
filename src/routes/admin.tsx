@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles } from "lucide-react";
 import { CravioMark } from "@/components/cravio/CravioLogo";
+import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/admin")({
@@ -23,6 +24,7 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
 function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
+    <RoleGuard allow="admin">
     <div className="min-h-svh w-full bg-[radial-gradient(circle_at_top_left,_oklch(0.96_0.04_148_/_0.4),_oklch(0.99_0.005_120)_45%)]">
       <div className="mx-auto flex min-h-svh max-w-[1600px]">
         {/* Sidebar */}
@@ -120,5 +122,7 @@ function AdminLayout() {
         </main>
       </div>
     </div>
+    </RoleGuard>
   );
 }
+

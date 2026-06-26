@@ -3,6 +3,7 @@ import { ArrowLeft, Bike, Clock, Heart, MapPin, Search, Share2, Star } from "luc
 import { useMemo, useState } from "react";
 import { findRestaurant, type Restaurant } from "@/lib/mock-data";
 import { useCart, useFavorites } from "@/lib/stores";
+import { useCms } from "@/lib/cms-store";
 import { DishCard } from "@/components/cravio/DishCard";
 import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ function RestaurantPage() {
   const navigate = useNavigate();
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const { items, totals } = useCart();
+  const { closedRestaurants } = useCms();
+  const closed = !!closedRestaurants[r.id];
   const fav = isRestaurantFav(r.id);
   const [cat, setCat] = useState<(typeof CATS)[number]>("Starters");
   const [query, setQuery] = useState("");
@@ -80,7 +83,13 @@ function RestaurantPage() {
           <span className="h-1 w-1 rounded-full bg-border" />
           <span className="flex items-center gap-1"><Bike className="h-3.5 w-3.5" />{r.distanceKm} km</span>
         </div>
-        {r.offer && (
+        {closed && (
+          <div className="mt-3 flex items-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 p-2.5 text-xs">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-destructive text-destructive-foreground">!</span>
+            <span className="font-semibold text-destructive">Closed right now — ordering is paused</span>
+          </div>
+        )}
+        {!closed && r.offer && (
           <div className="mt-3 flex items-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary-soft/60 p-2.5 text-xs">
             <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground">%</span>
             <span className="font-semibold text-primary">{r.offer}</span>
@@ -129,7 +138,7 @@ function RestaurantPage() {
         </div>
       </div>
 
-      <div className="px-4">
+      <div className={cn("px-4", closed && "pointer-events-none opacity-60")}>
         {dishes.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
             <p className="text-sm font-semibold">Nothing here yet</p>
@@ -140,7 +149,7 @@ function RestaurantPage() {
         )}
       </div>
 
-      {hasCart && (
+      {hasCart && !closed && (
         <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[480px] glass border-t border-border/60 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button onClick={() => navigate({ to: "/app/cart" })} className="h-13 w-full rounded-full gradient-primary text-base font-bold text-primary-foreground shadow-glow">
             View cart · {totals.itemCount} item{totals.itemCount === 1 ? "" : "s"} · {currency(totals.total)}
