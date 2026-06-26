@@ -36,7 +36,7 @@ function SearchPage() {
   const [cuisine, setCuisine] = useState("All");
   const [minRating, setMinRating] = useState(0);
   const [maxMins, setMaxMins] = useState(60);
-  const [maxPrice, setMaxPrice] = useState<"$" | "$$" | "$$$">("$$$");
+  const [maxPrice, setMaxPrice] = useState<"₹" | "₹₹" | "₹₹₹">("₹₹₹");
   const [sort, setSort] = useState<(typeof SORTS)[number]["id"]>("rating");
   const [filterOpen, setFilterOpen] = useState(false);
 
