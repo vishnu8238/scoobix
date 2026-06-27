@@ -58,6 +58,25 @@ function CartPage() {
         </Link>
       )}
 
+      {restaurantClosed && (
+        <div className="mx-4 mt-3 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-xs">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div>
+            <div className="font-bold text-destructive">Restaurant is currently closed</div>
+            <div className="text-destructive/80">You can't check out until they reopen.</div>
+          </div>
+        </div>
+      )}
+      {unavailableItems.length > 0 && (
+        <div className="mx-4 mt-3 rounded-2xl border border-warning/40 bg-warning/10 p-3 text-xs">
+          <div className="flex items-center gap-2 font-bold text-[oklch(0.45_0.14_70)]"><AlertTriangle className="h-4 w-4" /> Some items are unavailable</div>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
+            {unavailableItems.map((u) => <li key={u.lineId}>{u.name}</li>)}
+          </ul>
+          <button onClick={() => { unavailableItems.forEach((u) => removeItem(u.lineId)); toast.success("Unavailable items removed"); }} className="mt-2 rounded-full bg-card px-3 py-1 font-semibold text-foreground ring-1 ring-border">Remove unavailable items</button>
+        </div>
+      )}
+
       <ul className="mt-4 divide-y divide-border px-4">
         {items.map((it) => (
           <li key={it.lineId} className="flex gap-3 py-4 animate-fade-up">
