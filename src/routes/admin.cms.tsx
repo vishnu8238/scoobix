@@ -76,7 +76,84 @@ function CmsStudio() {
         {tab === "filters" && <FiltersPanel />}
         {tab === "offers" && <OffersPanel />}
         {tab === "veg" && <VegPanel />}
+        {tab === "featured" && <FeaturedPanel />}
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* FEATURED                                                            */
+/* ------------------------------------------------------------------ */
+
+function FeaturedPanel() {
+  const { featuredRestaurants, toggleFeaturedRestaurant, featuredDishes, toggleFeaturedDish } = useCms();
+  const [tab, setTab] = useState<"restaurants" | "dishes">("restaurants");
+  const dishes = allDishes();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setTab("restaurants")}
+          className={cn("rounded-full px-4 py-2 text-sm font-bold transition",
+            tab === "restaurants" ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground")}
+        >Featured restaurants</button>
+        <button
+          onClick={() => setTab("dishes")}
+          className={cn("rounded-full px-4 py-2 text-sm font-bold transition",
+            tab === "dishes" ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground")}
+        >Featured dishes</button>
+      </div>
+
+      {tab === "restaurants" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {allRestaurants.map((r) => {
+            const on = !!featuredRestaurants[r.id];
+            return (
+              <button
+                key={r.id}
+                onClick={() => toggleFeaturedRestaurant(r.id)}
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition active:scale-[0.99]",
+                  on ? "border-primary shadow-glow" : "border-border",
+                )}
+              >
+                <img src={r.cover} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{r.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{r.cuisine} · ★ {r.rating}</p>
+                </div>
+                <Star className={cn("h-5 w-5", on ? "fill-primary text-primary" : "text-muted-foreground")} />
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {dishes.map((d) => {
+            const on = !!featuredDishes[d.id];
+            const ref = findDish(d.id);
+            return (
+              <button
+                key={d.id}
+                onClick={() => toggleFeaturedDish(d.id)}
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition active:scale-[0.99]",
+                  on ? "border-primary shadow-glow" : "border-border",
+                )}
+              >
+                <img src={d.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{d.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{ref?.restaurant.name} · {currency(d.price)}</p>
+                </div>
+                <Star className={cn("h-5 w-5", on ? "fill-primary text-primary" : "text-muted-foreground")} />
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
