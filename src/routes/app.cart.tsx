@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ArrowLeft, Minus, Plus, Tag, Trash2, X, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Tag, Trash2, X, ShoppingBag, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/stores";
+import { useCms } from "@/lib/cms-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { currency } from "@/lib/format";
