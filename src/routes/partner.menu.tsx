@@ -13,7 +13,8 @@ export const Route = createFileRoute("/partner/menu")({
 
 const CATEGORIES = ["All", "Starters", "Main Course", "Drinks", "Desserts"] as const;
 
-type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSeller?: boolean };
+export type DishAddon = { id: string; name: string; price: number; available: boolean };
+type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSeller?: boolean; hasAddons?: boolean; addons?: DishAddon[] };
 
 function PartnerMenu() {
   const [items, setItems] = useState<EditableDish[]>(partnerMenu.map((d) => ({ ...d, available: true })));
