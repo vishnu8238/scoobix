@@ -127,16 +127,38 @@ export function TopBar() {
           </SheetContent>
         </Sheet>
 
-        <Link
-          to="/app/profile"
-          aria-label="Profile"
-          className="grid h-11 w-11 place-items-center rounded-2xl bg-surface p-1 shadow-soft ring-1 ring-border transition active:scale-95"
-        >
-          <span className="grid h-full w-full place-items-center rounded-xl bg-primary font-display text-sm font-bold text-primary-foreground">
-            A
-          </span>
-        </Link>
+        <VegModeToggle />
       </div>
     </header>
+  );
+}
+
+function VegModeToggle() {
+  const { vegMode, setVegMode } = useAppUI();
+  return (
+    <button
+      onClick={() => setVegMode(!vegMode)}
+      aria-pressed={vegMode}
+      aria-label={vegMode ? "Veg mode on — showing pure veg only" : "Veg mode off — showing all restaurants"}
+      title={vegMode ? "Veg mode on" : "Veg mode off"}
+      className={
+        "flex h-11 items-center gap-1.5 rounded-2xl px-2.5 shadow-soft ring-1 transition active:scale-95 " +
+        (vegMode
+          ? "bg-primary text-primary-foreground ring-primary"
+          : "bg-surface text-foreground ring-border")
+      }
+    >
+      <span
+        className={
+          "grid h-7 w-7 place-items-center rounded-xl " +
+          (vegMode ? "bg-white/20 text-white" : "bg-primary-soft text-primary")
+        }
+      >
+        <Leaf className="h-4 w-4" strokeWidth={2.5} />
+      </span>
+      <span className="pr-1 text-[11px] font-extrabold uppercase tracking-wider">
+        {vegMode ? "Veg" : "All"}
+      </span>
+    </button>
   );
 }
