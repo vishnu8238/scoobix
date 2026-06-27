@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Store } from "lucide-react";
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Store, Megaphone } from "lucide-react";
 import { RoleSwitch } from "@/components/cravio/RoleSwitch";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { cn } from "@/lib/format";
@@ -13,6 +13,7 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/partner", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/partner/orders", label: "Orders", icon: ClipboardList },
   { to: "/partner/menu", label: "Menu", icon: UtensilsCrossed },
+  { to: "/partner/ads", label: "Ads", icon: Megaphone },
   { to: "/partner/profile", label: "Profile", icon: Store },
 ];
 
