@@ -1,0 +1,26 @@
+{
+  "name": "Cravio — Crave it. Get it.",
+  "short_name": "Cravio",
+  "description": "Premium food delivery. Fresh meals from the best restaurants near you, fast.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#28a156",
+  "categories": ["food", "lifestyle", "shopping"],
+  "icons": [
+    {
+      "src": "/__l5e/assets-v1/ce9dea1e-9a2b-4604-9fdb-edc72023a6d0/cravio-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/__l5e/assets-v1/ce9dea1e-9a2b-4604-9fdb-edc72023a6d0/cravio-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
