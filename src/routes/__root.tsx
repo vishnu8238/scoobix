@@ -87,6 +87,8 @@ function RootComponent() {
         )}
         <Toaster position="top-center" richColors closeButton={false} />
         <CartConflictDialog />
+        <NetworkBanner />
+        <PWAInstallPrompt />
       </CravioProviders>
     </QueryClientProvider>
   );
