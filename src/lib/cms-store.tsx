@@ -27,7 +27,7 @@ export type CmsCategory = {
 };
 
 export type HomeSection =
-  | "carousel" | "categories" | "featured" | "trending" | "offers" | "recommended" | "collections";
+  | "carousel" | "categories" | "swipe" | "featured" | "trending" | "offers" | "recommended" | "collections";
 
 export type HomeSectionConfig = {
   key: HomeSection;
