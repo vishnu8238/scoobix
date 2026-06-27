@@ -74,6 +74,7 @@ function CmsStudio() {
         {tab === "sections" && <SectionsPanel />}
         {tab === "filters" && <FiltersPanel />}
         {tab === "offers" && <OffersPanel />}
+        {tab === "veg" && <VegPanel />}
       </div>
     </div>
   );
