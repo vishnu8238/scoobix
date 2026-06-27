@@ -103,6 +103,12 @@ type CmsCtx = {
   toggleRestaurantClosed: (restaurantId: string) => void;
   setRestaurantClosed: (restaurantId: string, closed: boolean) => void;
 
+  // Veg/non-veg overrides (admin/partner controlled)
+  pureVegOverrides: Record<string, boolean>;
+  setPureVeg: (restaurantId: string, pureVeg: boolean) => void;
+  dishVegOverrides: Record<string, boolean>; // dishId -> isVeg
+  setDishVeg: (dishId: string, isVeg: boolean) => void;
+
   // Platform settings (backend-ready)
   settings: PlatformSettings;
   updateSettings: (patch: Partial<PlatformSettings>) => void;
