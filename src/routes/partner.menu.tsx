@@ -81,6 +81,22 @@ function PartnerMenu() {
                 <span className="font-display text-sm font-extrabold text-primary">{formatPrice(d.price)}</span>
               </div>
               <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{d.description}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => toggleRecommended(d.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold transition active:scale-95",
+                    d.recommended ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}
+                ><Sparkles className="h-2.5 w-2.5" /> Recommended</button>
+                <button
+                  onClick={() => toggleBestSeller(d.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold transition active:scale-95",
+                    d.bestSeller ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground",
+                  )}
+                ><Trophy className="h-2.5 w-2.5" /> Best seller</button>
+              </div>
               <div className="mt-2 flex items-center justify-between">
                 <label className="flex items-center gap-2 text-[11px] font-bold">
                   <span className="relative inline-flex h-5 w-9 items-center">
