@@ -521,7 +521,7 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
     });
 
   return (
-    <AppUIContext.Provider value={{ location, setLocation, userCoords, recentSearches, pushRecent, clearRecent, locationPermission, detectingLocation, detectLocation }}>
+    <AppUIContext.Provider value={{ location, setLocation, userCoords, recentSearches, pushRecent, clearRecent, locationPermission, detectingLocation, detectLocation, vegMode, setVegMode }}>
       {children}
     </AppUIContext.Provider>
   );
