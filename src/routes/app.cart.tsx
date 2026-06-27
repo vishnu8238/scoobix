@@ -17,6 +17,9 @@ export const Route = createFileRoute("/app/cart")({
 function CartPage() {
   const navigate = useNavigate();
   const { items, setQty, removeItem, totals, coupon, applyCoupon, removeCoupon, restaurant, clear } = useCart();
+  const { closedRestaurants, dishAvailability } = useCms();
+  const restaurantClosed = restaurant ? !!closedRestaurants[restaurant.id] : false;
+  const unavailableItems = items.filter((it) => dishAvailability[it.dishId] === false);
   const [code, setCode] = useState("");
 
   if (items.length === 0) {
