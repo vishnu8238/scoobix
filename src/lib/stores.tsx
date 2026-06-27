@@ -426,6 +426,9 @@ type AppUICtx = {
   locationPermission: LocationPermission;
   detectingLocation: boolean;
   detectLocation: () => Promise<{ ok: boolean; message: string }>;
+  /** Customer-wide pure-veg filter. Persisted to localStorage. */
+  vegMode: boolean;
+  setVegMode: (on: boolean) => void;
 };
 
 const AppUIContext = createContext<AppUICtx | null>(null);
