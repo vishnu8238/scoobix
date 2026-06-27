@@ -112,6 +112,12 @@ type CmsCtx = {
   dishVegOverrides: Record<string, boolean>; // dishId -> isVeg
   setDishVeg: (dishId: string, isVeg: boolean) => void;
 
+  // Featured / promoted flags (admin controlled, backend-ready)
+  featuredRestaurants: Record<string, boolean>;
+  toggleFeaturedRestaurant: (restaurantId: string) => void;
+  featuredDishes: Record<string, boolean>;
+  toggleFeaturedDish: (dishId: string) => void;
+
   // Platform settings (backend-ready)
   settings: PlatformSettings;
   updateSettings: (patch: Partial<PlatformSettings>) => void;
