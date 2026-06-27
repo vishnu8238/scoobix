@@ -105,6 +105,12 @@ type CmsCtx = {
   closedRestaurants: Record<string, boolean>;
   toggleRestaurantClosed: (restaurantId: string) => void;
   setRestaurantClosed: (restaurantId: string, closed: boolean) => void;
+  acceptingOrders: Record<string, boolean>; // restaurantId -> accepting new orders (default true)
+  setAcceptingOrders: (restaurantId: string, on: boolean) => void;
+  dishAvailability: Record<string, boolean>; // dishId -> available (default true unless explicitly false)
+  setDishAvailability: (dishId: string, available: boolean) => void;
+  blockedUsers: Record<string, boolean>; // userId -> blocked
+  setUserBlocked: (userId: string, blocked: boolean) => void;
 
   // Veg/non-veg overrides (admin/partner controlled)
   pureVegOverrides: Record<string, boolean>;
