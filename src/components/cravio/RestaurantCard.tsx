@@ -34,6 +34,9 @@ export function RestaurantCard({ r, variant = "full", closed = false, sponsored:
               {r.offer}
             </span>
           )}
+          {sponsored && !closed && (
+            <SponsoredBadge className="absolute bottom-3 right-3" dark />
+          )}
           <span className="absolute right-3 top-3 glass flex items-center gap-1 rounded-full px-2.5 py-1 shadow-soft">
             <Star className="h-3 w-3 fill-primary text-primary" />
             <span className="text-[11px] font-extrabold">{r.rating.toFixed(1)}</span>
