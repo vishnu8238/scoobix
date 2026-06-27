@@ -73,8 +73,9 @@ function SearchPage() {
 
   const filteredDishes = useMemo(() => {
     if (!q) return [];
-    return dishes.filter((d) => `${d.name} ${d.description} ${d.cuisineTag}`.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
-  }, [dishes, q]);
+    const matched = dishes.filter((d) => `${d.name} ${d.description} ${d.cuisineTag}`.toLowerCase().includes(q.toLowerCase())).slice(0, 12);
+    return filterVegDishes(matched, vegMode).slice(0, 6);
+  }, [dishes, q, vegMode]);
 
   const activeFiltersCount = (cuisine !== "All" ? 1 : 0) + (minRating > 0 ? 1 : 0) + (maxMins < 60 ? 1 : 0) + (maxPrice !== "₹₹₹" ? 1 : 0);
 
