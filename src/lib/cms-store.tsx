@@ -267,6 +267,8 @@ type Snapshot = {
   closedRestaurants: Record<string, boolean>;
   pureVegOverrides: Record<string, boolean>;
   dishVegOverrides: Record<string, boolean>;
+  featuredRestaurants: Record<string, boolean>;
+  featuredDishes: Record<string, boolean>;
   settings: PlatformSettings;
 };
 
@@ -291,6 +293,13 @@ const seedHomeChips = (): FilterGroup => ({
   ],
 });
 
+const seedFeaturedRestaurants = (): Record<string, boolean> => ({
+  "trattoria-verde": true, "sakura-sushi": true, "char-and-crust": true,
+});
+const seedFeaturedDishes = (): Record<string, boolean> => ({
+  "t1": true, "i1": true, "c1": true,
+});
+
 function defaultSnapshot(): Snapshot {
   return {
     banners: seedBanners(),
@@ -302,6 +311,8 @@ function defaultSnapshot(): Snapshot {
     closedRestaurants: {},
     pureVegOverrides: {},
     dishVegOverrides: {},
+    featuredRestaurants: seedFeaturedRestaurants(),
+    featuredDishes: seedFeaturedDishes(),
     settings: DEFAULT_SETTINGS,
   };
 }
