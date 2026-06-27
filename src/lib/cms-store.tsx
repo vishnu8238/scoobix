@@ -196,6 +196,51 @@ const seedFilters = (): FilterGroup[] => [
       { id: "d45", label: "Under 45 min", active: true },
     ],
   },
+  {
+    key: "sort_by",
+    label: "Sort by",
+    options: [
+      { id: "relevance", label: "Relevance", active: true },
+      { id: "distance_asc", label: "Distance low to high", active: true },
+      { id: "rating_desc", label: "Rating high to low", active: true },
+      { id: "delivery_asc", label: "Delivery time low to high", active: true },
+      { id: "cost_asc", label: "Cost for one low to high", active: true },
+      { id: "cost_desc", label: "Cost for one high to low", active: true },
+    ],
+  },
+  {
+    key: "time",
+    label: "Time",
+    options: [
+      { id: "schedule",   label: "Schedule", active: true },
+      { id: "near_fast",  label: "Near & Fast", active: true },
+    ],
+  },
+  {
+    key: "rating_adv",
+    label: "Rating",
+    options: [
+      { id: "r35", label: "Rated 3.5+", active: true, value: 3.5 },
+      { id: "r40", label: "Rated 4+",   active: true, value: 4 },
+    ],
+  },
+  {
+    key: "dish_price",
+    label: "Dish price",
+    options: [
+      { id: "under250", label: "Under ₹250", active: true },
+      { id: "250_400",  label: "₹250-₹400",   active: true },
+      { id: "above400", label: "Above ₹400",  active: true },
+    ],
+  },
+  {
+    key: "collections",
+    label: "Collections",
+    options: [
+      { id: "previously_ordered", label: "Previously ordered", active: true },
+      { id: "new_to_you",         label: "New to you",         active: true },
+    ],
+  },
 ];
 
 const seedCoupons = (): CmsCoupon[] => [
