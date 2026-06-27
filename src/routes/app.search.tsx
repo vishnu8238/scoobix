@@ -8,6 +8,8 @@ import { allDishes, popularSearches, restaurants } from "@/lib/mock-data";
 import { RestaurantCard } from "@/components/cravio/RestaurantCard";
 import { DishCard } from "@/components/cravio/DishCard";
 import { useAppUI } from "@/lib/stores";
+import { useCms } from "@/lib/cms-store";
+import { filterVeg, filterVegDishes } from "@/lib/restaurant-extras";
 import { cn } from "@/lib/format";
 import { z } from "zod";
 
