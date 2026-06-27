@@ -42,6 +42,34 @@ function SearchPage() {
   const [maxPrice, setMaxPrice] = useState<"₹" | "₹₹" | "₹₹₹">("₹₹₹");
   const [sort, setSort] = useState<(typeof SORTS)[number]["id"]>("rating");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [listening, setListening] = useState(false);
+
+  const startVoice = () => {
+    if (typeof window === "undefined") return;
+    const SR: any = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      // graceful fallback for browsers without the API (e.g. desktop Firefox)
+      const text = window.prompt("Voice search not supported here — type your query:");
+      if (text) setQ(text);
+      return;
+    }
+    try {
+      const rec = new SR();
+      rec.lang = "en-IN";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.onstart = () => setListening(true);
+      rec.onerror = () => setListening(false);
+      rec.onend = () => setListening(false);
+      rec.onresult = (e: any) => {
+        const text = e.results?.[0]?.[0]?.transcript ?? "";
+        if (text) setQ(text);
+      };
+      rec.start();
+    } catch {
+      setListening(false);
+    }
+  };
 
   // commit search term to recent when user pauses typing
   useEffect(() => {
