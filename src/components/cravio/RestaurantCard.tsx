@@ -101,6 +101,9 @@ export function RestaurantCard({ r, variant = "full", closed = false, sponsored:
               </span>
             )}
           </div>
+          {sponsored && !closed && (
+            <SponsoredBadge className="absolute right-4 bottom-4" />
+          )}
         </div>
 
         <div className="mt-4 flex items-start justify-between gap-3 px-1">
