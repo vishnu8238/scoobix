@@ -13,7 +13,7 @@ export const Route = createFileRoute("/partner/menu")({
 
 const CATEGORIES = ["All", "Starters", "Main Course", "Drinks", "Desserts"] as const;
 
-type EditableDish = Dish & { available: boolean };
+type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSeller?: boolean };
 
 function PartnerMenu() {
   const [items, setItems] = useState<EditableDish[]>(partnerMenu.map((d) => ({ ...d, available: true })));
@@ -25,6 +25,8 @@ function PartnerMenu() {
 
   const toggle = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, available: !d.available } : d)));
   const toggleVeg = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, veg: !d.veg } : d)));
+  const toggleRecommended = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, recommended: !d.recommended } : d)));
+  const toggleBestSeller = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, bestSeller: !d.bestSeller } : d)));
   const remove = (id: string) => { setItems((prev) => prev.filter((d) => d.id !== id)); toast.success("Item removed"); };
   const save = (d: EditableDish) => {
     setItems((prev) => prev.some((x) => x.id === d.id) ? prev.map((x) => (x.id === d.id ? d : x)) : [...prev, d]);
