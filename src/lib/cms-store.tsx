@@ -26,7 +26,8 @@ export type CmsCategory = {
   active: boolean;
 };
 
-export type HomeSection = "carousel" | "categories" | "featured" | "trending" | "offers" | "recommended";
+export type HomeSection =
+  | "carousel" | "categories" | "featured" | "trending" | "offers" | "recommended" | "collections";
 
 export type HomeSectionConfig = {
   key: HomeSection;
@@ -35,7 +36,9 @@ export type HomeSectionConfig = {
   active: boolean;
 };
 
-export type FilterGroupKey = "cuisine" | "price" | "rating" | "delivery" | "home";
+export type FilterGroupKey =
+  | "cuisine" | "price" | "rating" | "delivery" | "home"
+  | "sort_by" | "time" | "dish_price" | "collections" | "rating_adv";
 
 /**
  * Home chip predicate keys. Chips on the customer home use these IDs to
