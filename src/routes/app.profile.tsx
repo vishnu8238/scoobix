@@ -138,6 +138,93 @@ function ProfilePage() {
   );
 }
 
+type AddressRow = { id: string; label: string; line1: string; line2: string; default: boolean };
+const ADDR_KEY = "cravio_addresses_v1";
+
+function loadAddresses(): AddressRow[] {
+  if (typeof window === "undefined") return savedAddresses.map((a) => ({ ...a }));
+  try {
+    const raw = localStorage.getItem(ADDR_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* */ }
+  return savedAddresses.map((a) => ({ ...a }));
+}
+
+function AddressesEditor() {
+  const [rows, setRows] = useState<AddressRow[]>(() => loadAddresses());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ label: string; line1: string; line2: string }>({ label: "", line1: "", line2: "" });
+
+  useEffect(() => { try { localStorage.setItem(ADDR_KEY, JSON.stringify(rows)); } catch { /* */ } }, [rows]);
+
+  const startEdit = (a: AddressRow) => { setEditingId(a.id); setDraft({ label: a.label, line1: a.line1, line2: a.line2 }); };
+  const startAdd = () => { setEditingId("__new"); setDraft({ label: "Home", line1: "", line2: "" }); };
+  const saveDraft = () => {
+    if (!draft.label.trim() || !draft.line1.trim()) { toast.error("Label and address line required"); return; }
+    if (editingId === "__new") {
+      const id = `a${Date.now().toString(36)}`;
+      setRows((p) => [...p, { id, ...draft, default: p.length === 0 }]);
+      toast.success("Address added");
+    } else if (editingId) {
+      setRows((p) => p.map((r) => (r.id === editingId ? { ...r, ...draft } : r)));
+      toast.success("Address updated");
+    }
+    setEditingId(null);
+  };
+  const remove = (id: string) => setRows((p) => {
+    const next = p.filter((r) => r.id !== id);
+    if (next.length > 0 && !next.some((r) => r.default)) next[0] = { ...next[0], default: true };
+    toast.success("Address removed");
+    return next;
+  });
+  const makeDefault = (id: string) => { setRows((p) => p.map((r) => ({ ...r, default: r.id === id }))); toast.success("Default address updated"); };
+
+  return (
+    <div className="mt-4 space-y-2">
+      {rows.map((a) => (
+        <div key={a.id} className="rounded-2xl border border-border bg-card p-3">
+          {editingId === a.id ? (
+            <div className="space-y-2">
+              <Input value={draft.label} onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))} placeholder="Label (Home / Work)" className="h-9 rounded-xl" />
+              <Input value={draft.line1} onChange={(e) => setDraft((d) => ({ ...d, line1: e.target.value }))} placeholder="Address line 1" className="h-9 rounded-xl" />
+              <Input value={draft.line2} onChange={(e) => setDraft((d) => ({ ...d, line2: e.target.value }))} placeholder="Address line 2" className="h-9 rounded-xl" />
+              <div className="flex gap-2"><Button onClick={saveDraft} className="flex-1 rounded-full">Save</Button><Button variant="outline" onClick={() => setEditingId(null)} className="rounded-full">Cancel</Button></div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-bold">{a.label}{a.default && <span className="ml-2 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">Default</span>}</div>
+                  <div className="text-xs text-muted-foreground">{a.line1}, {a.line2}</div>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => startEdit(a)} className="grid h-8 w-8 place-items-center rounded-full bg-secondary text-foreground" aria-label="Edit"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => remove(a.id)} className="grid h-8 w-8 place-items-center rounded-full bg-destructive/10 text-destructive" aria-label="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+              {!a.default && (
+                <button onClick={() => makeDefault(a.id)} className="mt-2 inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-[11px] font-bold">
+                  <Check className="h-3 w-3" /> Set as default
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      ))}
+      {editingId === "__new" ? (
+        <div className="rounded-2xl border border-primary/30 bg-primary-soft/40 p-3 space-y-2">
+          <Input value={draft.label} onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))} placeholder="Label (Home / Work)" className="h-9 rounded-xl" />
+          <Input value={draft.line1} onChange={(e) => setDraft((d) => ({ ...d, line1: e.target.value }))} placeholder="Address line 1" className="h-9 rounded-xl" />
+          <Input value={draft.line2} onChange={(e) => setDraft((d) => ({ ...d, line2: e.target.value }))} placeholder="Address line 2" className="h-9 rounded-xl" />
+          <div className="flex gap-2"><Button onClick={saveDraft} className="flex-1 rounded-full">Add address</Button><Button variant="outline" onClick={() => setEditingId(null)} className="rounded-full">Cancel</Button></div>
+        </div>
+      ) : (
+        <Button variant="outline" className="w-full rounded-full" onClick={startAdd}>+ Add new address</Button>
+      )}
+    </div>
+  );
+}
+
 function FavoritesView() {
   const { restaurants: favR, dishes: favD } = useFavorites();
   const rList = restaurants.filter((r) => favR.has(r.id));
