@@ -18,15 +18,16 @@ export const Route = createFileRoute("/admin/cms")({
   component: CmsStudio,
 });
 
-type TabKey = "banners" | "categories" | "sections" | "filters" | "offers" | "veg";
+type TabKey = "banners" | "categories" | "sections" | "filters" | "offers" | "veg" | "featured";
 
 const TABS: { key: TabKey; label: string; icon: any; hint: string }[] = [
   { key: "banners", label: "Home Carousel", icon: ImageIcon, hint: "Promo banners shown on the customer home" },
   { key: "categories", label: "Categories", icon: LayoutGrid, hint: "Cuisine pills on the home rail" },
-  { key: "sections", label: "Home Sections", icon: Layers, hint: "Toggle visibility of homepage modules" },
+  { key: "sections", label: "Home Sections", icon: Layers, hint: "Toggle visibility of homepage modules (incl. Cravio Swipe)" },
   { key: "filters", label: "Filters", icon: SlidersHorizontal, hint: "Search & discover filter chips" },
   { key: "offers", label: "Offers & Coupons", icon: Ticket, hint: "Discount codes and promotions" },
   { key: "veg", label: "Veg / Non-veg", icon: Leaf, hint: "Restaurant & dish veg classification" },
+  { key: "featured", label: "Featured", icon: Star, hint: "Promote restaurants & dishes on the home" },
 ];
 
 function CmsStudio() {
