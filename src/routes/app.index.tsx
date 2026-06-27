@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { TopBar } from "@/components/cravio/TopBar";
@@ -202,6 +202,27 @@ function Home() {
         <div className="pt-2">
           <CategoryRail />
         </div>
+      )}
+
+      {/* Cravio Swipe entry banner */}
+      {sectionEnabled("swipe") && (
+        <section className="px-5">
+          <Link
+            to="/app/swipe"
+            className="relative flex items-center justify-between gap-3 overflow-hidden rounded-3xl bg-primary px-5 py-4 text-primary-foreground shadow-glow transition active:scale-[0.98]"
+          >
+            <span className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10" aria-hidden />
+            <span className="absolute -bottom-8 -left-4 h-20 w-20 rounded-full bg-white/10" aria-hidden />
+            <div className="relative">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] opacity-90">New · Discovery</p>
+              <h3 className="mt-1 font-display text-lg font-extrabold tracking-tight">Cravio Swipe</h3>
+              <p className="mt-0.5 text-xs opacity-90">Swipe nearby food. Right adds, left skips.</p>
+            </div>
+            <span className="relative grid h-12 w-12 place-items-center rounded-2xl bg-white/20">
+              <Sparkles className="h-5 w-5" strokeWidth={2.6} />
+            </span>
+          </Link>
+        </section>
       )}
 
       {sectionEnabled("offers") && <QuickOffers />}

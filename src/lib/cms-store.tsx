@@ -27,7 +27,7 @@ export type CmsCategory = {
 };
 
 export type HomeSection =
-  | "carousel" | "categories" | "featured" | "trending" | "offers" | "recommended" | "collections";
+  | "carousel" | "categories" | "swipe" | "featured" | "trending" | "offers" | "recommended" | "collections";
 
 export type HomeSectionConfig = {
   key: HomeSection;
@@ -112,6 +112,12 @@ type CmsCtx = {
   dishVegOverrides: Record<string, boolean>; // dishId -> isVeg
   setDishVeg: (dishId: string, isVeg: boolean) => void;
 
+  // Featured / promoted flags (admin controlled, backend-ready)
+  featuredRestaurants: Record<string, boolean>;
+  toggleFeaturedRestaurant: (restaurantId: string) => void;
+  featuredDishes: Record<string, boolean>;
+  toggleFeaturedDish: (dishId: string) => void;
+
   // Platform settings (backend-ready)
   settings: PlatformSettings;
   updateSettings: (patch: Partial<PlatformSettings>) => void;
@@ -156,6 +162,7 @@ const seedCats = (): CmsCategory[] =>
 const seedSections = (): HomeSectionConfig[] => [
   { key: "carousel", label: "Hero carousel", description: "Top banner slideshow", active: true },
   { key: "categories", label: "Category rail", description: "Browse by cuisine type (Explore flavors)", active: true },
+  { key: "swipe", label: "Cravio Swipe", description: "Tinder-style food discovery entry banner", active: true },
   { key: "featured", label: "Featured restaurants", description: "Editor-picked spots", active: true },
   { key: "trending", label: "Trending dishes", description: "Most ordered this week", active: true },
   { key: "offers", label: "Offers strip", description: "Quick-tap promo cards", active: true },
@@ -260,6 +267,8 @@ type Snapshot = {
   closedRestaurants: Record<string, boolean>;
   pureVegOverrides: Record<string, boolean>;
   dishVegOverrides: Record<string, boolean>;
+  featuredRestaurants: Record<string, boolean>;
+  featuredDishes: Record<string, boolean>;
   settings: PlatformSettings;
 };
 
@@ -284,6 +293,13 @@ const seedHomeChips = (): FilterGroup => ({
   ],
 });
 
+const seedFeaturedRestaurants = (): Record<string, boolean> => ({
+  "trattoria-verde": true, "sakura-sushi": true, "char-and-crust": true,
+});
+const seedFeaturedDishes = (): Record<string, boolean> => ({
+  "t1": true, "i1": true, "c1": true,
+});
+
 function defaultSnapshot(): Snapshot {
   return {
     banners: seedBanners(),
@@ -295,6 +311,8 @@ function defaultSnapshot(): Snapshot {
     closedRestaurants: {},
     pureVegOverrides: {},
     dishVegOverrides: {},
+    featuredRestaurants: seedFeaturedRestaurants(),
+    featuredDishes: seedFeaturedDishes(),
     settings: DEFAULT_SETTINGS,
   };
 }
@@ -408,6 +426,14 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     dishVegOverrides: state.dishVegOverrides,
     setDishVeg: (dishId, isVeg) =>
       setState((s) => ({ ...s, dishVegOverrides: { ...s.dishVegOverrides, [dishId]: isVeg } })),
+
+    featuredRestaurants: state.featuredRestaurants,
+    toggleFeaturedRestaurant: (id) =>
+      setState((s) => ({ ...s, featuredRestaurants: { ...s.featuredRestaurants, [id]: !s.featuredRestaurants[id] } })),
+    featuredDishes: state.featuredDishes,
+    toggleFeaturedDish: (id) =>
+      setState((s) => ({ ...s, featuredDishes: { ...s.featuredDishes, [id]: !s.featuredDishes[id] } })),
+
 
     settings: state.settings,
     updateSettings: (patch) =>

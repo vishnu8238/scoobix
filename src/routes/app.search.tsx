@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Filter, Search as SearchIcon, X } from "lucide-react";
+import { ArrowLeft, Filter, Mic, Search as SearchIcon, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,34 @@ function SearchPage() {
   const [maxPrice, setMaxPrice] = useState<"₹" | "₹₹" | "₹₹₹">("₹₹₹");
   const [sort, setSort] = useState<(typeof SORTS)[number]["id"]>("rating");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [listening, setListening] = useState(false);
+
+  const startVoice = () => {
+    if (typeof window === "undefined") return;
+    const SR: any = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      // graceful fallback for browsers without the API (e.g. desktop Firefox)
+      const text = window.prompt("Voice search not supported here — type your query:");
+      if (text) setQ(text);
+      return;
+    }
+    try {
+      const rec = new SR();
+      rec.lang = "en-IN";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.onstart = () => setListening(true);
+      rec.onerror = () => setListening(false);
+      rec.onend = () => setListening(false);
+      rec.onresult = (e: any) => {
+        const text = e.results?.[0]?.[0]?.transcript ?? "";
+        if (text) setQ(text);
+      };
+      rec.start();
+    } catch {
+      setListening(false);
+    }
+  };
 
   // commit search term to recent when user pauses typing
   useEffect(() => {
@@ -93,9 +121,20 @@ function SearchPage() {
               placeholder="Search restaurants, dishes & cuisines"
               className="h-11 w-full rounded-full bg-secondary pl-10 pr-10 text-sm outline-none ring-1 ring-border/60 focus:ring-primary"
             />
-            {q && (
+            {q ? (
               <button onClick={() => setQ("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 <X className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                onClick={startVoice}
+                aria-label="Voice search"
+                className={cn(
+                  "absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full transition",
+                  listening ? "bg-primary text-primary-foreground animate-pulse" : "bg-primary/10 text-primary",
+                )}
+              >
+                <Mic className="h-3.5 w-3.5" strokeWidth={2.5} />
               </button>
             )}
           </div>

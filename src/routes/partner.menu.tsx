@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { partnerMenu } from "@/lib/role-data";
 import type { Dish } from "@/lib/mock-data";
-import { Plus, Pencil, Trash2, X, Leaf } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Leaf, Sparkles, Trophy } from "lucide-react";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/partner/menu")({
 
 const CATEGORIES = ["All", "Starters", "Main Course", "Drinks", "Desserts"] as const;
 
-type EditableDish = Dish & { available: boolean };
+type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSeller?: boolean };
 
 function PartnerMenu() {
   const [items, setItems] = useState<EditableDish[]>(partnerMenu.map((d) => ({ ...d, available: true })));
@@ -25,6 +25,8 @@ function PartnerMenu() {
 
   const toggle = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, available: !d.available } : d)));
   const toggleVeg = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, veg: !d.veg } : d)));
+  const toggleRecommended = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, recommended: !d.recommended } : d)));
+  const toggleBestSeller = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, bestSeller: !d.bestSeller } : d)));
   const remove = (id: string) => { setItems((prev) => prev.filter((d) => d.id !== id)); toast.success("Item removed"); };
   const save = (d: EditableDish) => {
     setItems((prev) => prev.some((x) => x.id === d.id) ? prev.map((x) => (x.id === d.id ? d : x)) : [...prev, d]);
@@ -79,6 +81,22 @@ function PartnerMenu() {
                 <span className="font-display text-sm font-extrabold text-primary">{formatPrice(d.price)}</span>
               </div>
               <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{d.description}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => toggleRecommended(d.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold transition active:scale-95",
+                    d.recommended ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}
+                ><Sparkles className="h-2.5 w-2.5" /> Recommended</button>
+                <button
+                  onClick={() => toggleBestSeller(d.id)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold transition active:scale-95",
+                    d.bestSeller ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground",
+                  )}
+                ><Trophy className="h-2.5 w-2.5" /> Best seller</button>
+              </div>
               <div className="mt-2 flex items-center justify-between">
                 <label className="flex items-center gap-2 text-[11px] font-bold">
                   <span className="relative inline-flex h-5 w-9 items-center">

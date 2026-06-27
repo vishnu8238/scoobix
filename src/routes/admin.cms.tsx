@@ -3,30 +3,31 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Image as ImageIcon, LayoutGrid, Layers, SlidersHorizontal, Ticket,
-  Plus, Trash2, ChevronUp, ChevronDown, Pencil, X, Eye, EyeOff, RotateCcw, Check, Leaf,
+  Plus, Trash2, ChevronUp, ChevronDown, Pencil, X, Eye, EyeOff, RotateCcw, Check, Leaf, Star,
 } from "lucide-react";
 import {
   useCms, CMS_IMAGE_OPTIONS,
   type Banner, type CmsCategory, type CmsCoupon, type FilterGroupKey,
 } from "@/lib/cms-store";
-import { restaurants as allRestaurants, allDishes } from "@/lib/mock-data";
+import { restaurants as allRestaurants, allDishes, findDish } from "@/lib/mock-data";
 import { isPureVeg } from "@/lib/restaurant-extras";
-import { cn } from "@/lib/format";
+import { cn, currency } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/cms")({
   head: () => ({ meta: [{ title: "Cravio Admin · CMS Studio" }] }),
   component: CmsStudio,
 });
 
-type TabKey = "banners" | "categories" | "sections" | "filters" | "offers" | "veg";
+type TabKey = "banners" | "categories" | "sections" | "filters" | "offers" | "veg" | "featured";
 
 const TABS: { key: TabKey; label: string; icon: any; hint: string }[] = [
   { key: "banners", label: "Home Carousel", icon: ImageIcon, hint: "Promo banners shown on the customer home" },
   { key: "categories", label: "Categories", icon: LayoutGrid, hint: "Cuisine pills on the home rail" },
-  { key: "sections", label: "Home Sections", icon: Layers, hint: "Toggle visibility of homepage modules" },
+  { key: "sections", label: "Home Sections", icon: Layers, hint: "Toggle visibility of homepage modules (incl. Cravio Swipe)" },
   { key: "filters", label: "Filters", icon: SlidersHorizontal, hint: "Search & discover filter chips" },
   { key: "offers", label: "Offers & Coupons", icon: Ticket, hint: "Discount codes and promotions" },
   { key: "veg", label: "Veg / Non-veg", icon: Leaf, hint: "Restaurant & dish veg classification" },
+  { key: "featured", label: "Featured", icon: Star, hint: "Promote restaurants & dishes on the home" },
 ];
 
 function CmsStudio() {
@@ -75,7 +76,84 @@ function CmsStudio() {
         {tab === "filters" && <FiltersPanel />}
         {tab === "offers" && <OffersPanel />}
         {tab === "veg" && <VegPanel />}
+        {tab === "featured" && <FeaturedPanel />}
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* FEATURED                                                            */
+/* ------------------------------------------------------------------ */
+
+function FeaturedPanel() {
+  const { featuredRestaurants, toggleFeaturedRestaurant, featuredDishes, toggleFeaturedDish } = useCms();
+  const [tab, setTab] = useState<"restaurants" | "dishes">("restaurants");
+  const dishes = allDishes();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setTab("restaurants")}
+          className={cn("rounded-full px-4 py-2 text-sm font-bold transition",
+            tab === "restaurants" ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground")}
+        >Featured restaurants</button>
+        <button
+          onClick={() => setTab("dishes")}
+          className={cn("rounded-full px-4 py-2 text-sm font-bold transition",
+            tab === "dishes" ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground")}
+        >Featured dishes</button>
+      </div>
+
+      {tab === "restaurants" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {allRestaurants.map((r) => {
+            const on = !!featuredRestaurants[r.id];
+            return (
+              <button
+                key={r.id}
+                onClick={() => toggleFeaturedRestaurant(r.id)}
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition active:scale-[0.99]",
+                  on ? "border-primary shadow-glow" : "border-border",
+                )}
+              >
+                <img src={r.cover} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{r.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{r.cuisine} · ★ {r.rating}</p>
+                </div>
+                <Star className={cn("h-5 w-5", on ? "fill-primary text-primary" : "text-muted-foreground")} />
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {dishes.map((d) => {
+            const on = !!featuredDishes[d.id];
+            const ref = findDish(d.id);
+            return (
+              <button
+                key={d.id}
+                onClick={() => toggleFeaturedDish(d.id)}
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition active:scale-[0.99]",
+                  on ? "border-primary shadow-glow" : "border-border",
+                )}
+              >
+                <img src={d.image} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{d.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{ref?.restaurant.name} · {currency(d.price)}</p>
+                </div>
+                <Star className={cn("h-5 w-5", on ? "fill-primary text-primary" : "text-muted-foreground")} />
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
