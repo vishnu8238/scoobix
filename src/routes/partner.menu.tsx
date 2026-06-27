@@ -63,7 +63,19 @@ function PartnerMenu() {
             <img src={d.image} alt="" className="h-20 w-20 shrink-0 rounded-2xl object-cover" />
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="truncate text-sm font-bold">{d.name}</h3>
+                <h3 className="truncate text-sm font-bold flex items-center gap-1.5">
+                  <button
+                    onClick={() => toggleVeg(d.id)}
+                    title={d.veg ? "Veg — click to mark non-veg" : "Non-veg — click to mark veg"}
+                    className={cn(
+                      "grid h-4 w-4 place-items-center rounded-sm border-2 transition active:scale-90",
+                      d.veg ? "border-primary" : "border-rose-600",
+                    )}
+                  >
+                    <Leaf className={cn("h-2.5 w-2.5", d.veg ? "text-primary fill-primary" : "text-rose-600 fill-rose-600")} />
+                  </button>
+                  <span className="truncate">{d.name}</span>
+                </h3>
                 <span className="font-display text-sm font-extrabold text-primary">{formatPrice(d.price)}</span>
               </div>
               <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{d.description}</p>
