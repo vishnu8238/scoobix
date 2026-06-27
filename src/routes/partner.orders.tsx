@@ -109,7 +109,25 @@ function PartnerOrders() {
                     {o.rider && <p><span className="text-muted-foreground">Rider:</span> {o.rider}</p>}
                   </div>
 
-                  <div className="mt-4 flex gap-2">
+                  {o.status !== "COMPLETED" && o.status !== "REJECTED" && (
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Prep time</span>
+                      <div className="flex gap-1">
+                        {[10, 15, 20, 30].map((m) => {
+                          const sel = (prepMins[o.id] ?? 15) === m;
+                          return (
+                            <button
+                              key={m}
+                              onClick={() => { setPrepMins((p) => ({ ...p, [o.id]: m })); toast.success(`${o.id} · prep ${m} min`); }}
+                              className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold transition", sel ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground")}
+                            >{m}m</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
                     {o.status === "PLACED" ? (
                       <>
                         <button onClick={() => reject(o)} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-bold text-destructive transition active:scale-95">
