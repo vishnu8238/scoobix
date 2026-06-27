@@ -26,7 +26,8 @@ export type CmsCategory = {
   active: boolean;
 };
 
-export type HomeSection = "carousel" | "categories" | "featured" | "trending" | "offers" | "recommended";
+export type HomeSection =
+  | "carousel" | "categories" | "featured" | "trending" | "offers" | "recommended" | "collections";
 
 export type HomeSectionConfig = {
   key: HomeSection;
@@ -35,7 +36,9 @@ export type HomeSectionConfig = {
   active: boolean;
 };
 
-export type FilterGroupKey = "cuisine" | "price" | "rating" | "delivery" | "home";
+export type FilterGroupKey =
+  | "cuisine" | "price" | "rating" | "delivery" | "home"
+  | "sort_by" | "time" | "dish_price" | "collections" | "rating_adv";
 
 /**
  * Home chip predicate keys. Chips on the customer home use these IDs to
@@ -103,6 +106,12 @@ type CmsCtx = {
   toggleRestaurantClosed: (restaurantId: string) => void;
   setRestaurantClosed: (restaurantId: string, closed: boolean) => void;
 
+  // Veg/non-veg overrides (admin/partner controlled)
+  pureVegOverrides: Record<string, boolean>;
+  setPureVeg: (restaurantId: string, pureVeg: boolean) => void;
+  dishVegOverrides: Record<string, boolean>; // dishId -> isVeg
+  setDishVeg: (dishId: string, isVeg: boolean) => void;
+
   // Platform settings (backend-ready)
   settings: PlatformSettings;
   updateSettings: (patch: Partial<PlatformSettings>) => void;
@@ -146,11 +155,12 @@ const seedCats = (): CmsCategory[] =>
 
 const seedSections = (): HomeSectionConfig[] => [
   { key: "carousel", label: "Hero carousel", description: "Top banner slideshow", active: true },
-  { key: "categories", label: "Category rail", description: "Browse by cuisine type", active: true },
+  { key: "categories", label: "Category rail", description: "Browse by cuisine type (Explore flavors)", active: true },
   { key: "featured", label: "Featured restaurants", description: "Editor-picked spots", active: true },
   { key: "trending", label: "Trending dishes", description: "Most ordered this week", active: true },
   { key: "offers", label: "Offers strip", description: "Quick-tap promo cards", active: true },
   { key: "recommended", label: "Recommended for you", description: "Personalised picks", active: true },
+  { key: "collections", label: "Collections", description: "Previously ordered & New to you", active: true },
 ];
 
 const seedFilters = (): FilterGroup[] => [
@@ -186,6 +196,51 @@ const seedFilters = (): FilterGroup[] => [
       { id: "d45", label: "Under 45 min", active: true },
     ],
   },
+  {
+    key: "sort_by",
+    label: "Sort by",
+    options: [
+      { id: "relevance", label: "Relevance", active: true },
+      { id: "distance_asc", label: "Distance low to high", active: true },
+      { id: "rating_desc", label: "Rating high to low", active: true },
+      { id: "delivery_asc", label: "Delivery time low to high", active: true },
+      { id: "cost_asc", label: "Cost for one low to high", active: true },
+      { id: "cost_desc", label: "Cost for one high to low", active: true },
+    ],
+  },
+  {
+    key: "time",
+    label: "Time",
+    options: [
+      { id: "schedule",   label: "Schedule", active: true },
+      { id: "near_fast",  label: "Near & Fast", active: true },
+    ],
+  },
+  {
+    key: "rating_adv",
+    label: "Rating",
+    options: [
+      { id: "r35", label: "Rated 3.5+", active: true, value: 3.5 },
+      { id: "r40", label: "Rated 4+",   active: true, value: 4 },
+    ],
+  },
+  {
+    key: "dish_price",
+    label: "Dish price",
+    options: [
+      { id: "under250", label: "Under ₹250", active: true },
+      { id: "250_400",  label: "₹250-₹400",   active: true },
+      { id: "above400", label: "Above ₹400",  active: true },
+    ],
+  },
+  {
+    key: "collections",
+    label: "Collections",
+    options: [
+      { id: "previously_ordered", label: "Previously ordered", active: true },
+      { id: "new_to_you",         label: "New to you",         active: true },
+    ],
+  },
 ];
 
 const seedCoupons = (): CmsCoupon[] => [
@@ -203,6 +258,8 @@ type Snapshot = {
   coupons: CmsCoupon[];
   commissions: Record<string, number>;
   closedRestaurants: Record<string, boolean>;
+  pureVegOverrides: Record<string, boolean>;
+  dishVegOverrides: Record<string, boolean>;
   settings: PlatformSettings;
 };
 
@@ -236,6 +293,8 @@ function defaultSnapshot(): Snapshot {
     coupons: seedCoupons(),
     commissions: seedCommissions(),
     closedRestaurants: {},
+    pureVegOverrides: {},
+    dishVegOverrides: {},
     settings: DEFAULT_SETTINGS,
   };
 }
@@ -342,6 +401,13 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, closedRestaurants: { ...s.closedRestaurants, [restaurantId]: !s.closedRestaurants[restaurantId] } })),
     setRestaurantClosed: (restaurantId, closed) =>
       setState((s) => ({ ...s, closedRestaurants: { ...s.closedRestaurants, [restaurantId]: closed } })),
+
+    pureVegOverrides: state.pureVegOverrides,
+    setPureVeg: (restaurantId, pureVeg) =>
+      setState((s) => ({ ...s, pureVegOverrides: { ...s.pureVegOverrides, [restaurantId]: pureVeg } })),
+    dishVegOverrides: state.dishVegOverrides,
+    setDishVeg: (dishId, isVeg) =>
+      setState((s) => ({ ...s, dishVegOverrides: { ...s.dishVegOverrides, [dishId]: isVeg } })),
 
     settings: state.settings,
     updateSettings: (patch) =>

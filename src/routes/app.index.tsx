@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { TopBar } from "@/components/cravio/TopBar";
 import { HeroCarousel } from "@/components/cravio/HeroCarousel";
 import { CategoryRail, QuickOffers, SectionHeader } from "@/components/cravio/CategoryRail";
@@ -8,6 +9,11 @@ import { RestaurantCard } from "@/components/cravio/RestaurantCard";
 import { DishCard } from "@/components/cravio/DishCard";
 import { restaurants, allDishes, trendingDishIds, recommendedDishIds, type Restaurant } from "@/lib/mock-data";
 import { useCms, type FilterOption } from "@/lib/cms-store";
+import { useAppUI } from "@/lib/stores";
+import {
+  filterVeg, filterVegDishes, isPureVeg, extrasFor,
+  recommendedRestaurantIds, previouslyOrderedIds, newToYouIds,
+} from "@/lib/restaurant-extras";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/app/")({
@@ -23,52 +29,112 @@ export const Route = createFileRoute("/app/")({
 /** Mock predicate for each home chip kind. */
 function chipMatches(r: Restaurant, opt: FilterOption, index: number): boolean {
   switch (opt.kind) {
-    case "under_price":
-      return r.menu.some((d) => d.price <= (opt.value ?? 250));
-    case "fast":
-      return r.deliveryMins <= (opt.value ?? 25);
-    case "top_rated":
-      return r.rating >= (opt.value ?? 4.7);
-    case "offers":
-      return !!r.offer;
-    case "new":
-      return index >= restaurants.length - 2; // last two are "new"
-    case "nearest":
-      return r.distanceKm <= (opt.value ?? 1.5);
-    case "rating_min":
-      return r.rating >= (opt.value ?? 4);
-    case "veg":
-      return r.menu.some((d) => d.veg);
-    default:
-      return true;
+    case "under_price": return r.menu.some((d) => d.price <= (opt.value ?? 250));
+    case "fast":        return r.deliveryMins <= (opt.value ?? 25);
+    case "top_rated":   return r.rating >= (opt.value ?? 4.7);
+    case "offers":      return !!r.offer;
+    case "new":         return index >= restaurants.length - 2;
+    case "nearest":     return r.distanceKm <= (opt.value ?? 1.5);
+    case "rating_min":  return r.rating >= (opt.value ?? 4);
+    case "veg":         return isPureVeg(r.id) || r.menu.some((d) => d.veg);
+    default: return true;
   }
 }
 
+type AdvState = {
+  sortBy: string;          // option id from sort_by group
+  time: string | null;     // schedule / near_fast
+  rating: number | null;   // 3.5 | 4
+  dishPrice: string | null; // under250 | 250_400 | above400
+  collections: string[];   // previously_ordered / new_to_you
+};
+
+const DEFAULT_ADV: AdvState = {
+  sortBy: "relevance",
+  time: null, rating: null, dishPrice: null, collections: [],
+};
+
 function Home() {
   const navigate = useNavigate();
-  const { filters, closedRestaurants } = useCms();
+  const { filters, sections, closedRestaurants, pureVegOverrides } = useCms();
+  const { vegMode } = useAppUI();
+
+  const sectionEnabled = (key: string) =>
+    sections.find((s) => s.key === key)?.active !== false;
+
   const dishes = allDishes();
   const trending = trendingDishIds.map((id) => dishes.find((d) => d.id === id)!).filter(Boolean);
   const recommended = recommendedDishIds.map((id) => dishes.find((d) => d.id === id)!).filter(Boolean);
 
   const homeChips = (filters.find((g) => g.key === "home")?.options ?? []).filter((o) => o.active);
   const [activeChips, setActiveChips] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [adv, setAdv] = useState<AdvState>(DEFAULT_ADV);
 
   const toggleChip = (id: string) =>
     setActiveChips((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
-  const filteredRestaurants = useMemo(() => {
-    if (activeChips.length === 0) return restaurants;
-    const active = homeChips.filter((c) => activeChips.includes(c.id));
-    return restaurants.filter((r, i) => active.every((opt) => chipMatches(r, opt, i)));
-  }, [activeChips, homeChips]);
+  const applyAdv = (list: Restaurant[]): Restaurant[] => {
+    let out = list;
 
-  const featured = filteredRestaurants.slice(0, 2);
-  const more = filteredRestaurants.slice(2, 4);
-  const explore = filteredRestaurants.slice(4);
+    if (adv.rating) out = out.filter((r) => r.rating >= adv.rating!);
+    if (adv.time === "near_fast") out = out.filter((r) => r.deliveryMins <= 25 && r.distanceKm <= 2);
+
+    if (adv.dishPrice) {
+      out = out.filter((r) => r.menu.some((d) => {
+        if (adv.dishPrice === "under250") return d.price <= 250;
+        if (adv.dishPrice === "250_400") return d.price > 250 && d.price <= 400;
+        if (adv.dishPrice === "above400") return d.price > 400;
+        return true;
+      }));
+    }
+
+    if (adv.collections.length) {
+      const ids = new Set<string>();
+      if (adv.collections.includes("previously_ordered")) previouslyOrderedIds.forEach((id) => ids.add(id));
+      if (adv.collections.includes("new_to_you")) newToYouIds.forEach((id) => ids.add(id));
+      out = out.filter((r) => ids.has(r.id));
+    }
+
+    const sorted = [...out];
+    switch (adv.sortBy) {
+      case "distance_asc": sorted.sort((a, b) => a.distanceKm - b.distanceKm); break;
+      case "rating_desc":  sorted.sort((a, b) => b.rating - a.rating); break;
+      case "delivery_asc": sorted.sort((a, b) => a.deliveryMins - b.deliveryMins); break;
+      case "cost_asc":     sorted.sort((a, b) => extrasFor(a.id).cost_for_one - extrasFor(b.id).cost_for_one); break;
+      case "cost_desc":    sorted.sort((a, b) => extrasFor(b.id).cost_for_one - extrasFor(a.id).cost_for_one); break;
+    }
+    return sorted;
+  };
+
+  const allFiltered = useMemo(() => {
+    let list = filterVeg(restaurants, vegMode, pureVegOverrides);
+    if (activeChips.length) {
+      const active = homeChips.filter((c) => activeChips.includes(c.id));
+      list = list.filter((r, i) => active.every((opt) => chipMatches(r, opt, i)));
+    }
+    return applyAdv(list);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vegMode, pureVegOverrides, activeChips, adv, homeChips]);
+
+  const recRestaurants = useMemo(() => {
+    const ids = recommendedRestaurantIds;
+    const base = restaurants.filter((r) => ids.includes(r.id));
+    return filterVeg(base, vegMode, pureVegOverrides);
+  }, [vegMode, pureVegOverrides]);
+
+  const recDishes = filterVegDishes(recommended, vegMode);
+  const trendingDishes = filterVegDishes(trending, vegMode);
+
+  const advCount =
+    (adv.sortBy !== "relevance" ? 1 : 0) +
+    (adv.time ? 1 : 0) +
+    (adv.rating ? 1 : 0) +
+    (adv.dishPrice ? 1 : 0) +
+    adv.collections.length;
 
   return (
-    <div className="space-y-8 animate-fade-up">
+    <div className="space-y-7 animate-fade-up">
       <TopBar />
 
       <div className="px-5 -mt-3">
@@ -81,76 +147,255 @@ function Home() {
         </button>
       </div>
 
-      <HeroCarousel />
+      {sectionEnabled("carousel") && <HeroCarousel />}
 
-      {homeChips.length > 0 && (
-        <div className="no-scrollbar -my-2 flex gap-2 overflow-x-auto px-5">
-          {homeChips.map((c) => {
-            const on = activeChips.includes(c.id);
-            return (
+      {/* FILTER STRIP — fixed: standalone row with proper padding, no negative margins */}
+      <div className="px-5">
+        <div className="flex items-center gap-2">
+          <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+            <SheetTrigger asChild>
               <button
-                key={c.id}
-                onClick={() => toggleChip(c.id)}
                 className={cn(
-                  "shrink-0 rounded-full border px-4 py-1.5 text-xs font-bold transition active:scale-95",
-                  on
+                  "relative flex h-9 shrink-0 items-center gap-1.5 rounded-full border-2 px-3.5 text-xs font-bold transition active:scale-95",
+                  advCount > 0
                     ? "border-primary bg-primary text-primary-foreground shadow-glow"
-                    : "border-border bg-card text-muted-foreground hover:border-primary/40",
+                    : "border-primary/40 bg-card text-foreground hover:bg-primary-soft/40",
                 )}
+                aria-label="Open filters"
               >
-                {c.label}
+                <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={2.6} />
+                Filters
+                {advCount > 0 && (
+                  <span className="ml-1 grid h-4 min-w-4 place-items-center rounded-full bg-white px-1 text-[10px] font-extrabold text-primary">
+                    {advCount}
+                  </span>
+                )}
               </button>
-            );
-          })}
+            </SheetTrigger>
+            <AdvancedFilterPanel adv={adv} setAdv={setAdv} onClose={() => setFilterOpen(false)} />
+          </Sheet>
+
+          <div className="no-scrollbar flex flex-1 gap-2 overflow-x-auto py-1">
+            {homeChips.map((c) => {
+              const on = activeChips.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => toggleChip(c.id)}
+                  className={cn(
+                    "h-9 shrink-0 rounded-full border px-3.5 text-xs font-bold transition active:scale-95",
+                    on
+                      ? "border-primary bg-primary text-primary-foreground shadow-glow"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40",
+                  )}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Explore flavors (categories) */}
+      {sectionEnabled("categories") && (
+        <div className="pt-2">
+          <CategoryRail />
         </div>
       )}
 
-      <CategoryRail />
-      <QuickOffers />
+      {sectionEnabled("offers") && <QuickOffers />}
 
+      {/* Recommended for you (dishes) */}
+      {sectionEnabled("recommended") && recDishes.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title="Recommended for you" />
+          <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
+            {recDishes.map((d) => <DishCard key={d.id} dish={d} />)}
+          </div>
+        </section>
+      )}
+
+      {/* Recommended restaurants */}
+      {sectionEnabled("recommended") && recRestaurants.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title="Recommended restaurants" action={{ label: "See all", to: "/app/search" }} />
+          <div className="space-y-7 px-5">
+            {recRestaurants.slice(0, 2).map((r) => (
+              <RestaurantCard key={r.id} r={r} closed={!!closedRestaurants[r.id]} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* All restaurants */}
       <section className="space-y-4">
-        <SectionHeader title={activeChips.length ? "Matching for you" : "Chef's selection"} action={{ label: "See all", to: "/app/search" }} />
+        <SectionHeader
+          title={vegMode ? "All pure-veg restaurants" : "All restaurants"}
+          action={{ label: "See all", to: "/app/search" }}
+        />
         <div className="space-y-7 px-5">
-          {featured.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground">No restaurants match those filters.</p>
-          ) : featured.map((r) => <RestaurantCard key={r.id} r={r} closed={!!closedRestaurants[r.id]} />)}
+          {allFiltered.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground">
+              No restaurants match those filters{vegMode ? " in veg mode" : ""}.
+            </p>
+          ) : (
+            allFiltered.map((r) => (
+              <RestaurantCard key={r.id} r={r} closed={!!closedRestaurants[r.id]} />
+            ))
+          )}
         </div>
       </section>
 
-      <section className="space-y-4">
-        <SectionHeader title="Recommended for you" />
-        <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
-          {recommended.map((d) => <DishCard key={d.id} dish={d} />)}
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <SectionHeader title="Top restaurants near you" action={{ label: "See all", to: "/app/search" }} />
-        <div className="space-y-7 px-5">
-          {more.map((r) => (
-            <RestaurantCard key={r.id} r={r} closed={!!closedRestaurants[r.id]} />
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <SectionHeader title="Popular dishes" />
-        <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
-          {trending.map((d) => <DishCard key={d.id} dish={d} />)}
-        </div>
-      </section>
-
-      <section className="space-y-4 pb-8">
-        <SectionHeader title="More places to explore" action={{ label: "See all", to: "/app/search" }} />
-        <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
-          {explore.map((r) => <RestaurantCard key={r.id} r={r} variant="compact" closed={!!closedRestaurants[r.id]} />)}
-        </div>
-      </section>
+      {sectionEnabled("trending") && trendingDishes.length > 0 && (
+        <section className="space-y-4 pb-8">
+          <SectionHeader title="Popular dishes" />
+          <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
+            {trendingDishes.map((d) => <DishCard key={d.id} dish={d} />)}
+          </div>
+        </section>
+      )}
 
       <p className="px-6 pb-4 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
         Cravio · Crave it. Get it.{" "}
         <Link to="/" className="font-bold text-primary">Splash</Link>
       </p>
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* ADVANCED FILTER PANEL                                                       */
+/* -------------------------------------------------------------------------- */
+function AdvancedFilterPanel({
+  adv, setAdv, onClose,
+}: { adv: AdvState; setAdv: (s: AdvState) => void; onClose: () => void }) {
+  const { filters } = useCms();
+  const group = (k: string) => filters.find((g) => g.key === k)?.options.filter((o) => o.active) ?? [];
+
+  const sortBy = group("sort_by");
+  const time = group("time");
+  const ratings = group("rating_adv");
+  const dishPrices = group("dish_price");
+  const collections = group("collections");
+
+  return (
+    <SheetContent side="left" className="w-[88vw] max-w-[360px] overflow-y-auto p-0">
+      <SheetHeader className="border-b border-border p-5 text-left">
+        <SheetTitle className="font-display text-xl">Filters</SheetTitle>
+        <SheetDescription>Refine restaurants and dishes.</SheetDescription>
+      </SheetHeader>
+
+      <div className="space-y-6 p-5">
+        <AdvSection title="Sort by">
+          {sortBy.map((o) => (
+            <Pill key={o.id} on={adv.sortBy === o.id} onClick={() => setAdv({ ...adv, sortBy: o.id })}>
+              {o.label}
+            </Pill>
+          ))}
+        </AdvSection>
+
+        <AdvSection title="Time">
+          {time.map((o) => (
+            <Pill key={o.id} on={adv.time === o.id} onClick={() => setAdv({ ...adv, time: adv.time === o.id ? null : o.id })}>
+              {o.label}
+            </Pill>
+          ))}
+        </AdvSection>
+
+        <AdvSection title="Rating">
+          {ratings.map((o) => (
+            <Pill
+              key={o.id}
+              on={adv.rating === (o.value ?? 0)}
+              onClick={() => setAdv({ ...adv, rating: adv.rating === (o.value ?? 0) ? null : (o.value ?? 0) })}
+            >
+              {o.label}
+            </Pill>
+          ))}
+        </AdvSection>
+
+        <AdvSection title="Dish price">
+          {dishPrices.map((o) => (
+            <Pill
+              key={o.id}
+              on={adv.dishPrice === o.id}
+              onClick={() => setAdv({ ...adv, dishPrice: adv.dishPrice === o.id ? null : o.id })}
+            >
+              {o.label}
+            </Pill>
+          ))}
+        </AdvSection>
+
+        <AdvSection title="Collections">
+          {collections.map((o) => {
+            const on = adv.collections.includes(o.id);
+            return (
+              <Pill
+                key={o.id}
+                on={on}
+                onClick={() =>
+                  setAdv({
+                    ...adv,
+                    collections: on
+                      ? adv.collections.filter((x) => x !== o.id)
+                      : [...adv.collections, o.id],
+                  })
+                }
+              >
+                {o.label}
+              </Pill>
+            );
+          })}
+        </AdvSection>
+      </div>
+
+      <div className="sticky bottom-0 flex gap-2 border-t border-border bg-card p-4">
+        <button
+          onClick={() => setAdv(DEFAULT_ADV)}
+          className="flex-1 rounded-full border border-border bg-card py-3 text-sm font-bold"
+        >
+          Reset
+        </button>
+        <button
+          onClick={onClose}
+          className="flex-1 rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground shadow-glow"
+        >
+          Apply
+        </button>
+        <button
+          onClick={onClose}
+          aria-label="Close filters"
+          className="grid h-12 w-12 place-items-center rounded-full bg-muted"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </SheetContent>
+  );
+}
+
+function AdvSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h4 className="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">{title}</h4>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function Pill({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-3.5 py-1.5 text-xs font-bold transition active:scale-95",
+        on
+          ? "border-primary bg-primary-soft text-primary"
+          : "border-border bg-card text-muted-foreground hover:border-primary/40",
+      )}
+    >
+      {children}
+    </button>
   );
 }

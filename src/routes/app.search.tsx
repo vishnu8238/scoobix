@@ -8,6 +8,8 @@ import { allDishes, popularSearches, restaurants } from "@/lib/mock-data";
 import { RestaurantCard } from "@/components/cravio/RestaurantCard";
 import { DishCard } from "@/components/cravio/DishCard";
 import { useAppUI } from "@/lib/stores";
+import { useCms } from "@/lib/cms-store";
+import { filterVeg, filterVegDishes } from "@/lib/restaurant-extras";
 import { cn } from "@/lib/format";
 import { z } from "zod";
 
@@ -30,7 +32,8 @@ const SORTS = [
 function SearchPage() {
   const navigate = useNavigate();
   const { q: initialQ } = Route.useSearch();
-  const { recentSearches, pushRecent, clearRecent } = useAppUI();
+  const { recentSearches, pushRecent, clearRecent, vegMode } = useAppUI();
+  const { pureVegOverrides } = useCms();
 
   const [q, setQ] = useState(initialQ ?? "");
   const [cuisine, setCuisine] = useState("All");
@@ -50,7 +53,7 @@ function SearchPage() {
   const dishes = useMemo(() => allDishes(), []);
 
   const filteredRestaurants = useMemo(() => {
-    let list = restaurants.filter((r) => {
+    let list = filterVeg(restaurants, vegMode, pureVegOverrides).filter((r) => {
       if (cuisine !== "All" && !r.cuisine.toLowerCase().includes(cuisine.toLowerCase()) && !r.tags.some((t) => t.toLowerCase() === cuisine.toLowerCase())) return false;
       if (r.rating < minRating) return false;
       if (r.deliveryMins > maxMins) return false;
@@ -66,12 +69,13 @@ function SearchPage() {
       return 0;
     });
     return list;
-  }, [q, cuisine, minRating, maxMins, maxPrice, sort]);
+  }, [q, cuisine, minRating, maxMins, maxPrice, sort, vegMode, pureVegOverrides]);
 
   const filteredDishes = useMemo(() => {
     if (!q) return [];
-    return dishes.filter((d) => `${d.name} ${d.description} ${d.cuisineTag}`.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
-  }, [dishes, q]);
+    const matched = dishes.filter((d) => `${d.name} ${d.description} ${d.cuisineTag}`.toLowerCase().includes(q.toLowerCase())).slice(0, 12);
+    return filterVegDishes(matched, vegMode).slice(0, 6);
+  }, [dishes, q, vegMode]);
 
   const activeFiltersCount = (cuisine !== "All" ? 1 : 0) + (minRating > 0 ? 1 : 0) + (maxMins < 60 ? 1 : 0) + (maxPrice !== "₹₹₹" ? 1 : 0);
 
