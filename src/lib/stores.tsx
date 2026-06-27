@@ -540,24 +540,31 @@ export const useAppUI = () => {
 import { CmsProvider } from "./cms-store";
 import { AuthProvider } from "./auth-store";
 import { AdsProvider } from "./ads-store";
+import { RewardsProvider } from "./rewards-store";
+import { DeliveryProvider } from "./delivery-store";
 
 export function CravioProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <CmsProvider>
         <AdsProvider>
-          <AppUIProvider>
-            <FavoritesProvider>
-              <OrdersProvider>
-                <CartProvider>{children}</CartProvider>
-              </OrdersProvider>
-            </FavoritesProvider>
-          </AppUIProvider>
+          <RewardsProvider>
+            <AppUIProvider>
+              <FavoritesProvider>
+                <OrdersProvider>
+                  <DeliveryProvider>
+                    <CartProvider>{children}</CartProvider>
+                  </DeliveryProvider>
+                </OrdersProvider>
+              </FavoritesProvider>
+            </AppUIProvider>
+          </RewardsProvider>
         </AdsProvider>
       </CmsProvider>
     </AuthProvider>
   );
 }
+
 
 /* utility */
 export const peekDish = (_d: Dish) => null;
