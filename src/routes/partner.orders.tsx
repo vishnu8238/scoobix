@@ -20,6 +20,7 @@ function PartnerOrders() {
   const [tab, setTab] = useState<"new" | "active" | "completed">("new");
   const [orders, setOrders] = useState(partnerOrders);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [prepMins, setPrepMins] = useState<Record<string, number>>({});
 
   const filtered = orders.filter((o) => TABS.find((t) => t.id === tab)!.match(o.status));
 
