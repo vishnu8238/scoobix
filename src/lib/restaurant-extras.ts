@@ -7,7 +7,7 @@
  *
  * Kept in a separate map so the base mock-data stays untouched.
  */
-import { restaurants } from "./mock-data";
+
 
 export type VegStatus = "pure_veg" | "mixed";
 export type CollectionTag = "previously_ordered" | "new_to_you" | "recommended";
