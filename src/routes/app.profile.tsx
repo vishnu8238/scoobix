@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, Heart, HelpCircle, LogOut, MapPin, Settings, User, Wallet, ReceiptText, Bell, Star } from "lucide-react";
-import { useState, type ComponentType } from "react";
+import { ArrowLeft, ChevronRight, Heart, HelpCircle, LogOut, MapPin, Settings, User, Wallet, ReceiptText, Bell, Star, Trash2, Check, Pencil } from "lucide-react";
+import { useEffect, useState, type ComponentType } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
 import { useFavorites } from "@/lib/stores";
 import { restaurants, allDishes, savedAddresses, paymentMethods } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
