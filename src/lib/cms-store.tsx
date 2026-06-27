@@ -209,6 +209,8 @@ type Snapshot = {
   coupons: CmsCoupon[];
   commissions: Record<string, number>;
   closedRestaurants: Record<string, boolean>;
+  pureVegOverrides: Record<string, boolean>;
+  dishVegOverrides: Record<string, boolean>;
   settings: PlatformSettings;
 };
 
