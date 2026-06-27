@@ -11,6 +11,10 @@ export const Route = createFileRoute("/partner/")({
 });
 
 function PartnerDashboard() {
+  const { closedRestaurants, setRestaurantClosed, acceptingOrders, setAcceptingOrders } = useCms();
+  const rid = partnerRestaurant.id;
+  const isClosed = !!closedRestaurants[rid];
+  const isAccepting = acceptingOrders[rid] !== false; // default true
   const todaysSales = partnerOrders.filter((o) => o.status === "COMPLETED").reduce((s, o) => s + o.total, 0) + 412.5;
   const active = partnerOrders.filter((o) => ["ACCEPTED", "PREPARING", "READY"].includes(o.status)).length;
   const pending = partnerOrders.filter((o) => o.status === "PLACED").length;
