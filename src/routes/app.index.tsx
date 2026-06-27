@@ -10,6 +10,8 @@ import { DishCard } from "@/components/cravio/DishCard";
 import { restaurants, allDishes, trendingDishIds, recommendedDishIds, type Restaurant } from "@/lib/mock-data";
 import { useCms, type FilterOption } from "@/lib/cms-store";
 import { useAppUI } from "@/lib/stores";
+import { useAds } from "@/lib/ads-store";
+import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
 import {
   filterVeg, filterVegDishes, isPureVeg, extrasFor,
   recommendedRestaurantIds, previouslyOrderedIds, newToYouIds,
