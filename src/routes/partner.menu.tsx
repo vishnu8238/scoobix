@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { partnerMenu } from "@/lib/role-data";
 import type { Dish } from "@/lib/mock-data";
-import { Plus, Pencil, Trash2, X, Leaf } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Leaf, Sparkles, Trophy } from "lucide-react";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
 
