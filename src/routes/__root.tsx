@@ -13,6 +13,8 @@ import { CravioProviders } from "@/lib/stores";
 import { PhoneShell } from "@/components/cravio/PhoneShell";
 import { Toaster } from "@/components/ui/sonner";
 import { CartConflictDialog } from "@/components/cravio/CartConflictDialog";
+import { PWAInstallPrompt } from "@/components/cravio/PWAInstallPrompt";
+import { NetworkBanner } from "@/components/cravio/NetworkBanner";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
