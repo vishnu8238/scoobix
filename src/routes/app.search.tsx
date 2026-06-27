@@ -53,7 +53,7 @@ function SearchPage() {
   const dishes = useMemo(() => allDishes(), []);
 
   const filteredRestaurants = useMemo(() => {
-    let list = restaurants.filter((r) => {
+    let list = filterVeg(restaurants, vegMode, pureVegOverrides).filter((r) => {
       if (cuisine !== "All" && !r.cuisine.toLowerCase().includes(cuisine.toLowerCase()) && !r.tags.some((t) => t.toLowerCase() === cuisine.toLowerCase())) return false;
       if (r.rating < minRating) return false;
       if (r.deliveryMins > maxMins) return false;
@@ -69,7 +69,7 @@ function SearchPage() {
       return 0;
     });
     return list;
-  }, [q, cuisine, minRating, maxMins, maxPrice, sort]);
+  }, [q, cuisine, minRating, maxMins, maxPrice, sort, vegMode, pureVegOverrides]);
 
   const filteredDishes = useMemo(() => {
     if (!q) return [];
