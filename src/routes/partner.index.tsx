@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { partnerOrders, partnerRestaurant } from "@/lib/role-data";
-import { TrendingUp, Clock, CheckCircle2, DollarSign, BellRing, ChefHat } from "lucide-react";
+import { TrendingUp, Clock, CheckCircle2, DollarSign, BellRing, ChefHat, Power, StoreIcon } from "lucide-react";
 import { formatPrice } from "@/lib/format";
+import { useCms } from "@/lib/cms-store";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/partner/")({
   head: () => ({ meta: [{ title: "Cravio Partner · Dashboard" }] }),
