@@ -1,5 +1,4 @@
-import { Bell, ChevronDown, MapPin, Navigation, Loader2 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Bell, ChevronDown, MapPin, Navigation, Loader2, Leaf } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { useAppUI } from "@/lib/stores";
