@@ -48,6 +48,7 @@ import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
 import { Route as AppValueRouteImport } from './routes/app.value'
+import { Route as AppSwipeRouteImport } from './routes/app.swipe'
 import { Route as AppSuccessRouteImport } from './routes/app.success'
 import { Route as AppSearchRouteImport } from './routes/app.search'
 import { Route as AppRecentRouteImport } from './routes/app.recent'
@@ -269,6 +270,11 @@ const AppValueRoute = AppValueRouteImport.update({
   path: '/value',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSwipeRoute = AppSwipeRouteImport.update({
+  id: '/swipe',
+  path: '/swipe',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSuccessRoute = AppSuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -430,6 +436,7 @@ export interface FileRoutesByFullPath {
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
@@ -492,6 +499,7 @@ export interface FileRoutesByTo {
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
@@ -559,6 +567,7 @@ export interface FileRoutesById {
   '/app/recent': typeof AppRecentRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
@@ -627,6 +636,7 @@ export interface FileRouteTypes {
     | '/app/recent'
     | '/app/search'
     | '/app/success'
+    | '/app/swipe'
     | '/app/value'
     | '/auth/forgot'
     | '/auth/login'
@@ -689,6 +699,7 @@ export interface FileRouteTypes {
     | '/app/recent'
     | '/app/search'
     | '/app/success'
+    | '/app/swipe'
     | '/app/value'
     | '/auth/forgot'
     | '/auth/login'
@@ -755,6 +766,7 @@ export interface FileRouteTypes {
     | '/app/recent'
     | '/app/search'
     | '/app/success'
+    | '/app/swipe'
     | '/app/value'
     | '/auth/forgot'
     | '/auth/login'
@@ -1076,6 +1088,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppValueRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/swipe': {
+      id: '/app/swipe'
+      path: '/swipe'
+      fullPath: '/app/swipe'
+      preLoaderRoute: typeof AppSwipeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/success': {
       id: '/app/success'
       path: '/success'
@@ -1301,6 +1320,7 @@ interface AppRouteChildren {
   AppRecentRoute: typeof AppRecentRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSuccessRoute: typeof AppSuccessRoute
+  AppSwipeRoute: typeof AppSwipeRoute
   AppValueRoute: typeof AppValueRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -1320,6 +1340,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppRecentRoute: AppRecentRoute,
   AppSearchRoute: AppSearchRoute,
   AppSuccessRoute: AppSuccessRoute,
+  AppSwipeRoute: AppSwipeRoute,
   AppValueRoute: AppValueRoute,
   AppIndexRoute: AppIndexRoute,
 }
