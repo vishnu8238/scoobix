@@ -432,6 +432,18 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     setRestaurantClosed: (restaurantId, closed) =>
       setState((s) => ({ ...s, closedRestaurants: { ...s.closedRestaurants, [restaurantId]: closed } })),
 
+    acceptingOrders: state.acceptingOrders,
+    setAcceptingOrders: (restaurantId, on) =>
+      setState((s) => ({ ...s, acceptingOrders: { ...s.acceptingOrders, [restaurantId]: on } })),
+
+    dishAvailability: state.dishAvailability,
+    setDishAvailability: (dishId, available) =>
+      setState((s) => ({ ...s, dishAvailability: { ...s.dishAvailability, [dishId]: available } })),
+
+    blockedUsers: state.blockedUsers,
+    setUserBlocked: (userId, blocked) =>
+      setState((s) => ({ ...s, blockedUsers: { ...s.blockedUsers, [userId]: blocked } })),
+
     pureVegOverrides: state.pureVegOverrides,
     setPureVeg: (restaurantId, pureVeg) =>
       setState((s) => ({ ...s, pureVegOverrides: { ...s.pureVegOverrides, [restaurantId]: pureVeg } })),
