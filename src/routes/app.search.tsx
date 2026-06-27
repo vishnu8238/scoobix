@@ -121,9 +121,20 @@ function SearchPage() {
               placeholder="Search restaurants, dishes & cuisines"
               className="h-11 w-full rounded-full bg-secondary pl-10 pr-10 text-sm outline-none ring-1 ring-border/60 focus:ring-primary"
             />
-            {q && (
+            {q ? (
               <button onClick={() => setQ("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                 <X className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                onClick={startVoice}
+                aria-label="Voice search"
+                className={cn(
+                  "absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full transition",
+                  listening ? "bg-primary text-primary-foreground animate-pulse" : "bg-primary/10 text-primary",
+                )}
+              >
+                <Mic className="h-3.5 w-3.5" strokeWidth={2.5} />
               </button>
             )}
           </div>
