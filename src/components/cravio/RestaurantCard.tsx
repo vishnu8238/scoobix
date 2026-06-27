@@ -2,10 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { Star, Clock, Bike, Heart } from "lucide-react";
 import type { Restaurant } from "@/lib/mock-data";
 import { useFavorites } from "@/lib/stores";
+import { useAds } from "@/lib/ads-store";
+import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
 import { cn } from "@/lib/format";
 import { useState } from "react";
 
-export function RestaurantCard({ r, variant = "full", closed = false }: { r: Restaurant; variant?: "full" | "compact"; closed?: boolean }) {
+export function RestaurantCard({ r, variant = "full", closed = false, sponsored: sponsoredProp }: { r: Restaurant; variant?: "full" | "compact"; closed?: boolean; sponsored?: boolean }) {
+  const { isSponsored } = useAds();
+  const sponsored = sponsoredProp ?? isSponsored(r.id);
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const fav = isRestaurantFav(r.id);
   const [pop, setPop] = useState(0);

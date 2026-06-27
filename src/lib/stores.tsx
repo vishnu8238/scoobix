@@ -539,18 +539,21 @@ export const useAppUI = () => {
 
 import { CmsProvider } from "./cms-store";
 import { AuthProvider } from "./auth-store";
+import { AdsProvider } from "./ads-store";
 
 export function CravioProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <CmsProvider>
-        <AppUIProvider>
-          <FavoritesProvider>
-            <OrdersProvider>
-              <CartProvider>{children}</CartProvider>
-            </OrdersProvider>
-          </FavoritesProvider>
-        </AppUIProvider>
+        <AdsProvider>
+          <AppUIProvider>
+            <FavoritesProvider>
+              <OrdersProvider>
+                <CartProvider>{children}</CartProvider>
+              </OrdersProvider>
+            </FavoritesProvider>
+          </AppUIProvider>
+        </AdsProvider>
       </CmsProvider>
     </AuthProvider>
   );
