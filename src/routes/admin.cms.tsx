@@ -18,7 +18,7 @@ export const Route = createFileRoute("/admin/cms")({
   component: CmsStudio,
 });
 
-type TabKey = "banners" | "categories" | "sections" | "filters" | "offers";
+type TabKey = "banners" | "categories" | "sections" | "filters" | "offers" | "veg";
 
 const TABS: { key: TabKey; label: string; icon: any; hint: string }[] = [
   { key: "banners", label: "Home Carousel", icon: ImageIcon, hint: "Promo banners shown on the customer home" },
@@ -26,6 +26,7 @@ const TABS: { key: TabKey; label: string; icon: any; hint: string }[] = [
   { key: "sections", label: "Home Sections", icon: Layers, hint: "Toggle visibility of homepage modules" },
   { key: "filters", label: "Filters", icon: SlidersHorizontal, hint: "Search & discover filter chips" },
   { key: "offers", label: "Offers & Coupons", icon: Ticket, hint: "Discount codes and promotions" },
+  { key: "veg", label: "Veg / Non-veg", icon: Leaf, hint: "Restaurant & dish veg classification" },
 ];
 
 function CmsStudio() {
