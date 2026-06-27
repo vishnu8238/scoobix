@@ -1,8 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useCart, useOrders, STATUS_LABEL } from "@/lib/stores";
-import { ReceiptText, RotateCcw, ArrowLeft, X } from "lucide-react";
+import { useCart, useOrders, STATUS_LABEL, type Order } from "@/lib/stores";
+import { ReceiptText, RotateCcw, ArrowLeft, X, FileText, Star, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import { currency, cn } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
 import { toast } from "sonner";
