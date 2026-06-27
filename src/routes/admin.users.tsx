@@ -13,6 +13,7 @@ export const Route = createFileRoute("/admin/users")({
 
 function AdminUsers() {
   const [q, setQ] = useState("");
+  const { blockedUsers, setUserBlocked } = useCms();
   const rows = adminUsers.filter((u) => u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase()));
 
   return (
