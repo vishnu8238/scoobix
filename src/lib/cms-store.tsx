@@ -244,6 +244,8 @@ function defaultSnapshot(): Snapshot {
     coupons: seedCoupons(),
     commissions: seedCommissions(),
     closedRestaurants: {},
+    pureVegOverrides: {},
+    dishVegOverrides: {},
     settings: DEFAULT_SETTINGS,
   };
 }
