@@ -455,6 +455,7 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
   const [recentSearches, setRecent] = useState<string[]>([]);
   const [locationPermission, setLocationPermission] = useState<LocationPermission>("unknown");
   const [detectingLocation, setDetecting] = useState(false);
+  const [vegMode, setVegModeState] = useState(false);
 
   useEffect(() => {
     try {
@@ -464,6 +465,7 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
         if (o.location) setLocationState(o.location);
         if (o.userCoords) setUserCoords(o.userCoords);
         if (Array.isArray(o.recentSearches)) setRecent(o.recentSearches);
+        if (typeof o.vegMode === "boolean") setVegModeState(o.vegMode);
       }
     } catch {/* */}
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
@@ -472,8 +474,10 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(UI_KEY, JSON.stringify({ location, userCoords, recentSearches }));
-  }, [location, userCoords, recentSearches]);
+    localStorage.setItem(UI_KEY, JSON.stringify({ location, userCoords, recentSearches, vegMode }));
+  }, [location, userCoords, recentSearches, vegMode]);
+
+  const setVegMode = (on: boolean) => setVegModeState(on);
 
   const setLocation: AppUICtx["setLocation"] = (l, coords) => {
     setLocationState(l);
