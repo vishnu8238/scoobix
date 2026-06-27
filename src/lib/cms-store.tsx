@@ -156,6 +156,7 @@ const seedCats = (): CmsCategory[] =>
 const seedSections = (): HomeSectionConfig[] => [
   { key: "carousel", label: "Hero carousel", description: "Top banner slideshow", active: true },
   { key: "categories", label: "Category rail", description: "Browse by cuisine type (Explore flavors)", active: true },
+  { key: "swipe", label: "Cravio Swipe", description: "Tinder-style food discovery entry banner", active: true },
   { key: "featured", label: "Featured restaurants", description: "Editor-picked spots", active: true },
   { key: "trending", label: "Trending dishes", description: "Most ordered this week", active: true },
   { key: "offers", label: "Offers strip", description: "Quick-tap promo cards", active: true },
