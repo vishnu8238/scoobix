@@ -43,6 +43,7 @@ import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
+import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
@@ -74,6 +75,7 @@ import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
+import { Route as AdminAdsRouteImport } from './routes/admin.ads'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -245,6 +247,11 @@ const PartnerAnalyticsRoute = PartnerAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => PartnerRoute,
 } as any)
+const PartnerAdsRoute = PartnerAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
   id: '/addons',
   path: '/addons',
@@ -400,6 +407,11 @@ const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAdsRoute = AdminAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -411,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
+  '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
@@ -442,6 +455,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/partner/addons': typeof PartnerAddonsRoute
+  '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
@@ -474,6 +488,7 @@ export interface FileRoutesByTo {
   '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
@@ -505,6 +520,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/partner/addons': typeof PartnerAddonsRoute
+  '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
@@ -542,6 +558,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
+  '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
@@ -573,6 +590,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/partner/addons': typeof PartnerAddonsRoute
+  '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
@@ -611,6 +629,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rider'
     | '/terms'
+    | '/admin/ads'
     | '/admin/approvals'
     | '/admin/cms'
     | '/admin/commission'
@@ -642,6 +661,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/partner/addons'
+    | '/partner/ads'
     | '/partner/analytics'
     | '/partner/hours'
     | '/partner/invoice'
@@ -674,6 +694,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/privacy'
     | '/terms'
+    | '/admin/ads'
     | '/admin/approvals'
     | '/admin/cms'
     | '/admin/commission'
@@ -705,6 +726,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/partner/addons'
+    | '/partner/ads'
     | '/partner/analytics'
     | '/partner/hours'
     | '/partner/invoice'
@@ -741,6 +763,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rider'
     | '/terms'
+    | '/admin/ads'
     | '/admin/approvals'
     | '/admin/cms'
     | '/admin/commission'
@@ -772,6 +795,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/partner/addons'
+    | '/partner/ads'
     | '/partner/analytics'
     | '/partner/hours'
     | '/partner/invoice'
@@ -1053,6 +1077,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerAnalyticsRouteImport
       parentRoute: typeof PartnerRoute
     }
+    '/partner/ads': {
+      id: '/partner/ads'
+      path: '/ads'
+      fullPath: '/partner/ads'
+      preLoaderRoute: typeof PartnerAdsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
     '/partner/addons': {
       id: '/partner/addons'
       path: '/addons'
@@ -1270,10 +1301,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminApprovalsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/ads': {
+      id: '/admin/ads'
+      path: '/ads'
+      fullPath: '/admin/ads'
+      preLoaderRoute: typeof AdminAdsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminAdsRoute: typeof AdminAdsRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminCommissionRoute: typeof AdminCommissionRoute
@@ -1289,6 +1328,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdsRoute: AdminAdsRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminCommissionRoute: AdminCommissionRoute,
@@ -1363,6 +1403,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface PartnerRouteChildren {
   PartnerAddonsRoute: typeof PartnerAddonsRoute
+  PartnerAdsRoute: typeof PartnerAdsRoute
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
   PartnerInvoiceRoute: typeof PartnerInvoiceRoute
@@ -1377,6 +1418,7 @@ interface PartnerRouteChildren {
 
 const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerAddonsRoute: PartnerAddonsRoute,
+  PartnerAdsRoute: PartnerAdsRoute,
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
   PartnerHoursRoute: PartnerHoursRoute,
   PartnerInvoiceRoute: PartnerInvoiceRoute,
