@@ -567,3 +567,84 @@ function CouponEditor({ initial, onClose, onSave }: { initial: CmsCoupon | null;
     </Modal>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* 6. VEG / NON-VEG                                                    */
+/* ------------------------------------------------------------------ */
+
+function VegPanel() {
+  const { pureVegOverrides, setPureVeg, dishVegOverrides, setDishVeg } = useCms();
+  const [tab, setTab] = useState<"restaurants" | "dishes">("restaurants");
+  const dishes = allDishes();
+
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setTab("restaurants")}
+          className={cn(
+            "rounded-2xl px-4 py-2 text-sm font-bold transition",
+            tab === "restaurants" ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground",
+          )}
+        >Restaurants</button>
+        <button
+          onClick={() => setTab("dishes")}
+          className={cn(
+            "rounded-2xl px-4 py-2 text-sm font-bold transition",
+            tab === "dishes" ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground",
+          )}
+        >Dishes</button>
+      </div>
+
+      {tab === "restaurants" ? (
+        <Card className="p-0">
+          <ul className="divide-y divide-border/60">
+            {allRestaurants.map((r) => {
+              const pure = isPureVeg(r.id, pureVegOverrides);
+              return (
+                <li key={r.id} className="flex items-center gap-4 p-4">
+                  <img src={r.cover} alt="" className="h-12 w-12 rounded-2xl object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-bold">{r.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{r.cuisine}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider",
+                      pure ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}
+                  >{pure ? "Pure Veg" : "Mixed"}</span>
+                  <Toggle checked={pure} onChange={() => { setPureVeg(r.id, !pure); toast.success(`${r.name} marked ${!pure ? "pure veg" : "mixed"}`); }} />
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : (
+        <Card className="p-0">
+          <ul className="divide-y divide-border/60">
+            {dishes.map((d) => {
+              const veg = d.id in dishVegOverrides ? dishVegOverrides[d.id] : !!d.veg;
+              return (
+                <li key={d.id} className="flex items-center gap-4 p-4">
+                  <img src={d.image} alt="" className="h-12 w-12 rounded-2xl object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-bold">{d.name}</p>
+                    <p className="text-[11px] text-muted-foreground">₹{d.price} · {d.category}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider",
+                      veg ? "bg-primary text-primary-foreground" : "bg-rose-600 text-white",
+                    )}
+                  >{veg ? "Veg" : "Non-veg"}</span>
+                  <Toggle checked={veg} onChange={() => setDishVeg(d.id, !veg)} />
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
+    </div>
+  );
+}
