@@ -13,7 +13,8 @@ export const Route = createFileRoute("/partner/menu")({
 
 const CATEGORIES = ["All", "Starters", "Main Course", "Drinks", "Desserts"] as const;
 
-type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSeller?: boolean };
+export type DishAddon = { id: string; name: string; price: number; available: boolean };
+type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSeller?: boolean; hasAddons?: boolean; addons?: DishAddon[] };
 
 function PartnerMenu() {
   const [items, setItems] = useState<EditableDish[]>(partnerMenu.map((d) => ({ ...d, available: true })));
@@ -136,10 +137,23 @@ function EditSheet({ dish, onClose, onSave }: { dish: EditableDish | null; onClo
   const [price, setPrice] = useState(String(dish?.price ?? ""));
   const [desc, setDesc] = useState(dish?.description ?? "");
   const [category, setCategory] = useState<Dish["category"]>(dish?.category ?? "Main Course");
+  const [hasAddons, setHasAddons] = useState<boolean>(dish?.hasAddons ?? (dish?.addons?.length ?? 0) > 0);
+  const [addons, setAddons] = useState<DishAddon[]>(dish?.addons ?? []);
+  const [aName, setAName] = useState("");
+  const [aPrice, setAPrice] = useState("");
+
+  const addAddon = () => {
+    if (!aName.trim()) return;
+    setAddons((prev) => [...prev, { id: `a${Date.now()}`, name: aName.trim(), price: parseFloat(aPrice) || 0, available: true }]);
+    setAName(""); setAPrice("");
+  };
+  const updateAddon = (id: string, patch: Partial<DishAddon>) =>
+    setAddons((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+  const removeAddon = (id: string) => setAddons((prev) => prev.filter((a) => a.id !== id));
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-[480px] rounded-t-3xl bg-card p-6 shadow-pop animate-fade-up" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-[480px] max-h-[92svh] overflow-y-auto rounded-t-3xl bg-card p-6 shadow-pop animate-fade-up" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl font-extrabold">{dish ? "Edit item" : "New item"}</h2>
           <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted"><X className="h-4 w-4" /></button>
@@ -153,6 +167,68 @@ function EditSheet({ dish, onClose, onSave }: { dish: EditableDish | null; onClo
               {["Starters", "Main Course", "Drinks", "Desserts"].map((c) => <option key={c}>{c}</option>)}
             </select>
           </Field>
+
+          <div className="rounded-2xl bg-muted/60 p-3 ring-1 ring-border/60">
+            <label className="flex items-center justify-between">
+              <span className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">Add-ons / Toppings</span>
+              <span className="relative inline-flex h-5 w-9 items-center">
+                <input type="checkbox" checked={hasAddons} onChange={() => setHasAddons((v) => !v)} className="peer sr-only" />
+                <span className="absolute inset-0 rounded-full bg-muted-foreground/30 transition peer-checked:bg-primary" />
+                <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-4" />
+              </span>
+            </label>
+
+            {hasAddons && (
+              <div className="mt-3 space-y-2">
+                {addons.length === 0 && <p className="text-[11px] text-muted-foreground">No add-ons yet. Add one below.</p>}
+                {addons.map((a) => (
+                  <div key={a.id} className={cn("flex items-center gap-2 rounded-xl bg-card px-3 py-2 ring-1 ring-border/60", !a.available && "opacity-60")}>
+                    <input
+                      value={a.name}
+                      onChange={(e) => updateAddon(a.id, { name: e.target.value })}
+                      className="flex-1 min-w-0 bg-transparent text-sm font-medium outline-none"
+                    />
+                    <div className="flex items-center gap-0.5 text-sm font-bold text-primary">
+                      <span>+₹</span>
+                      <input
+                        value={String(a.price)}
+                        onChange={(e) => updateAddon(a.id, { price: parseFloat(e.target.value) || 0 })}
+                        type="number"
+                        className="w-14 bg-transparent text-right outline-none"
+                      />
+                    </div>
+                    <label className="relative inline-flex h-5 w-9 items-center" title={a.available ? "Available" : "Disabled"}>
+                      <input type="checkbox" checked={a.available} onChange={() => updateAddon(a.id, { available: !a.available })} className="peer sr-only" />
+                      <span className="absolute inset-0 rounded-full bg-muted-foreground/30 transition peer-checked:bg-primary" />
+                      <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-4" />
+                    </label>
+                    <button onClick={() => removeAddon(a.id)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                <div className="flex items-center gap-2 rounded-xl border-2 border-dashed border-border px-3 py-2">
+                  <input
+                    value={aName}
+                    onChange={(e) => setAName(e.target.value)}
+                    placeholder="Add-on name (e.g. Extra Cheese)"
+                    className="flex-1 min-w-0 bg-transparent text-sm outline-none"
+                  />
+                  <input
+                    value={aPrice}
+                    onChange={(e) => setAPrice(e.target.value)}
+                    placeholder="₹40"
+                    type="number"
+                    className="w-16 bg-transparent text-right text-sm outline-none"
+                  />
+                  <button onClick={addAddon} className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground active:scale-90">
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <button
           onClick={() => onSave({
@@ -164,6 +240,8 @@ function EditSheet({ dish, onClose, onSave }: { dish: EditableDish | null; onClo
             rating: dish?.rating ?? 4.5,
             category, cuisineTag: dish?.cuisineTag ?? "House",
             available: true,
+            hasAddons,
+            addons: hasAddons ? addons : [],
           })}
           className="mt-5 w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95"
         >
