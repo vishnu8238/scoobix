@@ -24,6 +24,7 @@ function PartnerMenu() {
   const visible = cat === "All" ? items : items.filter((d) => d.category === cat);
 
   const toggle = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, available: !d.available } : d)));
+  const toggleVeg = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, veg: !d.veg } : d)));
   const remove = (id: string) => { setItems((prev) => prev.filter((d) => d.id !== id)); toast.success("Item removed"); };
   const save = (d: EditableDish) => {
     setItems((prev) => prev.some((x) => x.id === d.id) ? prev.map((x) => (x.id === d.id ? d : x)) : [...prev, d]);
