@@ -32,6 +32,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/ce9dea1e-9a2b-4604-9fdb-edc72023a6d0/cravio-logo.png" },
+      { rel: "apple-touch-icon", href: "/__l5e/assets-v1/ce9dea1e-9a2b-4604-9fdb-edc72023a6d0/cravio-logo.png" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
