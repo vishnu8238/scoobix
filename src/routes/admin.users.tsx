@@ -37,15 +37,23 @@ function AdminUsers() {
       <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
         <DataTable
           columns={["ID", "Name", "Email", "Orders", "Joined", "Status", ""]}
-          rows={rows.map((u) => [
-            <span className="font-bold text-primary">{u.id}</span>,
-            <span className="font-bold">{u.name}</span>,
-            <span className="text-muted-foreground">{u.email}</span>,
-            u.orders,
-            <span className="text-muted-foreground">{u.joined}</span>,
-            <StatusBadge label={u.status} />,
-            <button className="text-[12px] font-bold text-primary">Manage</button>,
-          ])}
+          rows={rows.map((u) => {
+            const blocked = !!blockedUsers[u.id];
+            return [
+              <span className="font-bold text-primary">{u.id}</span>,
+              <span className="font-bold">{u.name}</span>,
+              <span className="text-muted-foreground">{u.email}</span>,
+              u.orders,
+              <span className="text-muted-foreground">{u.joined}</span>,
+              <StatusBadge label={blocked ? "Suspended" : u.status} />,
+              <button
+                onClick={() => { setUserBlocked(u.id, !blocked); toast.success(blocked ? `${u.name} unblocked` : `${u.name} blocked`); }}
+                className={`text-[12px] font-bold ${blocked ? "text-primary" : "text-destructive"}`}
+              >
+                {blocked ? "Unblock" : "Block"}
+              </button>,
+            ];
+          })}
         />
       </section>
     </div>
