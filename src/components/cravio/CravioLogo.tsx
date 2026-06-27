@@ -1,30 +1,58 @@
 import { cn } from "@/lib/format";
+import logo from "@/assets/cravio-logo.png.asset.json";
 
-export function CravioLogo({ className, size = 32 }: { className?: string; size?: number }) {
+const LOGO_URL = logo.url;
+
+/**
+ * Brand lockup: square logo mark + "Cravio" wordmark.
+ * The uploaded logo already contains the wordmark inside a green tile, so
+ * we only render the wordmark beside the mark on larger lockups when the
+ * caller asks for it via `showWordmark`.
+ */
+export function CravioLogo({
+  className,
+  size = 32,
+  showWordmark = true,
+}: {
+  className?: string;
+  size?: number;
+  showWordmark?: boolean;
+}) {
   return (
     <div className={cn("inline-flex items-center gap-2", className)}>
-      <span
-        className="grid place-items-center rounded-2xl gradient-primary text-primary-foreground font-bold shadow-glow"
-        style={{ width: size, height: size, fontSize: size * 0.55 }}
-        aria-hidden
-      >
-        c
-      </span>
-      <span className="font-display text-2xl font-extrabold tracking-tight text-foreground">
-        Cravio
-      </span>
+      <img
+        src={LOGO_URL}
+        alt="Cravio"
+        width={size}
+        height={size}
+        className="rounded-2xl object-contain shadow-glow"
+        style={{ width: size, height: size }}
+      />
+      {showWordmark && (
+        <span className="font-display text-2xl font-extrabold tracking-tight text-foreground">
+          Cravio
+        </span>
+      )}
     </div>
   );
 }
 
-export function CravioMark({ size = 56 }: { size?: number }) {
+/** Square logo mark only, used as an app icon / standalone brand badge. */
+export function CravioMark({
+  size = 56,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
-    <span
-      className="grid place-items-center rounded-[28%] gradient-primary text-primary-foreground font-bold shadow-glow"
-      style={{ width: size, height: size, fontSize: size * 0.55 }}
-      aria-hidden
-    >
-      c
-    </span>
+    <img
+      src={LOGO_URL}
+      alt="Cravio"
+      width={size}
+      height={size}
+      className={cn("rounded-[28%] object-contain shadow-glow", className)}
+      style={{ width: size, height: size }}
+    />
   );
 }
