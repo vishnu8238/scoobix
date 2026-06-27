@@ -32,7 +32,8 @@ const SORTS = [
 function SearchPage() {
   const navigate = useNavigate();
   const { q: initialQ } = Route.useSearch();
-  const { recentSearches, pushRecent, clearRecent } = useAppUI();
+  const { recentSearches, pushRecent, clearRecent, vegMode } = useAppUI();
+  const { pureVegOverrides } = useCms();
 
   const [q, setQ] = useState(initialQ ?? "");
   const [cuisine, setCuisine] = useState("All");
