@@ -19,6 +19,9 @@ function OrdersPage() {
   const { orders, reorder, cancelOrder } = useOrders();
   const { addItem, clear } = useCart();
   const [tab, setTab] = useState<"active" | "past">("active");
+  const [sheet, setSheet] = useState<{ kind: "invoice" | "rate" | "report"; order: Order } | null>(null);
+  const [rating, setRating] = useState(5);
+  const [reportText, setReportText] = useState("");
 
   const active = orders.filter((o) => o.status !== "DELIVERED" && o.status !== "CANCELLED");
   const past = orders.filter((o) => o.status === "DELIVERED" || o.status === "CANCELLED");
