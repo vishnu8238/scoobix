@@ -105,6 +105,12 @@ type CmsCtx = {
   closedRestaurants: Record<string, boolean>;
   toggleRestaurantClosed: (restaurantId: string) => void;
   setRestaurantClosed: (restaurantId: string, closed: boolean) => void;
+  acceptingOrders: Record<string, boolean>; // restaurantId -> accepting new orders (default true)
+  setAcceptingOrders: (restaurantId: string, on: boolean) => void;
+  dishAvailability: Record<string, boolean>; // dishId -> available (default true unless explicitly false)
+  setDishAvailability: (dishId: string, available: boolean) => void;
+  blockedUsers: Record<string, boolean>; // userId -> blocked
+  setUserBlocked: (userId: string, blocked: boolean) => void;
 
   // Veg/non-veg overrides (admin/partner controlled)
   pureVegOverrides: Record<string, boolean>;
@@ -265,6 +271,9 @@ type Snapshot = {
   coupons: CmsCoupon[];
   commissions: Record<string, number>;
   closedRestaurants: Record<string, boolean>;
+  acceptingOrders: Record<string, boolean>;
+  dishAvailability: Record<string, boolean>;
+  blockedUsers: Record<string, boolean>;
   pureVegOverrides: Record<string, boolean>;
   dishVegOverrides: Record<string, boolean>;
   featuredRestaurants: Record<string, boolean>;
@@ -309,6 +318,9 @@ function defaultSnapshot(): Snapshot {
     coupons: seedCoupons(),
     commissions: seedCommissions(),
     closedRestaurants: {},
+    acceptingOrders: {},
+    dishAvailability: {},
+    blockedUsers: {},
     pureVegOverrides: {},
     dishVegOverrides: {},
     featuredRestaurants: seedFeaturedRestaurants(),
@@ -419,6 +431,18 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, closedRestaurants: { ...s.closedRestaurants, [restaurantId]: !s.closedRestaurants[restaurantId] } })),
     setRestaurantClosed: (restaurantId, closed) =>
       setState((s) => ({ ...s, closedRestaurants: { ...s.closedRestaurants, [restaurantId]: closed } })),
+
+    acceptingOrders: state.acceptingOrders,
+    setAcceptingOrders: (restaurantId, on) =>
+      setState((s) => ({ ...s, acceptingOrders: { ...s.acceptingOrders, [restaurantId]: on } })),
+
+    dishAvailability: state.dishAvailability,
+    setDishAvailability: (dishId, available) =>
+      setState((s) => ({ ...s, dishAvailability: { ...s.dishAvailability, [dishId]: available } })),
+
+    blockedUsers: state.blockedUsers,
+    setUserBlocked: (userId, blocked) =>
+      setState((s) => ({ ...s, blockedUsers: { ...s.blockedUsers, [userId]: blocked } })),
 
     pureVegOverrides: state.pureVegOverrides,
     setPureVeg: (restaurantId, pureVeg) =>

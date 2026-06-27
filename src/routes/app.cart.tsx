@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ArrowLeft, Minus, Plus, Tag, Trash2, X, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Tag, Trash2, X, ShoppingBag, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/stores";
+import { useCms } from "@/lib/cms-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { currency } from "@/lib/format";
@@ -16,6 +17,9 @@ export const Route = createFileRoute("/app/cart")({
 function CartPage() {
   const navigate = useNavigate();
   const { items, setQty, removeItem, totals, coupon, applyCoupon, removeCoupon, restaurant, clear } = useCart();
+  const { closedRestaurants, dishAvailability } = useCms();
+  const restaurantClosed = restaurant ? !!closedRestaurants[restaurant.id] : false;
+  const unavailableItems = items.filter((it) => dishAvailability[it.dishId] === false);
   const [code, setCode] = useState("");
 
   if (items.length === 0) {
@@ -52,6 +56,25 @@ function CartPage() {
             <div className="truncate text-xs text-muted-foreground">{restaurant.cuisine} · {restaurant.deliveryMins} min</div>
           </div>
         </Link>
+      )}
+
+      {restaurantClosed && (
+        <div className="mx-4 mt-3 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-xs">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div>
+            <div className="font-bold text-destructive">Restaurant is currently closed</div>
+            <div className="text-destructive/80">You can't check out until they reopen.</div>
+          </div>
+        </div>
+      )}
+      {unavailableItems.length > 0 && (
+        <div className="mx-4 mt-3 rounded-2xl border border-warning/40 bg-warning/10 p-3 text-xs">
+          <div className="flex items-center gap-2 font-bold text-[oklch(0.45_0.14_70)]"><AlertTriangle className="h-4 w-4" /> Some items are unavailable</div>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
+            {unavailableItems.map((u) => <li key={u.lineId}>{u.name}</li>)}
+          </ul>
+          <button onClick={() => { unavailableItems.forEach((u) => removeItem(u.lineId)); toast.success("Unavailable items removed"); }} className="mt-2 rounded-full bg-card px-3 py-1 font-semibold text-foreground ring-1 ring-border">Remove unavailable items</button>
+        </div>
       )}
 
       <ul className="mt-4 divide-y divide-border px-4">
