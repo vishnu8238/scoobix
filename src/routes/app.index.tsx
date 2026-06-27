@@ -197,6 +197,9 @@ function Home() {
         </div>
       </div>
 
+      {/* Sponsored restaurants — placed after Filters, before Explore flavors */}
+      <SponsoredRestaurantsRow />
+
       {/* Explore flavors (categories) */}
       {sectionEnabled("categories") && (
         <div className="pt-2">
