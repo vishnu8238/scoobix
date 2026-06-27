@@ -82,17 +82,9 @@ function ProfilePage() {
       </Sheet>
 
       <Sheet open={open === "addresses"} onOpenChange={(o) => !o && setOpen(null)}>
-        <SheetContent side="bottom" className="rounded-t-3xl">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[88svh] overflow-y-auto">
           <SheetHeader className="text-left"><SheetTitle>Saved addresses</SheetTitle></SheetHeader>
-          <div className="mt-4 space-y-2">
-            {savedAddresses.map((a) => (
-              <div key={a.id} className="rounded-2xl border border-border bg-card p-3">
-                <div className="text-sm font-bold">{a.label}{a.default && <span className="ml-2 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">Default</span>}</div>
-                <div className="text-xs text-muted-foreground">{a.line1}, {a.line2}</div>
-              </div>
-            ))}
-            <Button variant="outline" className="w-full rounded-full" onClick={() => toast.success("Add address (demo)")}>+ Add new address</Button>
-          </div>
+          <AddressesEditor />
         </SheetContent>
       </Sheet>
 
