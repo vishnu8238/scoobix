@@ -427,6 +427,14 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     setDishVeg: (dishId, isVeg) =>
       setState((s) => ({ ...s, dishVegOverrides: { ...s.dishVegOverrides, [dishId]: isVeg } })),
 
+    featuredRestaurants: state.featuredRestaurants,
+    toggleFeaturedRestaurant: (id) =>
+      setState((s) => ({ ...s, featuredRestaurants: { ...s.featuredRestaurants, [id]: !s.featuredRestaurants[id] } })),
+    featuredDishes: state.featuredDishes,
+    toggleFeaturedDish: (id) =>
+      setState((s) => ({ ...s, featuredDishes: { ...s.featuredDishes, [id]: !s.featuredDishes[id] } })),
+
+
     settings: state.settings,
     updateSettings: (patch) =>
       setState((s) => ({ ...s, settings: { ...s.settings, ...patch } })),
