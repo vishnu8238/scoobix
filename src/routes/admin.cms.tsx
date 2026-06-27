@@ -3,15 +3,15 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Image as ImageIcon, LayoutGrid, Layers, SlidersHorizontal, Ticket,
-  Plus, Trash2, ChevronUp, ChevronDown, Pencil, X, Eye, EyeOff, RotateCcw, Check, Leaf,
+  Plus, Trash2, ChevronUp, ChevronDown, Pencil, X, Eye, EyeOff, RotateCcw, Check, Leaf, Star,
 } from "lucide-react";
 import {
   useCms, CMS_IMAGE_OPTIONS,
   type Banner, type CmsCategory, type CmsCoupon, type FilterGroupKey,
 } from "@/lib/cms-store";
-import { restaurants as allRestaurants, allDishes } from "@/lib/mock-data";
+import { restaurants as allRestaurants, allDishes, findDish } from "@/lib/mock-data";
 import { isPureVeg } from "@/lib/restaurant-extras";
-import { cn } from "@/lib/format";
+import { cn, currency } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/cms")({
   head: () => ({ meta: [{ title: "Cravio Admin · CMS Studio" }] }),
