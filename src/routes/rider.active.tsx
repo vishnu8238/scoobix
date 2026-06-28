@@ -6,6 +6,12 @@ import { Phone, Navigation, MapPin, Store, User, CheckCircle2 } from "lucide-rea
 import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { addressCoords, restaurantCoords } from "@/lib/geo";
 import { toast } from "sonner";
+import { updateDeliveryStatus, pingDriverLocation } from "@/lib/insforge";
+
+function getDriverId(): string {
+  if (typeof window === "undefined") return "guest";
+  return window.localStorage.getItem("driverId") || "guest";
+}
 
 export const Route = createFileRoute("/rider/active")({
   head: () => ({ meta: [{ title: "Cravio Rider · Active" }] }),
@@ -22,6 +28,20 @@ function RiderActive() {
   const [progress, setProgress] = useState(0.4);
   useEffect(() => {
     const t = setInterval(() => setProgress((p) => (p >= 0.95 ? 0.95 : +(p + 0.08).toFixed(2))), 2200);
+    return () => clearInterval(t);
+  }, []);
+
+  // Best-effort live-location ping while the active screen is open.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    const driverId = getDriverId();
+    const send = () => navigator.geolocation.getCurrentPosition(
+      (pos) => { void pingDriverLocation(driverId, pos.coords.latitude, pos.coords.longitude); },
+      () => {},
+      { maximumAge: 15000, timeout: 8000 },
+    );
+    send();
+    const t = setInterval(send, 20000);
     return () => clearInterval(t);
   }, []);
 
@@ -101,7 +121,7 @@ function RiderActive() {
         </button>
 
         <button
-          onClick={() => { toast.success("Delivery completed · +₹620 earned"); setTimeout(() => navigate({ to: "/rider" }), 800); }}
+          onClick={() => { void updateDeliveryStatus(d.id, "DELIVERED"); toast.success("Delivery completed · +₹620 earned"); setTimeout(() => navigate({ to: "/rider" }), 800); }}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95"
         >
           <CheckCircle2 className="h-4 w-4" />

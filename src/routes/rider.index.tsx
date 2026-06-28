@@ -4,6 +4,12 @@ import { riderEarnings, deliveryRequests } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { Bike, TrendingUp, Clock, Package, ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/format";
+import { setDriverOnline } from "@/lib/insforge";
+
+function getDriverId(): string {
+  if (typeof window === "undefined") return "guest";
+  return window.localStorage.getItem("driverId") || "guest";
+}
 
 export const Route = createFileRoute("/rider/")({
   head: () => ({ meta: [{ title: "Cravio Rider · Home" }] }),
@@ -43,7 +49,7 @@ function RiderHome() {
             </p>
           </div>
           <button
-            onClick={() => setOnline(!online)}
+            onClick={() => { const next = !online; setOnline(next); void setDriverOnline(getDriverId(), next); }}
             className={cn(
               "relative h-9 w-16 rounded-full p-1 transition",
               online ? "bg-white/30" : "bg-muted",
