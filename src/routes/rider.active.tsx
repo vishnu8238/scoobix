@@ -31,6 +31,20 @@ function RiderActive() {
     return () => clearInterval(t);
   }, []);
 
+  // Best-effort live-location ping while the active screen is open.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    const driverId = getDriverId();
+    const send = () => navigator.geolocation.getCurrentPosition(
+      (pos) => { void pingDriverLocation(driverId, pos.coords.latitude, pos.coords.longitude); },
+      () => {},
+      { maximumAge: 15000, timeout: 8000 },
+    );
+    send();
+    const t = setInterval(send, 20000);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <div className="animate-fade-up pb-8">
       <div className="relative h-64 w-full overflow-hidden">
