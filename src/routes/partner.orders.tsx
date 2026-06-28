@@ -121,7 +121,7 @@ function PartnerOrders() {
                           return (
                             <button
                               key={m}
-                              onClick={() => { setPrepMins((p) => ({ ...p, [o.id]: m })); toast.success(`${o.id} · prep ${m} min`); }}
+                              onClick={() => { void updateOrderStatus(o.id, { prep_minutes: m }); setPrepMins((p) => ({ ...p, [o.id]: m })); toast.success(`${o.id} · prep ${m} min`); }}
                               className={cn("rounded-full px-2.5 py-1 text-[11px] font-bold transition", sel ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground")}
                             >{m}m</button>
                           );
