@@ -4,6 +4,12 @@ import { riderEarnings, deliveryRequests } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { Bike, TrendingUp, Clock, Package, ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/format";
+import { setDriverOnline } from "@/lib/insforge";
+
+function getDriverId(): string {
+  if (typeof window === "undefined") return "guest";
+  return window.localStorage.getItem("driverId") || "guest";
+}
 
 export const Route = createFileRoute("/rider/")({
   head: () => ({ meta: [{ title: "Cravio Rider · Home" }] }),
