@@ -232,6 +232,31 @@ export function pingDriverLocation(driverId: string, lat: number, lng: number) {
   });
 }
 
+// ---------- admin-side writes (best-effort, never throw) ----------
+
+/** Generic record CRUD — for admin pages with diverse tables. */
+export function adminCreate(table: string, record: Record<string, unknown>) {
+  return ifWrite(`/api/database/records/${table}`, "POST", record);
+}
+export function adminPatch(table: string, id: string, patch: Record<string, unknown>) {
+  return ifWrite(`/api/database/records/${table}/${id}`, "PATCH", patch);
+}
+export function adminDelete(table: string, id: string) {
+  return ifWrite(`/api/database/records/${table}/${id}`, "DELETE");
+}
+
+/** Admin-set commission %. */
+export function setRestaurantCommission(id: string, commission: number) {
+  return ifWrite(`/api/database/records/restaurants/${id}`, "PATCH", { commission });
+}
+
+/** Admin approve/reject/suspend a restaurant. */
+export function setRestaurantApprovalStatus(id: string, status: "approved" | "rejected" | "suspended" | "pending") {
+  return ifWrite(`/api/database/records/restaurants/${id}`, "PATCH", { status });
+}
+
+
+
 
 
 

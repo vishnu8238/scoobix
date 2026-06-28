@@ -7,6 +7,7 @@ import { Star, Plus, Percent, Pencil, Save, X, Check, Ban } from "lucide-react";
 import { useCms } from "@/lib/cms-store";
 import { toast } from "sonner";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { setRestaurantApprovalStatus, setRestaurantCommission, updateRestaurantStatus } from "@/lib/insforge";
 
 export const Route = createFileRoute("/admin/restaurants")({
   head: () => ({ meta: [{ title: "Cravio Admin · Restaurants" }] }),
@@ -18,7 +19,8 @@ type RowStatus = "Live" | "Pending" | "Suspended" | "Rejected" | string;
 function AdminRestaurants() {
   // Local status overlay — replace with backend mutation later.
   const [statusOverrides, setStatusOverrides] = useState<Record<string, RowStatus>>({});
-  const updateStatus = (id: string, next: RowStatus, msg: string) => {
+  const updateStatus = (id: string, next: RowStatus, msg: string, backend: "approved" | "rejected" | "suspended") => {
+    void setRestaurantApprovalStatus(id, backend);
     setStatusOverrides((p) => ({ ...p, [id]: next }));
     toast.success(msg);
   };
@@ -53,9 +55,10 @@ function AdminRestaurants() {
               <OpenToggle key={r.id + "open"} id={r.id} />,
               <StatusBadge key={r.id + "status"} label={status} />,
               <div key={r.id + "act"} className="flex items-center gap-1.5">
-                <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => updateStatus(r.id, "Live", `${r.name} approved`)} />
-                <ActionButton tone="warn"    icon={Ban}   label="Suspend" onClick={() => updateStatus(r.id, "Suspended", `${r.name} suspended`)} />
-                <ActionButton tone="danger"  icon={X}     label="Reject"  onClick={() => updateStatus(r.id, "Rejected", `${r.name} rejected`)} />
+                <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => updateStatus(r.id, "Live", `${r.name} approved`, "approved")} />
+                <ActionButton tone="warn"    icon={Ban}   label="Suspend" onClick={() => updateStatus(r.id, "Suspended", `${r.name} suspended`, "suspended")} />
+                <ActionButton tone="danger"  icon={X}     label="Reject"  onClick={() => updateStatus(r.id, "Rejected", `${r.name} rejected`, "rejected")} />
+
               </div>,
             ];
           })}
@@ -70,7 +73,7 @@ function OpenToggle({ id }: { id: string }) {
   const closed = !!closedRestaurants[id];
   return (
     <button
-      onClick={() => { toggleRestaurantClosed(id); toast.success(closed ? "Restaurant marked open" : "Restaurant marked closed"); }}
+      onClick={() => { void updateRestaurantStatus(id, { is_open: closed }); toggleRestaurantClosed(id); toast.success(closed ? "Restaurant marked open" : "Restaurant marked closed"); }}
       className={`rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider transition active:scale-95 ${closed ? "bg-zinc-200 text-zinc-700" : "bg-primary-soft text-primary"}`}
     >
       {closed ? "Closed" : "Open"}
@@ -100,6 +103,7 @@ function CommissionCell({ id }: { id: string }) {
   const earning = Math.round(previewAmount * (pct / 100));
 
   const handleSave = () => {
+    void setRestaurantCommission(id, pct);
     setCommission(id, pct);
     setOpen(false);
     toast.success(`Commission updated to ${pct}%`);
