@@ -377,8 +377,22 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       deliveryInstructions, contactless, notes, couponCode,
     };
     setOrders((prev) => [order, ...prev]);
+    // Best-effort backend sync — never blocks the optimistic UI.
+    try {
+      const raw = typeof localStorage !== "undefined" ? localStorage.getItem("cravio_user_v1") : null;
+      const customerId = raw ? (JSON.parse(raw)?.id as string) ?? "guest" : "guest";
+      void submitOrderToBackend({
+        orderId: id,
+        customerId,
+        restaurantId: restaurant.id,
+        total: totals.total,
+        status: "PLACED",
+        items: items.map((i) => ({ dish_id: i.dishId, name: i.name, price: i.price, qty: i.qty, addons: i.customizations })),
+      });
+    } catch { /* ignore */ }
     return id;
   };
+
 
   const getOrder = (id: string) => orders.find((o) => o.id === id);
   const reorder = (id: string) => orders.find((x) => x.id === id)?.items ?? null;
