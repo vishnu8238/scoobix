@@ -202,6 +202,37 @@ export function updateOrderStatus(
   return ifWrite(`/api/database/records/orders/${id}`, "PATCH", patch);
 }
 
+// ---------- rider-side writes (best-effort, never throw) ----------
+
+/** Toggle driver online/offline. */
+export function setDriverOnline(driverId: string, online: boolean) {
+  return ifWrite(`/api/database/records/drivers/${driverId}`, "PATCH", { online_status: online });
+}
+
+/** Accept a delivery request — claim the order for this driver. */
+export function acceptDeliveryRequest(orderId: string, driverId: string) {
+  return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", {
+    driver_id: driverId,
+    status: "PICKED_UP",
+  });
+}
+
+/** Driver-side order status update (READY → PICKED_UP → DELIVERED, etc.). */
+export function updateDeliveryStatus(orderId: string, status: string) {
+  return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { status });
+}
+
+/** Append a live-location ping for the driver. */
+export function pingDriverLocation(driverId: string, lat: number, lng: number) {
+  return ifWrite(`/api/database/records/driver_tracking`, "POST", {
+    driver_id: driverId,
+    latitude: lat,
+    longitude: lng,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+
 
 
 
