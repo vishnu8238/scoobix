@@ -55,9 +55,10 @@ function AdminRestaurants() {
               <OpenToggle key={r.id + "open"} id={r.id} />,
               <StatusBadge key={r.id + "status"} label={status} />,
               <div key={r.id + "act"} className="flex items-center gap-1.5">
-                <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => updateStatus(r.id, "Live", `${r.name} approved`)} />
-                <ActionButton tone="warn"    icon={Ban}   label="Suspend" onClick={() => updateStatus(r.id, "Suspended", `${r.name} suspended`)} />
-                <ActionButton tone="danger"  icon={X}     label="Reject"  onClick={() => updateStatus(r.id, "Rejected", `${r.name} rejected`)} />
+                <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => updateStatus(r.id, "Live", `${r.name} approved`, "approved")} />
+                <ActionButton tone="warn"    icon={Ban}   label="Suspend" onClick={() => updateStatus(r.id, "Suspended", `${r.name} suspended`, "suspended")} />
+                <ActionButton tone="danger"  icon={X}     label="Reject"  onClick={() => updateStatus(r.id, "Rejected", `${r.name} rejected`, "rejected")} />
+
               </div>,
             ];
           })}
