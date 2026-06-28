@@ -4,6 +4,7 @@ import { TrendingUp, Clock, CheckCircle2, DollarSign, BellRing, ChefHat, Power, 
 import { formatPrice } from "@/lib/format";
 import { useCms } from "@/lib/cms-store";
 import { Switch } from "@/components/ui/switch";
+import { updateRestaurantStatus } from "@/lib/insforge";
 
 export const Route = createFileRoute("/partner/")({
   head: () => ({ meta: [{ title: "Cravio Partner · Dashboard" }] }),
@@ -50,7 +51,7 @@ function PartnerDashboard() {
               <p className="text-[11px] text-muted-foreground">Toggle off to pause incoming orders.</p>
             </div>
           </div>
-          <Switch checked={isAccepting && !isClosed} disabled={isClosed} onCheckedChange={(v) => setAcceptingOrders(rid, v)} />
+          <Switch checked={isAccepting && !isClosed} disabled={isClosed} onCheckedChange={(v) => { void updateRestaurantStatus(rid, { accepting_orders: v }); setAcceptingOrders(rid, v); }} />
         </div>
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
           <div className="flex items-center gap-3">
@@ -60,7 +61,7 @@ function PartnerDashboard() {
               <p className="text-[11px] text-muted-foreground">Hide your restaurant from customers for now.</p>
             </div>
           </div>
-          <Switch checked={isClosed} onCheckedChange={(v) => setRestaurantClosed(rid, v)} />
+          <Switch checked={isClosed} onCheckedChange={(v) => { void updateRestaurantStatus(rid, { is_open: !v, status: v ? "closed" : "approved" }); setRestaurantClosed(rid, v); }} />
         </div>
       </section>
 

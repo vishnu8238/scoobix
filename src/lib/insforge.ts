@@ -125,6 +125,85 @@ export async function submitOrderToBackend(input: {
   }
 }
 
+// ---------- partner-side writes (best-effort, never throw) ----------
+
+async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<{ ok: boolean }> {
+  try {
+    const res = await fetch(`${INSFORGE_URL}${path}`, {
+      method,
+      headers: {
+        apikey: INSFORGE_ANON_KEY,
+        Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/** Update restaurant open / accepting / status flags. */
+export function updateRestaurantStatus(
+  id: string,
+  patch: { is_open?: boolean; accepting_orders?: boolean; status?: string },
+) {
+  return ifWrite(`/api/database/records/restaurants/${id}`, "PATCH", patch);
+}
+
+/** Upsert a menu item (insert if new id, patch otherwise). */
+export function upsertMenuItem(item: {
+  id?: string;
+  restaurant_id: string;
+  name: string;
+  description?: string;
+  price: number;
+  image_url?: string;
+  category?: string;
+  veg_type?: "veg" | "non_veg" | "egg";
+  available?: boolean;
+  recommended?: boolean;
+  best_seller?: boolean;
+}) {
+  if (item.id && !item.id.startsWith("n")) {
+    return ifWrite(`/api/database/records/menu_items/${item.id}`, "PATCH", item);
+  }
+  return ifWrite(`/api/database/records/menu_items`, "POST", item);
+}
+
+export function deleteMenuItem(id: string) {
+  return ifWrite(`/api/database/records/menu_items/${id}`, "DELETE");
+}
+
+/** Addon CRUD. */
+export function upsertAddon(addon: {
+  id?: string;
+  dish_id: string;
+  name: string;
+  price: number;
+  available?: boolean;
+}) {
+  if (addon.id && !addon.id.startsWith("a")) {
+    return ifWrite(`/api/database/records/addons/${addon.id}`, "PATCH", addon);
+  }
+  return ifWrite(`/api/database/records/addons`, "POST", addon);
+}
+
+export function deleteAddon(id: string) {
+  return ifWrite(`/api/database/records/addons/${id}`, "DELETE");
+}
+
+/** Order lifecycle for partner. */
+export function updateOrderStatus(
+  id: string,
+  patch: { status?: string; prep_minutes?: number; reject_reason?: string },
+) {
+  return ifWrite(`/api/database/records/orders/${id}`, "PATCH", patch);
+}
+
+
+
 
 // ---------- row → mock-shape adapters ----------
 
