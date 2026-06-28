@@ -22,8 +22,11 @@ export const INSFORGE_ANON_KEY =
 type RestaurantRow = {
   id: string;
   name?: string;
+  logo?: string;
   logo_url?: string;
+  cover?: string;
   cover_url?: string;
+  cover_image?: string;
   rating?: number;
   address?: string;
   is_open?: boolean;
