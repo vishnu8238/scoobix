@@ -51,7 +51,7 @@ function PartnerDashboard() {
               <p className="text-[11px] text-muted-foreground">Toggle off to pause incoming orders.</p>
             </div>
           </div>
-          <Switch checked={isAccepting && !isClosed} disabled={isClosed} onCheckedChange={(v) => setAcceptingOrders(rid, v)} />
+          <Switch checked={isAccepting && !isClosed} disabled={isClosed} onCheckedChange={(v) => { void updateRestaurantStatus(rid, { accepting_orders: v }); setAcceptingOrders(rid, v); }} />
         </div>
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
           <div className="flex items-center gap-3">
