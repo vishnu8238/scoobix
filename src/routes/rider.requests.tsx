@@ -4,6 +4,12 @@ import { deliveryRequests, type DeliveryRequest } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { Check, X, MapPin, Package, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { acceptDeliveryRequest, updateDeliveryStatus } from "@/lib/insforge";
+
+function getDriverId(): string {
+  if (typeof window === "undefined") return "guest";
+  return window.localStorage.getItem("driverId") || "guest";
+}
 
 export const Route = createFileRoute("/rider/requests")({
   head: () => ({ meta: [{ title: "Cravio Rider · Requests" }] }),
