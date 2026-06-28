@@ -4,6 +4,7 @@ import { TrendingUp, Clock, CheckCircle2, DollarSign, BellRing, ChefHat, Power, 
 import { formatPrice } from "@/lib/format";
 import { useCms } from "@/lib/cms-store";
 import { Switch } from "@/components/ui/switch";
+import { updateRestaurantStatus } from "@/lib/insforge";
 
 export const Route = createFileRoute("/partner/")({
   head: () => ({ meta: [{ title: "Cravio Partner · Dashboard" }] }),
