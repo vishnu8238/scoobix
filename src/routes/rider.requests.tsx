@@ -20,6 +20,8 @@ function RiderRequests() {
   const [list, setList] = useState<DeliveryRequest[]>(deliveryRequests);
 
   const decide = (id: string, accept: boolean) => {
+    if (accept) void acceptDeliveryRequest(id, getDriverId());
+    else void updateDeliveryStatus(id, "READY"); // leave available for other drivers
     setList((prev) => prev.filter((r) => r.id !== id));
     toast.success(accept ? `Accepted ${id} — head to pickup` : `Rejected ${id}`);
   };
