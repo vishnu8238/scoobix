@@ -121,7 +121,7 @@ function RiderActive() {
         </button>
 
         <button
-          onClick={() => { toast.success("Delivery completed · +₹620 earned"); setTimeout(() => navigate({ to: "/rider" }), 800); }}
+          onClick={() => { void updateDeliveryStatus(d.id, "DELIVERED"); toast.success("Delivery completed · +₹620 earned"); setTimeout(() => navigate({ to: "/rider" }), 800); }}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95"
         >
           <CheckCircle2 className="h-4 w-4" />
