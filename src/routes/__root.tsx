@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { CartConflictDialog } from "@/components/cravio/CartConflictDialog";
 import { PWAInstallPrompt } from "@/components/cravio/PWAInstallPrompt";
 import { NetworkBanner } from "@/components/cravio/NetworkBanner";
+import { InsForgeBootstrap } from "@/components/cravio/InsForgeBootstrap";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -89,6 +90,7 @@ function RootComponent() {
         <CartConflictDialog />
         <NetworkBanner />
         <PWAInstallPrompt />
+        <InsForgeBootstrap />
       </CravioProviders>
     </QueryClientProvider>
   );

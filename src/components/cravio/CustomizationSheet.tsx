@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Button } from "@/components/ui/button";
 import type { Dish } from "@/lib/mock-data";
 import { findDish } from "@/lib/mock-data";
+import { addonsForDish } from "@/lib/insforge";
 import { useCart } from "@/lib/stores";
 import { currency, cn } from "@/lib/format";
 import { Minus, Plus } from "lucide-react";
@@ -13,7 +14,7 @@ const SIZES = [
   { id: "large",   label: "Large",   delta: 2.5 },
   { id: "xl",      label: "Sharing", delta: 5.0 },
 ];
-const EXTRAS = [
+const DEFAULT_EXTRAS = [
   { id: "cheese", label: "Extra cheese", delta: 1.5 },
   { id: "avocado", label: "Avocado", delta: 2.0 },
   { id: "egg", label: "Extra protein", delta: 3.0 },
@@ -31,6 +32,12 @@ export function CustomizationSheet({
   const [qty, setQty] = useState(1);
 
   const sizeObj = SIZES.find((s) => s.id === size)!;
+  // Prefer InsForge add-ons for this dish; fall back to defaults when none exist.
+  const EXTRAS = useMemo(() => {
+    const fromBackend = addonsForDish(dish.id);
+    if (fromBackend.length === 0) return DEFAULT_EXTRAS;
+    return fromBackend.map((a) => ({ id: a.id, label: a.name, delta: a.price }));
+  }, [dish.id]);
   const extrasObj = EXTRAS.filter((e) => extras.includes(e.id));
   const unit = useMemo(() => dish.price + sizeObj.delta + extrasObj.reduce((s, e) => s + e.delta, 0), [dish.price, sizeObj, extrasObj]);
 

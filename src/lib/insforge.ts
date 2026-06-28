@@ -1,0 +1,213 @@
+/**
+ * InsForge data layer for Cravio.
+ *
+ * Publishable values (project URL + anon key) are embedded here — they are
+ * client-readable by design, same as a Supabase anon key. The server-only
+ * INSFORGE_API_KEY secret is never imported in the client bundle.
+ *
+ * Strategy: fetch InsForge rows once at app boot, MERGE them into the existing
+ * mock-data arrays (`restaurants`, `categories`). All 17 existing consumers
+ * continue to work unchanged. On error or empty response the mock data is
+ * left in place as a fallback.
+ */
+
+import { restaurants, categories, type Restaurant, type Dish, type Category } from "./mock-data";
+
+export const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";
+export const INSFORGE_ANON_KEY =
+  "anon_f8c2fce9afe385f45eb6d00d434eb365833a70386175df3707743df3b751b102";
+
+// ---------- raw row shapes (loose — backend may add/omit fields) ----------
+
+type RestaurantRow = {
+  id: string;
+  name?: string;
+  logo_url?: string;
+  cover_url?: string;
+  rating?: number;
+  address?: string;
+  is_open?: boolean;
+  veg_status?: boolean | string;
+};
+
+type CategoryRow = {
+  id: string;
+  name?: string;
+  image_url?: string;
+  active?: boolean;
+};
+
+type MenuItemRow = {
+  id: string;
+  restaurant_id?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  image_url?: string;
+  veg_type?: "veg" | "non_veg" | "egg" | string;
+  available?: boolean;
+  recommended?: boolean;
+  best_seller?: boolean;
+  category?: string;
+};
+
+export type AddonRow = {
+  id: string;
+  dish_id: string;
+  name: string;
+  price: number;
+  available: boolean;
+};
+
+// ---------- fetch helper ----------
+
+async function ifFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`${INSFORGE_URL}${path}`, {
+    headers: {
+      apikey: INSFORGE_ANON_KEY,
+      Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+      "Content-Type": "application/json",
+    },
+    signal,
+  });
+  if (!res.ok) throw new Error(`InsForge ${path} → ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+// ---------- row → mock-shape adapters ----------
+
+function toRestaurant(row: RestaurantRow, menu: Dish[]): Restaurant {
+  return {
+    id: row.id,
+    name: row.name ?? "Untitled",
+    cuisine: row.address ?? "",
+    rating: typeof row.rating === "number" ? row.rating : 4.5,
+    reviews: 100,
+    deliveryMins: 30,
+    distanceKm: 2,
+    priceLevel: "₹₹",
+    cover: row.cover_url || "",
+    logo: row.logo_url || "",
+    tags: [],
+    menu,
+  };
+}
+
+function toDish(row: MenuItemRow): Dish {
+  const cat = (row.category as Dish["category"]) ?? "Main Course";
+  return {
+    id: row.id,
+    name: row.name ?? "Untitled",
+    description: row.description ?? "",
+    price: typeof row.price === "number" ? row.price : 0,
+    image: row.image_url || "",
+    rating: 4.5,
+    category: ["Starters", "Main Course", "Drinks", "Desserts"].includes(cat) ? cat : "Main Course",
+    cuisineTag: "",
+    veg: row.veg_type === "veg",
+    popular: !!row.recommended || !!row.best_seller,
+  };
+}
+
+function toCategory(row: CategoryRow): Category {
+  return {
+    id: row.id,
+    name: row.name ?? "Untitled",
+    emoji: "🍽️",
+    image: row.image_url || "",
+  };
+}
+
+// ---------- one-shot bootstrap ----------
+
+let bootstrapPromise: Promise<{ ok: boolean; error?: string }> | null = null;
+
+export type InsForgeStatus = "idle" | "loading" | "ready" | "error" | "empty";
+
+export const insforgeState: {
+  status: InsForgeStatus;
+  error?: string;
+  addonsByDish: Map<string, AddonRow[]>;
+} = {
+  status: "idle",
+  addonsByDish: new Map(),
+};
+
+/**
+ * Fetch restaurants + categories + menu_items + addons in parallel and merge
+ * them into the existing mock arrays. Safe to call multiple times — only
+ * runs once. Returns `{ ok }` so callers can show a retry UI.
+ */
+export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
+  if (bootstrapPromise) return bootstrapPromise;
+  insforgeState.status = "loading";
+
+  bootstrapPromise = (async () => {
+    try {
+      const [rests, cats, menu, addons] = await Promise.all([
+        ifFetch<RestaurantRow[]>("/api/database/records/restaurants?limit=200").catch(() => [] as RestaurantRow[]),
+        ifFetch<CategoryRow[]>("/api/database/records/categories?limit=200").catch(() => [] as CategoryRow[]),
+        ifFetch<MenuItemRow[]>("/api/database/records/menu_items?limit=2000").catch(() => [] as MenuItemRow[]),
+        ifFetch<AddonRow[]>("/api/database/records/addons?limit=2000").catch(() => [] as AddonRow[]),
+      ]);
+
+      const totalRows = rests.length + cats.length + menu.length + addons.length;
+      if (totalRows === 0) {
+        insforgeState.status = "empty";
+        return { ok: true };
+      }
+
+      // group menu items by restaurant
+      const menuByRest = new Map<string, Dish[]>();
+      for (const m of menu) {
+        if (m.available === false) continue;
+        const rid = m.restaurant_id ?? "";
+        const list = menuByRest.get(rid) ?? [];
+        list.push(toDish(m));
+        menuByRest.set(rid, list);
+      }
+
+      // group addons by dish
+      const addonMap = new Map<string, AddonRow[]>();
+      for (const a of addons) {
+        if (a.available === false) continue;
+        const list = addonMap.get(a.dish_id) ?? [];
+        list.push(a);
+        addonMap.set(a.dish_id, list);
+      }
+      insforgeState.addonsByDish = addonMap;
+
+      // merge restaurants — skip ones that already exist by id
+      const existingRestIds = new Set(restaurants.map((r) => r.id));
+      for (const row of rests) {
+        if (existingRestIds.has(row.id)) continue;
+        restaurants.push(toRestaurant(row, menuByRest.get(row.id) ?? []));
+      }
+
+      // merge categories — skip duplicates
+      const existingCatIds = new Set(categories.map((c) => c.id));
+      for (const row of cats) {
+        if (existingCatIds.has(row.id)) continue;
+        if (row.active === false) continue;
+        categories.push(toCategory(row));
+      }
+
+      insforgeState.status = "ready";
+      return { ok: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      insforgeState.status = "error";
+      insforgeState.error = msg;
+      // Reset so a retry can run.
+      bootstrapPromise = null;
+      return { ok: false, error: msg };
+    }
+  })();
+
+  return bootstrapPromise;
+}
+
+/** Lookup add-ons for a dish (used by customer customization sheet). */
+export function addonsForDish(dishId: string): AddonRow[] {
+  return insforgeState.addonsByDish.get(dishId) ?? [];
+}
