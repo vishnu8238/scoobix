@@ -64,18 +64,67 @@ export type AddonRow = {
 
 // ---------- fetch helper ----------
 
-async function ifFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
+async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit): Promise<T> {
   const res = await fetch(`${INSFORGE_URL}${path}`, {
+    ...init,
     headers: {
       apikey: INSFORGE_ANON_KEY,
       Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
       "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
     },
     signal,
   });
   if (!res.ok) throw new Error(`InsForge ${path} → ${res.status}`);
   return res.json() as Promise<T>;
 }
+
+// ---------- writes ----------
+
+/**
+ * Best-effort: insert an order + its items into InsForge. Never throws —
+ * UI keeps working on the local optimistic order if the backend is down.
+ */
+export async function submitOrderToBackend(input: {
+  orderId: string;
+  customerId: string;
+  restaurantId: string;
+  total: number;
+  status: string;
+  items: { dish_id: string; name: string; price: number; qty: number; addons?: string[] }[];
+}): Promise<{ ok: boolean }> {
+  try {
+    await ifFetch("/api/database/records/orders", undefined, {
+      method: "POST",
+      body: JSON.stringify({
+        id: input.orderId,
+        customer_id: input.customerId,
+        restaurant_id: input.restaurantId,
+        total_price: input.total,
+        status: input.status,
+      }),
+    });
+    await Promise.all(
+      input.items.map((it) =>
+        ifFetch("/api/database/records/order_items", undefined, {
+          method: "POST",
+          body: JSON.stringify({
+            order_id: input.orderId,
+            dish_id: it.dish_id,
+            name: it.name,
+            price: it.price,
+            quantity: it.qty,
+            addons: it.addons ?? [],
+          }),
+        }).catch(() => null),
+      ),
+    );
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
 
 // ---------- row → mock-shape adapters ----------
 
