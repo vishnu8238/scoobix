@@ -61,7 +61,7 @@ function PartnerDashboard() {
               <p className="text-[11px] text-muted-foreground">Hide your restaurant from customers for now.</p>
             </div>
           </div>
-          <Switch checked={isClosed} onCheckedChange={(v) => setRestaurantClosed(rid, v)} />
+          <Switch checked={isClosed} onCheckedChange={(v) => { void updateRestaurantStatus(rid, { is_open: !v, status: v ? "closed" : "approved" }); setRestaurantClosed(rid, v); }} />
         </div>
       </section>
 
