@@ -103,6 +103,7 @@ function CommissionCell({ id }: { id: string }) {
   const earning = Math.round(previewAmount * (pct / 100));
 
   const handleSave = () => {
+    void setRestaurantCommission(id, pct);
     setCommission(id, pct);
     setOpen(false);
     toast.success(`Commission updated to ${pct}%`);
