@@ -5,6 +5,8 @@ import type { Dish } from "@/lib/mock-data";
 import { Plus, Pencil, Trash2, X, Leaf, Sparkles, Trophy } from "lucide-react";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
+import { partnerRestaurant } from "@/lib/role-data";
+import { upsertMenuItem, deleteMenuItem, upsertAddon, deleteAddon } from "@/lib/insforge";
 
 export const Route = createFileRoute("/partner/menu")({
   head: () => ({ meta: [{ title: "Cravio Partner · Menu" }] }),
