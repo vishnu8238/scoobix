@@ -19,7 +19,8 @@ type RowStatus = "Live" | "Pending" | "Suspended" | "Rejected" | string;
 function AdminRestaurants() {
   // Local status overlay — replace with backend mutation later.
   const [statusOverrides, setStatusOverrides] = useState<Record<string, RowStatus>>({});
-  const updateStatus = (id: string, next: RowStatus, msg: string) => {
+  const updateStatus = (id: string, next: RowStatus, msg: string, backend: "approved" | "rejected" | "suspended") => {
+    void setRestaurantApprovalStatus(id, backend);
     setStatusOverrides((p) => ({ ...p, [id]: next }));
     toast.success(msg);
   };
