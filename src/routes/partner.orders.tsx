@@ -26,6 +26,7 @@ function PartnerOrders() {
   const filtered = orders.filter((o) => TABS.find((t) => t.id === tab)!.match(o.status));
 
   const update = (id: string, status: PartnerOrderStatus) => {
+    void updateOrderStatus(id, { status });
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
     toast.success(`Order ${id} → ${status}`);
   };
@@ -33,6 +34,7 @@ function PartnerOrders() {
   const reject = (o: PartnerOrder) => {
     const reason = typeof window !== "undefined" ? window.prompt(`Reject ${o.id} — reason?`, "Out of stock") : null;
     if (reason === null) return; // cancelled
+    void updateOrderStatus(o.id, { status: "CANCELLED", reject_reason: reason || undefined });
     setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: "REJECTED" } : x)));
     toast.success(`${o.id} rejected · ${reason || "no reason given"}`);
   };
