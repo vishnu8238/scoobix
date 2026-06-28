@@ -7,6 +7,7 @@ import { Star, Plus, Percent, Pencil, Save, X, Check, Ban } from "lucide-react";
 import { useCms } from "@/lib/cms-store";
 import { toast } from "sonner";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { setRestaurantApprovalStatus, setRestaurantCommission, updateRestaurantStatus } from "@/lib/insforge";
 
 export const Route = createFileRoute("/admin/restaurants")({
   head: () => ({ meta: [{ title: "Cravio Admin · Restaurants" }] }),
