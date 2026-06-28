@@ -73,7 +73,7 @@ function OpenToggle({ id }: { id: string }) {
   const closed = !!closedRestaurants[id];
   return (
     <button
-      onClick={() => { toggleRestaurantClosed(id); toast.success(closed ? "Restaurant marked open" : "Restaurant marked closed"); }}
+      onClick={() => { void updateRestaurantStatus(id, { is_open: closed }); toggleRestaurantClosed(id); toast.success(closed ? "Restaurant marked open" : "Restaurant marked closed"); }}
       className={`rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider transition active:scale-95 ${closed ? "bg-zinc-200 text-zinc-700" : "bg-primary-soft text-primary"}`}
     >
       {closed ? "Closed" : "Open"}
