@@ -26,13 +26,60 @@ function PartnerMenu() {
 
   const visible = cat === "All" ? items : items.filter((d) => d.category === cat);
 
-  const toggle = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, available: !d.available } : d)));
-  const toggleVeg = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, veg: !d.veg } : d)));
-  const toggleRecommended = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, recommended: !d.recommended } : d)));
-  const toggleBestSeller = (id: string) => setItems((prev) => prev.map((d) => (d.id === id ? { ...d, bestSeller: !d.bestSeller } : d)));
-  const remove = (id: string) => { setItems((prev) => prev.filter((d) => d.id !== id)); toast.success("Item removed"); };
+  const toggle = (id: string) => setItems((prev) => prev.map((d) => {
+    if (d.id !== id) return d;
+    const next = { ...d, available: !d.available };
+    void upsertMenuItem({ id: next.id, restaurant_id: partnerRestaurant.id, name: next.name, price: next.price, available: next.available });
+    return next;
+  }));
+  const toggleVeg = (id: string) => setItems((prev) => prev.map((d) => {
+    if (d.id !== id) return d;
+    const next = { ...d, veg: !d.veg };
+    void upsertMenuItem({ id: next.id, restaurant_id: partnerRestaurant.id, name: next.name, price: next.price, veg_type: next.veg ? "veg" : "non_veg" });
+    return next;
+  }));
+  const toggleRecommended = (id: string) => setItems((prev) => prev.map((d) => {
+    if (d.id !== id) return d;
+    const next = { ...d, recommended: !d.recommended };
+    void upsertMenuItem({ id: next.id, restaurant_id: partnerRestaurant.id, name: next.name, price: next.price, recommended: !!next.recommended });
+    return next;
+  }));
+  const toggleBestSeller = (id: string) => setItems((prev) => prev.map((d) => {
+    if (d.id !== id) return d;
+    const next = { ...d, bestSeller: !d.bestSeller };
+    void upsertMenuItem({ id: next.id, restaurant_id: partnerRestaurant.id, name: next.name, price: next.price, best_seller: !!next.bestSeller });
+    return next;
+  }));
+  const remove = (id: string) => {
+    void deleteMenuItem(id);
+    setItems((prev) => prev.filter((d) => d.id !== id));
+    toast.success("Item removed");
+  };
   const save = (d: EditableDish) => {
-    setItems((prev) => prev.some((x) => x.id === d.id) ? prev.map((x) => (x.id === d.id ? d : x)) : [...prev, d]);
+    void upsertMenuItem({
+      id: d.id,
+      restaurant_id: partnerRestaurant.id,
+      name: d.name,
+      description: d.description,
+      price: d.price,
+      image_url: d.image,
+      category: d.category,
+      veg_type: d.veg ? "veg" : "non_veg",
+      available: d.available,
+      recommended: !!d.recommended,
+      best_seller: !!d.bestSeller,
+    });
+    (d.addons ?? []).forEach((a) => {
+      void upsertAddon({ id: a.id, dish_id: d.id, name: a.name, price: a.price, available: a.available });
+    });
+    // Track removed addons against previous version
+    setItems((prev) => {
+      const old = prev.find((x) => x.id === d.id);
+      const oldIds = new Set((old?.addons ?? []).map((a) => a.id));
+      const newIds = new Set((d.addons ?? []).map((a) => a.id));
+      oldIds.forEach((id) => { if (!newIds.has(id)) void deleteAddon(id); });
+      return prev.some((x) => x.id === d.id) ? prev.map((x) => (x.id === d.id ? d : x)) : [...prev, d];
+    });
     setEditing(null); setShowNew(false);
     toast.success("Menu updated");
   };
