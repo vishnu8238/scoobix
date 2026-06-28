@@ -6,6 +6,12 @@ import { Phone, Navigation, MapPin, Store, User, CheckCircle2 } from "lucide-rea
 import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { addressCoords, restaurantCoords } from "@/lib/geo";
 import { toast } from "sonner";
+import { updateDeliveryStatus, pingDriverLocation } from "@/lib/insforge";
+
+function getDriverId(): string {
+  if (typeof window === "undefined") return "guest";
+  return window.localStorage.getItem("driverId") || "guest";
+}
 
 export const Route = createFileRoute("/rider/active")({
   head: () => ({ meta: [{ title: "Cravio Rider · Active" }] }),
