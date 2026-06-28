@@ -4,6 +4,7 @@ import { partnerOrders, PARTNER_STATUS_FLOW, type PartnerOrder, type PartnerOrde
 import { Check, X, ChevronRight, Phone } from "lucide-react";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
+import { updateOrderStatus } from "@/lib/insforge";
 
 export const Route = createFileRoute("/partner/orders")({
   head: () => ({ meta: [{ title: "Cravio Partner · Orders" }] }),
