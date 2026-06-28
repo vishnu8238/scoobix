@@ -80,6 +80,8 @@ async function ifFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
 // ---------- row → mock-shape adapters ----------
 
 function toRestaurant(row: RestaurantRow, menu: Dish[]): Restaurant {
+  const logo = row.logo_url || row.logo || "";
+  const cover = row.cover_url || row.cover_image || row.cover || "";
   return {
     id: row.id,
     name: row.name ?? "Untitled",
@@ -89,8 +91,8 @@ function toRestaurant(row: RestaurantRow, menu: Dish[]): Restaurant {
     deliveryMins: 30,
     distanceKm: 2,
     priceLevel: "₹₹",
-    cover: row.cover_url || "",
-    logo: row.logo_url || "",
+    cover,
+    logo,
     tags: [],
     menu,
   };
