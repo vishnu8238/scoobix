@@ -151,6 +151,11 @@ function Home() {
 
       {sectionEnabled("carousel") && <HeroCarousel />}
 
+      <SpotlightBanner />
+
+      <QuickAccessRow />
+
+
       {/* FILTER STRIP — fixed: standalone row with proper padding, no negative margins */}
       <div className="px-5">
         <div className="flex items-center gap-2">
