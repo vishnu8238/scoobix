@@ -10,6 +10,8 @@ import { currency, cn } from "@/lib/format";
 import { savedAddresses, paymentMethods } from "@/lib/mock-data";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { scheduleOrder } from "@/lib/insforge";
+
 
 export const Route = createFileRoute("/app/checkout")({
   head: () => ({ meta: [{ title: "Scoobix · Checkout" }] }),
