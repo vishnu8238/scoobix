@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Store, Megaphone } from "lucide-react";
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Store, Megaphone, Utensils, Building2 } from "lucide-react";
 import { RoleSwitch } from "@/components/cravio/RoleSwitch";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { cn } from "@/lib/format";
