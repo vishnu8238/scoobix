@@ -483,3 +483,46 @@ function SponsoredRestaurantsRow() {
     </section>
   );
 }
+
+/* ============================================================
+   Scoobix feature extensions — Spotlight + Quick Access
+   ============================================================ */
+function SpotlightBanner() {
+  const { spotlight } = useSpotlight();
+  if (!spotlight) return null;
+  return (
+    <div className="px-5 mt-4">
+      <div className="relative overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60 animate-fade-up">
+        <div className="relative h-36">
+          <img src={spotlight.image} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+          {spotlight.sponsored && <span className="absolute right-3 top-3"><SponsoredBadge dark /></span>}
+          <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] opacity-90">Scoobix Spotlight</p>
+            <h3 className="mt-0.5 font-display text-lg font-extrabold">{spotlight.title}</h3>
+            <p className="text-[11px] opacity-90">{spotlight.subtitle}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuickAccessRow() {
+  return (
+    <div className="px-5 mt-4 grid grid-cols-3 gap-2">
+      <Link to="/app/meal" className="flex flex-col items-center gap-1 rounded-2xl bg-card p-3 text-center shadow-soft ring-1 ring-border/60 active:scale-95 transition">
+        <span className="text-xl">🍱</span>
+        <span className="text-[11px] font-bold">Daily Meal</span>
+      </Link>
+      <Link to="/app/bulk" className="flex flex-col items-center gap-1 rounded-2xl bg-card p-3 text-center shadow-soft ring-1 ring-border/60 active:scale-95 transition">
+        <span className="text-xl">🏢</span>
+        <span className="text-[11px] font-bold">Corporate</span>
+      </Link>
+      <Link to="/app/swipe" className="flex flex-col items-center gap-1 rounded-2xl bg-card p-3 text-center shadow-soft ring-1 ring-border/60 active:scale-95 transition">
+        <span className="text-xl">✨</span>
+        <span className="text-[11px] font-bold">Swipe</span>
+      </Link>
+    </div>
+  );
+}
