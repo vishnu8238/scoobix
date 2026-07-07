@@ -13,7 +13,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/app/swipe")({
   head: () => ({
     meta: [
-      { title: "Cravio Swipe · Discover food" },
+      { title: "Scoobix Swipe · Discover food" },
       { name: "description", content: "Swipe to discover nearby dishes. Right adds to cart, left dismisses." },
     ],
   }),
@@ -130,7 +130,7 @@ function SwipePage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="text-center">
-            <p className="eyebrow flex items-center justify-center gap-1"><Sparkles className="h-3 w-3" /> Cravio Swipe</p>
+            <p className="eyebrow flex items-center justify-center gap-1"><Sparkles className="h-3 w-3" /> Scoobix Swipe</p>
             <p className="text-[11px] text-muted-foreground">{remaining} dishes left</p>
           </div>
           <Sheet open={filterOpen} onOpenChange={setFilterOpen}>

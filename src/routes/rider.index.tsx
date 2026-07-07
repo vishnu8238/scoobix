@@ -12,7 +12,7 @@ function getDriverId(): string {
 }
 
 export const Route = createFileRoute("/rider/")({
-  head: () => ({ meta: [{ title: "Cravio Rider · Home" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · Home" }] }),
   component: RiderHome,
 });
 

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, ArrowRight } from "lucide-react";
-import { CravioMark } from "@/components/cravio/CravioLogo";
+import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/auth/forgot")({
-  head: () => ({ meta: [{ title: "Cravio · Reset password" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Reset password" }] }),
   component: ForgotPage,
 });
 
@@ -32,7 +32,7 @@ function ForgotPage() {
   return (
     <div className="min-h-svh px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-12">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <CravioMark size={48} />
+        <ScoobixMark size={48} />
         <p className="eyebrow mt-4">Forgot password</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Reset your password</h1>
         <p className="mt-1 text-sm text-muted-foreground">We'll send a reset link to your email.</p>

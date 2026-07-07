@@ -8,7 +8,7 @@ import { formatPrice } from "@/lib/format";
 import { useCms } from "@/lib/cms-store";
 
 export const Route = createFileRoute("/admin/commission")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Revenue & commission" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Revenue & commission" }] }),
   component: CommissionPage,
 });
 
@@ -31,7 +31,7 @@ function CommissionPage() {
       <div className="grid gap-3 md:grid-cols-4">
         <Card icon={IndianRupee} label="Gross revenue"   value={formatPrice(adminStats.revenueToday)} growth={adminStats.growth.revenue} />
         <Card icon={Percent}     label="Avg commission"  value={`${avg}%`} growth={0.4} />
-        <Card icon={Banknote}    label="Net to Cravio"   value={formatPrice(net)} growth={11.2} />
+        <Card icon={Banknote}    label="Net to Scoobix"   value={formatPrice(net)} growth={11.2} />
         <Card icon={TrendingUp}  label="Orders today"    value={adminStats.ordersToday.toLocaleString("en-IN")} growth={adminStats.growth.orders} />
       </div>
 

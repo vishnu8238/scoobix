@@ -13,7 +13,7 @@ import { filterVeg, filterVegDishes } from "@/lib/restaurant-extras";
 export const Route = createFileRoute("/app/value")({
   head: () => ({
     meta: [
-      { title: "Cravio · Under ₹250" },
+      { title: "Scoobix · Under ₹250" },
       { name: "description", content: "Affordable food picks — dishes, restaurants and offers under ₹250." },
     ],
   }),

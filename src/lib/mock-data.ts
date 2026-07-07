@@ -221,9 +221,9 @@ export const offers = [
   {
     id: "o1",
     title: "50% OFF your first 3 orders",
-    subtitle: "New on Cravio? Eat well, pay less.",
+    subtitle: "New on Scoobix? Eat well, pay less.",
     cta: "Claim now",
-    code: "CRAVIO50",
+    code: "SCOOBIX50",
   },
   {
     id: "o2",
@@ -273,7 +273,7 @@ export function findRestaurant(id: string): Restaurant | undefined {
 
 export const savedAddresses = [
   { id: "a1", label: "Home", line1: "221B Baker Street", line2: "Apt 4 · Westside", default: true },
-  { id: "a2", label: "Work", line1: "Cravio HQ, 7th Floor", line2: "Innovation Park · Block C", default: false },
+  { id: "a2", label: "Work", line1: "Scoobix HQ, 7th Floor", line2: "Innovation Park · Block C", default: false },
   { id: "a3", label: "Other", line1: "Iron Garden Gym", line2: "Riverside 88 · Locker 12", default: false },
 ];
 

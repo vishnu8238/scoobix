@@ -5,7 +5,7 @@ import { Users, Store, Bike, ClipboardList, DollarSign, TrendingUp, ArrowUpRight
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 
 export const Route = createFileRoute("/admin/")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Dashboard" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Dashboard" }] }),
   component: AdminDashboard,
 });
 
@@ -24,7 +24,7 @@ function AdminDashboard() {
         <div>
           <p className="eyebrow">Overview</p>
           <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight md:text-4xl">Good morning, Anika</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Here's how Cravio is performing today.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Here's how Scoobix is performing today.</p>
         </div>
         <div className="flex gap-2">
           <button className="rounded-2xl bg-card px-4 py-2.5 text-sm font-bold shadow-soft ring-1 ring-border">Export</button>

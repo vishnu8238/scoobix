@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, Lock, ArrowRight, Utensils, Store, Bike, ShieldCheck } from "lucide-react";
-import { CravioMark } from "@/components/cravio/CravioLogo";
+import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import type { Role } from "@/lib/types";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/auth/login")({
-  head: () => ({ meta: [{ title: "Cravio · Sign in" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Sign in" }] }),
   component: LoginPage,
 });
 
@@ -43,9 +43,9 @@ function LoginPage() {
   return (
     <div className="min-h-svh px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-12">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <CravioMark size={48} />
+        <ScoobixMark size={48} />
         <p className="eyebrow mt-4">Welcome back</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Sign in to Cravio</h1>
+        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Sign in to Scoobix</h1>
         <p className="mt-1 text-sm text-muted-foreground">Pick your role and continue.</p>
       </div>
 
@@ -80,7 +80,7 @@ function LoginPage() {
         </Button>
 
         <p className="text-center text-[12.5px] text-muted-foreground">
-          New to Cravio? <Link to="/auth/signup" className="font-bold text-primary">Create an account</Link>
+          New to Scoobix? <Link to="/auth/signup" className="font-bold text-primary">Create an account</Link>
         </p>
 
         <div className="rounded-2xl bg-secondary/60 p-3 text-center text-[11px] text-muted-foreground">

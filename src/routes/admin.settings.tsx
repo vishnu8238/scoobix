@@ -5,7 +5,7 @@ import { useCms } from "@/lib/cms-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/settings")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Settings" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Settings" }] }),
   component: AdminSettings,
 });
 
@@ -28,7 +28,7 @@ function AdminSettings() {
       <header>
         <p className="eyebrow">Settings</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Platform settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Operating preferences for the Cravio network.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Operating preferences for the Scoobix network.</p>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -72,7 +72,7 @@ function AdminSettings() {
         </Card>
 
         <Card icon={Globe} title="General">
-          <Row label="Platform name" value="Cravio" />
+          <Row label="Platform name" value="Scoobix" />
           <Row label="Default region" value="India" />
           <Row label="Currency" value="INR" />
           <Toggle label="Maintenance mode" desc="Disable new orders across all apps" value={maintenance} onChange={setMaintenance} />

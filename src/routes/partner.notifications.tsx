@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/partner/notifications")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Notifications" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Notifications" }] }),
   component: PartnerNotifs,
 });
 

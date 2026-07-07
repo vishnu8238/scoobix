@@ -24,7 +24,7 @@ export function InsForgeBootstrap() {
 
   return (
     <div className="fixed inset-x-0 top-[max(0.5rem,env(safe-area-inset-top))] z-[60] mx-auto flex max-w-[480px] items-center justify-between gap-3 rounded-full bg-destructive px-4 py-2 text-xs font-semibold text-destructive-foreground shadow-glow">
-      <span>Couldn’t reach Cravio backend — showing demo data.</span>
+      <span>Couldn’t reach Scoobix backend — showing demo data.</span>
       <button
         onClick={() => {
           setStatus("loading");

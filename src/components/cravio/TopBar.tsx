@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 const SUGGESTED_LOCATIONS = [
   "Westside · Apt 4",
-  "Cravio HQ · Innovation Park",
+  "Scoobix HQ · Innovation Park",
   "Downtown Loft · 5th Ave",
   "Sunset Marina · Pier 12",
 ];

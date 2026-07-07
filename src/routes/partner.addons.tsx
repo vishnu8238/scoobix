@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/partner/addons")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Add-ons & variants" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Add-ons & variants" }] }),
   component: AddonsPage,
 });
 

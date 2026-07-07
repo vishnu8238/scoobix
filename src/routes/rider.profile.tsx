@@ -3,7 +3,7 @@ import { Star, Phone, Mail, Bike, FileText, ChevronRight, Award, Shield } from "
 import { PageHeader } from "@/components/cravio/PageHeader";
 
 export const Route = createFileRoute("/rider/profile")({
-  head: () => ({ meta: [{ title: "Cravio Rider · Profile" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · Profile" }] }),
   component: RiderProfile,
 });
 

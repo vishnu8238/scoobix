@@ -3,7 +3,7 @@ import { formatPrice } from "@/lib/format";
 import { TrendingUp, Users, ShoppingBag, Download } from "lucide-react";
 
 export const Route = createFileRoute("/admin/reports")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Reports" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Reports" }] }),
   component: AdminReports,
 });
 

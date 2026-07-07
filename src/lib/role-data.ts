@@ -25,7 +25,7 @@ export const partnerOrders: PartnerOrder[] = [
     total: 4040, status: "PLACED", placedAgo: "2 min", paymentMethod: "Visa •4242",
   },
   {
-    id: "CRV-8819", customer: "Noah Kim", address: "Cravio HQ · Block C",
+    id: "CRV-8819", customer: "Noah Kim", address: "Scoobix HQ · Block C",
     items: [{ name: "Burrata & Heirloom", qty: 2, price: 960 }, { name: "Tiramisu Classico", qty: 1, price: 680 }],
     total: 2600, status: "PLACED", placedAgo: "5 min", paymentMethod: "Apple Pay",
   },
@@ -74,7 +74,7 @@ export type DeliveryRequest = {
 
 export const deliveryRequests: DeliveryRequest[] = [
   { id: "DLV-3301", restaurant: "Trattoria Verde", restaurantAddress: "12 Hearth Ln", customer: "Maya I.", customerAddress: "221B Baker St", distanceKm: 2.1, payout: 600, etaMins: 18, itemsCount: 4 },
-  { id: "DLV-3302", restaurant: "Sakura Sushi Bar", restaurantAddress: "9 Lantern Rd", customer: "Noah K.", customerAddress: "Cravio HQ Block C", distanceKm: 3.4, payout: 736, etaMins: 24, itemsCount: 2 },
+  { id: "DLV-3302", restaurant: "Sakura Sushi Bar", restaurantAddress: "9 Lantern Rd", customer: "Noah K.", customerAddress: "Scoobix HQ Block C", distanceKm: 3.4, payout: 736, etaMins: 24, itemsCount: 2 },
   { id: "DLV-3303", restaurant: "Char & Crust", restaurantAddress: "5 Smoke St", customer: "Liam C.", customerAddress: "7th & Pine", distanceKm: 1.4, payout: 464, etaMins: 12, itemsCount: 3 },
 ];
 

@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/cravio/EmptyState";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/cart")({
-  head: () => ({ meta: [{ title: "Cravio · Cart" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Cart" }] }),
   component: CartPage,
 });
 
@@ -116,7 +116,7 @@ function CartPage() {
           </div>
         ) : (
           <div className="mt-3 flex gap-2">
-            <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Try CRAVIO10 or FREESHIP" className="rounded-full" />
+            <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Try SCOOBIX10 or FREESHIP" className="rounded-full" />
             <Button onClick={handleApply} className="rounded-full">Apply</Button>
           </div>
         )}

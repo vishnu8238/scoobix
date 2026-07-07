@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useOrders } from "@/lib/stores";
 
 export const Route = createFileRoute("/app/success")({
-  head: () => ({ meta: [{ title: "Cravio · Payment successful" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Payment successful" }] }),
   component: SuccessPage,
 });
 

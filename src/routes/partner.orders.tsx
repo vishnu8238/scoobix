@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { updateOrderStatus } from "@/lib/insforge";
 
 export const Route = createFileRoute("/partner/orders")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Orders" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Orders" }] }),
   component: PartnerOrders,
 });
 

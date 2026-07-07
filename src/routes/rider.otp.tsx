@@ -8,7 +8,7 @@ import { riderActiveDelivery } from "@/lib/role-data";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/rider/otp")({
-  head: () => ({ meta: [{ title: "Cravio Rider · Complete delivery" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · Complete delivery" }] }),
   component: OtpPage,
 });
 

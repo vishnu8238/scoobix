@@ -14,7 +14,7 @@ import { isPureVeg } from "@/lib/restaurant-extras";
 import { cn, currency } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/cms")({
-  head: () => ({ meta: [{ title: "Cravio Admin · CMS Studio" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · CMS Studio" }] }),
   component: CmsStudio,
 });
 
@@ -23,7 +23,7 @@ type TabKey = "banners" | "categories" | "sections" | "filters" | "offers" | "ve
 const TABS: { key: TabKey; label: string; icon: any; hint: string }[] = [
   { key: "banners", label: "Home Carousel", icon: ImageIcon, hint: "Promo banners shown on the customer home" },
   { key: "categories", label: "Categories", icon: LayoutGrid, hint: "Cuisine pills on the home rail" },
-  { key: "sections", label: "Home Sections", icon: Layers, hint: "Toggle visibility of homepage modules (incl. Cravio Swipe)" },
+  { key: "sections", label: "Home Sections", icon: Layers, hint: "Toggle visibility of homepage modules (incl. Scoobix Swipe)" },
   { key: "filters", label: "Filters", icon: SlidersHorizontal, hint: "Search & discover filter chips" },
   { key: "offers", label: "Offers & Coupons", icon: Ticket, hint: "Discount codes and promotions" },
   { key: "veg", label: "Veg / Non-veg", icon: Leaf, hint: "Restaurant & dish veg classification" },
@@ -41,7 +41,7 @@ function CmsStudio() {
         <div>
           <p className="eyebrow flex items-center gap-1.5"><Sparkles className="h-3 w-3" /> CMS Studio</p>
           <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight md:text-4xl">Customer app content</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">{active.hint}. Changes save instantly and reflect across the Cravio customer experience.</p>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">{active.hint}. Changes save instantly and reflect across the Scoobix customer experience.</p>
         </div>
         <button
           onClick={() => { resetAll(); toast.success("CMS reset to defaults"); }}

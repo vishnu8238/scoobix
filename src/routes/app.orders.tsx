@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/cravio/EmptyState";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/orders")({
-  head: () => ({ meta: [{ title: "Cravio · Orders" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Orders" }] }),
   component: OrdersPage,
 });
 

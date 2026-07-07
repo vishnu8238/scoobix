@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/rider/vehicle")({
-  head: () => ({ meta: [{ title: "Cravio Rider · Vehicle" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · Vehicle" }] }),
   component: VehiclePage,
 });
 

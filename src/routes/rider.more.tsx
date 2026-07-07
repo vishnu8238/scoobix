@@ -3,7 +3,7 @@ import { ChevronRight, User, Bike, KeyRound, FileText, Wallet, Shield, Bell } fr
 import { PageHeader } from "@/components/cravio/PageHeader";
 
 export const Route = createFileRoute("/rider/more")({
-  head: () => ({ meta: [{ title: "Cravio Rider · More" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · More" }] }),
   component: RiderMore,
 });
 

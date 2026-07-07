@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/format";
 
 /**
- * Interactive scratch card. Reuses Cravio tokens (gradient-primary, etc.).
+ * Interactive scratch card. Reuses Scoobix tokens (gradient-primary, etc.).
  * Renders a foil overlay on a canvas; user drags to reveal the reward beneath.
  * Auto-reveals when ~55% scratched.
  */

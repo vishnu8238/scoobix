@@ -19,7 +19,7 @@ function isStandalone() {
 }
 
 /**
- * Native-style "Add Cravio to Home Screen" banner.
+ * Native-style "Add Scoobix to Home Screen" banner.
  * - Only shows when the browser fires `beforeinstallprompt` (Chromium/Edge/Android).
  * - Hides forever after install or explicit dismissal.
  * - Never appears when the app is already running standalone.
@@ -77,7 +77,7 @@ export function PWAInstallPrompt() {
           <Download className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-extrabold leading-tight">Add Cravio to Home Screen</p>
+          <p className="text-[13px] font-extrabold leading-tight">Add Scoobix to Home Screen</p>
           <p className="truncate text-[11px] opacity-70">Faster access. Works like a native app.</p>
         </div>
         <button

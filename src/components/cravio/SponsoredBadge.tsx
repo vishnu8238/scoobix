@@ -1,7 +1,7 @@
 import { Megaphone } from "lucide-react";
 import { cn } from "@/lib/format";
 
-/** Small "Sponsored" pill used on restaurant/dish cards. Reuses Cravio glass styling. */
+/** Small "Sponsored" pill used on restaurant/dish cards. Reuses Scoobix glass styling. */
 export function SponsoredBadge({ className, dark = false }: { className?: string; dark?: boolean }) {
   return (
     <span

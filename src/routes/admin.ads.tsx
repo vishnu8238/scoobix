@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/ads")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Ads" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Ads" }] }),
   component: AdminAdsPage,
 });
 

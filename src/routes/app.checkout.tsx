@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/checkout")({
-  head: () => ({ meta: [{ title: "Cravio · Checkout" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Checkout" }] }),
   component: CheckoutPage,
 });
 
@@ -24,7 +24,7 @@ const DELIVERY_OPTIONS = [
 const PAY_OPTIONS = [
   { id: "card",  label: "Credit / Debit card", icon: CreditCard },
   { id: "upi",   label: "UPI / Pay App",       icon: Smartphone },
-  { id: "wallet",label: "Cravio Wallet",       icon: Wallet },
+  { id: "wallet",label: "Scoobix Wallet",       icon: Wallet },
   { id: "cash",  label: "Cash on delivery",    icon: Banknote },
 ];
 

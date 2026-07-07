@@ -7,7 +7,7 @@ import { cn } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
 
 export const Route = createFileRoute("/app/notifications")({
-  head: () => ({ meta: [{ title: "Cravio · Notifications" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Notifications" }] }),
   component: NotificationsPage,
 });
 

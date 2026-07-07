@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/approvals")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Restaurant approvals" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Restaurant approvals" }] }),
   component: ApprovalsPage,
 });
 

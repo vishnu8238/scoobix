@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/format";
 import { Radio } from "lucide-react";
 
 export const Route = createFileRoute("/admin/live")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Live orders" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Live orders" }] }),
   component: LiveOrders,
 });
 

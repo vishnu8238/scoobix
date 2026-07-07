@@ -3,7 +3,7 @@ import { partnerRestaurant } from "@/lib/role-data";
 import { MapPin, Phone, Clock, Star, Tag, Image as ImageIcon } from "lucide-react";
 
 export const Route = createFileRoute("/partner/profile")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Profile" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Profile" }] }),
   component: PartnerProfile,
 });
 

@@ -7,7 +7,7 @@ import { useCms } from "@/lib/cms-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/users")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Users" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Users" }] }),
   component: AdminUsers,
 });
 

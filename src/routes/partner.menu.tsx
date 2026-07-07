@@ -9,7 +9,7 @@ import { partnerRestaurant } from "@/lib/role-data";
 import { upsertMenuItem, deleteMenuItem, upsertAddon, deleteAddon } from "@/lib/insforge";
 
 export const Route = createFileRoute("/partner/menu")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Menu" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Menu" }] }),
   component: PartnerMenu,
 });
 

@@ -6,7 +6,7 @@ import { Star, Plus, Check, X, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/drivers")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Drivers" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Drivers" }] }),
   component: AdminDrivers,
 });
 
