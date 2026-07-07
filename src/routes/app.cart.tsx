@@ -1,13 +1,16 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ArrowLeft, Minus, Plus, Tag, Trash2, X, ShoppingBag, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Tag, Trash2, X, ShoppingBag, AlertTriangle, Users, Truck } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/stores";
 import { useCms } from "@/lib/cms-store";
+import { useGroupCart } from "@/lib/scoobix-extras";
+import { useAuth } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { currency } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/app/cart")({
   head: () => ({ meta: [{ title: "Scoobix · Cart" }] }),
