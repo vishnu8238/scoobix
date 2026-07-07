@@ -11,7 +11,9 @@ import { restaurants, allDishes, trendingDishIds, recommendedDishIds, type Resta
 import { useCms, type FilterOption } from "@/lib/cms-store";
 import { useAppUI } from "@/lib/stores";
 import { useAds } from "@/lib/ads-store";
+import { useSpotlight } from "@/lib/scoobix-extras";
 import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
+
 import {
   filterVeg, filterVegDishes, isPureVeg, extrasFor,
   recommendedRestaurantIds, previouslyOrderedIds, newToYouIds,
