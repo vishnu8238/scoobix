@@ -13,8 +13,11 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/partner", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/partner/orders", label: "Orders", icon: ClipboardList },
   { to: "/partner/menu", label: "Menu", icon: UtensilsCrossed },
+  { to: "/partner/meals", label: "Meal Plans", icon: Utensils },
+  { to: "/partner/bulk", label: "Bulk", icon: Building2 },
   { to: "/partner/ads", label: "Ads", icon: Megaphone },
   { to: "/partner/profile", label: "Profile", icon: Store },
+
 ];
 
 function PartnerLayout() {
