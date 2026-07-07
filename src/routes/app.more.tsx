@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/more")({
-  head: () => ({ meta: [{ title: "Cravio · More" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · More" }] }),
   component: MoreHub,
 });
 
@@ -70,7 +70,7 @@ function MoreHub() {
         </li>
       </ul>
 
-      <p className="mt-6 px-6 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Cravio v1.0 · Crave it. Get it.</p>
+      <p className="mt-6 px-6 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Scoobix v1.0 · Crave it. Get it.</p>
     </div>
   );
 }

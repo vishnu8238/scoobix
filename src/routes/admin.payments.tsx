@@ -6,7 +6,7 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/payments")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Payments" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Payments" }] }),
   component: AdminPayments,
 });
 

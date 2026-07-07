@@ -10,7 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { setRestaurantApprovalStatus, setRestaurantCommission, updateRestaurantStatus } from "@/lib/insforge";
 
 export const Route = createFileRoute("/admin/restaurants")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Restaurants" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Restaurants" }] }),
   component: AdminRestaurants,
 });
 

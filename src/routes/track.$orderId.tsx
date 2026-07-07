@@ -9,7 +9,7 @@ import { addressCoords, restaurantCoords, statusToProgress } from "@/lib/geo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/track/$orderId")({
-  head: () => ({ meta: [{ title: "Cravio · Tracking" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Tracking" }] }),
   component: TrackPage,
 });
 

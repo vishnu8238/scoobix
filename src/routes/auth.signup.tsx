@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowRight, Utensils, Store, Bike } from "lucide-react";
-import { CravioMark } from "@/components/cravio/CravioLogo";
+import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import type { Role } from "@/lib/types";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/auth/signup")({
-  head: () => ({ meta: [{ title: "Cravio · Create account" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Create account" }] }),
   component: SignupPage,
 });
 
@@ -42,7 +42,7 @@ function SignupPage() {
   return (
     <div className="min-h-svh px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-12">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
-        <CravioMark size={48} />
+        <ScoobixMark size={48} />
         <p className="eyebrow mt-4">Get started</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Create your account</h1>
       </div>

@@ -6,7 +6,7 @@ import { cn } from "@/lib/format";
 import { TrendingUp, Package, Clock, Gift } from "lucide-react";
 
 export const Route = createFileRoute("/rider/earnings")({
-  head: () => ({ meta: [{ title: "Cravio Rider · Earnings" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · Earnings" }] }),
   component: RiderEarnings,
 });
 
@@ -68,9 +68,9 @@ function RiderEarnings() {
         <h2 className="font-display text-lg font-bold">Recent payouts</h2>
         <ul className="mt-3 space-y-3">
           {[
-            { date: "Today · 3:24 PM", from: "Cravio weekly payout", amount: 612.4 },
-            { date: "Last Mon · 9:01 AM", from: "Cravio weekly payout", amount: 488.1 },
-            { date: "2 weeks ago", from: "Cravio weekly payout", amount: 552.7 },
+            { date: "Today · 3:24 PM", from: "Scoobix weekly payout", amount: 612.4 },
+            { date: "Last Mon · 9:01 AM", from: "Scoobix weekly payout", amount: 488.1 },
+            { date: "2 weeks ago", from: "Scoobix weekly payout", amount: 552.7 },
           ].map((p, i) => (
             <li key={i} className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">

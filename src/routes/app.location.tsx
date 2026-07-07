@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/app/location")({
-  head: () => ({ meta: [{ title: "Cravio · Set delivery location" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Set delivery location" }] }),
   component: LocationPicker,
 });
 

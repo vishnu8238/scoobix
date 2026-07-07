@@ -22,7 +22,7 @@ const DEMO_USERS: User[] = [
   { id: "u_cust",  name: "Alex Customer",  email: "customer@cravio.app",  phone: "+91 90000 00001", role: "customer" },
   { id: "u_part",  name: "Marco Bianchi",  email: "partner@cravio.app",   phone: "+91 90000 00002", role: "partner"  },
   { id: "u_ride",  name: "Aarav Mehta",    email: "rider@cravio.app",     phone: "+91 90000 00003", role: "rider"    },
-  { id: "u_admin", name: "Cravio Admin",   email: "admin@cravio.app",     phone: "+91 90000 00004", role: "admin"    },
+  { id: "u_admin", name: "Scoobix Admin",   email: "admin@cravio.app",     phone: "+91 90000 00004", role: "admin"    },
 ];
 
 export const ROLE_HOME: Record<Role, string> = {

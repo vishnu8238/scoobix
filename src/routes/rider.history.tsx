@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/format";
 import { Check, X } from "lucide-react";
 
 export const Route = createFileRoute("/rider/history")({
-  head: () => ({ meta: [{ title: "Cravio Rider · Delivery history" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · Delivery history" }] }),
   component: HistoryPage,
 });
 

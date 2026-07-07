@@ -168,7 +168,7 @@ const seedCats = (): CmsCategory[] =>
 const seedSections = (): HomeSectionConfig[] => [
   { key: "carousel", label: "Hero carousel", description: "Top banner slideshow", active: true },
   { key: "categories", label: "Category rail", description: "Browse by cuisine type (Explore flavors)", active: true },
-  { key: "swipe", label: "Cravio Swipe", description: "Tinder-style food discovery entry banner", active: true },
+  { key: "swipe", label: "Scoobix Swipe", description: "Tinder-style food discovery entry banner", active: true },
   { key: "featured", label: "Featured restaurants", description: "Editor-picked spots", active: true },
   { key: "trending", label: "Trending dishes", description: "Most ordered this week", active: true },
   { key: "offers", label: "Offers strip", description: "Quick-tap promo cards", active: true },
@@ -257,7 +257,7 @@ const seedFilters = (): FilterGroup[] => [
 ];
 
 const seedCoupons = (): CmsCoupon[] => [
-  { id: "c1", code: "CRAVIO50", title: "50% off first 3 orders", subtitle: "New customers only", kind: "pct", value: 50, minOrder: 400, expiry: "2026-12-31", active: true },
+  { id: "c1", code: "SCOOBIX50", title: "50% off first 3 orders", subtitle: "New customers only", kind: "pct", value: 50, minOrder: 400, expiry: "2026-12-31", active: true },
   { id: "c2", code: "FREESHIP", title: "Free delivery weekend", subtitle: "On orders ₹500+", kind: "freeship", value: 0, minOrder: 500, expiry: "2026-09-30", active: true },
   { id: "c3", code: "NIGHT20", title: "20% off late night", subtitle: "10pm–2am", kind: "pct", value: 20, minOrder: 300, expiry: "2026-08-15", active: true },
   { id: "c4", code: "FLAT100", title: "₹100 off", subtitle: "Above ₹700", kind: "flat", value: 100, minOrder: 700, expiry: "2026-07-20", active: false },

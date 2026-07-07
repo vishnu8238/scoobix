@@ -4,7 +4,7 @@ import { riderNotifications } from "@/lib/mock-extras";
 import { NotificationItem } from "./app.notifications";
 
 export const Route = createFileRoute("/rider/notifications")({
-  head: () => ({ meta: [{ title: "Cravio Rider · Notifications" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · Notifications" }] }),
   component: RiderNotifs,
 });
 

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/profile")({
-  head: () => ({ meta: [{ title: "Cravio · Profile" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Profile" }] }),
   component: ProfilePage,
 });
 
@@ -35,7 +35,7 @@ function ProfilePage() {
           <div className="grid h-16 w-16 place-items-center rounded-full gradient-primary text-xl font-extrabold text-primary-foreground shadow-glow">A</div>
           <div className="min-w-0">
             <h2 className="font-display text-xl font-bold">Alex Morgan</h2>
-            <p className="text-xs text-muted-foreground">alex@cravio.app · Cravio Gold</p>
+            <p className="text-xs text-muted-foreground">alex@cravio.app · Scoobix Gold</p>
           </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">

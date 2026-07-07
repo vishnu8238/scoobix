@@ -1,11 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles, Megaphone } from "lucide-react";
-import { CravioMark } from "@/components/cravio/CravioLogo";
+import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Operations" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Operations" }] }),
   component: AdminLayout,
 });
 
@@ -31,9 +31,9 @@ function AdminLayout() {
         {/* Sidebar */}
         <aside className="sticky top-0 hidden h-svh w-64 flex-col gap-1 border-r border-border/60 bg-card/60 p-5 backdrop-blur-md md:flex">
           <div className="mb-6 flex items-center gap-3">
-            <CravioMark size={36} />
+            <ScoobixMark size={36} />
             <div>
-              <p className="font-display text-lg font-extrabold leading-none tracking-tight">Cravio</p>
+              <p className="font-display text-lg font-extrabold leading-none tracking-tight">Scoobix</p>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Master Admin</p>
             </div>
           </div>
@@ -66,7 +66,7 @@ function AdminLayout() {
           {/* Mobile top */}
           <div className="mb-6 flex items-center justify-between md:hidden">
             <div className="flex items-center gap-2">
-              <CravioMark size={28} />
+              <ScoobixMark size={28} />
               <p className="font-display text-base font-extrabold">Admin</p>
             </div>
             <Link to="/portal" className="rounded-full bg-muted px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">

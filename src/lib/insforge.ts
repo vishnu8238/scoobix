@@ -1,5 +1,5 @@
 /**
- * InsForge data layer for Cravio.
+ * InsForge data layer for Scoobix.
  *
  * Publishable values (project URL + anon key) are embedded here — they are
  * client-readable by design, same as a Supabase anon key. The server-only

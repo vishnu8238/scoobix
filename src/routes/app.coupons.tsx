@@ -5,7 +5,7 @@ import { coupons } from "@/lib/mock-extras";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/coupons")({
-  head: () => ({ meta: [{ title: "Cravio · Coupons & offers" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Coupons & offers" }] }),
   component: CouponsPage,
 });
 
@@ -21,9 +21,9 @@ function CouponsPage() {
 
       <div className="px-4 pt-4">
         <div className="rounded-3xl gradient-primary p-5 text-primary-foreground shadow-glow">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] opacity-90"><Sparkles className="h-3.5 w-3.5" /> Cravio Plus</div>
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] opacity-90"><Sparkles className="h-3.5 w-3.5" /> Scoobix Plus</div>
           <h2 className="mt-2 font-display text-xl font-extrabold leading-tight">Unlock free delivery on every order</h2>
-          <p className="mt-1 text-[12.5px] opacity-90">Try Cravio Plus for ₹149/month. Cancel anytime.</p>
+          <p className="mt-1 text-[12.5px] opacity-90">Try Scoobix Plus for ₹149/month. Cancel anytime.</p>
         </div>
       </div>
 

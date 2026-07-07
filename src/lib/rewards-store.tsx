@@ -34,7 +34,7 @@ export type EarnedReward = {
 };
 
 const DEFAULT_REWARDS: Reward[] = [
-  { id: "r-cravio-100", title: "₹100 Cravio Cash", type: "cravio", discount: 100, expiry: "2027-01-01", status: "active", limit: 0, distributed: 0, subtitle: "Auto-applied on next order" },
+  { id: "r-cravio-100", title: "₹100 Scoobix Cash", type: "cravio", discount: 100, expiry: "2027-01-01", status: "active", limit: 0, distributed: 0, subtitle: "Auto-applied on next order" },
   { id: "r-coupon-50",  title: "50% off next order", type: "coupon", discount: 50, expiry: "2026-12-31", status: "active", limit: 0, distributed: 0, subtitle: "Max ₹150 · code SCRATCH50" },
   { id: "r-voucher-zo", title: "Zomo Café · Free coffee", type: "voucher", discount: 0, expiry: "2026-10-31", status: "active", limit: 250, distributed: 0, sponsor: "Zomo Café", subtitle: "Show at counter" },
   { id: "r-coupon-30",  title: "Flat ₹30 off", type: "coupon", discount: 30, expiry: "2026-09-30", status: "active", limit: 0, distributed: 0, subtitle: "Min order ₹199" },

@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/cravio/PageHeader";
 import { formatPrice } from "@/lib/format";
 
 export const Route = createFileRoute("/partner/analytics")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Sales analytics" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Sales analytics" }] }),
   component: AnalyticsPage,
 });
 

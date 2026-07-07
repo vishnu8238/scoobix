@@ -3,7 +3,7 @@ import { ChevronRight, Sparkles, Clock, Layers, Bell, FileText, BarChart3, Shiel
 import { PageHeader } from "@/components/cravio/PageHeader";
 
 export const Route = createFileRoute("/partner/more")({
-  head: () => ({ meta: [{ title: "Cravio Partner · More" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · More" }] }),
   component: PartnerMore,
 });
 

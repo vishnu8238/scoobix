@@ -1,5 +1,5 @@
 /**
- * Canonical data shapes for Cravio.
+ * Canonical data shapes for Scoobix.
  *
  * These match the future backend schema 1:1 so that swapping mock data for
  * real API responses later requires zero refactoring at the call sites.

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/partner/onboarding")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Onboarding" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Onboarding" }] }),
   component: PartnerOnboarding,
 });
 
@@ -40,7 +40,7 @@ function PartnerOnboarding() {
 
       <div className="mt-6 grid h-14 w-14 place-items-center rounded-2xl bg-primary-soft text-primary"><StepIcon className="h-7 w-7" strokeWidth={2.5} /></div>
       <h1 className="mt-4 font-display text-2xl font-extrabold tracking-tight">{STEPS[step].title}</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">Tell us about your restaurant to get listed on Cravio.</p>
+      <p className="mt-1 text-[13px] text-muted-foreground">Tell us about your restaurant to get listed on Scoobix.</p>
 
       <div className="mt-6 space-y-4 rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
         {step === 0 && <>

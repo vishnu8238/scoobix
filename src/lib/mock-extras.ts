@@ -11,7 +11,7 @@ export type AppNotification = {
 
 export const customerNotifications: AppNotification[] = [
   { id: "n1", title: "Your order is on the way 🛵", body: "Aarav is 8 min away from your address.", ago: "2 min", kind: "order", unread: true },
-  { id: "n2", title: "₹100 off · CRAVIO10", body: "Tap to apply on your next order over ₹500.", ago: "1 hr", kind: "promo", unread: true },
+  { id: "n2", title: "₹100 off · SCOOBIX10", body: "Tap to apply on your next order over ₹500.", ago: "1 hr", kind: "promo", unread: true },
   { id: "n3", title: "Order delivered", body: "Trattoria Verde · Rate your meal to earn 20 points.", ago: "Yesterday", kind: "order" },
   { id: "n4", title: "New restaurants near you", body: "Sakura Sushi Bar just opened in Westside.", ago: "2 days", kind: "system" },
 ];
@@ -29,7 +29,7 @@ export const riderNotifications: AppNotification[] = [
 ];
 
 export const coupons = [
-  { code: "CRAVIO10", title: "10% off your order", description: "Min order ₹500", expires: "30 Jun" },
+  { code: "SCOOBIX10", title: "10% off your order", description: "Min order ₹500", expires: "30 Jun" },
   { code: "FREESHIP", title: "Free delivery", description: "On all orders this week", expires: "28 Jun" },
   { code: "NIGHT20", title: "20% off late night", description: "Valid 10pm – 2am", expires: "31 Jul" },
   { code: "WELCOME50", title: "₹250 off · new users", description: "Apply once per account", expires: "15 Aug" },
@@ -37,7 +37,7 @@ export const coupons = [
 
 export const savedLocations = [
   { id: "home", label: "Home", line: "221B Baker St · Apt 4, Westside", tag: "Home", icon: "🏠" },
-  { id: "work", label: "Work", line: "Cravio HQ · Block C, 6th floor", tag: "Work", icon: "💼" },
+  { id: "work", label: "Work", line: "Scoobix HQ · Block C, 6th floor", tag: "Work", icon: "💼" },
   { id: "gym",  label: "Gym",  line: "Iron Garden, Riverside 88",        tag: "Other", icon: "🏋️" },
 ];
 

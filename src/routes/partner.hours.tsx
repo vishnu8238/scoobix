@@ -9,7 +9,7 @@ import { openingHours } from "@/lib/mock-extras";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/partner/hours")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Opening hours" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Opening hours" }] }),
   component: HoursPage,
 });
 

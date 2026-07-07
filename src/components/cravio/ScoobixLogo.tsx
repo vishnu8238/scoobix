@@ -1,15 +1,15 @@
 import { cn } from "@/lib/format";
-import logo from "@/assets/cravio-logo.png.asset.json";
+import logo from "@/assets/scoobix-logo.png.asset.json";
 
 const LOGO_URL = logo.url;
 
 /**
- * Brand lockup: square logo mark + "Cravio" wordmark.
+ * Brand lockup: square logo mark + "Scoobix" wordmark.
  * The uploaded logo already contains the wordmark inside a green tile, so
  * we only render the wordmark beside the mark on larger lockups when the
  * caller asks for it via `showWordmark`.
  */
-export function CravioLogo({
+export function ScoobixLogo({
   className,
   size = 32,
   showWordmark = true,
@@ -22,7 +22,7 @@ export function CravioLogo({
     <div className={cn("inline-flex items-center gap-2", className)}>
       <img
         src={LOGO_URL}
-        alt="Cravio"
+        alt="Scoobix"
         width={size}
         height={size}
         className="rounded-2xl object-contain shadow-glow"
@@ -30,7 +30,7 @@ export function CravioLogo({
       />
       {showWordmark && (
         <span className="font-display text-2xl font-extrabold tracking-tight text-foreground">
-          Cravio
+          Scoobix
         </span>
       )}
     </div>
@@ -38,7 +38,7 @@ export function CravioLogo({
 }
 
 /** Square logo mark only, used as an app icon / standalone brand badge. */
-export function CravioMark({
+export function ScoobixMark({
   size = 56,
   className,
 }: {
@@ -48,7 +48,7 @@ export function CravioMark({
   return (
     <img
       src={LOGO_URL}
-      alt="Cravio"
+      alt="Scoobix"
       width={size}
       height={size}
       className={cn("rounded-[28%] object-contain shadow-glow", className)}

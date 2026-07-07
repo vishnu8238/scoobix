@@ -7,7 +7,7 @@ import healthy from "@/assets/food-healthy.jpg";
 import dessert from "@/assets/food-dessert.jpg";
 
 export const Route = createFileRoute("/app/onboarding")({
-  head: () => ({ meta: [{ title: "Welcome to Cravio" }] }),
+  head: () => ({ meta: [{ title: "Welcome to Scoobix" }] }),
   component: Onboarding,
 });
 

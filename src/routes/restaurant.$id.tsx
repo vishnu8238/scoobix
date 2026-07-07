@@ -21,8 +21,8 @@ export const Route = createFileRoute("/restaurant/$id")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: loaderData ? `${loaderData.name} · Cravio` : "Cravio" },
-      { name: "description", content: loaderData?.cuisine ?? "Order from premium restaurants on Cravio." },
+      { title: loaderData ? `${loaderData.name} · Scoobix` : "Scoobix" },
+      { name: "description", content: loaderData?.cuisine ?? "Order from premium restaurants on Scoobix." },
     ],
   }),
   component: RestaurantPage,

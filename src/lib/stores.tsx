@@ -21,8 +21,8 @@ export type CartItem = {
 export type Coupon = { code: string; label: string; kind: "pct" | "freeship"; value: number };
 
 const COUPONS: Coupon[] = [
-  { code: "CRAVIO10", label: "10% off your order", kind: "pct", value: 0.1 },
-  { code: "CRAVIO50", label: "50% off (max ₹800)", kind: "pct", value: 0.5 },
+  { code: "SCOOBIX10", label: "10% off your order", kind: "pct", value: 0.1 },
+  { code: "SCOOBIX50", label: "50% off (max ₹800)", kind: "pct", value: 0.5 },
   { code: "FREESHIP", label: "Free delivery", kind: "freeship", value: 0 },
   { code: "NIGHT20", label: "20% off late-night", kind: "pct", value: 0.2 },
 ];
@@ -149,7 +149,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const taxes = +(subtotal * 0.08).toFixed(2);
     let discount = 0;
     if (coupon?.kind === "pct") {
-      discount = Math.min(subtotal * coupon.value, coupon.code === "CRAVIO50" ? 10 : Infinity);
+      discount = Math.min(subtotal * coupon.value, coupon.code === "SCOOBIX50" ? 10 : Infinity);
     }
     const total = Math.max(0, subtotal + delivery + taxes - discount);
     return { subtotal: +subtotal.toFixed(2), delivery: +delivery.toFixed(2), taxes, discount: +discount.toFixed(2), total: +total.toFixed(2), itemCount };
@@ -558,7 +558,7 @@ import { AdsProvider } from "./ads-store";
 import { RewardsProvider } from "./rewards-store";
 import { DeliveryProvider } from "./delivery-store";
 
-export function CravioProviders({ children }: { children: ReactNode }) {
+export function ScoobixProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <CmsProvider>

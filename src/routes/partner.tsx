@@ -5,7 +5,7 @@ import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/partner")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Restaurant" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Restaurant" }] }),
   component: PartnerLayout,
 });
 

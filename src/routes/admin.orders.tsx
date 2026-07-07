@@ -4,7 +4,7 @@ import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 
 export const Route = createFileRoute("/admin/orders")({
-  head: () => ({ meta: [{ title: "Cravio Admin · Orders" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Admin · Orders" }] }),
   component: AdminOrders,
 });
 

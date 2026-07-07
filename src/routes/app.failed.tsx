@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/cravio/PageHeader";
 import { ErrorState } from "@/components/cravio/ErrorState";
 
 export const Route = createFileRoute("/app/failed")({
-  head: () => ({ meta: [{ title: "Cravio · Order failed" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Order failed" }] }),
   component: FailedPage,
 });
 

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/partner/ads")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Ads" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Ads" }] }),
   component: PartnerAdsPage,
 });
 

@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CravioMark } from "@/components/cravio/CravioLogo";
+import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { Utensils, Store, Bike, ShieldCheck, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/portal")({
   head: () => ({
     meta: [
-      { title: "Cravio · Choose your portal" },
+      { title: "Scoobix · Choose your portal" },
       { name: "description", content: "Sign in as a customer, restaurant partner, delivery rider, or admin." },
     ],
   }),
@@ -24,11 +24,11 @@ function Portal() {
     <div className="min-h-svh w-full bg-[radial-gradient(circle_at_top,_oklch(0.96_0.04_148),_oklch(0.99_0.005_120)_60%)] px-5 py-10 md:py-16">
       <div className="mx-auto max-w-5xl animate-fade-up">
         <div className="flex flex-col items-center text-center">
-          <CravioMark size={56} />
-          <p className="eyebrow mt-4">Cravio Operating Platform</p>
+          <ScoobixMark size={56} />
+          <p className="eyebrow mt-4">Scoobix Operating Platform</p>
           <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight md:text-5xl">Choose your portal</h1>
           <p className="mt-3 max-w-md text-sm text-muted-foreground">
-            Preview every Cravio experience — customer, restaurant, rider and admin — in one place.
+            Preview every Scoobix experience — customer, restaurant, rider and admin — in one place.
           </p>
         </div>
 
@@ -61,7 +61,7 @@ function Portal() {
         </div>
 
         <p className="mt-8 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Cravio · Mock environment · No backend required
+          Scoobix · Mock environment · No backend required
         </p>
       </div>
     </div>

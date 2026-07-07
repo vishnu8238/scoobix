@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { updateRestaurantStatus } from "@/lib/insforge";
 
 export const Route = createFileRoute("/partner/")({
-  head: () => ({ meta: [{ title: "Cravio Partner · Dashboard" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Partner · Dashboard" }] }),
   component: PartnerDashboard,
 });
 

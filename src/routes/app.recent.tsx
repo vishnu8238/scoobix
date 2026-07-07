@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useCart } from "@/lib/stores";
 
 export const Route = createFileRoute("/app/recent")({
-  head: () => ({ meta: [{ title: "Cravio · Recently viewed" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Recently viewed" }] }),
   component: RecentPage,
 });
 

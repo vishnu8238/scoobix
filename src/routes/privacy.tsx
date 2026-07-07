@@ -3,8 +3,8 @@ import { PageHeader } from "@/components/cravio/PageHeader";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({ meta: [
-    { title: "Cravio · Privacy policy" },
-    { name: "description", content: "How Cravio collects, uses and protects your data when you order food or partner with us." },
+    { title: "Scoobix · Privacy policy" },
+    { name: "description", content: "How Scoobix collects, uses and protects your data when you order food or partner with us." },
   ] }),
   component: PrivacyPage,
 });
@@ -26,7 +26,7 @@ function PrivacyPage() {
       <PageHeader title="Privacy policy" subtitle="Last updated · 1 Jun 2026" />
 
       <article className="px-5 pt-4">
-        <p className="text-sm text-muted-foreground">Your trust matters. This page explains what data Cravio collects, why we collect it, and how you can control it.</p>
+        <p className="text-sm text-muted-foreground">Your trust matters. This page explains what data Scoobix collects, why we collect it, and how you can control it.</p>
 
         <div className="mt-6 space-y-5">
           {SECTIONS.map((s) => (

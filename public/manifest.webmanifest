@@ -1,6 +1,6 @@
 {
-  "name": "Cravio — Crave it. Get it.",
-  "short_name": "Cravio",
+  "name": "Scoobix — Crave it. Get it.",
+  "short_name": "Scoobix",
   "description": "Premium food delivery. Fresh meals from the best restaurants near you, fast.",
   "start_url": "/",
   "scope": "/",
@@ -11,13 +11,13 @@
   "categories": ["food", "lifestyle", "shopping"],
   "icons": [
     {
-      "src": "/__l5e/assets-v1/ce9dea1e-9a2b-4604-9fdb-edc72023a6d0/cravio-logo.png",
+      "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/__l5e/assets-v1/ce9dea1e-9a2b-4604-9fdb-edc72023a6d0/cravio-logo.png",
+      "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

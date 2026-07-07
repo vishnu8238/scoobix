@@ -21,7 +21,7 @@ import { cn } from "@/lib/format";
 export const Route = createFileRoute("/app/")({
   head: () => ({
     meta: [
-      { title: "Cravio · Home" },
+      { title: "Scoobix · Home" },
       { name: "description", content: "Discover top restaurants and trending dishes near you." },
     ],
   }),
@@ -209,7 +209,7 @@ function Home() {
         </div>
       )}
 
-      {/* Cravio Swipe entry banner */}
+      {/* Scoobix Swipe entry banner */}
       {sectionEnabled("swipe") && (
         <section className="px-5">
           <Link
@@ -220,7 +220,7 @@ function Home() {
             <span className="absolute -bottom-8 -left-4 h-20 w-20 rounded-full bg-white/10" aria-hidden />
             <div className="relative">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] opacity-90">New · Discovery</p>
-              <h3 className="mt-1 font-display text-lg font-extrabold tracking-tight">Cravio Swipe</h3>
+              <h3 className="mt-1 font-display text-lg font-extrabold tracking-tight">Scoobix Swipe</h3>
               <p className="mt-0.5 text-xs opacity-90">Swipe nearby food. Right adds, left skips.</p>
             </div>
             <span className="relative grid h-12 w-12 place-items-center rounded-2xl bg-white/20">
@@ -283,7 +283,7 @@ function Home() {
       )}
 
       <p className="px-6 pb-4 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        Cravio · Crave it. Get it.{" "}
+        Scoobix · Crave it. Get it.{" "}
         <Link to="/" className="font-bold text-primary">Splash</Link>
       </p>
     </div>

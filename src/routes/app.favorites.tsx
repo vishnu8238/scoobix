@@ -10,7 +10,7 @@ import { useState } from "react";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/app/favorites")({
-  head: () => ({ meta: [{ title: "Cravio · Favorites" }] }),
+  head: () => ({ meta: [{ title: "Scoobix · Favorites" }] }),
   component: FavoritesPage,
 });
 
