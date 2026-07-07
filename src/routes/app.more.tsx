@@ -10,7 +10,10 @@ export const Route = createFileRoute("/app/more")({
 });
 
 const ITEMS = [
+  { to: "/app/meal",       icon: Utensils,   label: "Scoobix Daily Meal",    desc: "Weekly & monthly meal plans" },
+  { to: "/app/bulk",       icon: Building2,  label: "Corporate & Bulk",      desc: "Catering & office orders" },
   { to: "/app/onboarding", icon: Sparkles, label: "Welcome tour",         desc: "Take the intro again" },
+
   { to: "/app/location",   icon: MapPin,   label: "Delivery location",     desc: "Manage saved places" },
   { to: "/app/favorites",  icon: Heart,    label: "Favorites",             desc: "Restaurants & dishes you love" },
   { to: "/app/recent",     icon: Clock,    label: "Recently viewed",       desc: "Quick reorder & history" },
