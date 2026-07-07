@@ -1,13 +1,16 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ArrowLeft, Minus, Plus, Tag, Trash2, X, ShoppingBag, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Tag, Trash2, X, ShoppingBag, AlertTriangle, Users, Truck } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/stores";
 import { useCms } from "@/lib/cms-store";
+import { useGroupCart } from "@/lib/scoobix-extras";
+import { useAuth } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { currency } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/app/cart")({
   head: () => ({ meta: [{ title: "Scoobix · Cart" }] }),
@@ -18,11 +21,30 @@ function CartPage() {
   const navigate = useNavigate();
   const { items, setQty, removeItem, totals, coupon, applyCoupon, removeCoupon, restaurant, clear } = useCart();
   const { closedRestaurants, dishAvailability } = useCms();
+  const { createSession } = useGroupCart();
+  const { user } = useAuth();
   const restaurantClosed = restaurant ? !!closedRestaurants[restaurant.id] : false;
   const unavailableItems = items.filter((it) => dishAvailability[it.dishId] === false);
   const [code, setCode] = useState("");
 
+  const startGroup = async () => {
+    if (!restaurant) return;
+    const s = createSession({
+      hostId: user?.id ?? "guest",
+      hostName: user?.name ?? "Host",
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
+    });
+    const url = `${window.location.origin}/app/group/${s.id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: "Join my Scoobix cart", url });
+      else { await navigator.clipboard.writeText(url); toast.success("Invite link copied"); }
+    } catch { /* cancelled */ }
+    navigate({ to: "/app/group/$sessionId", params: { sessionId: s.id } });
+  };
+
   if (items.length === 0) {
+
     return (
       <div className="min-h-svh">
         <Header onBack={() => navigate({ to: "/app" })} title="Your cart" />
@@ -57,6 +79,17 @@ function CartPage() {
           </div>
         </Link>
       )}
+
+      <div className="mx-4 mt-3 flex flex-wrap items-center gap-2">
+        {totals.freeDeliveryEligible && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-3 py-1 text-[11px] font-extrabold text-primary"><Truck className="h-3 w-3" /> Free delivery</span>
+        )}
+        {restaurant && (
+          <button onClick={startGroup} className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-[11px] font-bold"><Users className="h-3 w-3" /> Invite to cart</button>
+        )}
+      </div>
+
+
 
       {restaurantClosed && (
         <div className="mx-4 mt-3 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-xs">

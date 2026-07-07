@@ -137,6 +137,8 @@ export type PlatformSettings = {
   minOrder: number;
   supportPhone: string;
   supportEmail: string;
+  /** Cart subtotal at/above which delivery is free (Scoobix free-delivery rule). */
+  freeDeliveryMin: number;
 };
 
 const DEFAULT_SETTINGS: PlatformSettings = {
@@ -145,7 +147,9 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   minOrder: 99,
   supportPhone: "+91 80000 12345",
   supportEmail: "support@cravio.app",
+  freeDeliveryMin: 25,
 };
+
 
 const CmsContext = createContext<CmsCtx | null>(null);
 const KEY = "cravio_cms_v2";

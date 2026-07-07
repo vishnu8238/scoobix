@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, CreditCard, Wallet, Banknote, Smartphone, MapPin, Zap, Check, ShieldCheck, Tag, X, MessageSquareText } from "lucide-react";
+import { ArrowLeft, ChevronRight, CreditCard, Wallet, Banknote, Smartphone, MapPin, Zap, Check, ShieldCheck, Tag, X, MessageSquareText, Clock3 } from "lucide-react";
 import { useState } from "react";
 import { useCart, useOrders } from "@/lib/stores";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { currency, cn } from "@/lib/format";
 import { savedAddresses, paymentMethods } from "@/lib/mock-data";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { scheduleOrder } from "@/lib/insforge";
+
 
 export const Route = createFileRoute("/app/checkout")({
   head: () => ({ meta: [{ title: "Scoobix · Checkout" }] }),
@@ -50,6 +52,8 @@ function CheckoutPage() {
   const [contactless, setContactless] = useState(false);
   const [notes, setNotes] = useState("");
   const [couponCode, setCouponCode] = useState("");
+  const [scheduledFor, setScheduledFor] = useState<string>("");
+
 
   const address = savedAddresses.find((a) => a.id === addressId)!;
   const deliveryObj = DELIVERY_OPTIONS.find((d) => d.id === delivery)!;
@@ -93,7 +97,9 @@ function CheckoutPage() {
         notes: notes.trim() || undefined,
         couponCode: coupon?.code,
       });
+      if (scheduledFor) void scheduleOrder(orderId, scheduledFor);
       clear();
+
       toast.success("Order placed!", { description: `Tracking #${orderId}` });
       if (pay === "cash") navigate({ to: "/track/$orderId", params: { orderId } });
       else navigate({ to: "/app/success" });
@@ -152,6 +158,29 @@ function CheckoutPage() {
             ))}
           </div>
         </section>
+
+        {/* Schedule for later */}
+        <section className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-primary-soft text-primary"><Clock3 className="h-4 w-4" /></span>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold">Schedule for later</div>
+              <div className="text-xs text-muted-foreground">Deliver at a specific time (optional).</div>
+            </div>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="datetime-local"
+              value={scheduledFor}
+              onChange={(e) => setScheduledFor(e.target.value)}
+              className="flex-1 rounded-2xl bg-secondary px-3 py-2.5 text-sm font-semibold outline-none"
+            />
+            {scheduledFor && (
+              <button onClick={() => setScheduledFor("")} className="rounded-2xl bg-muted px-3 text-xs font-bold">Clear</button>
+            )}
+          </div>
+        </section>
+
 
         {/* Payment */}
         <section>

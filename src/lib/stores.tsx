@@ -46,7 +46,9 @@ type CartCtx = {
     discount: number;
     total: number;
     itemCount: number;
+    freeDeliveryEligible: boolean;
   };
+
   restaurant: Restaurant | null;
   /** Multi-restaurant conflict popup state. */
   pendingConflict: PendingAdd | null;
@@ -144,7 +146,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
     const itemCount = items.reduce((s, i) => s + i.qty, 0);
     const baseDelivery = subtotal === 0 ? 0 : 2.99;
-    const freeShip = coupon?.kind === "freeship" || subtotal >= 25;
+    let freeMin = 25;
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("cravio_cms_v2") : null;
+      if (raw) { const s = JSON.parse(raw)?.settings; if (s && typeof s.freeDeliveryMin === "number") freeMin = s.freeDeliveryMin; }
+    } catch { /* ignore */ }
+    const freeShip = coupon?.kind === "freeship" || subtotal >= freeMin;
     const delivery = freeShip ? 0 : baseDelivery;
     const taxes = +(subtotal * 0.08).toFixed(2);
     let discount = 0;
@@ -152,8 +159,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       discount = Math.min(subtotal * coupon.value, coupon.code === "SCOOBIX50" ? 10 : Infinity);
     }
     const total = Math.max(0, subtotal + delivery + taxes - discount);
-    return { subtotal: +subtotal.toFixed(2), delivery: +delivery.toFixed(2), taxes, discount: +discount.toFixed(2), total: +total.toFixed(2), itemCount };
+    return { subtotal: +subtotal.toFixed(2), delivery: +delivery.toFixed(2), taxes, discount: +discount.toFixed(2), total: +total.toFixed(2), itemCount, freeDeliveryEligible: freeShip };
   }, [items, coupon]);
+
 
   const restaurant = restaurantId ? findRestaurant(restaurantId) ?? null : null;
 
@@ -557,6 +565,7 @@ import { AuthProvider } from "./auth-store";
 import { AdsProvider } from "./ads-store";
 import { RewardsProvider } from "./rewards-store";
 import { DeliveryProvider } from "./delivery-store";
+import { ScoobixExtrasProviders } from "./scoobix-extras";
 
 export function ScoobixProviders({ children }: { children: ReactNode }) {
   return (
@@ -568,7 +577,9 @@ export function ScoobixProviders({ children }: { children: ReactNode }) {
               <FavoritesProvider>
                 <OrdersProvider>
                   <DeliveryProvider>
-                    <CartProvider>{children}</CartProvider>
+                    <ScoobixExtrasProviders>
+                      <CartProvider>{children}</CartProvider>
+                    </ScoobixExtrasProviders>
                   </DeliveryProvider>
                 </OrdersProvider>
               </FavoritesProvider>
@@ -579,6 +590,7 @@ export function ScoobixProviders({ children }: { children: ReactNode }) {
     </AuthProvider>
   );
 }
+
 
 
 /* utility */

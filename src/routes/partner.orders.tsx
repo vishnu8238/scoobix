@@ -87,11 +87,20 @@ function PartnerOrders() {
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-bold">{o.customer}</p>
                   <p className="text-[12px] text-muted-foreground">{o.items.length} items · {o.placedAgo} ago · {o.paymentMethod}</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {(o as unknown as { scheduled_for?: string }).scheduled_for && (
+                      <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-bold text-[oklch(0.45_0.14_70)]">Scheduled</span>
+                    )}
+                    {(o as unknown as { batch_id?: string }).batch_id && (
+                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">Batched</span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="font-display text-base font-extrabold">{formatPrice(o.total)}</p>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{o.status}</span>
                 </div>
+
                 <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition", isOpen && "rotate-90")} />
               </button>
 
