@@ -80,6 +80,17 @@ function CartPage() {
         </Link>
       )}
 
+      <div className="mx-4 mt-3 flex flex-wrap items-center gap-2">
+        {totals.freeDeliveryEligible && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-3 py-1 text-[11px] font-extrabold text-primary"><Truck className="h-3 w-3" /> Free delivery</span>
+        )}
+        {restaurant && (
+          <button onClick={startGroup} className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-[11px] font-bold"><Users className="h-3 w-3" /> Invite to cart</button>
+        )}
+      </div>
+
+      )}
+
       {restaurantClosed && (
         <div className="mx-4 mt-3 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-xs">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
