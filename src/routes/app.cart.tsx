@@ -89,7 +89,7 @@ function CartPage() {
         )}
       </div>
 
-      )}
+
 
       {restaurantClosed && (
         <div className="mx-4 mt-3 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-xs">
