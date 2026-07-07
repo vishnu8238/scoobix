@@ -52,6 +52,8 @@ function CheckoutPage() {
   const [contactless, setContactless] = useState(false);
   const [notes, setNotes] = useState("");
   const [couponCode, setCouponCode] = useState("");
+  const [scheduledFor, setScheduledFor] = useState<string>("");
+
 
   const address = savedAddresses.find((a) => a.id === addressId)!;
   const deliveryObj = DELIVERY_OPTIONS.find((d) => d.id === delivery)!;
