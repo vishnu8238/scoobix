@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, CreditCard, Wallet, Banknote, Smartphone, MapPin, Zap, Check, ShieldCheck, Tag, X, MessageSquareText } from "lucide-react";
+import { ArrowLeft, ChevronRight, CreditCard, Wallet, Banknote, Smartphone, MapPin, Zap, Check, ShieldCheck, Tag, X, MessageSquareText, Clock3 } from "lucide-react";
 import { useState } from "react";
 import { useCart, useOrders } from "@/lib/stores";
 import { Button } from "@/components/ui/button";
