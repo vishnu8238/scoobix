@@ -1,5 +1,5 @@
 import { cn } from "@/lib/format";
-import logo from "@/assets/cravio-logo.png.asset.json";
+import logo from "@/assets/scoobix-logo.png.asset.json";
 
 const LOGO_URL = logo.url;
 
