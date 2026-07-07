@@ -17,6 +17,9 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/drivers", label: "Drivers", icon: Bike },
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
   { to: "/admin/ads", label: "Ads", icon: Megaphone },
+  { to: "/admin/spotlight", label: "Spotlight", icon: Sparkles },
+  { to: "/admin/bulk", label: "Bulk Orders", icon: Building2 },
+
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
   { to: "/admin/reports", label: "Reports", icon: BarChart3 },
   { to: "/admin/settings", label: "Settings", icon: Settings },
