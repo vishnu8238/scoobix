@@ -97,7 +97,9 @@ function CheckoutPage() {
         notes: notes.trim() || undefined,
         couponCode: coupon?.code,
       });
+      if (scheduledFor) void scheduleOrder(orderId, scheduledFor);
       clear();
+
       toast.success("Order placed!", { description: `Tracking #${orderId}` });
       if (pay === "cash") navigate({ to: "/track/$orderId", params: { orderId } });
       else navigate({ to: "/app/success" });
