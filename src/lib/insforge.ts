@@ -255,6 +255,71 @@ export function setRestaurantApprovalStatus(id: string, status: "approved" | "re
   return ifWrite(`/api/database/records/restaurants/${id}`, "PATCH", { status });
 }
 
+// ---------- Scoobix feature extensions (best-effort, never throw) ----------
+
+export function createMealSubscription(sub: {
+  customer_id: string;
+  restaurant_id: string;
+  plan: "weekly" | "monthly";
+  meals: "lunch" | "dinner" | "both";
+  starts_on: string;
+  address?: string;
+  price?: number;
+}) { return ifWrite(`/api/database/records/meal_subscriptions`, "POST", sub); }
+
+export function updateMealSubscription(id: string, patch: Record<string, unknown>) {
+  return ifWrite(`/api/database/records/meal_subscriptions/${id}`, "PATCH", patch);
+}
+
+export function listMealSubscriptions(params?: { customer_id?: string; restaurant_id?: string }) {
+  const q = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
+  return ifFetch<Record<string, unknown>[]>(`/api/database/records/meal_subscriptions${q}`).catch(() => [] as Record<string, unknown>[]);
+}
+
+export function createBulkRequest(req: {
+  customer_id: string;
+  restaurant_id?: string;
+  event_date: string;
+  guest_count: number;
+  budget: number;
+  notes?: string;
+}) { return ifWrite(`/api/database/records/bulk_requests`, "POST", { status: "pending", ...req }); }
+
+export function listBulkRequests(params?: { customer_id?: string; restaurant_id?: string }) {
+  const q = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
+  return ifFetch<Record<string, unknown>[]>(`/api/database/records/bulk_requests${q}`).catch(() => [] as Record<string, unknown>[]);
+}
+
+export function updateBulkStatus(id: string, status: "pending" | "accepted" | "rejected") {
+  return ifWrite(`/api/database/records/bulk_requests/${id}`, "PATCH", { status });
+}
+
+export function createGroupCart(session: { id: string; host_id: string; restaurant_id: string }) {
+  return ifWrite(`/api/database/records/group_carts`, "POST", session);
+}
+export function getGroupCartRow(id: string) {
+  return ifFetch<Record<string, unknown>>(`/api/database/records/group_carts/${id}`).catch(() => null);
+}
+export function updateGroupCart(id: string, patch: Record<string, unknown>) {
+  return ifWrite(`/api/database/records/group_carts/${id}`, "PATCH", patch);
+}
+
+export function getSpotlightRow() {
+  return ifFetch<Record<string, unknown>[]>(`/api/database/records/spotlight?limit=1`).catch(() => [] as Record<string, unknown>[]);
+}
+export function setSpotlight(record: Record<string, unknown>) {
+  return ifWrite(`/api/database/records/spotlight`, "POST", record);
+}
+
+export function scheduleOrder(orderId: string, iso: string) {
+  return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { scheduled_for: iso });
+}
+export function assignBatch(orderId: string, batchId: string) {
+  return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { batch_id: batchId });
+}
+
+
+
 
 
 
