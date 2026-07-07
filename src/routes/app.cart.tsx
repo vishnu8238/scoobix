@@ -21,11 +21,30 @@ function CartPage() {
   const navigate = useNavigate();
   const { items, setQty, removeItem, totals, coupon, applyCoupon, removeCoupon, restaurant, clear } = useCart();
   const { closedRestaurants, dishAvailability } = useCms();
+  const { createSession } = useGroupCart();
+  const { user } = useAuth();
   const restaurantClosed = restaurant ? !!closedRestaurants[restaurant.id] : false;
   const unavailableItems = items.filter((it) => dishAvailability[it.dishId] === false);
   const [code, setCode] = useState("");
 
+  const startGroup = async () => {
+    if (!restaurant) return;
+    const s = createSession({
+      hostId: user?.id ?? "guest",
+      hostName: user?.name ?? "Host",
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
+    });
+    const url = `${window.location.origin}/app/group/${s.id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: "Join my Scoobix cart", url });
+      else { await navigator.clipboard.writeText(url); toast.success("Invite link copied"); }
+    } catch { /* cancelled */ }
+    navigate({ to: "/app/group/$sessionId", params: { sessionId: s.id } });
+  };
+
   if (items.length === 0) {
+
     return (
       <div className="min-h-svh">
         <Header onBack={() => navigate({ to: "/app" })} title="Your cart" />
