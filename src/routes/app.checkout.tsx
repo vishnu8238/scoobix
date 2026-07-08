@@ -324,6 +324,7 @@ function CheckoutPage() {
             <Row label="Delivery" value={deliveryObj.price + totals.delivery === 0 ? "Free" : currency(deliveryObj.price + totals.delivery)} />
             <Row label="Taxes" value={currency(totals.taxes)} />
             {totals.discount > 0 && <Row label="Discount" value={`- ${currency(totals.discount)}`} accent />}
+            {walletApplied > 0 && <Row label="Wallet applied" value={`- ${currency(walletApplied)}`} accent />}
           </div>
         </section>
       </div>
