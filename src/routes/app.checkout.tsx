@@ -11,6 +11,7 @@ import { savedAddresses, paymentMethods } from "@/lib/mock-data";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { scheduleOrder } from "@/lib/insforge";
+import { useMyWallet } from "@/lib/scoobix-loyalty";
 
 
 export const Route = createFileRoute("/app/checkout")({
@@ -53,13 +54,19 @@ function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [scheduledFor, setScheduledFor] = useState<string>("");
+  const [useWalletBalance, setUseWalletBalance] = useState(false);
+  const { balance: walletBalance, debit: walletDebit, credit: walletCredit } = useMyWallet();
 
 
   const address = savedAddresses.find((a) => a.id === addressId)!;
   const deliveryObj = DELIVERY_OPTIONS.find((d) => d.id === delivery)!;
   const payObj = PAY_OPTIONS.find((p) => p.id === pay)!;
 
-  const finalTotal = totals.total + deliveryObj.price;
+  const orderTotal = totals.total + deliveryObj.price;
+  const walletApplied = pay === "wallet"
+    ? Math.min(walletBalance, orderTotal)
+    : (useWalletBalance ? Math.min(walletBalance, orderTotal) : 0);
+  const finalTotal = Math.max(0, orderTotal - walletApplied);
 
   if (!restaurant || items.length === 0) {
     return (
@@ -76,6 +83,10 @@ function CheckoutPage() {
   }
 
   const handlePlace = () => {
+    if (pay === "wallet" && walletBalance < orderTotal) {
+      toast.error("Insufficient wallet balance for wallet-only payment.");
+      return;
+    }
     setPlacing(true);
     const instructionLabel = INSTRUCTION_OPTIONS.find((i) => i.id === instructionId)?.label;
     setTimeout(() => {
@@ -91,13 +102,19 @@ function CheckoutPage() {
         restaurant,
         addressLabel: address.label,
         addressLine: `${address.line1}, ${address.line2}`,
-        paymentLabel: payObj.label,
+        paymentLabel: walletApplied > 0 && pay !== "wallet" ? `${payObj.label} + Wallet` : payObj.label,
         deliveryInstructions: instructionLabel,
         contactless,
         notes: notes.trim() || undefined,
         couponCode: coupon?.code,
       });
       if (scheduledFor) void scheduleOrder(orderId, scheduledFor);
+      if (walletApplied > 0) walletDebit(walletApplied, "debit", `Order ${orderId}`);
+      // Small cashback reward for orders paid entirely or partly online (skip cash).
+      if (pay !== "cash" && finalTotal > 0) {
+        const cashback = Math.round(finalTotal * 0.02);
+        if (cashback > 0) walletCredit(cashback, "cashback", `Cashback · Order ${orderId}`);
+      }
       clear();
 
       toast.success("Order placed!", { description: `Tracking #${orderId}` });
@@ -202,12 +219,23 @@ function CheckoutPage() {
                   <div className="flex-1">
                     <div className="text-sm font-semibold">{p.label}</div>
                     {card && <div className="text-xs text-muted-foreground">{card.brand} •••• {card.last4}</div>}
+                    {p.id === "wallet" && <div className="text-xs text-muted-foreground">Balance {currency(walletBalance)}</div>}
                   </div>
                   {pay === p.id && <Check className="h-4 w-4 text-primary" />}
                 </button>
               );
             })}
           </div>
+          {pay !== "wallet" && walletBalance > 0 && (
+            <div className="mt-2 flex items-center gap-3 rounded-2xl bg-card p-3 shadow-soft ring-1 ring-border/60">
+              <Wallet className="h-4 w-4 text-primary" />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold">Use wallet balance</div>
+                <div className="text-xs text-muted-foreground">Available {currency(walletBalance)} · applied to this order</div>
+              </div>
+              <Switch checked={useWalletBalance} onCheckedChange={setUseWalletBalance} />
+            </div>
+          )}
         </section>
 
         {/* Delivery instructions */}
@@ -296,6 +324,7 @@ function CheckoutPage() {
             <Row label="Delivery" value={deliveryObj.price + totals.delivery === 0 ? "Free" : currency(deliveryObj.price + totals.delivery)} />
             <Row label="Taxes" value={currency(totals.taxes)} />
             {totals.discount > 0 && <Row label="Discount" value={`- ${currency(totals.discount)}`} accent />}
+            {walletApplied > 0 && <Row label="Wallet applied" value={`- ${currency(walletApplied)}`} accent />}
           </div>
         </section>
       </div>

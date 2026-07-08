@@ -287,14 +287,17 @@ export const useSpotlight = () => {
    ============================================================ */
 
 export type GroupCartMember = { id: string; name: string; joinedAt: number };
+export type GroupItemOwner = { lineId: string; memberId: string; name: string; price: number; qty: number };
 export type GroupCartSession = {
   id: string;
   hostId: string;
   restaurantId: string;
   restaurantName: string;
   members: GroupCartMember[];
+  itemOwners: GroupItemOwner[];
   createdAt: number;
   closed?: boolean;
+  locked?: boolean;
 };
 
 type GroupCtx = {
@@ -303,6 +306,10 @@ type GroupCtx = {
   joinSession: (id: string, member: { id: string; name: string }) => GroupCartSession | null;
   getSession: (id: string) => GroupCartSession | null;
   closeSession: (id: string) => void;
+  lockSession: (id: string, locked: boolean) => void;
+  removeMember: (id: string, memberId: string) => void;
+  syncItems: (id: string, currentMemberId: string, items: Array<{ lineId: string; name: string; price: number; qty: number }>) => void;
+  subtotalFor: (id: string, memberId: string) => number;
 };
 
 const GCKey = "scoobix_group_carts_v1";
@@ -327,6 +334,7 @@ export function GroupCartProvider({ children }: { children: ReactNode }) {
     const session: GroupCartSession = {
       id, hostId, restaurantId, restaurantName,
       members: [{ id: hostId, name: hostName, joinedAt: Date.now() }],
+      itemOwners: [],
       createdAt: Date.now(),
     };
     setSessions((p) => ({ ...p, [id]: session }));
@@ -339,17 +347,18 @@ export function GroupCartProvider({ children }: { children: ReactNode }) {
     setSessions((p) => {
       const cur = p[id];
       if (!cur) {
-        // Optimistically create a shell so the invitee can add items
         const shell: GroupCartSession = {
           id, hostId: "unknown", restaurantId: "", restaurantName: "Shared cart",
-          members: [{ ...member, joinedAt: Date.now() }], createdAt: Date.now(),
+          members: [{ ...member, joinedAt: Date.now() }],
+          itemOwners: [],
+          createdAt: Date.now(),
         };
         out = shell;
-        // Try to hydrate from backend
         void getGroupCartRow(id);
         return { ...p, [id]: shell };
       }
       if (cur.members.some((m) => m.id === member.id)) { out = cur; return p; }
+      if (cur.locked || cur.closed) { out = cur; return p; }
       out = { ...cur, members: [...cur.members, { ...member, joinedAt: Date.now() }] };
       void patchGroupCart(id, { members: out.members });
       return { ...p, [id]: out };
@@ -362,8 +371,47 @@ export function GroupCartProvider({ children }: { children: ReactNode }) {
     setSessions((p) => (p[id] ? { ...p, [id]: { ...p[id], closed: true } } : p));
     void patchGroupCart(id, { closed: true });
   };
+  const lockSession: GroupCtx["lockSession"] = (id, locked) => {
+    setSessions((p) => (p[id] ? { ...p, [id]: { ...p[id], locked } } : p));
+    void patchGroupCart(id, { locked });
+  };
+  const removeMember: GroupCtx["removeMember"] = (id, memberId) => {
+    setSessions((p) => {
+      const cur = p[id]; if (!cur) return p;
+      const next: GroupCartSession = {
+        ...cur,
+        members: cur.members.filter((m) => m.id !== memberId),
+        itemOwners: cur.itemOwners.filter((o) => o.memberId !== memberId),
+      };
+      void patchGroupCart(id, { members: next.members });
+      return { ...p, [id]: next };
+    });
+  };
+  const syncItems: GroupCtx["syncItems"] = (id, memberId, items) => {
+    setSessions((p) => {
+      const cur = p[id]; if (!cur) return p;
+      // Preserve ownership for lines that already belong to someone;
+      // any new lineId belongs to the current member.
+      const owned = new Map(cur.itemOwners.map((o) => [o.lineId, o] as const));
+      const nextOwners: GroupItemOwner[] = items.map((it) => {
+        const prev = owned.get(it.lineId);
+        return {
+          lineId: it.lineId,
+          memberId: prev?.memberId ?? memberId,
+          name: it.name,
+          price: it.price,
+          qty: it.qty,
+        };
+      });
+      return { ...p, [id]: { ...cur, itemOwners: nextOwners } };
+    });
+  };
+  const subtotalFor: GroupCtx["subtotalFor"] = (id, memberId) => {
+    const cur = sessions[id]; if (!cur) return 0;
+    return cur.itemOwners.filter((o) => o.memberId === memberId).reduce((s, o) => s + o.price * o.qty, 0);
+  };
 
-  const value = useMemo(() => ({ sessions, createSession, joinSession, getSession, closeSession }), [sessions]);
+  const value = useMemo(() => ({ sessions, createSession, joinSession, getSession, closeSession, lockSession, removeMember, syncItems, subtotalFor }), [sessions]);
 
   return <GCContext.Provider value={value}>{children}</GCContext.Provider>;
 }

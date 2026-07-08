@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag, LogIn, LogOut, CheckCircle2, Utensils, Building2 } from "lucide-react";
+import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag, LogIn, LogOut, CheckCircle2, Utensils, Building2, Wallet, Gift } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { useAuth } from "@/lib/auth-store";
 import { toast } from "sonner";
@@ -10,6 +10,8 @@ export const Route = createFileRoute("/app/more")({
 });
 
 const ITEMS = [
+  { to: "/app/wallet",     icon: Wallet,     label: "Scoobix Wallet",        desc: "Balance, cashback & refunds" },
+  { to: "/app/referral",   icon: Gift,       label: "Invite & earn",         desc: "Share your code, earn credit" },
   { to: "/app/meal",       icon: Utensils,   label: "Scoobix Daily Meal",    desc: "Weekly & monthly meal plans" },
   { to: "/app/bulk",       icon: Building2,  label: "Corporate & Bulk",      desc: "Catering & office orders" },
   { to: "/app/onboarding", icon: Sparkles, label: "Welcome tour",         desc: "Take the intro again" },
