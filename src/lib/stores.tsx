@@ -566,6 +566,7 @@ import { AdsProvider } from "./ads-store";
 import { RewardsProvider } from "./rewards-store";
 import { DeliveryProvider } from "./delivery-store";
 import { ScoobixExtrasProviders } from "./scoobix-extras";
+import { ScoobixLoyaltyProviders } from "./scoobix-loyalty";
 
 export function ScoobixProviders({ children }: { children: ReactNode }) {
   return (
@@ -577,9 +578,11 @@ export function ScoobixProviders({ children }: { children: ReactNode }) {
               <FavoritesProvider>
                 <OrdersProvider>
                   <DeliveryProvider>
-                    <ScoobixExtrasProviders>
-                      <CartProvider>{children}</CartProvider>
-                    </ScoobixExtrasProviders>
+                    <ScoobixLoyaltyProviders>
+                      <ScoobixExtrasProviders>
+                        <CartProvider>{children}</CartProvider>
+                      </ScoobixExtrasProviders>
+                    </ScoobixLoyaltyProviders>
                   </DeliveryProvider>
                 </OrdersProvider>
               </FavoritesProvider>
