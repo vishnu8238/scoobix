@@ -219,12 +219,23 @@ function CheckoutPage() {
                   <div className="flex-1">
                     <div className="text-sm font-semibold">{p.label}</div>
                     {card && <div className="text-xs text-muted-foreground">{card.brand} •••• {card.last4}</div>}
+                    {p.id === "wallet" && <div className="text-xs text-muted-foreground">Balance {currency(walletBalance)}</div>}
                   </div>
                   {pay === p.id && <Check className="h-4 w-4 text-primary" />}
                 </button>
               );
             })}
           </div>
+          {pay !== "wallet" && walletBalance > 0 && (
+            <div className="mt-2 flex items-center gap-3 rounded-2xl bg-card p-3 shadow-soft ring-1 ring-border/60">
+              <Wallet className="h-4 w-4 text-primary" />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold">Use wallet balance</div>
+                <div className="text-xs text-muted-foreground">Available {currency(walletBalance)} · applied to this order</div>
+              </div>
+              <Switch checked={useWalletBalance} onCheckedChange={setUseWalletBalance} />
+            </div>
+          )}
         </section>
 
         {/* Delivery instructions */}
