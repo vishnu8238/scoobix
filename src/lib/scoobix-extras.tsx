@@ -287,14 +287,17 @@ export const useSpotlight = () => {
    ============================================================ */
 
 export type GroupCartMember = { id: string; name: string; joinedAt: number };
+export type GroupItemOwner = { lineId: string; memberId: string; name: string; price: number; qty: number };
 export type GroupCartSession = {
   id: string;
   hostId: string;
   restaurantId: string;
   restaurantName: string;
   members: GroupCartMember[];
+  itemOwners: GroupItemOwner[];
   createdAt: number;
   closed?: boolean;
+  locked?: boolean;
 };
 
 type GroupCtx = {
@@ -303,6 +306,10 @@ type GroupCtx = {
   joinSession: (id: string, member: { id: string; name: string }) => GroupCartSession | null;
   getSession: (id: string) => GroupCartSession | null;
   closeSession: (id: string) => void;
+  lockSession: (id: string, locked: boolean) => void;
+  removeMember: (id: string, memberId: string) => void;
+  syncItems: (id: string, currentMemberId: string, items: Array<{ lineId: string; name: string; price: number; qty: number }>) => void;
+  subtotalFor: (id: string, memberId: string) => number;
 };
 
 const GCKey = "scoobix_group_carts_v1";
