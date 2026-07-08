@@ -58,7 +58,7 @@ function AdminReferrals() {
       <section className="rounded-2xl bg-card p-4 shadow-card ring-1 ring-border/60">
         <h2 className="eyebrow mb-2 flex items-center gap-1"><Users className="h-3 w-3" /> Recent referrals</h2>
         {records.length === 0 ? (
-          <EmptyState title="No referrals yet" description="Once customers share their code, referrals show up here." />
+          <EmptyState icon={<Users className="h-5 w-5" />} title="No referrals yet" description="Once customers share their code, referrals show up here." />
         ) : (
           <ul className="divide-y divide-border/60">
             {records.slice(0, 40).map((r) => (

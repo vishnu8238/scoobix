@@ -42,7 +42,7 @@ function WalletPage() {
       <section className="px-4">
         <h2 className="eyebrow mb-2">Transactions</h2>
         {txns.length === 0 ? (
-          <EmptyState title="No transactions yet" description="Earn cashback and scratch cards on your next order." />
+          <EmptyState icon={<Wallet className="h-5 w-5" />} title="No transactions yet" description="Earn cashback and scratch cards on your next order." />
         ) : (
           <ul className="divide-y divide-border/60 rounded-3xl bg-card shadow-card ring-1 ring-border/60">
             {txns.map((t) => {

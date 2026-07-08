@@ -63,7 +63,7 @@ function AdminWalletPage() {
       <section className="rounded-2xl bg-card p-4 shadow-card ring-1 ring-border/60">
         <h2 className="eyebrow mb-2">Balances</h2>
         {balances.length === 0 ? (
-          <EmptyState title="No wallets yet" description="Wallet balances appear here once customers earn or spend." />
+          <EmptyState icon={<Wallet className="h-5 w-5" />} title="No wallets yet" description="Wallet balances appear here once customers earn or spend." />
         ) : (
           <ul className="divide-y divide-border/60">
             {balances.map(([cid, bal]) => (
@@ -89,7 +89,7 @@ function TxnList({ title, items, emptyDesc }: { title: string; items: WalletTxn[
     <div className="rounded-2xl bg-card p-4 shadow-card ring-1 ring-border/60">
       <h2 className="eyebrow mb-2">{title}</h2>
       {items.length === 0 ? (
-        <EmptyState title="Nothing yet" description={emptyDesc ?? "No entries yet."} />
+        <EmptyState icon={<Wallet className="h-5 w-5" />} title="Nothing yet" description={emptyDesc ?? "No entries yet."} />
       ) : (
         <ul className="divide-y divide-border/60">
           {items.slice(0, 40).map((t) => (

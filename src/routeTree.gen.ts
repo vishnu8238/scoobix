@@ -50,10 +50,12 @@ import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
+import { Route as AppWalletRouteImport } from './routes/app.wallet'
 import { Route as AppValueRouteImport } from './routes/app.value'
 import { Route as AppSwipeRouteImport } from './routes/app.swipe'
 import { Route as AppSuccessRouteImport } from './routes/app.success'
 import { Route as AppSearchRouteImport } from './routes/app.search'
+import { Route as AppReferralRouteImport } from './routes/app.referral'
 import { Route as AppRecentRouteImport } from './routes/app.recent'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
@@ -68,11 +70,13 @@ import { Route as AppCouponsRouteImport } from './routes/app.coupons'
 import { Route as AppCheckoutRouteImport } from './routes/app.checkout'
 import { Route as AppCartRouteImport } from './routes/app.cart'
 import { Route as AppBulkRouteImport } from './routes/app.bulk'
+import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSpotlightRouteImport } from './routes/admin.spotlight'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
@@ -289,6 +293,11 @@ const AuthForgotRoute = AuthForgotRouteImport.update({
   path: '/forgot',
   getParentRoute: () => AuthRoute,
 } as any)
+const AppWalletRoute = AppWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppValueRoute = AppValueRouteImport.update({
   id: '/value',
   path: '/value',
@@ -307,6 +316,11 @@ const AppSuccessRoute = AppSuccessRouteImport.update({
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReferralRoute = AppReferralRouteImport.update({
+  id: '/referral',
+  path: '/referral',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRecentRoute = AppRecentRouteImport.update({
@@ -379,6 +393,11 @@ const AppBulkRoute = AppBulkRouteImport.update({
   path: '/bulk',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminWalletRoute = AdminWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -402,6 +421,11 @@ const AdminRestaurantsRoute = AdminRestaurantsRouteImport.update({
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReferralsRoute = AdminReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
@@ -474,11 +498,13 @@ export interface FileRoutesByFullPath {
   '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
@@ -493,10 +519,12 @@ export interface FileRoutesByFullPath {
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
+  '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
+  '/app/wallet': typeof AppWalletRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
@@ -546,11 +574,13 @@ export interface FileRoutesByTo {
   '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
@@ -565,10 +595,12 @@ export interface FileRoutesByTo {
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
+  '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
+  '/app/wallet': typeof AppWalletRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
@@ -623,11 +655,13 @@ export interface FileRoutesById {
   '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
@@ -642,10 +676,12 @@ export interface FileRoutesById {
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
+  '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
+  '/app/wallet': typeof AppWalletRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
@@ -701,11 +737,13 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/orders'
     | '/admin/payments'
+    | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/users'
+    | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
     | '/app/checkout'
@@ -720,10 +758,12 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/profile'
     | '/app/recent'
+    | '/app/referral'
     | '/app/search'
     | '/app/success'
     | '/app/swipe'
     | '/app/value'
+    | '/app/wallet'
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
@@ -773,11 +813,13 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/orders'
     | '/admin/payments'
+    | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/users'
+    | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
     | '/app/checkout'
@@ -792,10 +834,12 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/profile'
     | '/app/recent'
+    | '/app/referral'
     | '/app/search'
     | '/app/success'
     | '/app/swipe'
     | '/app/value'
+    | '/app/wallet'
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
@@ -849,11 +893,13 @@ export interface FileRouteTypes {
     | '/admin/live'
     | '/admin/orders'
     | '/admin/payments'
+    | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/users'
+    | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
     | '/app/checkout'
@@ -868,10 +914,12 @@ export interface FileRouteTypes {
     | '/app/orders'
     | '/app/profile'
     | '/app/recent'
+    | '/app/referral'
     | '/app/search'
     | '/app/success'
     | '/app/swipe'
     | '/app/value'
+    | '/app/wallet'
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
@@ -1210,6 +1258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/app/wallet': {
+      id: '/app/wallet'
+      path: '/wallet'
+      fullPath: '/app/wallet'
+      preLoaderRoute: typeof AppWalletRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/value': {
       id: '/app/value'
       path: '/value'
@@ -1236,6 +1291,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/app/search'
       preLoaderRoute: typeof AppSearchRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/referral': {
+      id: '/app/referral'
+      path: '/referral'
+      fullPath: '/app/referral'
+      preLoaderRoute: typeof AppReferralRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/recent': {
@@ -1336,6 +1398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBulkRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/wallet': {
+      id: '/admin/wallet'
+      path: '/wallet'
+      fullPath: '/admin/wallet'
+      preLoaderRoute: typeof AdminWalletRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -1369,6 +1438,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/referrals': {
+      id: '/admin/referrals'
+      path: '/referrals'
+      fullPath: '/admin/referrals'
+      preLoaderRoute: typeof AdminReferralsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payments': {
@@ -1454,11 +1530,13 @@ interface AdminRouteChildren {
   AdminLiveRoute: typeof AdminLiveRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
+  AdminReferralsRoute: typeof AdminReferralsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRestaurantsRoute: typeof AdminRestaurantsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSpotlightRoute: typeof AdminSpotlightRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  AdminWalletRoute: typeof AdminWalletRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1472,11 +1550,13 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLiveRoute: AdminLiveRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
+  AdminReferralsRoute: AdminReferralsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRestaurantsRoute: AdminRestaurantsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSpotlightRoute: AdminSpotlightRoute,
   AdminUsersRoute: AdminUsersRoute,
+  AdminWalletRoute: AdminWalletRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -1497,10 +1577,12 @@ interface AppRouteChildren {
   AppOrdersRoute: typeof AppOrdersRoute
   AppProfileRoute: typeof AppProfileRoute
   AppRecentRoute: typeof AppRecentRoute
+  AppReferralRoute: typeof AppReferralRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSuccessRoute: typeof AppSuccessRoute
   AppSwipeRoute: typeof AppSwipeRoute
   AppValueRoute: typeof AppValueRoute
+  AppWalletRoute: typeof AppWalletRoute
   AppIndexRoute: typeof AppIndexRoute
   AppGroupSessionIdRoute: typeof AppGroupSessionIdRoute
 }
@@ -1520,10 +1602,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrdersRoute: AppOrdersRoute,
   AppProfileRoute: AppProfileRoute,
   AppRecentRoute: AppRecentRoute,
+  AppReferralRoute: AppReferralRoute,
   AppSearchRoute: AppSearchRoute,
   AppSuccessRoute: AppSuccessRoute,
   AppSwipeRoute: AppSwipeRoute,
   AppValueRoute: AppValueRoute,
+  AppWalletRoute: AppWalletRoute,
   AppIndexRoute: AppIndexRoute,
   AppGroupSessionIdRoute: AppGroupSessionIdRoute,
 }
