@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag, LogIn, LogOut, CheckCircle2, Utensils, Building2 } from "lucide-react";
+import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag, LogIn, LogOut, CheckCircle2, Utensils, Building2, Wallet, Gift } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { useAuth } from "@/lib/auth-store";
 import { toast } from "sonner";
