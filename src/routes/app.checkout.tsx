@@ -54,13 +54,19 @@ function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [scheduledFor, setScheduledFor] = useState<string>("");
+  const [useWalletBalance, setUseWalletBalance] = useState(false);
+  const { balance: walletBalance, debit: walletDebit, credit: walletCredit } = useMyWallet();
 
 
   const address = savedAddresses.find((a) => a.id === addressId)!;
   const deliveryObj = DELIVERY_OPTIONS.find((d) => d.id === delivery)!;
   const payObj = PAY_OPTIONS.find((p) => p.id === pay)!;
 
-  const finalTotal = totals.total + deliveryObj.price;
+  const orderTotal = totals.total + deliveryObj.price;
+  const walletApplied = pay === "wallet"
+    ? Math.min(walletBalance, orderTotal)
+    : (useWalletBalance ? Math.min(walletBalance, orderTotal) : 0);
+  const finalTotal = Math.max(0, orderTotal - walletApplied);
 
   if (!restaurant || items.length === 0) {
     return (
