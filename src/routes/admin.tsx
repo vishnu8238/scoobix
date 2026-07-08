@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles, Megaphone, Building2 } from "lucide-react";
+import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { cn } from "@/lib/format";
