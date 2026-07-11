@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift } from "lucide-react";
+import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { cn } from "@/lib/format";
@@ -18,6 +18,8 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
   { to: "/admin/ads", label: "Ads", icon: Megaphone },
   { to: "/admin/spotlight", label: "Spotlight", icon: Sparkles },
+  { to: "/admin/discover", label: "Discover More", icon: Compass },
+  { to: "/admin/trending", label: "Trending Now", icon: TrendingUp },
   { to: "/admin/bulk", label: "Bulk Orders", icon: Building2 },
   { to: "/admin/wallet", label: "Wallets", icon: Wallet },
   { to: "/admin/referrals", label: "Referrals", icon: Gift },

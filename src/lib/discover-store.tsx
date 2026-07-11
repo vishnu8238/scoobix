@@ -1,0 +1,183 @@
+/**
+ * Lightweight local-first stores for:
+ *  - Discover More cards (admin-managed horizontal shortcuts on Home)
+ *  - Trending Now chips (admin-managed + optionally auto-ranked)
+ *  - Restaurant collection requests (partner opt-in, admin approval)
+ *
+ * Uses useSyncExternalStore + localStorage so no Provider wiring is needed.
+ */
+import { useSyncExternalStore } from "react";
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+function createStore<T>(key: string, initial: T) {
+  let state: T = initial;
+  const listeners = new Set<() => void>();
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) state = { ...(initial as object), ...JSON.parse(raw) } as T;
+    } catch { /* ignore */ }
+  }
+  const persist = () => {
+    if (typeof window !== "undefined") {
+      try { localStorage.setItem(key, JSON.stringify(state)); } catch { /* ignore */ }
+    }
+  };
+  return {
+    get: () => state,
+    set: (next: T | ((prev: T) => T)) => {
+      state = typeof next === "function" ? (next as (p: T) => T)(state) : next;
+      persist();
+      listeners.forEach((l) => l());
+    },
+    subscribe: (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; },
+  };
+}
+
+/* ---------- Discover More ---------- */
+export type DiscoverCard = {
+  id: string;
+  title: string;
+  icon: string;         // emoji or single char (image fallback)
+  image?: string;       // optional image url
+  color?: string;       // colored border (hex/oklch)
+  query: string;        // search query it opens
+  enabled: boolean;
+  order: number;
+  startsAt?: string;    // ISO date; card only visible from
+  endsAt?: string;      // ISO date; card hidden after
+};
+
+const DEFAULT_DISCOVER: DiscoverCard[] = [
+  { id: "d1",  title: "Offers",           icon: "🎁", color: "#ef4444", query: "offer",         enabled: true, order: 1 },
+  { id: "d2",  title: "Local Legends",    icon: "🏆", color: "#f59e0b", query: "local",         enabled: true, order: 2 },
+  { id: "d3",  title: "Women Owned",      icon: "💜", color: "#a855f7", query: "women owned",   enabled: true, order: 3 },
+  { id: "d4",  title: "Healthy",          icon: "🥗", color: "#22c55e", query: "healthy",       enabled: true, order: 4 },
+  { id: "d5",  title: "Pure Veg",         icon: "🌿", color: "#16a34a", query: "veg",           enabled: true, order: 5 },
+  { id: "d6",  title: "Budget Meals",     icon: "💰", color: "#eab308", query: "budget",        enabled: true, order: 6 },
+  { id: "d7",  title: "Family Packs",     icon: "👨‍👩‍👧", color: "#f97316", query: "family",  enabled: true, order: 7 },
+  { id: "d8",  title: "New Restaurants",  icon: "✨", color: "#0ea5e9", query: "new",           enabled: true, order: 8 },
+  { id: "d9",  title: "Trending",         icon: "🔥", color: "#dc2626", query: "trending",      enabled: true, order: 9 },
+  { id: "d10", title: "Best Rated",       icon: "⭐", color: "#facc15", query: "best rated",    enabled: true, order: 10 },
+  { id: "d11", title: "Breakfast",        icon: "🥞", color: "#fb923c", query: "breakfast",     enabled: true, order: 11 },
+  { id: "d12", title: "Late Night",       icon: "🌙", color: "#6366f1", query: "late night",    enabled: true, order: 12 },
+  { id: "d13", title: "Desserts",         icon: "🍰", color: "#ec4899", query: "dessert",       enabled: true, order: 13 },
+  { id: "d14", title: "Street Food",      icon: "🌮", color: "#f97316", query: "street",        enabled: true, order: 14 },
+  { id: "d15", title: "Premium Dining",   icon: "🥂", color: "#7c3aed", query: "premium",       enabled: true, order: 15 },
+];
+
+const discoverStore = createStore<DiscoverCard[]>("scoobix_discover_v1", DEFAULT_DISCOVER);
+
+const isVisible = (c: DiscoverCard) => {
+  if (!c.enabled) return false;
+  const now = Date.now();
+  if (c.startsAt && new Date(c.startsAt).getTime() > now) return false;
+  if (c.endsAt   && new Date(c.endsAt).getTime()   < now) return false;
+  return true;
+};
+
+export function useDiscoverCards() {
+  const all = useSyncExternalStore(discoverStore.subscribe, discoverStore.get, () => DEFAULT_DISCOVER);
+  return [...all].sort((a, b) => a.order - b.order);
+}
+export function useVisibleDiscoverCards() {
+  return useDiscoverCards().filter(isVisible);
+}
+export const discoverActions = {
+  add: (input: Partial<DiscoverCard>) => discoverStore.set((prev) => [
+    ...prev,
+    { id: uid(), title: "New card", icon: "✨", query: "", enabled: true, order: (prev.at(-1)?.order ?? 0) + 1, ...input },
+  ]),
+  update: (id: string, patch: Partial<DiscoverCard>) =>
+    discoverStore.set((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c))),
+  remove: (id: string) => discoverStore.set((prev) => prev.filter((c) => c.id !== id)),
+  reorder: (id: string, dir: -1 | 1) => discoverStore.set((prev) => {
+    const list = [...prev].sort((a, b) => a.order - b.order);
+    const idx = list.findIndex((c) => c.id === id);
+    const swap = idx + dir;
+    if (idx < 0 || swap < 0 || swap >= list.length) return prev;
+    const a = list[idx], b = list[swap];
+    return prev.map((c) => c.id === a.id ? { ...c, order: b.order } : c.id === b.id ? { ...c, order: a.order } : c);
+  }),
+};
+
+/* ---------- Trending Now ---------- */
+export type TrendingChip = {
+  id: string;
+  name: string;
+  image: string;
+  enabled: boolean;
+  order: number;
+  startsAt?: string;
+  endsAt?: string;
+  auto?: boolean; // auto-ranked from popularity (mock: order preserved)
+};
+
+const DEFAULT_TRENDING: TrendingChip[] = [
+  { id: "t1",  name: "Pizza",         image: "https://images.unsplash.com/photo-1548365328-9f547fb0953b?w=200",  enabled: true, order: 1 },
+  { id: "t2",  name: "Burger",        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200",  enabled: true, order: 2 },
+  { id: "t3",  name: "Biryani",       image: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=200",  enabled: true, order: 3 },
+  { id: "t4",  name: "Chinese",       image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=200",  enabled: true, order: 4 },
+  { id: "t5",  name: "Rolls",         image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=200",  enabled: true, order: 5 },
+  { id: "t6",  name: "Shawarma",      image: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=200",  enabled: true, order: 6 },
+  { id: "t7",  name: "South Indian",  image: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=200",  enabled: true, order: 7 },
+  { id: "t8",  name: "Ice Cream",     image: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=200",  enabled: true, order: 8 },
+  { id: "t9",  name: "Cake",          image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200",  enabled: true, order: 9 },
+  { id: "t10", name: "Healthy",       image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200",  enabled: true, order: 10 },
+  { id: "t11", name: "Coffee",        image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200",  enabled: true, order: 11 },
+];
+
+const trendingStore = createStore<TrendingChip[]>("scoobix_trending_v1", DEFAULT_TRENDING);
+
+export function useTrendingChips() {
+  const all = useSyncExternalStore(trendingStore.subscribe, trendingStore.get, () => DEFAULT_TRENDING);
+  return [...all].sort((a, b) => a.order - b.order);
+}
+export function useVisibleTrendingChips() {
+  return useTrendingChips().filter(isVisible);
+}
+export const trendingActions = {
+  add: (input: Partial<TrendingChip>) => trendingStore.set((prev) => [
+    ...prev,
+    { id: uid(), name: "New", image: "", enabled: true, order: (prev.at(-1)?.order ?? 0) + 1, ...input },
+  ]),
+  update: (id: string, patch: Partial<TrendingChip>) =>
+    trendingStore.set((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c))),
+  remove: (id: string) => trendingStore.set((prev) => prev.filter((c) => c.id !== id)),
+  reorder: (id: string, dir: -1 | 1) => trendingStore.set((prev) => {
+    const list = [...prev].sort((a, b) => a.order - b.order);
+    const idx = list.findIndex((c) => c.id === id);
+    const swap = idx + dir;
+    if (idx < 0 || swap < 0 || swap >= list.length) return prev;
+    const a = list[idx], b = list[swap];
+    return prev.map((c) => c.id === a.id ? { ...c, order: b.order } : c.id === b.id ? { ...c, order: a.order } : c);
+  }),
+};
+
+/* ---------- Restaurant collection inclusion requests ---------- */
+export type CollectionRequest = {
+  id: string;
+  restaurantId: string;
+  restaurantName: string;
+  collectionId: string;  // matches a DiscoverCard id
+  collectionTitle: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: number;
+};
+
+const reqStore = createStore<CollectionRequest[]>("scoobix_collection_requests_v1", []);
+
+export function useCollectionRequests() {
+  return useSyncExternalStore(reqStore.subscribe, reqStore.get, () => [] as CollectionRequest[]);
+}
+export const collectionRequestActions = {
+  submit: (input: Omit<CollectionRequest, "id" | "status" | "createdAt">) =>
+    reqStore.set((prev) => [
+      { ...input, id: uid(), status: "pending", createdAt: Date.now() },
+      ...prev,
+    ]),
+  setStatus: (id: string, status: CollectionRequest["status"]) =>
+    reqStore.set((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r))),
+  remove: (id: string) => reqStore.set((prev) => prev.filter((r) => r.id !== id)),
+};
