@@ -43,6 +43,7 @@ import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as PartnerMealsRouteImport } from './routes/partner.meals'
 import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
+import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
 import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
@@ -72,6 +73,7 @@ import { Route as AppCartRouteImport } from './routes/app.cart'
 import { Route as AppBulkRouteImport } from './routes/app.bulk'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminTrendingRouteImport } from './routes/admin.trending'
 import { Route as AdminSpotlightRouteImport } from './routes/admin.spotlight'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants'
@@ -81,6 +83,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
+import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
@@ -258,6 +261,11 @@ const PartnerHoursRoute = PartnerHoursRouteImport.update({
   path: '/hours',
   getParentRoute: () => PartnerRoute,
 } as any)
+const PartnerCollectionsRoute = PartnerCollectionsRouteImport.update({
+  id: '/collections',
+  path: '/collections',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const PartnerBulkRoute = PartnerBulkRouteImport.update({
   id: '/bulk',
   path: '/bulk',
@@ -403,6 +411,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTrendingRoute = AdminTrendingRouteImport.update({
+  id: '/trending',
+  path: '/trending',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSpotlightRoute = AdminSpotlightRouteImport.update({
   id: '/spotlight',
   path: '/spotlight',
@@ -446,6 +459,11 @@ const AdminLiveRoute = AdminLiveRouteImport.update({
 const AdminDriversRoute = AdminDriversRouteImport.update({
   id: '/drivers',
   path: '/drivers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDiscoverRoute = AdminDiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCommissionRoute = AdminCommissionRouteImport.update({
@@ -494,6 +512,7 @@ export interface FileRoutesByFullPath {
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
+  '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -503,6 +522,7 @@ export interface FileRoutesByFullPath {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
@@ -532,6 +552,7 @@ export interface FileRoutesByFullPath {
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -570,6 +591,7 @@ export interface FileRoutesByTo {
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
+  '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -579,6 +601,7 @@ export interface FileRoutesByTo {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
@@ -608,6 +631,7 @@ export interface FileRoutesByTo {
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -651,6 +675,7 @@ export interface FileRoutesById {
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
+  '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -660,6 +685,7 @@ export interface FileRoutesById {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
@@ -689,6 +715,7 @@ export interface FileRoutesById {
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -733,6 +760,7 @@ export interface FileRouteTypes {
     | '/admin/bulk'
     | '/admin/cms'
     | '/admin/commission'
+    | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
     | '/admin/orders'
@@ -742,6 +770,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
     | '/app/bulk'
@@ -771,6 +800,7 @@ export interface FileRouteTypes {
     | '/partner/ads'
     | '/partner/analytics'
     | '/partner/bulk'
+    | '/partner/collections'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -809,6 +839,7 @@ export interface FileRouteTypes {
     | '/admin/bulk'
     | '/admin/cms'
     | '/admin/commission'
+    | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
     | '/admin/orders'
@@ -818,6 +849,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
     | '/app/bulk'
@@ -847,6 +879,7 @@ export interface FileRouteTypes {
     | '/partner/ads'
     | '/partner/analytics'
     | '/partner/bulk'
+    | '/partner/collections'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -889,6 +922,7 @@ export interface FileRouteTypes {
     | '/admin/bulk'
     | '/admin/cms'
     | '/admin/commission'
+    | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
     | '/admin/orders'
@@ -898,6 +932,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
     | '/app/bulk'
@@ -927,6 +962,7 @@ export interface FileRouteTypes {
     | '/partner/ads'
     | '/partner/analytics'
     | '/partner/bulk'
+    | '/partner/collections'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -1209,6 +1245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerHoursRouteImport
       parentRoute: typeof PartnerRoute
     }
+    '/partner/collections': {
+      id: '/partner/collections'
+      path: '/collections'
+      fullPath: '/partner/collections'
+      preLoaderRoute: typeof PartnerCollectionsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
     '/partner/bulk': {
       id: '/partner/bulk'
       path: '/bulk'
@@ -1412,6 +1455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/trending': {
+      id: '/admin/trending'
+      path: '/trending'
+      fullPath: '/admin/trending'
+      preLoaderRoute: typeof AdminTrendingRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/spotlight': {
       id: '/admin/spotlight'
       path: '/spotlight'
@@ -1475,6 +1525,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDriversRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/discover': {
+      id: '/admin/discover'
+      path: '/discover'
+      fullPath: '/admin/discover'
+      preLoaderRoute: typeof AdminDiscoverRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/commission': {
       id: '/admin/commission'
       path: '/commission'
@@ -1526,6 +1583,7 @@ interface AdminRouteChildren {
   AdminBulkRoute: typeof AdminBulkRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminCommissionRoute: typeof AdminCommissionRoute
+  AdminDiscoverRoute: typeof AdminDiscoverRoute
   AdminDriversRoute: typeof AdminDriversRoute
   AdminLiveRoute: typeof AdminLiveRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
@@ -1535,6 +1593,7 @@ interface AdminRouteChildren {
   AdminRestaurantsRoute: typeof AdminRestaurantsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSpotlightRoute: typeof AdminSpotlightRoute
+  AdminTrendingRoute: typeof AdminTrendingRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminWalletRoute: typeof AdminWalletRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1546,6 +1605,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBulkRoute: AdminBulkRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminCommissionRoute: AdminCommissionRoute,
+  AdminDiscoverRoute: AdminDiscoverRoute,
   AdminDriversRoute: AdminDriversRoute,
   AdminLiveRoute: AdminLiveRoute,
   AdminOrdersRoute: AdminOrdersRoute,
@@ -1555,6 +1615,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminRestaurantsRoute: AdminRestaurantsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSpotlightRoute: AdminSpotlightRoute,
+  AdminTrendingRoute: AdminTrendingRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminWalletRoute: AdminWalletRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -1633,6 +1694,7 @@ interface PartnerRouteChildren {
   PartnerAdsRoute: typeof PartnerAdsRoute
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
   PartnerBulkRoute: typeof PartnerBulkRoute
+  PartnerCollectionsRoute: typeof PartnerCollectionsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
   PartnerInvoiceRoute: typeof PartnerInvoiceRoute
   PartnerMealsRoute: typeof PartnerMealsRoute
@@ -1650,6 +1712,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerAdsRoute: PartnerAdsRoute,
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
   PartnerBulkRoute: PartnerBulkRoute,
+  PartnerCollectionsRoute: PartnerCollectionsRoute,
   PartnerHoursRoute: PartnerHoursRoute,
   PartnerInvoiceRoute: PartnerInvoiceRoute,
   PartnerMealsRoute: PartnerMealsRoute,
