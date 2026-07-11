@@ -13,6 +13,7 @@ import { useAppUI } from "@/lib/stores";
 import { useAds } from "@/lib/ads-store";
 import { useSpotlight } from "@/lib/scoobix-extras";
 import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
+import { DiscoverMore, TrendingNow } from "@/components/cravio/DiscoverMore";
 
 import {
   filterVeg, filterVegDishes, isPureVeg, extrasFor,
@@ -151,6 +152,9 @@ function Home() {
         </button>
       </div>
 
+      {/* Trending Now — directly below search area */}
+      <TrendingNow />
+
       {sectionEnabled("carousel") && <HeroCarousel />}
 
       <SpotlightBanner />
@@ -209,12 +213,16 @@ function Home() {
       {/* Sponsored restaurants — placed after Filters, before Explore flavors */}
       <SponsoredRestaurantsRow />
 
-      {/* Explore flavors (categories) */}
+      {/* Explore flavors (categories) — sticky while scrolling below */}
       {sectionEnabled("categories") && (
-        <div className="pt-2">
+        <div className="sticky top-0 z-20 -mx-0 bg-background/85 pt-2 pb-1 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
           <CategoryRail />
         </div>
       )}
+
+      {/* Discover More — horizontal shortcut rail */}
+      <DiscoverMore />
+
 
       {/* Scoobix Swipe entry banner */}
       {sectionEnabled("swipe") && (
@@ -512,7 +520,7 @@ function SpotlightBanner() {
 
 function QuickAccessRow() {
   return (
-    <div className="px-5 mt-4 grid grid-cols-3 gap-2">
+    <div className="px-5 mt-4 grid grid-cols-2 gap-2">
       <Link to="/app/meal" className="flex flex-col items-center gap-1 rounded-2xl bg-card p-3 text-center shadow-soft ring-1 ring-border/60 active:scale-95 transition">
         <span className="text-xl">🍱</span>
         <span className="text-[11px] font-bold">Daily Meal</span>
@@ -520,10 +528,6 @@ function QuickAccessRow() {
       <Link to="/app/bulk" className="flex flex-col items-center gap-1 rounded-2xl bg-card p-3 text-center shadow-soft ring-1 ring-border/60 active:scale-95 transition">
         <span className="text-xl">🏢</span>
         <span className="text-[11px] font-bold">Corporate</span>
-      </Link>
-      <Link to="/app/swipe" className="flex flex-col items-center gap-1 rounded-2xl bg-card p-3 text-center shadow-soft ring-1 ring-border/60 active:scale-95 transition">
-        <span className="text-xl">✨</span>
-        <span className="text-[11px] font-bold">Swipe</span>
       </Link>
     </div>
   );
