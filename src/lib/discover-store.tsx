@@ -69,7 +69,7 @@ const DEFAULT_DISCOVER: DiscoverCard[] = [
 
 const discoverStore = createStore<DiscoverCard[]>("scoobix_discover_v1", DEFAULT_DISCOVER);
 
-const isVisible = (c: DiscoverCard) => {
+const isVisible = (c: { enabled: boolean; startsAt?: string; endsAt?: string }) => {
   if (!c.enabled) return false;
   const now = Date.now();
   if (c.startsAt && new Date(c.startsAt).getTime() > now) return false;
