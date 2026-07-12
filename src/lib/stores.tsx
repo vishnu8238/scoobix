@@ -383,29 +383,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(REFUNDS_KEY, JSON.stringify(refunds));
   }, [refunds]);
 
-  // Auto-advance any active orders periodically for the demo
-  useEffect(() => {
-    const t = setInterval(() => {
-      setOrders((prev) => {
-        let changed = false;
-        const next = prev.map((o) => {
-          if (o.status === "DELIVERED" || o.status === "CANCELLED") return o;
-          const ageSec = (Date.now() - o.placedAt) / 1000;
-          let target: OrderStatus = "PLACED";
-          if (ageSec >= 60) target = "DELIVERED";
-          else if (ageSec >= 42) target = "ON_THE_WAY";
-          else if (ageSec >= 32) target = "PICKED_UP";
-          else if (ageSec >= 22) target = "READY";
-          else if (ageSec >= 10) target = "PREPARING";
-          else if (ageSec >= 4) target = "ACCEPTED";
-          if (target !== o.status) { changed = true; return { ...o, status: target }; }
-          return o;
-        });
-        return changed ? next : prev;
-      });
-    }, 2000);
-    return () => clearInterval(t);
-  }, []);
+  // Live status is now driven by the backend via realtime hooks
+  // (`useLiveOrders` / `useLiveOrder`). The old fake-advance loop was removed.
 
   const placeOrder: OrdersCtx["placeOrder"] = ({ items, totals, restaurant, addressLabel, addressLine, paymentLabel, deliveryInstructions, contactless, notes, couponCode }) => {
     const id = `CRV${Math.floor(100000 + Math.random() * 900000)}`;
