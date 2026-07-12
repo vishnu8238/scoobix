@@ -15,7 +15,12 @@
  * in the InsForge dashboard — anon clients cannot create buckets.
  */
 
-import { INSFORGE_URL, insforgeHeaders } from "./insforge";
+import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+
+const insforgeHeaders = () => ({
+  apikey: INSFORGE_ANON_KEY,
+  Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+});
 
 export type ImageType =
   | "logo"
