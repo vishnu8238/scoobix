@@ -214,6 +214,10 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
       createdAt: Date.now(),
     };
     setRecords((p) => [rec, ...p]);
+    void import("./insforge-crud").then(({ createRecord }) => createRecord("referrals", {
+      id: rec.id, code: rec.code, referrer_id: rec.referrerId, referee_id: rec.refereeId,
+      referee_name: rec.refereeName, status: rec.status,
+    }));
     return { ok: true };
   };
 
@@ -222,7 +226,11 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
     const rec = records.find((r) => r.refereeId === refereeId && r.status === "pending");
     if (!rec) return null;
     const expired = Date.now() - rec.createdAt > config.expiryDays * 86400000;
-    if (expired) { setRecords((p) => p.map((r) => r.id === rec.id ? { ...r, status: "expired" } : r)); return null; }
+    if (expired) {
+      setRecords((p) => p.map((r) => r.id === rec.id ? { ...r, status: "expired" } : r));
+      void import("./insforge-crud").then(({ patchRecord }) => patchRecord("referrals", rec.id, { status: "expired" }));
+      return null;
+    }
     if (orderTotal < config.minOrder) return null;
     // Credit the referee
     credit(refereeId, config.refereeReward, "credit", `Referral bonus (code ${rec.code})`);
