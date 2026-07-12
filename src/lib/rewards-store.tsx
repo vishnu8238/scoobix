@@ -78,6 +78,30 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* ignore */ }
   }, [state]);
 
+  // Hydrate earned scratch cards from InsForge on mount.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<{ order_id?: string; reward_id?: string; earned_at?: string; applied?: boolean }>("scratch_cards");
+      if (cancelled || !rows.length) return;
+      setState((s) => {
+        const earned = { ...s.earned };
+        for (const r of rows) {
+          if (!r.order_id || !r.reward_id) continue;
+          earned[r.order_id] = {
+            rewardId: r.reward_id,
+            orderId: r.order_id,
+            earnedAt: r.earned_at ? new Date(r.earned_at).getTime() : Date.now(),
+            applied: !!r.applied,
+          };
+        }
+        return { ...s, earned };
+      });
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const drawReward: Ctx["drawReward"] = (orderId) => {
     if (state.earned[orderId]) {
       return state.rewards.find((r) => r.id === state.earned[orderId].rewardId) ?? null;
@@ -88,6 +112,9 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     setState((s) => ({
       rewards: s.rewards.map((r) => r.id === picked.id ? { ...r, distributed: r.distributed + 1 } : r),
       earned: { ...s.earned, [orderId]: { rewardId: picked.id, orderId, earnedAt: Date.now(), applied: false } },
+    }));
+    void import("./insforge-crud").then(({ createRecord }) => createRecord("scratch_cards", {
+      order_id: orderId, reward_id: picked.id, applied: false,
     }));
     return picked;
   };
@@ -100,7 +127,13 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     toggleReward: (id) => setState((s) => ({ ...s, rewards: s.rewards.map((r) => r.id === id ? { ...r, status: r.status === "active" ? "disabled" : "active" } : r) })),
     earned: state.earned,
     drawReward,
-    markApplied: (orderId) => setState((s) => s.earned[orderId] ? { ...s, earned: { ...s.earned, [orderId]: { ...s.earned[orderId], applied: true } } } : s),
+    markApplied: (orderId) => {
+      setState((s) => s.earned[orderId] ? { ...s, earned: { ...s.earned, [orderId]: { ...s.earned[orderId], applied: true } } } : s);
+      void import("./insforge-crud").then(({ listTable, patchRecord }) => listTable<{ id?: string; order_id?: string }>("scratch_cards", { order_id: orderId, limit: 1 }).then((rs) => {
+        const row = rs[0];
+        if (row?.id) void patchRecord("scratch_cards", row.id, { applied: true });
+      }));
+    },
   };
 
   return <RewardsContext.Provider value={ctx}>{children}</RewardsContext.Provider>;
