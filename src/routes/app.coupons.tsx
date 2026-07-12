@@ -66,7 +66,7 @@ function CouponsPage() {
       </div>
 
       {!loading && list.length === 0 ? (
-        <div className="px-4 pt-6"><EmptyState title="No offers yet" description="Check back soon for coupons and discounts." /></div>
+        <div className="px-4 pt-6"><EmptyState icon={<Tag className="h-6 w-6" />} title="No offers yet" description="Check back soon for coupons and discounts." /></div>
       ) : (
         <ul className="mt-6 space-y-3 px-4">
           {list.map((c) => (

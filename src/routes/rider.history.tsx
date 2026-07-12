@@ -50,7 +50,7 @@ function HistoryPage() {
       <PageHeader title="Delivery history" subtitle={loading ? "Loading…" : `${rows.length} trips`} />
 
       {!loading && rows.length === 0 ? (
-        <div className="px-4 pt-6"><EmptyState title="No trips yet" description="Completed and cancelled deliveries appear here." /></div>
+        <div className="px-4 pt-6"><EmptyState icon={<Check className="h-6 w-6" />} title="No trips yet" description="Completed and cancelled deliveries appear here." /></div>
       ) : (
         <ul className="mx-4 mt-3 divide-y divide-border/60 rounded-3xl bg-card shadow-soft ring-1 ring-border/60">
           {rows.map((d) => {
