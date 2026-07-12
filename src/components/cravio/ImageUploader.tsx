@@ -50,10 +50,9 @@ export function ImageUploader({
 
     try {
       setStatus("uploading");
-      const ref = await uploadImage(file, type);
-      // Mock "server-side processing" step so the UI mirrors the future flow.
+      const ref = await uploadImage(file, type, { oldRef: value ?? null });
       setStatus("processing");
-      await new Promise((r) => setTimeout(r, 350));
+      await new Promise((r) => setTimeout(r, 150));
       setStatus("done");
       onChange?.(ref);
     } catch {
