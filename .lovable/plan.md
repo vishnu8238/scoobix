@@ -1,54 +1,53 @@
-# Scoobix Feature Extensions Plan
+## Scope — minimum-footprint extensions
 
-Seven features added with **minimum footprint**. Reuses existing stores, InsForge helpers, sheet/dialog components, and Scoobix design tokens. No redesign of any existing screen.
+All 13 items landed by extending existing stores/routes. No new tables required; state persists via localStorage with best-effort InsForge sync (existing pattern).
 
-## Scope Summary
+### 1. Restaurant Coupons (extend `app.coupons.tsx`)
+- New store slice in `src/lib/scoobix-extras.tsx`: `coupons[]` with `{code, type: flat|percent, value, minOrder, maxDiscount, startAt, endAt, usageLimit, perUser, status: draft|pending|approved|rejected|disabled, restaurantId, usageCount}`.
+- New `src/routes/partner.coupons.tsx`: create/edit/toggle/submit for approval, list with status chips. Wire into partner nav.
+- Extend `src/routes/admin.cms.tsx` OR new `admin.coupons.tsx` (chosen: **new page** to avoid touching CMS editor) — approve/reject/edit/disable + usage counts.
+- `app.coupons.tsx` filters to `status==='approved'` and active date window; existing checkout apply flow unchanged.
 
-| # | Feature | New route(s) | Backend calls added |
-|---|---------|--------------|---------------------|
-| 1 | Daily Meal subscriptions | `app.meal.tsx` + partner tab | `meal_subscriptions` records |
-| 2 | Corporate / Bulk orders | `app.bulk.tsx` + partner tab | `bulk_requests` records |
-| 3 | Free Delivery logic | (extends checkout/cart) | reads `settings.free_delivery_min` |
-| 4 | Scoobix Spotlight | home banner + admin card | reads `spotlight` record |
-| 5 | Delivery Batching | (backend hook only) | `orders.batch_id` field |
-| 6 | Scheduled Orders | checkout time picker + partner filter | `orders.scheduled_for` field |
-| 7 | Group Ordering | `app.group.$sessionId.tsx` + share sheet | `group_carts` records |
+### 2. Delivery Charge Rule Engine (extend `cms-store.tsx`)
+- Replace flat `deliveryFee` with `deliverySlabs: [{minSubtotal, maxSubtotal?, fee}]` (defaults: `<400→25`, `≥400→50`), plus `restaurantOverrides` and `cityOverrides` maps and `campaigns[]` (free-delivery windows).
+- Helper `computeDeliveryFee(subtotal, restaurantId, city)` used by `stores.tsx` cart calc (replaces current flat lookup; keeps `freeDeliveryMin` as legacy fallback).
+- Editor UI added to `admin.settings.tsx`.
 
-## Files to change
+### 3. Restaurant Delivery Subscription
+- Store slice: `subscriptionPlans[]` and `restaurantSubscriptions{}` in `scoobix-extras.tsx`.
+- New `src/routes/partner.subscription.tsx`: current plan, renewal date, mock payment history, upgrade/downgrade.
+- New `src/routes/admin.plans.tsx`: CRUD plans, assign manually.
+- Commission logic untouched.
 
-### New route files (kept minimal, reuse existing `Card`, `Sheet`, `Button`, `EmptyState`)
-- `src/routes/app.meal.tsx` — subscription form + list with pause/resume/skip
-- `src/routes/app.bulk.tsx` — bulk order request form
-- `src/routes/app.group.$sessionId.tsx` — shared cart view (thin wrapper around existing cart UI)
-- `src/routes/partner.meals.tsx` — next-day meal count summary
-- `src/routes/partner.bulk.tsx` — accept/reject bulk requests
-- `src/routes/admin.spotlight.tsx` — pick weekly featured content
-- `src/routes/admin.bulk.tsx` — monitor all bulk requests
+### 4. Petpooja / POS Integration (architecture-ready)
+- Extend `partner.profile.tsx` (or new `partner.integrations.tsx` — chosen: **new page**) with a POS Integrations card: connect/disconnect Petpooja, API key + secret fields, order-sync toggle, menu-sync toggle, status indicator (Not configured / Connected / Error).
+- State in `scoobix-extras.tsx`: `posIntegrations{restaurantId: {provider, apiKey, secret, orderSync, menuSync, status}}`. No live API.
 
-### Extended files (small additions, no removals)
-- `src/lib/insforge.ts` — add helpers: `createMealSubscription`, `updateMealSubscription`, `listMealSubscriptions`, `createBulkRequest`, `listBulkRequests`, `updateBulkStatus`, `getSpotlight`, `setSpotlight`, `createGroupCart`, `joinGroupCart`, `getGroupCart`
-- `src/lib/stores.tsx` — add `useMealPlan`, `useGroupCart`, `useBulk` hooks (localStorage + backend sync, same pattern as existing stores)
-- `src/lib/cms-store.tsx` — add `freeDeliveryMin` and `spotlight` fields to settings
-- `src/routes/app.checkout.tsx` — add scheduled-time picker (existing `Sheet`), show/hide free delivery via cms setting
-- `src/routes/app.cart.tsx` — add "Invite to cart" button (opens share sheet) and free-delivery badge
-- `src/routes/app.index.tsx` — add Spotlight banner (reuses `HeroCarousel` pattern) + entry chips linking to `/app/meal` and `/app/bulk`
-- `src/routes/partner.orders.tsx` — split "Scheduled" tab, show `batch_id` badge when present
-- `src/routes/rider.active.tsx` — if `batch_id` present, render "Batch (n stops)" pill
-- `src/routes/admin.tsx` — add nav entries for `Spotlight` and `Bulk`
-- `src/routes/app.more.tsx` — add entries for Meal Plan, Bulk Orders, Group Cart
+### 5–12. Driver End-to-End Flow (extend rider routes + `delivery-store.tsx`)
+Existing: online toggle, DriverAssignDialog with countdown, rider.active. Additions:
+- **60s timer** driven by admin setting `acceptanceTimerSec` (already exists, default lifted to 60).
+- **Slide-to-accept** control component `src/components/cravio/SlideToConfirm.tsx` used across: accept order, reached pickup, order picked up, reached destination, complete delivery.
+- Extend `rider.active.tsx` into a **phased flow**: `ASSIGNED → EN_ROUTE_PICKUP → AT_PICKUP → PICKED_UP → EN_ROUTE_DROP → AT_DROP → PAYMENT → COMPLETE`. Each phase renders the required cards (restaurant/customer info, map reuse `LeafletMap`, call/chat/navigate deep links).
+- **Order card fields** (accept step): pickup dist, drop dist, earnings, per-km rate, bonus, COD/online, order value — computed from delivery settings.
+- **Pickup confirmation**: OTP/order code (already in `orders`), items list, notes.
+- **Restaurant feedback sheet** (post-pickup): 6 quick chips + optional note → stored on order in `delivery-store.tsx`.
+- **Customer feedback sheet** (post-delivery): 6 quick chips + optional note.
+- **Payment step**: COD shows amount; UPI generates QR via existing QR API pattern used in group orders.
+- **Complete screen**: earnings breakdown (base + per-km + bonus), distance, time, today's total, "Find New Orders" resumes online search.
 
-## Technical Notes
+### 13. Admin Delivery Settings (extend `admin.settings.tsx`)
+Single expanded section: base fee, slabs editor, per-km rate, long-distance multiplier + threshold, waiting charge, peak-hour incentive, rain incentive, COD fee, acceptance timer, auto-reassign toggle, max radius. Coupon-approval and subscription-plan links point to the new admin pages. All values stored in `cms-store.tsx` settings.
 
-- **No new tables required** — reuse `orders` table with added columns (`scheduled_for`, `batch_id`, `subscription_id`, `bulk_request_id`) via InsForge's flexible schema. If missing, helpers degrade gracefully (backend responds `field unknown` → we catch and keep local state).
-- **Free delivery**: single boolean derived from `cart.subtotal >= settings.freeDeliveryMin`. No new customer fee added. Existing delivery-fee line hides when eligible; badge appears on restaurant + cart.
-- **Group cart**: session id in URL, cart state synced through `group_carts` record; existing `useCart` extended with `sessionId` mode. One checkout at end.
-- **Batching**: purely a data flag — `batch_id` on `orders`. Partner and rider screens show a pill when set; grouping logic itself is admin/backend concern (stubbed helper `computeBatches` provided for later cron).
-- **Spotlight**: single row in a `spotlight` record (or CMS setting fallback). Admin picks restaurant/dish/combo id + copy.
-- **Loading + empty states**: all new lists reuse `EmptyState` and existing skeleton components.
-- **Demo fallback preserved**: every new list falls back to local mock data if backend is empty, matching existing pattern.
+### Nav wiring
+- Partner nav (`partner.tsx`): + Coupons, Subscription, Integrations.
+- Admin nav (`admin.tsx`): + Coupons, Plans.
+- Rider nav: unchanged (flow lives inside `rider.active.tsx`).
 
-## Out of scope
-- Redesign of any existing screen
-- New animation systems
-- Payment provider changes
-- Push-notification wiring (uses existing `notifications` table only)
+### Files
+**New (8)**: `partner.coupons.tsx`, `partner.subscription.tsx`, `partner.integrations.tsx`, `admin.coupons.tsx`, `admin.plans.tsx`, `components/cravio/SlideToConfirm.tsx`, and helpers inside existing stores.
+**Edited (8)**: `scoobix-extras.tsx`, `cms-store.tsx`, `stores.tsx` (cart fee calc), `delivery-store.tsx` (phases + feedback), `rider.active.tsx` (phased UI), `admin.settings.tsx`, `partner.tsx`, `admin.tsx`.
+
+### Out of scope
+- No UI redesign, no branding/animation changes, no new DB tables, no live Petpooja API, no changes to existing commission or wallet logic.
+
+Approve to proceed, or tell me which items to drop to save credits (e.g. skip Petpooja stub, or ship driver flow only).
