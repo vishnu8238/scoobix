@@ -463,8 +463,12 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     },
 
     commissions: state.commissions,
-    setCommission: (restaurantId, pct) =>
-      setState((s) => ({ ...s, commissions: { ...s.commissions, [restaurantId]: Math.max(0, Math.min(100, pct)) } })),
+    setCommission: (restaurantId, pct) => {
+      const clamped = Math.max(0, Math.min(100, pct));
+      setState((s) => ({ ...s, commissions: { ...s.commissions, [restaurantId]: clamped } }));
+      // Mirror to backend so the order-finalizer reads the same value.
+      void import("./insforge").then(({ setRestaurantCommission }) => setRestaurantCommission(restaurantId, clamped));
+    },
 
     closedRestaurants: state.closedRestaurants,
     toggleRestaurantClosed: (restaurantId) =>
