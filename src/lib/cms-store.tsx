@@ -374,6 +374,17 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
   }, [state]);
 
+  // Hydrate coupons from InsForge on mount (backend wins when non-empty).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<CmsCoupon>("coupons");
+      if (!cancelled && rows.length) setState((s) => ({ ...s, coupons: rows }));
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const ctx: CmsCtx = {
     banners: reorder(state.banners),
     addBanner: (b) =>
