@@ -383,28 +383,48 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(REFUNDS_KEY, JSON.stringify(refunds));
   }, [refunds]);
 
-  // Auto-advance any active orders periodically for the demo
+  // Live server status overlay — subscribes to `orders` and merges the
+  // server-authoritative status into any local order with a matching id.
+  // Falls back to polling (via `subscribeTable`) with exponential backoff.
   useEffect(() => {
-    const t = setInterval(() => {
-      setOrders((prev) => {
-        let changed = false;
-        const next = prev.map((o) => {
-          if (o.status === "DELIVERED" || o.status === "CANCELLED") return o;
-          const ageSec = (Date.now() - o.placedAt) / 1000;
-          let target: OrderStatus = "PLACED";
-          if (ageSec >= 60) target = "DELIVERED";
-          else if (ageSec >= 42) target = "ON_THE_WAY";
-          else if (ageSec >= 32) target = "PICKED_UP";
-          else if (ageSec >= 22) target = "READY";
-          else if (ageSec >= 10) target = "PREPARING";
-          else if (ageSec >= 4) target = "ACCEPTED";
-          if (target !== o.status) { changed = true; return { ...o, status: target }; }
-          return o;
-        });
-        return changed ? next : prev;
-      });
-    }, 2000);
-    return () => clearInterval(t);
+    let cancelled = false;
+    // Lazy-load so SSR bundles don't touch browser-only realtime state.
+    void import("./realtime").then(({ subscribeTable }) => {
+      if (cancelled) return;
+      const unsub = subscribeTable(
+        "orders",
+        { params: { limit: 200, order: "-created_at" }, minMs: 2500, maxMs: 15000 },
+        (rows) => {
+          if (cancelled) return;
+          const remote = new Map<string, string>();
+          for (const r of rows) {
+            const id = (r as { id?: unknown }).id;
+            const status = (r as { status?: unknown }).status;
+            if (typeof id === "string" && typeof status === "string") remote.set(id, status);
+          }
+          if (!remote.size) return;
+          setOrders((prev) => {
+            let changed = false;
+            const next = prev.map((o) => {
+              const s = remote.get(o.id);
+              if (!s) return o;
+              // Map backend statuses that don't exist locally onto the closest local one.
+              const mapped: OrderStatus =
+                s === "ASSIGNING" ? "ACCEPTED" :
+                s === "ARRIVED" ? "ON_THE_WAY" :
+                s === "NO_DRIVERS" ? "READY" :
+                s === "REJECTED" ? "CANCELLED" :
+                (STATUS_FLOW as string[]).includes(s) ? (s as OrderStatus) : o.status;
+              if (mapped !== o.status) { changed = true; return { ...o, status: mapped }; }
+              return o;
+            });
+            return changed ? next : prev;
+          });
+        },
+      );
+      return () => { unsub(); };
+    });
+    return () => { cancelled = true; };
   }, []);
 
   const placeOrder: OrdersCtx["placeOrder"] = ({ items, totals, restaurant, addressLabel, addressLine, paymentLabel, deliveryInstructions, contactless, notes, couponCode }) => {

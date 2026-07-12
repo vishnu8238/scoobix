@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { partnerOrders, PARTNER_STATUS_FLOW, type PartnerOrder, type PartnerOrderStatus } from "@/lib/role-data";
+import { useMemo, useState } from "react";
+import { partnerOrders as fallbackOrders, PARTNER_STATUS_FLOW, type PartnerOrder, type PartnerOrderStatus } from "@/lib/role-data";
 import { Check, X, ChevronRight, Phone } from "lucide-react";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
 import { updateOrderStatus } from "@/lib/insforge";
+import { nudgeTable } from "@/lib/realtime";
+import { useLiveOrders } from "@/lib/realtime-hooks";
+import { useDispatchDaemon } from "@/lib/dispatch-engine";
 
 export const Route = createFileRoute("/partner/orders")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Orders" }] }),
@@ -17,25 +20,72 @@ const TABS: { id: "new" | "active" | "completed"; label: string; match: (s: Part
   { id: "completed", label: "Completed", match: (s) => s === "COMPLETED" || s === "REJECTED" },
 ];
 
+// Backend statuses → partner UI statuses.
+const BACKEND_TO_PARTNER: Record<string, PartnerOrderStatus> = {
+  PLACED: "PLACED",
+  ACCEPTED: "ACCEPTED",
+  ASSIGNING: "ACCEPTED",
+  PREPARING: "PREPARING",
+  READY: "READY",
+  PICKED_UP: "READY",
+  ON_THE_WAY: "READY",
+  DELIVERED: "COMPLETED",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "REJECTED",
+  REJECTED: "REJECTED",
+  NO_DRIVERS: "READY",
+};
+
+type OrderRow = { id: string; customer_id?: string; total_price?: number; status?: string; created_at?: string; driver_id?: string | null };
+
+function mapRow(r: OrderRow): PartnerOrder {
+  const status = BACKEND_TO_PARTNER[String(r.status ?? "")] ?? "PLACED";
+  const ageMin = r.created_at ? Math.max(0, Math.round((Date.now() - Date.parse(r.created_at)) / 60000)) : 0;
+  return {
+    id: String(r.id),
+    customer: r.customer_id ? `Customer ${String(r.customer_id).slice(0, 6)}` : "Customer",
+    items: [],
+    total: Number(r.total_price ?? 0),
+    placedAgo: ageMin < 1 ? "just now" : `${ageMin} min`,
+    paymentMethod: "Card",
+    status,
+    address: "—",
+    rider: r.driver_id ? String(r.driver_id).slice(0, 8) : undefined,
+  } as PartnerOrder;
+}
+
 function PartnerOrders() {
+  useDispatchDaemon();
+  const { rows } = useLiveOrders();
   const [tab, setTab] = useState<"new" | "active" | "completed">("new");
-  const [orders, setOrders] = useState(partnerOrders);
   const [openId, setOpenId] = useState<string | null>(null);
   const [prepMins, setPrepMins] = useState<Record<string, number>>({});
+
+  const orders = useMemo<PartnerOrder[]>(() => {
+    if (!rows.length) return fallbackOrders;
+    return rows.map((r) => mapRow(r as OrderRow));
+  }, [rows]);
 
   const filtered = orders.filter((o) => TABS.find((t) => t.id === tab)!.match(o.status));
 
   const update = (id: string, status: PartnerOrderStatus) => {
-    void updateOrderStatus(id, { status });
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+    // Map partner status back to canonical backend status.
+    const backend =
+      status === "COMPLETED" ? "DELIVERED" :
+      status === "READY" ? "READY" :
+      status === "PREPARING" ? "PREPARING" :
+      status === "ACCEPTED" ? "ACCEPTED" :
+      status === "REJECTED" ? "CANCELLED" : "PLACED";
+    void updateOrderStatus(id, { status: backend });
+    nudgeTable("orders");
     toast.success(`Order ${id} → ${status}`);
   };
 
   const reject = (o: PartnerOrder) => {
     const reason = typeof window !== "undefined" ? window.prompt(`Reject ${o.id} — reason?`, "Out of stock") : null;
-    if (reason === null) return; // cancelled
+    if (reason === null) return;
     void updateOrderStatus(o.id, { status: "CANCELLED", reject_reason: reason || undefined });
-    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status: "REJECTED" } : x)));
+    nudgeTable("orders");
     toast.success(`${o.id} rejected · ${reason || "no reason given"}`);
   };
 
