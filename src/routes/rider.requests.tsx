@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { deliveryRequests, type DeliveryRequest } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { Check, X, MapPin, Package, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { acceptDeliveryRequest, updateDeliveryStatus } from "@/lib/insforge";
+import { acceptDeliveryRequest } from "@/lib/insforge";
+import { nudgeTable } from "@/lib/realtime";
+import { useLiveOrders } from "@/lib/realtime-hooks";
+import { markOfferAccepted, markOfferRejected, OFFER_TIMEOUT_SEC } from "@/lib/dispatch-engine";
 
 function getDriverId(): string {
   if (typeof window === "undefined") return "guest";
@@ -16,14 +19,72 @@ export const Route = createFileRoute("/rider/requests")({
   component: RiderRequests,
 });
 
-function RiderRequests() {
-  const [list, setList] = useState<DeliveryRequest[]>(deliveryRequests);
+type OrderRow = { id: string; restaurant_id?: string; total_price?: number; status?: string; driver_id?: string | null };
 
-  const decide = (id: string, accept: boolean) => {
-    if (accept) void acceptDeliveryRequest(id, getDriverId());
-    else void updateDeliveryStatus(id, "READY"); // leave available for other drivers
-    setList((prev) => prev.filter((r) => r.id !== id));
-    toast.success(accept ? `Accepted ${id} — head to pickup` : `Rejected ${id}`);
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371, toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function RiderRequests() {
+  const driverId = getDriverId();
+  // Live offers targeted at this driver.
+  const { rows } = useLiveOrders({ driver_id: driverId, status: "ASSIGNING" });
+
+  // Track first-seen time per offer to drive the 60-second countdown.
+  const seenRef = useState<Map<string, number>>(new Map())[0];
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    for (const r of rows) {
+      const id = String((r as OrderRow).id);
+      if (!seenRef.has(id)) seenRef.set(id, Date.now());
+    }
+    for (const id of Array.from(seenRef.keys())) {
+      if (!rows.find((r) => String((r as OrderRow).id) === id)) seenRef.delete(id);
+    }
+  }, [rows, seenRef]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(t);
+  }, []);
+
+  // Live-mapped requests + fallback to mock when nothing live.
+  const list: DeliveryRequest[] = useMemo(() => {
+    if (!rows.length) return deliveryRequests;
+    return rows.map((r) => {
+      const row = r as OrderRow;
+      const km = 1 + Math.random() * 3; // no rider coords → placeholder
+      const payout = Math.max(35, Math.round(km * 22 + 30));
+      return {
+        id: String(row.id),
+        restaurant: "Restaurant",
+        restaurantAddress: "—",
+        customer: "Customer",
+        customerAddress: "—",
+        distanceKm: Number(km.toFixed(1)),
+        etaMins: Math.max(10, Math.round(km * 4)),
+        itemsCount: 0,
+        payout,
+      } as DeliveryRequest;
+    });
+    // haversineKm reserved for when driver coords are known.
+    void haversineKm;
+  }, [rows]);
+
+  const decide = async (id: string, accept: boolean) => {
+    if (accept) {
+      markOfferAccepted(id);
+      await acceptDeliveryRequest(id, driverId); // sets driver_id + status=PICKED_UP-ish
+      nudgeTable("orders");
+      toast.success(`Accepted ${id} — head to pickup`);
+    } else {
+      await markOfferRejected(id);
+      toast.success(`Rejected ${id}`);
+    }
   };
 
   return (
@@ -40,56 +101,63 @@ function RiderRequests() {
         </div>
       ) : (
         <div className="space-y-3">
-          {list.map((r) => (
-            <div key={r.id} className="overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60">
-              <div className="flex items-start gap-3 bg-gradient-to-br from-primary/10 to-transparent p-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                  <Package className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-primary">{r.id}</p>
-                      <h3 className="font-display text-base font-extrabold">{r.restaurant}</h3>
+          {list.map((r) => {
+            const seenAt = seenRef.get(r.id) ?? now;
+            const remaining = Math.max(0, OFFER_TIMEOUT_SEC - Math.floor((now - seenAt) / 1000));
+            const isLive = rows.some((x) => String((x as OrderRow).id) === r.id);
+            return (
+              <div key={r.id} className="overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+                <div className="flex items-start gap-3 bg-gradient-to-br from-primary/10 to-transparent p-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                    <Package className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                          {r.id}{isLive && ` · ${remaining}s`}
+                        </p>
+                        <h3 className="font-display text-base font-extrabold">{r.restaurant}</h3>
+                      </div>
+                      <span className="font-display text-xl font-extrabold text-primary">{formatPrice(r.payout)}</span>
                     </div>
-                    <span className="font-display text-xl font-extrabold text-primary">{formatPrice(r.payout)}</span>
-                  </div>
-                  <div className="mt-2 flex gap-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {r.distanceKm} km</span>
-                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {r.etaMins} min</span>
-                    <span>· {r.itemsCount} items</span>
+                    <div className="mt-2 flex gap-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {r.distanceKm} km</span>
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {r.etaMins} min</span>
+                      <span>· {r.itemsCount} items</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="px-4 py-3 space-y-2 text-xs">
-                <div className="flex gap-2">
-                  <span className="mt-0.5 h-2 w-2 rounded-full bg-primary" />
-                  <div>
-                    <p className="font-bold">Pickup · {r.restaurant}</p>
-                    <p className="text-muted-foreground">{r.restaurantAddress}</p>
+                <div className="px-4 py-3 space-y-2 text-xs">
+                  <div className="flex gap-2">
+                    <span className="mt-0.5 h-2 w-2 rounded-full bg-primary" />
+                    <div>
+                      <p className="font-bold">Pickup · {r.restaurant}</p>
+                      <p className="text-muted-foreground">{r.restaurantAddress}</p>
+                    </div>
+                  </div>
+                  <div className="ml-1 h-3 w-px bg-border" />
+                  <div className="flex gap-2">
+                    <span className="mt-0.5 h-2 w-2 rounded-full bg-foreground" />
+                    <div>
+                      <p className="font-bold">Drop-off · {r.customer}</p>
+                      <p className="text-muted-foreground">{r.customerAddress}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="ml-1 h-3 w-px bg-border" />
-                <div className="flex gap-2">
-                  <span className="mt-0.5 h-2 w-2 rounded-full bg-foreground" />
-                  <div>
-                    <p className="font-bold">Drop-off · {r.customer}</p>
-                    <p className="text-muted-foreground">{r.customerAddress}</p>
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex gap-2 border-t border-border/60 p-3">
-                <button onClick={() => decide(r.id, false)} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-muted px-4 py-3 text-sm font-bold text-muted-foreground transition active:scale-95">
-                  <X className="h-4 w-4" /> Reject
-                </button>
-                <button onClick={() => decide(r.id, true)} className="flex flex-[2] items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">
-                  <Check className="h-4 w-4" /> Accept delivery
-                </button>
+                <div className="flex gap-2 border-t border-border/60 p-3">
+                  <button onClick={() => decide(r.id, false)} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-muted px-4 py-3 text-sm font-bold text-muted-foreground transition active:scale-95">
+                    <X className="h-4 w-4" /> Reject
+                  </button>
+                  <button onClick={() => decide(r.id, true)} className="flex flex-[2] items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">
+                    <Check className="h-4 w-4" /> Accept delivery
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
