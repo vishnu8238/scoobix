@@ -383,8 +383,49 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(REFUNDS_KEY, JSON.stringify(refunds));
   }, [refunds]);
 
-  // Live status is now driven by the backend via realtime hooks
-  // (`useLiveOrders` / `useLiveOrder`). The old fake-advance loop was removed.
+  // Live server status overlay — subscribes to `orders` and merges the
+  // server-authoritative status into any local order with a matching id.
+  // Falls back to polling (via `subscribeTable`) with exponential backoff.
+  useEffect(() => {
+    let cancelled = false;
+    // Lazy-load so SSR bundles don't touch browser-only realtime state.
+    void import("./realtime").then(({ subscribeTable }) => {
+      if (cancelled) return;
+      const unsub = subscribeTable(
+        "orders",
+        { params: { limit: 200, order: "-created_at" }, minMs: 2500, maxMs: 15000 },
+        (rows) => {
+          if (cancelled) return;
+          const remote = new Map<string, string>();
+          for (const r of rows) {
+            const id = (r as { id?: unknown }).id;
+            const status = (r as { status?: unknown }).status;
+            if (typeof id === "string" && typeof status === "string") remote.set(id, status);
+          }
+          if (!remote.size) return;
+          setOrders((prev) => {
+            let changed = false;
+            const next = prev.map((o) => {
+              const s = remote.get(o.id);
+              if (!s) return o;
+              // Map backend statuses that don't exist locally onto the closest local one.
+              const mapped: OrderStatus =
+                s === "ASSIGNING" ? "ACCEPTED" :
+                s === "ARRIVED" ? "ON_THE_WAY" :
+                s === "NO_DRIVERS" ? "READY" :
+                s === "REJECTED" ? "CANCELLED" :
+                (STATUS_FLOW as string[]).includes(s) ? (s as OrderStatus) : o.status;
+              if (mapped !== o.status) { changed = true; return { ...o, status: mapped }; }
+              return o;
+            });
+            return changed ? next : prev;
+          });
+        },
+      );
+      return () => { unsub(); };
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const placeOrder: OrdersCtx["placeOrder"] = ({ items, totals, restaurant, addressLabel, addressLine, paymentLabel, deliveryInstructions, contactless, notes, couponCode }) => {
     const id = `CRV${Math.floor(100000 + Math.random() * 900000)}`;
