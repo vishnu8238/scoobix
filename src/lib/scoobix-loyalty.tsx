@@ -243,6 +243,7 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
     const updated: ReferralRecord = { ...rec, status: "rewarded", rewardedAt: Date.now() };
     setRecords((p) => p.map((r) => r.id === rec.id ? updated : r));
+    void import("./insforge-crud").then(({ patchRecord }) => patchRecord("referrals", rec.id, { status: "rewarded", rewarded_at: new Date().toISOString() }));
     return updated;
   };
 
