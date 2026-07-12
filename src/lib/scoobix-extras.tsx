@@ -162,10 +162,6 @@ export function BulkProvider({ children }: { children: ReactNode }) {
   const [requests, setRequests] = useState<BulkRequest[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(BulkKey) : null;
-      if (raw) setRequests(JSON.parse(raw));
-    } catch { /* ignore */ }
     void listBulkRequests().then((rows) => {
       if (!rows.length) return;
       setRequests((prev) => {
@@ -175,10 +171,6 @@ export function BulkProvider({ children }: { children: ReactNode }) {
       });
     });
   }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem(BulkKey, JSON.stringify(requests));
-  }, [requests]);
 
   const create: BulkCtx["create"] = (input) => {
     const req: BulkRequest = { ...input, id: uid(), status: "pending", createdAt: Date.now() };
