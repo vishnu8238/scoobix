@@ -20,10 +20,10 @@ const ICONS = {
 
 function NotificationsPage() {
   const [tab, setTab] = useState<"all" | "orders" | "offers">("all");
-  const all = [...customerNotifications, ...partnerNotifications.slice(0, 1), ...riderNotifications.slice(0, 1)];
-  const list = customerNotifications;
+  const { list } = useNotifications("customer");
+  const _unused = [customerNotifications, partnerNotifications, riderNotifications];
+  void _unused;
   const filtered = tab === "all" ? list : list.filter((n) => (tab === "orders" ? n.kind === "order" : n.kind === "promo"));
-  void all;
 
   return (
     <div className="min-h-svh pb-16">
