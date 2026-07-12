@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Sparkles, ClipboardList, BellRing } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { customerNotifications, partnerNotifications, riderNotifications, type AppNotification } from "@/lib/mock-extras";
+import { useNotifications } from "@/lib/notifications-store";
 import { useState } from "react";
 import { cn } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
