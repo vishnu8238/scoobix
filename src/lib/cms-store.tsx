@@ -131,6 +131,8 @@ type CmsCtx = {
   resetAll: () => void;
 };
 
+export type DeliverySlab = { uptoKm: number; fee: number };
+
 export type PlatformSettings = {
   deliveryFee: number;
   taxPct: number;
@@ -139,6 +141,12 @@ export type PlatformSettings = {
   supportEmail: string;
   /** Cart subtotal at/above which delivery is free (Scoobix free-delivery rule). */
   freeDeliveryMin: number;
+  /** Distance-based delivery slabs. First matching slab (by uptoKm ascending) wins. */
+  deliverySlabs: DeliverySlab[];
+  /** Platform commission on driver earnings (percent). */
+  driverCommissionPct: number;
+  /** Enable Petpooja POS sync stubs across partner screens. */
+  posEnabled: boolean;
 };
 
 const DEFAULT_SETTINGS: PlatformSettings = {
@@ -148,6 +156,14 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   supportPhone: "+91 80000 12345",
   supportEmail: "support@cravio.app",
   freeDeliveryMin: 25,
+  deliverySlabs: [
+    { uptoKm: 2, fee: 25 },
+    { uptoKm: 5, fee: 40 },
+    { uptoKm: 10, fee: 65 },
+    { uptoKm: 999, fee: 90 },
+  ],
+  driverCommissionPct: 15,
+  posEnabled: false,
 };
 
 
