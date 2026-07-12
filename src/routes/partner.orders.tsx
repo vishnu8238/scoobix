@@ -57,6 +57,7 @@ function mapRow(r: OrderRow): PartnerOrder {
 
 function PartnerOrders() {
   useDispatchDaemon();
+  useOrderFinalizationDaemon();
   const { rows } = useLiveOrders();
   const [tab, setTab] = useState<"new" | "active" | "completed">("new");
   const [openId, setOpenId] = useState<string | null>(null);
