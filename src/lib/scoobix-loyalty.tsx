@@ -176,15 +176,24 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
   const [records, setRecords] = useState<ReferralRecord[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(RKey) : null;
-      if (raw) setRecords(JSON.parse(raw));
-      const rc = typeof window !== "undefined" ? localStorage.getItem(RCfgKey) : null;
-      if (rc) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(rc) });
-    } catch { /* ignore */ }
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<ReferralRecord & { id?: string; created_at?: string; rewarded_at?: string }>("referrals");
+      if (cancelled || !rows.length) return;
+      setRecords(rows.map((r) => ({
+        id: r.id ?? uid(),
+        code: r.code ?? "",
+        referrerId: r.referrerId ?? "",
+        refereeId: r.refereeId ?? "",
+        refereeName: r.refereeName ?? "",
+        status: r.status ?? "pending",
+        createdAt: r.created_at ? new Date(r.created_at).getTime() : (r.createdAt ?? Date.now()),
+        rewardedAt: r.rewarded_at ? new Date(r.rewarded_at).getTime() : r.rewardedAt,
+      })));
+    })();
+    return () => { cancelled = true; };
   }, []);
-  useEffect(() => { if (typeof window !== "undefined") localStorage.setItem(RKey, JSON.stringify(records)); }, [records]);
-  useEffect(() => { if (typeof window !== "undefined") localStorage.setItem(RCfgKey, JSON.stringify(config)); }, [config]);
 
   const updateConfig: ReferralCtx["updateConfig"] = (patch) => setConfig((c) => ({ ...c, ...patch }));
   const codeFor: ReferralCtx["codeFor"] = (cid) => codeFromId(cid || "guest");
