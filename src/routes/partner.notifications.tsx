@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Bell, Check, X } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
-import { partnerNotifications } from "@/lib/mock-extras";
+import { useNotifications } from "@/lib/notifications-store";
 import { NotificationItem } from "./app.notifications";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ const REJECT_REASONS = [
 
 function PartnerNotifs() {
   const navigate = useNavigate();
+  const { list } = useNotifications("partner");
   const [incoming, setIncoming] = useState<{ id: string; customer: string; total: number; items: number } | null>({
     id: "CRV-8830", customer: "Maya Iyer", total: 4040, items: 4,
   });
@@ -71,7 +72,7 @@ function PartnerNotifs() {
       )}
 
       <ul className="mt-4 space-y-2 px-4">
-        {partnerNotifications.map((n) => <NotificationItem key={n.id} n={n} />)}
+        {list.map((n) => <NotificationItem key={n.id} n={n} />)}
       </ul>
     </div>
   );

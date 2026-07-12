@@ -40,6 +40,23 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T | null> {
 
 const base = (table: string) => `${INSFORGE_URL}/api/database/records/${table}`;
 
+function normalizeParam(k: string, v: string | number): string {
+  // Translate leading "-" / "+" order shorthand into PostgREST `field.desc`/`.asc`.
+  if (k === "order" && typeof v === "string") {
+    return v
+      .split(",")
+      .map((s) => {
+        const t = s.trim();
+        if (!t) return t;
+        if (t.startsWith("-")) return `${t.slice(1)}.desc`;
+        if (t.startsWith("+")) return `${t.slice(1)}.asc`;
+        return t.includes(".") ? t : `${t}.asc`;
+      })
+      .join(",");
+  }
+  return String(v);
+}
+
 export function listTable<T = Record<string, unknown>>(
   table: string,
   params?: Record<string, string | number | undefined>,
@@ -48,7 +65,7 @@ export function listTable<T = Record<string, unknown>>(
     ? "?" +
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(normalizeParam(k, v as string | number))}`)
         .join("&")
     : "";
   return withRetry(() => once(`${base(table)}${qs}`, "GET")).then((v) => (Array.isArray(v) ? (v as T[]) : []));
