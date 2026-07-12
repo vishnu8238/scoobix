@@ -49,6 +49,62 @@ function AdminSettings() {
             value={draft.minOrder}
             onChange={(v) => setDraft({ ...draft, minOrder: v })}
           />
+          <NumberField
+            label="Free delivery above (₹)"
+            value={draft.freeDeliveryMin}
+            onChange={(v) => setDraft({ ...draft, freeDeliveryMin: v })}
+          />
+          <NumberField
+            label="Driver commission %"
+            value={draft.driverCommissionPct}
+            step={0.5}
+            onChange={(v) => setDraft({ ...draft, driverCommissionPct: v })}
+          />
+          <Toggle
+            label="Petpooja POS sync"
+            desc="Mirror menu & order events to Petpooja (stub)"
+            value={draft.posEnabled}
+            onChange={(v) => setDraft({ ...draft, posEnabled: v })}
+          />
+          <div className="rounded-2xl bg-muted/40 p-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Delivery slabs (₹ by km)</p>
+            <div className="space-y-2">
+              {draft.deliverySlabs.map((slab, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={slab.uptoKm}
+                    onChange={(e) => {
+                      const next = [...draft.deliverySlabs];
+                      next[i] = { ...slab, uptoKm: Number(e.target.value) };
+                      setDraft({ ...draft, deliverySlabs: next });
+                    }}
+                    className="w-20 rounded-xl bg-background px-2 py-1.5 text-right text-xs font-bold outline-none ring-1 ring-border/60"
+                  />
+                  <span className="text-[11px] text-muted-foreground">km →</span>
+                  <input
+                    type="number"
+                    value={slab.fee}
+                    onChange={(e) => {
+                      const next = [...draft.deliverySlabs];
+                      next[i] = { ...slab, fee: Number(e.target.value) };
+                      setDraft({ ...draft, deliverySlabs: next });
+                    }}
+                    className="w-20 rounded-xl bg-background px-2 py-1.5 text-right text-xs font-bold outline-none ring-1 ring-border/60"
+                  />
+                  <span className="text-[11px] text-muted-foreground">₹</span>
+                  <button
+                    onClick={() => setDraft({ ...draft, deliverySlabs: draft.deliverySlabs.filter((_, j) => j !== i) })}
+                    className="ml-auto text-[11px] font-bold text-destructive"
+                  >Remove</button>
+                </div>
+              ))}
+              <button
+                onClick={() => setDraft({ ...draft, deliverySlabs: [...draft.deliverySlabs, { uptoKm: 15, fee: 100 }] })}
+                className="w-full rounded-xl border border-dashed border-border py-2 text-[11px] font-bold text-muted-foreground"
+              >+ Add slab</button>
+            </div>
+          </div>
         </Card>
 
         <Card icon={LifeBuoy} title="Support contact">
@@ -57,6 +113,7 @@ function AdminSettings() {
             value={draft.supportPhone}
             onChange={(v) => setDraft({ ...draft, supportPhone: v })}
           />
+
           <TextField
             label="Support email"
             value={draft.supportEmail}
