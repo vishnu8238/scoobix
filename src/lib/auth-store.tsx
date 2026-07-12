@@ -1,29 +1,38 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Role, User } from "./types";
+import {
+  ifSignup,
+  ifLogin,
+  ifLogout,
+  ifGetSession,
+  ifSendPasswordReset,
+  fetchUserProfile,
+  upsertUserProfile,
+  type DbRole,
+  type InsForgeUser,
+} from "./insforge-auth";
 
 /**
- * Mock auth store. Replace `signIn` / `signUp` / `signOut` internals with a
- * real backend call later — the public API is intentionally backend-shaped.
+ * Auth store backed by InsForge Auth.
+ *
+ * - Real sign in / sign up / sign out via `/api/auth/*` endpoints.
+ * - Session persists across refresh (access + refresh tokens in localStorage).
+ * - User role is read from `public.users.role`.
+ * - Supported DB roles: customer | restaurant | driver | admin.
+ *   The UI still uses the historical Role type (customer|partner|rider|admin) —
+ *   we map DB ↔ UI so routes and components stay unchanged.
  */
 
 type AuthCtx = {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, _password: string, role?: Role) => Promise<{ ok: boolean; user?: User; message?: string }>;
+  signIn: (email: string, password: string, role?: Role) => Promise<{ ok: boolean; user?: User; message?: string }>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<{ ok: boolean; user?: User; message?: string }>;
   signOut: () => void;
   resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
-const KEY = "cravio_auth_v1";
-
-const DEMO_USERS: User[] = [
-  { id: "u_cust",  name: "Alex Customer",  email: "customer@cravio.app",  phone: "+91 90000 00001", role: "customer" },
-  { id: "u_part",  name: "Marco Bianchi",  email: "partner@cravio.app",   phone: "+91 90000 00002", role: "partner"  },
-  { id: "u_ride",  name: "Aarav Mehta",    email: "rider@cravio.app",     phone: "+91 90000 00003", role: "rider"    },
-  { id: "u_admin", name: "Scoobix Admin",   email: "admin@cravio.app",     phone: "+91 90000 00004", role: "admin"    },
-];
 
 export const ROLE_HOME: Record<Role, string> = {
   customer: "/app",
@@ -32,61 +41,107 @@ export const ROLE_HOME: Record<Role, string> = {
   admin: "/admin",
 };
 
-function detectRole(email: string): Role {
-  const e = email.toLowerCase();
-  if (e.includes("admin"))   return "admin";
-  if (e.includes("partner") || e.includes("restaurant")) return "partner";
-  if (e.includes("rider")   || e.includes("driver"))     return "rider";
+// ---------- role mapping between DB and existing UI enum ----------
+
+const DB_TO_UI: Record<DbRole, Role> = {
+  customer: "customer",
+  restaurant: "partner",
+  driver: "rider",
+  admin: "admin",
+};
+const UI_TO_DB: Record<Role, DbRole> = {
+  customer: "customer",
+  partner: "restaurant",
+  rider: "driver",
+  admin: "admin",
+};
+
+function toUiRole(role: string | undefined | null): Role {
+  if (!role) return "customer";
+  if (role in DB_TO_UI) return DB_TO_UI[role as DbRole];
+  // Some rows may already store the UI role directly.
+  if (["customer", "partner", "rider", "admin"].includes(role)) return role as Role;
   return "customer";
+}
+
+async function assembleUser(sess: InsForgeUser, fallbackRole?: Role, fallbackName?: string, fallbackPhone?: string): Promise<User> {
+  const profile = await fetchUserProfile(sess.id);
+  const role = toUiRole(profile?.role) || fallbackRole || "customer";
+  return {
+    id: sess.id,
+    name: profile?.name || fallbackName || sess.profile?.name || sess.email.split("@")[0],
+    email: sess.email,
+    phone: profile?.phone || fallbackPhone || "",
+    role,
+    avatar: profile?.avatar_url || (sess.profile?.avatar_url as string | undefined),
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Auto-login: hydrate session from stored token on mount.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch { /* */ }
-    setLoading(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const sess = await ifGetSession();
+        if (cancelled) return;
+        if (sess) setUser(await assembleUser(sess));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (loading) return;
-    if (user) localStorage.setItem(KEY, JSON.stringify(user));
-    else localStorage.removeItem(KEY);
-  }, [user, loading]);
-
-  const signIn: AuthCtx["signIn"] = async (email, _password, role) => {
-    await new Promise((r) => setTimeout(r, 400));
-    if (!email.trim()) return { ok: false, message: "Enter your email" };
-    const inferred = role ?? DEMO_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase().trim())?.role ?? detectRole(email);
-    const next: User = DEMO_USERS.find((u) => u.role === inferred) ?? {
-      id: `u_${Math.random().toString(36).slice(2, 8)}`,
-      name: email.split("@")[0],
-      email,
-      phone: "",
-      role: inferred,
-    };
-    setUser(next);
-    return { ok: true, user: next };
+  const signIn: AuthCtx["signIn"] = async (email, password) => {
+    try {
+      const { user: sess } = await ifLogin(email.trim(), password);
+      const next = await assembleUser(sess);
+      setUser(next);
+      return { ok: true, user: next };
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : "Sign in failed" };
+    }
   };
 
-  const signUp: AuthCtx["signUp"] = async ({ name, email, phone, role }) => {
-    await new Promise((r) => setTimeout(r, 500));
-    if (!email.trim() || !name.trim()) return { ok: false, message: "Name and email are required" };
-    const next: User = { id: `u_${Math.random().toString(36).slice(2, 8)}`, name, email, phone, role };
-    setUser(next);
-    return { ok: true, user: next };
+  const signUp: AuthCtx["signUp"] = async ({ name, email, phone, password, role }) => {
+    try {
+      const { user: sess, requireEmailVerification } = await ifSignup(email.trim(), password, name.trim());
+      // Best-effort profile row in public.users with the requested role.
+      await upsertUserProfile({
+        id: sess.id,
+        name,
+        email: sess.email,
+        phone,
+        role: UI_TO_DB[role],
+      });
+      if (requireEmailVerification) {
+        return { ok: true, message: "Check your email to verify your account before signing in." };
+      }
+      const next = await assembleUser(sess, role, name, phone);
+      setUser(next);
+      return { ok: true, user: next };
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : "Sign up failed" };
+    }
   };
 
-  const signOut = () => setUser(null);
+  const signOut = () => {
+    void ifLogout();
+    setUser(null);
+  };
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {
-    await new Promise((r) => setTimeout(r, 400));
-    if (!email.trim()) return { ok: false, message: "Enter your email" };
-    return { ok: true, message: "Reset link sent — check your inbox" };
+    try {
+      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/login` : undefined;
+      await ifSendPasswordReset(email.trim(), redirectTo);
+      return { ok: true, message: "Reset link sent — check your inbox" };
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : "Could not send reset email" };
+    }
   };
 
   return (
