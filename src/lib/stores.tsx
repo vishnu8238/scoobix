@@ -198,7 +198,7 @@ type FavRow = { id?: string; user_id?: string; restaurant_id?: string; dish_id?:
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [restaurants, setR] = useState<Set<string>>(new Set());
   const [dishes, setD] = useState<Set<string>>(new Set());
-  const rowIndexRef = React.useRef<Map<string, string>>(new Map()); // key: `${kind}:${id}` -> row id
+  const rowIndexRef = useRef<Map<string, string>>(new Map()); // key: `${kind}:${id}` -> row id
 
   useEffect(() => {
     let cancelled = false;
