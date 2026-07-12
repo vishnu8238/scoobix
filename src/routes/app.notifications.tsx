@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Sparkles, ClipboardList, BellRing } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { customerNotifications, partnerNotifications, riderNotifications, type AppNotification } from "@/lib/mock-extras";
+import { useNotifications } from "@/lib/notifications-store";
 import { useState } from "react";
 import { cn } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
@@ -19,10 +20,10 @@ const ICONS = {
 
 function NotificationsPage() {
   const [tab, setTab] = useState<"all" | "orders" | "offers">("all");
-  const all = [...customerNotifications, ...partnerNotifications.slice(0, 1), ...riderNotifications.slice(0, 1)];
-  const list = customerNotifications;
+  const { list } = useNotifications("customer");
+  const _unused = [customerNotifications, partnerNotifications, riderNotifications];
+  void _unused;
   const filtered = tab === "all" ? list : list.filter((n) => (tab === "orders" ? n.kind === "order" : n.kind === "promo"));
-  void all;
 
   return (
     <div className="min-h-svh pb-16">

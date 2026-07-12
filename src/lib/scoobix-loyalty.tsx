@@ -34,24 +34,49 @@ type WalletCtx = {
 const WKey = "scoobix_wallet_v1";
 const WalletContext = createContext<WalletCtx | null>(null);
 
+type WalletTxnRow = {
+  id?: string;
+  customer_id?: string;
+  amount?: number;
+  kind?: WalletTxn["kind"];
+  note?: string;
+  created_at?: string;
+};
+
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [txns, setTxns] = useState<WalletTxn[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(WKey) : null;
-      if (raw) setTxns(JSON.parse(raw));
-    } catch { /* ignore */ }
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<WalletTxnRow>("wallet_transactions");
+      if (cancelled) return;
+      setTxns(rows.map((r) => ({
+        id: r.id ?? uid(),
+        customerId: r.customer_id ?? "",
+        amount: typeof r.amount === "number" ? r.amount : 0,
+        kind: r.kind ?? "credit",
+        note: r.note ?? "",
+        createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+      })));
+    })();
+    return () => { cancelled = true; };
   }, []);
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem(WKey, JSON.stringify(txns));
-  }, [txns]);
+
+  const persist = async (t: WalletTxn) => {
+    const { createRecord } = await import("./insforge-crud");
+    void createRecord("wallet_transactions", {
+      id: t.id, customer_id: t.customerId, amount: t.amount, kind: t.kind, note: t.note,
+    });
+  };
 
   const balanceOf = (cid: string) => txns.filter((t) => t.customerId === cid).reduce((s, t) => s + t.amount, 0);
 
   const credit: WalletCtx["credit"] = (customerId, amount, kind, note) => {
     const txn: WalletTxn = { id: uid(), customerId, amount: Math.abs(amount), kind, note, createdAt: Date.now() };
     setTxns((p) => [txn, ...p]);
+    void persist(txn);
     return txn;
   };
   const debit: WalletCtx["debit"] = (customerId, amount, kind, note) => {
@@ -59,6 +84,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (balanceOf(customerId) < amt) return { ok: false, reason: "Insufficient wallet balance" };
     const txn: WalletTxn = { id: uid(), customerId, amount: -amt, kind, note, createdAt: Date.now() };
     setTxns((p) => [txn, ...p]);
+    void persist(txn);
     return { ok: true, txn };
   };
 
@@ -150,15 +176,24 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
   const [records, setRecords] = useState<ReferralRecord[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(RKey) : null;
-      if (raw) setRecords(JSON.parse(raw));
-      const rc = typeof window !== "undefined" ? localStorage.getItem(RCfgKey) : null;
-      if (rc) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(rc) });
-    } catch { /* ignore */ }
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<ReferralRecord & { id?: string; created_at?: string; rewarded_at?: string }>("referrals");
+      if (cancelled || !rows.length) return;
+      setRecords(rows.map((r) => ({
+        id: r.id ?? uid(),
+        code: r.code ?? "",
+        referrerId: r.referrerId ?? "",
+        refereeId: r.refereeId ?? "",
+        refereeName: r.refereeName ?? "",
+        status: r.status ?? "pending",
+        createdAt: r.created_at ? new Date(r.created_at).getTime() : (r.createdAt ?? Date.now()),
+        rewardedAt: r.rewarded_at ? new Date(r.rewarded_at).getTime() : r.rewardedAt,
+      })));
+    })();
+    return () => { cancelled = true; };
   }, []);
-  useEffect(() => { if (typeof window !== "undefined") localStorage.setItem(RKey, JSON.stringify(records)); }, [records]);
-  useEffect(() => { if (typeof window !== "undefined") localStorage.setItem(RCfgKey, JSON.stringify(config)); }, [config]);
 
   const updateConfig: ReferralCtx["updateConfig"] = (patch) => setConfig((c) => ({ ...c, ...patch }));
   const codeFor: ReferralCtx["codeFor"] = (cid) => codeFromId(cid || "guest");
@@ -179,6 +214,10 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
       createdAt: Date.now(),
     };
     setRecords((p) => [rec, ...p]);
+    void import("./insforge-crud").then(({ createRecord }) => createRecord("referrals", {
+      id: rec.id, code: rec.code, referrer_id: rec.referrerId, referee_id: rec.refereeId,
+      referee_name: rec.refereeName, status: rec.status,
+    }));
     return { ok: true };
   };
 
@@ -187,7 +226,11 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
     const rec = records.find((r) => r.refereeId === refereeId && r.status === "pending");
     if (!rec) return null;
     const expired = Date.now() - rec.createdAt > config.expiryDays * 86400000;
-    if (expired) { setRecords((p) => p.map((r) => r.id === rec.id ? { ...r, status: "expired" } : r)); return null; }
+    if (expired) {
+      setRecords((p) => p.map((r) => r.id === rec.id ? { ...r, status: "expired" } : r));
+      void import("./insforge-crud").then(({ patchRecord }) => patchRecord("referrals", rec.id, { status: "expired" }));
+      return null;
+    }
     if (orderTotal < config.minOrder) return null;
     // Credit the referee
     credit(refereeId, config.refereeReward, "credit", `Referral bonus (code ${rec.code})`);
@@ -200,6 +243,7 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
     const updated: ReferralRecord = { ...rec, status: "rewarded", rewardedAt: Date.now() };
     setRecords((p) => p.map((r) => r.id === rec.id ? updated : r));
+    void import("./insforge-crud").then(({ patchRecord }) => patchRecord("referrals", rec.id, { status: "rewarded", rewarded_at: new Date().toISOString() }));
     return updated;
   };
 

@@ -374,6 +374,17 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
   }, [state]);
 
+  // Hydrate coupons from InsForge on mount (backend wins when non-empty).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<CmsCoupon>("coupons");
+      if (!cancelled && rows.length) setState((s) => ({ ...s, coupons: rows }));
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const ctx: CmsCtx = {
     banners: reorder(state.banners),
     addBanner: (b) =>
@@ -437,10 +448,19 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       })),
 
     coupons: state.coupons,
-    addCoupon: (c) => setState((s) => ({ ...s, coupons: [...s.coupons, { ...c, id: uid() }] })),
-    updateCoupon: (id, patch) =>
-      setState((s) => ({ ...s, coupons: s.coupons.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
-    deleteCoupon: (id) => setState((s) => ({ ...s, coupons: s.coupons.filter((x) => x.id !== id) })),
+    addCoupon: (c) => {
+      const created = { ...c, id: uid() };
+      setState((s) => ({ ...s, coupons: [...s.coupons, created] }));
+      void import("./insforge-crud").then(({ createRecord }) => createRecord("coupons", created as unknown as Record<string, unknown>));
+    },
+    updateCoupon: (id, patch) => {
+      setState((s) => ({ ...s, coupons: s.coupons.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
+      void import("./insforge-crud").then(({ patchRecord }) => patchRecord("coupons", id, patch as Record<string, unknown>));
+    },
+    deleteCoupon: (id) => {
+      setState((s) => ({ ...s, coupons: s.coupons.filter((x) => x.id !== id) }));
+      void import("./insforge-crud").then(({ deleteRecord }) => deleteRecord("coupons", id));
+    },
 
     commissions: state.commissions,
     setCommission: (restaurantId, pct) =>
