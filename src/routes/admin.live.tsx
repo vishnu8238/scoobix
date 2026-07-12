@@ -5,6 +5,7 @@ import { formatPrice } from "@/lib/format";
 import { Radio } from "lucide-react";
 import { useLiveOrders, useLiveDriverLocations } from "@/lib/realtime-hooks";
 import { useDispatchDaemon } from "@/lib/dispatch-engine";
+import { useOrderFinalizationDaemon } from "@/lib/order-completion";
 
 export const Route = createFileRoute("/admin/live")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Live orders" }] }),
