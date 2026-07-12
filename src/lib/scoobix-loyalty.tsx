@@ -7,6 +7,7 @@
  */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "./auth-store";
+import { getAppSettings } from "./app-settings";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -74,12 +75,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const balanceOf = (cid: string) => txns.filter((t) => t.customerId === cid).reduce((s, t) => s + t.amount, 0);
 
   const credit: WalletCtx["credit"] = (customerId, amount, kind, note) => {
+    // Gate: admin can turn off wallet platform-wide via app_settings.
+    if (!getAppSettings().wallet_enabled) {
+      // Return a no-op stub txn so callers don't crash.
+      return { id: uid(), customerId, amount: 0, kind, note, createdAt: Date.now() };
+    }
     const txn: WalletTxn = { id: uid(), customerId, amount: Math.abs(amount), kind, note, createdAt: Date.now() };
     setTxns((p) => [txn, ...p]);
     void persist(txn);
     return txn;
   };
   const debit: WalletCtx["debit"] = (customerId, amount, kind, note) => {
+    if (!getAppSettings().wallet_enabled) return { ok: false, reason: "Wallet disabled" };
     const amt = Math.abs(amount);
     if (balanceOf(customerId) < amt) return { ok: false, reason: "Insufficient wallet balance" };
     const txn: WalletTxn = { id: uid(), customerId, amount: -amt, kind, note, createdAt: Date.now() };
@@ -199,6 +206,8 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
   const codeFor: ReferralCtx["codeFor"] = (cid) => codeFromId(cid || "guest");
 
   const registerReferral: ReferralCtx["registerReferral"] = (code, referee) => {
+    // App-settings global toggle wins over the provider's own config.
+    if (!getAppSettings().referral_enabled) return { ok: false, reason: "Referral program is disabled" };
     if (!config.enabled) return { ok: false, reason: "Referral program is disabled" };
     const normalised = code.trim().toUpperCase();
     if (!normalised) return { ok: false, reason: "Enter a referral code" };
@@ -222,6 +231,7 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
   };
 
   const completeReferral: ReferralCtx["completeReferral"] = (refereeId, orderTotal, credit) => {
+    if (!getAppSettings().referral_enabled) return null;
     if (!config.enabled) return null;
     const rec = records.find((r) => r.refereeId === refereeId && r.status === "pending");
     if (!rec) return null;

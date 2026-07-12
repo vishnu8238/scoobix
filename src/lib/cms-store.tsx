@@ -463,8 +463,12 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     },
 
     commissions: state.commissions,
-    setCommission: (restaurantId, pct) =>
-      setState((s) => ({ ...s, commissions: { ...s.commissions, [restaurantId]: Math.max(0, Math.min(100, pct)) } })),
+    setCommission: (restaurantId, pct) => {
+      const clamped = Math.max(0, Math.min(100, pct));
+      setState((s) => ({ ...s, commissions: { ...s.commissions, [restaurantId]: clamped } }));
+      // Mirror to backend so the order-finalizer reads the same value.
+      void import("./insforge").then(({ setRestaurantCommission }) => setRestaurantCommission(restaurantId, clamped));
+    },
 
     closedRestaurants: state.closedRestaurants,
     toggleRestaurantClosed: (restaurantId) =>
@@ -500,8 +504,18 @@ export function CmsProvider({ children }: { children: ReactNode }) {
 
 
     settings: state.settings,
-    updateSettings: (patch) =>
-      setState((s) => ({ ...s, settings: { ...s.settings, ...patch } })),
+    updateSettings: (patch) => {
+      setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+      // Mirror the corresponding fields into the platform-wide app_settings row.
+      void import("./app-settings").then(({ patchAppSettings }) => {
+        const mapped: Record<string, unknown> = {};
+        if (patch.deliveryFee !== undefined) mapped.delivery_base_fee = patch.deliveryFee;
+        if (patch.freeDeliveryMin !== undefined) mapped.free_delivery_min = patch.freeDeliveryMin;
+        if (patch.deliverySlabs !== undefined) mapped.delivery_slabs = patch.deliverySlabs;
+        if (patch.driverCommissionPct !== undefined) mapped.default_commission_pct = patch.driverCommissionPct;
+        if (Object.keys(mapped).length) void patchAppSettings(mapped);
+      });
+    },
 
     resetAll: () => setState(defaultSnapshot()),
   };

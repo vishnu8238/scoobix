@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { getAppSettings } from "./app-settings";
 
 /* ============================================================
    REWARDS STORE — Scratch card rewards.
@@ -106,6 +107,9 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     if (state.earned[orderId]) {
       return state.rewards.find((r) => r.id === state.earned[orderId].rewardId) ?? null;
     }
+    // Gate on the global app_settings toggle — admin can disable the entire
+    // scratch-card program platform-wide without touching UI.
+    if (!getAppSettings().scratch_enabled) return null;
     const pool = state.rewards.filter((r) => r.status === "active" && (r.limit === 0 || r.distributed < r.limit));
     if (pool.length === 0) return null;
     const picked = pool[Math.floor(Math.random() * pool.length)];

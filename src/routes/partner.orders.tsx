@@ -8,6 +8,7 @@ import { updateOrderStatus } from "@/lib/insforge";
 import { nudgeTable } from "@/lib/realtime";
 import { useLiveOrders } from "@/lib/realtime-hooks";
 import { useDispatchDaemon } from "@/lib/dispatch-engine";
+import { useOrderFinalizationDaemon } from "@/lib/order-completion";
 
 export const Route = createFileRoute("/partner/orders")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Orders" }] }),
@@ -56,6 +57,7 @@ function mapRow(r: OrderRow): PartnerOrder {
 
 function PartnerOrders() {
   useDispatchDaemon();
+  useOrderFinalizationDaemon();
   const { rows } = useLiveOrders();
   const [tab, setTab] = useState<"new" | "active" | "completed">("new");
   const [openId, setOpenId] = useState<string | null>(null);
