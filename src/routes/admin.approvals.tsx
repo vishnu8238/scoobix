@@ -1,30 +1,60 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, X, FileCheck2 } from "lucide-react";
-import { restaurantApprovals } from "@/lib/mock-extras";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { listTable, patchRecord } from "@/lib/insforge-crud";
 
 export const Route = createFileRoute("/admin/approvals")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Restaurant approvals" }] }),
   component: ApprovalsPage,
 });
 
+type Row = {
+  id: string;
+  name?: string;
+  address?: string;
+  status?: string;
+  created_at?: string;
+  owner_id?: string | null;
+};
+
+function fmtDate(iso?: string) {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleDateString(); } catch { return "—"; }
+}
+
 function ApprovalsPage() {
-  const [list, setList] = useState(restaurantApprovals);
-  const act = (id: string, ok: boolean) => {
+  const [list, setList] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const rows = await listTable<Row>("restaurants", { limit: 200 });
+      if (cancelled) return;
+      setList(rows.filter((r) => (r.status ?? "").toLowerCase() === "pending"));
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const act = async (id: string, ok: boolean) => {
     setList((p) => p.filter((r) => r.id !== id));
-    toast.success(ok ? "Restaurant approved" : "Application rejected");
+    const status = ok ? "active" : "rejected";
+    const res = await patchRecord("restaurants", id, { status });
+    if (res === null) toast.error("Backend update failed — retry later");
+    else toast.success(ok ? "Restaurant approved" : "Application rejected");
   };
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="font-display text-2xl font-extrabold tracking-tight">Restaurant approvals</h1>
-        <p className="text-sm text-muted-foreground">{list.length} pending applications</p>
+        <p className="text-sm text-muted-foreground">{loading ? "Loading…" : `${list.length} pending applications`}</p>
       </header>
 
-      {list.length === 0 ? (
+      {!loading && list.length === 0 ? (
         <div className="rounded-3xl bg-card p-12 text-center shadow-soft ring-1 ring-border/60">
           <FileCheck2 className="mx-auto h-10 w-10 text-primary" />
           <p className="mt-3 font-display text-lg font-bold">All caught up</p>
@@ -36,16 +66,16 @@ function ApprovalsPage() {
             <article key={r.id} className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{r.id} · {r.submitted}</p>
-                  <h3 className="mt-1 font-display text-lg font-extrabold">{r.name}</h3>
-                  <p className="text-sm text-muted-foreground">{r.cuisine} · {r.city}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{r.id.slice(0, 8)} · {fmtDate(r.created_at)}</p>
+                  <h3 className="mt-1 font-display text-lg font-extrabold">{r.name ?? "—"}</h3>
+                  <p className="text-sm text-muted-foreground">{r.address ?? "No address"}</p>
                 </div>
-                <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${r.docs === "Verified" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{r.docs}</span>
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700">Pending</span>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                <Info label="Owner"   value={r.owner} />
-                <Info label="Submitted" value={r.submitted} />
+                <Info label="Owner"     value={r.owner_id ? r.owner_id.slice(0, 8) : "—"} />
+                <Info label="Submitted" value={fmtDate(r.created_at)} />
               </div>
 
               <div className="mt-5 flex items-center gap-2">
