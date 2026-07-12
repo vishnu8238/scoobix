@@ -1,15 +1,53 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Tag, Copy, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
-import { coupons } from "@/lib/mock-extras";
 import { toast } from "sonner";
+import { listTable } from "@/lib/insforge-crud";
+import { EmptyState } from "@/components/cravio/EmptyState";
 
 export const Route = createFileRoute("/app/coupons")({
   head: () => ({ meta: [{ title: "Scoobix · Coupons & offers" }] }),
   component: CouponsPage,
 });
 
+type CouponRow = {
+  id?: string;
+  code?: string;
+  title?: string;
+  description?: string;
+  expires_at?: string;
+  expires?: string;
+  active?: boolean;
+};
+
+function fmtExpiry(row: CouponRow): string {
+  const raw = row.expires_at ?? row.expires;
+  if (!raw) return "No expiry";
+  try {
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return String(raw);
+    return d.toLocaleDateString(undefined, { day: "2-digit", month: "short" });
+  } catch {
+    return String(raw);
+  }
+}
+
 function CouponsPage() {
+  const [list, setList] = useState<CouponRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const rows = await listTable<CouponRow>("coupons", { limit: 100 });
+      if (cancelled) return;
+      setList(rows.filter((c) => c.active !== false && !!c.code));
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const copy = (code: string) => {
     navigator.clipboard?.writeText(code);
     toast.success(`${code} copied · paste at checkout`);
@@ -17,7 +55,7 @@ function CouponsPage() {
 
   return (
     <div className="min-h-svh pb-16">
-      <PageHeader title="Coupons & offers" subtitle={`${coupons.length} active`} />
+      <PageHeader title="Coupons & offers" subtitle={loading ? "Loading…" : `${list.length} active`} />
 
       <div className="px-4 pt-4">
         <div className="rounded-3xl gradient-primary p-5 text-primary-foreground shadow-glow">
@@ -27,28 +65,32 @@ function CouponsPage() {
         </div>
       </div>
 
-      <ul className="mt-6 space-y-3 px-4">
-        {coupons.map((c) => (
-          <li key={c.code} className="relative overflow-hidden rounded-2xl bg-card shadow-soft ring-1 ring-border/60">
-            <div className="flex items-stretch">
-              <div className="flex w-20 shrink-0 flex-col items-center justify-center gap-1 bg-primary-soft p-3 text-primary">
-                <Tag className="h-5 w-5" strokeWidth={2.6} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Offer</span>
-              </div>
-              <div className="relative flex-1 p-4">
-                <div className="absolute -left-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-background" />
-                <h3 className="text-sm font-bold">{c.title}</h3>
-                <p className="text-xs text-muted-foreground">{c.description}</p>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="rounded-md bg-secondary px-2 py-1 font-mono text-[12px] font-bold tracking-wider">{c.code}</span>
-                  <button onClick={() => copy(c.code)} className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary"><Copy className="h-3 w-3" /> Copy</button>
+      {!loading && list.length === 0 ? (
+        <div className="px-4 pt-6"><EmptyState title="No offers yet" description="Check back soon for coupons and discounts." /></div>
+      ) : (
+        <ul className="mt-6 space-y-3 px-4">
+          {list.map((c) => (
+            <li key={c.id ?? c.code} className="relative overflow-hidden rounded-2xl bg-card shadow-soft ring-1 ring-border/60">
+              <div className="flex items-stretch">
+                <div className="flex w-20 shrink-0 flex-col items-center justify-center gap-1 bg-primary-soft p-3 text-primary">
+                  <Tag className="h-5 w-5" strokeWidth={2.6} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Offer</span>
                 </div>
-                <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Expires {c.expires}</p>
+                <div className="relative flex-1 p-4">
+                  <div className="absolute -left-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-background" />
+                  <h3 className="text-sm font-bold">{c.title ?? c.code}</h3>
+                  <p className="text-xs text-muted-foreground">{c.description ?? "Tap to copy the code."}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="rounded-md bg-secondary px-2 py-1 font-mono text-[12px] font-bold tracking-wider">{c.code}</span>
+                    <button onClick={() => copy(String(c.code))} className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary"><Copy className="h-3 w-3" /> Copy</button>
+                  </div>
+                  <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Expires {fmtExpiry(c)}</p>
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

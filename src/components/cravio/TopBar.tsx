@@ -2,7 +2,7 @@ import { Bell, ChevronDown, MapPin, Navigation, Loader2, Leaf } from "lucide-rea
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { useAppUI } from "@/lib/stores";
-import { notifications } from "@/lib/mock-data";
+import { useNotifications } from "@/lib/notifications-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -19,6 +19,8 @@ export function TopBar() {
   const [locOpen, setLocOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [customLoc, setCustomLoc] = useState("");
+  const { list: notifs } = useNotifications("customer");
+  const hasUnread = notifs.some((n) => n.unread);
 
   const handleDetect = async () => {
     const res = await detectLocation();
@@ -104,7 +106,7 @@ export function TopBar() {
           <SheetTrigger asChild>
             <button className="relative grid h-11 w-11 place-items-center rounded-2xl bg-surface text-foreground shadow-soft ring-1 ring-border transition active:scale-95">
               <Bell className="h-[18px] w-[18px]" />
-              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-primary ring-2 ring-surface" />
+              {hasUnread && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-primary ring-2 ring-surface" />}
             </button>
           </SheetTrigger>
           <SheetContent side="right" className="w-[88vw] sm:w-[400px]">
@@ -112,18 +114,22 @@ export function TopBar() {
               <SheetTitle className="font-display">Notifications</SheetTitle>
               <SheetDescription>Updates on your orders and offers.</SheetDescription>
             </SheetHeader>
-            <ul className="mt-4 space-y-2">
-              {notifications.map((n) => (
-                <li key={n.id} className="rounded-2xl border border-border bg-card p-3.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-foreground">{n.title}</p>
-                    <span className="text-[11px] text-muted-foreground">{n.time}</span>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{n.body}</p>
-                  {n.unread && <span className="mt-2 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">New</span>}
-                </li>
-              ))}
-            </ul>
+            {notifs.length === 0 ? (
+              <p className="mt-6 text-center text-sm text-muted-foreground">You're all caught up.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {notifs.map((n) => (
+                  <li key={n.id} className="rounded-2xl border border-border bg-card p-3.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground">{n.title}</p>
+                      <span className="text-[11px] text-muted-foreground">{n.ago}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">{n.body}</p>
+                    {n.unread && <span className="mt-2 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">New</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
           </SheetContent>
         </Sheet>
 
