@@ -31,6 +31,7 @@ const LIVE_STATUS_LABEL: Record<string, string> = {
 
 function LiveOrders() {
   useDispatchDaemon();
+  useOrderFinalizationDaemon();
   const { rows } = useLiveOrders();
   useLiveDriverLocations(); // keep the driver-location stream warm
 
