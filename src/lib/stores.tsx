@@ -192,29 +192,63 @@ type FavCtx = {
 };
 
 const FavContext = createContext<FavCtx | null>(null);
-const FAV_KEY = "cravio_favs_v1";
+
+type FavRow = { id?: string; user_id?: string; restaurant_id?: string; dish_id?: string; kind?: "restaurant" | "dish" };
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [restaurants, setR] = useState<Set<string>>(new Set());
   const [dishes, setD] = useState<Set<string>>(new Set());
+  const rowIndexRef = React.useRef<Map<string, string>>(new Map()); // key: `${kind}:${id}` -> row id
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(FAV_KEY);
-      if (raw) {
-        const o = JSON.parse(raw);
-        setR(new Set(o.restaurants ?? []));
-        setD(new Set(o.dishes ?? []));
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<FavRow>("favorites");
+      if (cancelled) return;
+      const rSet = new Set<string>();
+      const dSet = new Set<string>();
+      rowIndexRef.current.clear();
+      for (const row of rows) {
+        if (row.restaurant_id) {
+          rSet.add(row.restaurant_id);
+          if (row.id) rowIndexRef.current.set(`restaurant:${row.restaurant_id}`, row.id);
+        }
+        if (row.dish_id) {
+          dSet.add(row.dish_id);
+          if (row.id) rowIndexRef.current.set(`dish:${row.dish_id}`, row.id);
+        }
       }
-    } catch {/* ignore */}
+      setR(rSet); setD(dSet);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(FAV_KEY, JSON.stringify({ restaurants: [...restaurants], dishes: [...dishes] }));
-  }, [restaurants, dishes]);
+  const mirror = async (kind: "restaurant" | "dish", id: string, add: boolean) => {
+    const { createRecord, deleteRecord } = await import("./insforge-crud");
+    const key = `${kind}:${id}`;
+    if (add) {
+      const payload: Record<string, unknown> = kind === "restaurant" ? { restaurant_id: id, kind } : { dish_id: id, kind };
+      const created = await createRecord<{ id: string }>("favorites", payload);
+      if (created?.id) rowIndexRef.current.set(key, created.id);
+    } else {
+      const rowId = rowIndexRef.current.get(key);
+      if (rowId) { await deleteRecord("favorites", rowId); rowIndexRef.current.delete(key); }
+    }
+  };
 
-  const toggleRestaurant = (id: string) => setR((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleDish = (id: string) => setD((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleRestaurant = (id: string) => setR((p) => {
+    const n = new Set(p); const willAdd = !n.has(id);
+    willAdd ? n.add(id) : n.delete(id);
+    void mirror("restaurant", id, willAdd);
+    return n;
+  });
+  const toggleDish = (id: string) => setD((p) => {
+    const n = new Set(p); const willAdd = !n.has(id);
+    willAdd ? n.add(id) : n.delete(id);
+    void mirror("dish", id, willAdd);
+    return n;
+  });
 
   return (
     <FavContext.Provider value={{ restaurants, dishes, toggleRestaurant, toggleDish, isRestaurantFav: (id) => restaurants.has(id), isDishFav: (id) => dishes.has(id) }}>
