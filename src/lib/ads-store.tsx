@@ -134,13 +134,21 @@ export function AdsProvider({ children }: { children: ReactNode }) {
         ...a,
       };
       setAds((prev) => [ad, ...prev]);
+      void import("./insforge-crud").then(({ createRecord }) => createRecord("restaurant_ads", ad as unknown as Record<string, unknown>));
       return ad;
     },
-    updateAd: (id, patch) =>
-      setAds((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x))),
-    deleteAd: (id) => setAds((p) => p.filter((x) => x.id !== id)),
-    setStatus: (id, status) =>
-      setAds((p) => p.map((x) => (x.id === id ? { ...x, status } : x))),
+    updateAd: (id, patch) => {
+      setAds((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+      void import("./insforge-crud").then(({ patchRecord }) => patchRecord("restaurant_ads", id, patch as Record<string, unknown>));
+    },
+    deleteAd: (id) => {
+      setAds((p) => p.filter((x) => x.id !== id));
+      void import("./insforge-crud").then(({ deleteRecord }) => deleteRecord("restaurant_ads", id));
+    },
+    setStatus: (id, status) => {
+      setAds((p) => p.map((x) => (x.id === id ? { ...x, status } : x)));
+      void import("./insforge-crud").then(({ patchRecord }) => patchRecord("restaurant_ads", id, { status }));
+    },
     trackClick: (id) =>
       setAds((p) => p.map((x) => (x.id === id ? { ...x, clicks: x.clicks + 1, spend: Math.min(x.budget, x.spend + x.cpc_bid) } : x))),
     trackImpression: (id) =>
