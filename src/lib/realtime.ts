@@ -60,12 +60,30 @@ function streamKey(table: string, params?: Record<string, string | number | unde
   return `${table}?${entries.map(([k, v]) => `${k}=${v}`).join("&")}`;
 }
 
+function normalizeParamValue(k: string, v: string | number): string {
+  // InsForge/PostgREST expects `order=field.desc`/`.asc`. Translate the leading
+  // "-" shorthand (e.g. "-created_at") we use across the codebase.
+  if (k === "order" && typeof v === "string") {
+    return v
+      .split(",")
+      .map((s) => {
+        const t = s.trim();
+        if (!t) return t;
+        if (t.startsWith("-")) return `${t.slice(1)}.desc`;
+        if (t.startsWith("+")) return `${t.slice(1)}.asc`;
+        return t.includes(".") ? t : `${t}.asc`;
+      })
+      .join(",");
+  }
+  return String(v);
+}
+
 function paramsUrl(table: string, params?: Record<string, string | number | undefined>) {
   const qs = params
     ? "?" +
       Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== "")
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(normalizeParamValue(k, v as string | number))}`)
         .join("&")
     : "";
   return `${INSFORGE_URL}/api/database/records/${table}${qs}`;
