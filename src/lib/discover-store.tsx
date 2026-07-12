@@ -1,34 +1,23 @@
 /**
- * Lightweight local-first stores for:
- *  - Discover More cards (admin-managed horizontal shortcuts on Home)
- *  - Trending Now chips (admin-managed + optionally auto-ranked)
- *  - Restaurant collection requests (partner opt-in, admin approval)
+ * Discover More cards, Trending Now chips, and Restaurant collection requests.
  *
- * Uses useSyncExternalStore + localStorage so no Provider wiring is needed.
+ * Live-fetches from InsForge (`discover_cards`, `trending_chips`,
+ * `collection_requests` tables) with optimistic mutations mirrored to the
+ * backend. Falls back to hard-coded defaults on first boot when the table
+ * is empty. No localStorage — every visit reflects the current backend row.
  */
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useEffect } from "react";
+import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-function createStore<T>(key: string, initial: T) {
+function createStore<T>(initial: T) {
   let state: T = initial;
   const listeners = new Set<() => void>();
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) state = { ...(initial as object), ...JSON.parse(raw) } as T;
-    } catch { /* ignore */ }
-  }
-  const persist = () => {
-    if (typeof window !== "undefined") {
-      try { localStorage.setItem(key, JSON.stringify(state)); } catch { /* ignore */ }
-    }
-  };
   return {
     get: () => state,
     set: (next: T | ((prev: T) => T)) => {
       state = typeof next === "function" ? (next as (p: T) => T)(state) : next;
-      persist();
       listeners.forEach((l) => l());
     },
     subscribe: (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; },
@@ -39,14 +28,14 @@ function createStore<T>(key: string, initial: T) {
 export type DiscoverCard = {
   id: string;
   title: string;
-  icon: string;         // emoji or single char (image fallback)
-  image?: string;       // optional image url
-  color?: string;       // colored border (hex/oklch)
-  query: string;        // search query it opens
+  icon: string;
+  image?: string;
+  color?: string;
+  query: string;
   enabled: boolean;
   order: number;
-  startsAt?: string;    // ISO date; card only visible from
-  endsAt?: string;      // ISO date; card hidden after
+  startsAt?: string;
+  endsAt?: string;
 };
 
 const DEFAULT_DISCOVER: DiscoverCard[] = [
@@ -67,7 +56,15 @@ const DEFAULT_DISCOVER: DiscoverCard[] = [
   { id: "d15", title: "Premium Dining",   icon: "🥂", color: "#7c3aed", query: "premium",       enabled: true, order: 15 },
 ];
 
-const discoverStore = createStore<DiscoverCard[]>("scoobix_discover_v1", DEFAULT_DISCOVER);
+const discoverStore = createStore<DiscoverCard[]>(DEFAULT_DISCOVER);
+let discoverHydrated = false;
+
+async function hydrateDiscover() {
+  if (discoverHydrated) return;
+  discoverHydrated = true;
+  const rows = await listTable<DiscoverCard>("discover_cards");
+  if (rows.length) discoverStore.set(rows);
+}
 
 const isVisible = (c: { enabled: boolean; startsAt?: string; endsAt?: string }) => {
   if (!c.enabled) return false;
@@ -78,6 +75,7 @@ const isVisible = (c: { enabled: boolean; startsAt?: string; endsAt?: string }) 
 };
 
 export function useDiscoverCards() {
+  useEffect(() => { void hydrateDiscover(); }, []);
   const all = useSyncExternalStore(discoverStore.subscribe, discoverStore.get, () => DEFAULT_DISCOVER);
   return [...all].sort((a, b) => a.order - b.order);
 }
@@ -85,19 +83,27 @@ export function useVisibleDiscoverCards() {
   return useDiscoverCards().filter(isVisible);
 }
 export const discoverActions = {
-  add: (input: Partial<DiscoverCard>) => discoverStore.set((prev) => [
-    ...prev,
-    { id: uid(), title: "New card", icon: "✨", query: "", enabled: true, order: (prev.at(-1)?.order ?? 0) + 1, ...input },
-  ]),
-  update: (id: string, patch: Partial<DiscoverCard>) =>
-    discoverStore.set((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c))),
-  remove: (id: string) => discoverStore.set((prev) => prev.filter((c) => c.id !== id)),
+  add: (input: Partial<DiscoverCard>) => {
+    const card: DiscoverCard = { id: uid(), title: "New card", icon: "✨", query: "", enabled: true, order: (discoverStore.get().at(-1)?.order ?? 0) + 1, ...input };
+    discoverStore.set((prev) => [...prev, card]);
+    void createRecord("discover_cards", card as unknown as Record<string, unknown>);
+  },
+  update: (id: string, patch: Partial<DiscoverCard>) => {
+    discoverStore.set((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    void patchRecord("discover_cards", id, patch as Record<string, unknown>);
+  },
+  remove: (id: string) => {
+    discoverStore.set((prev) => prev.filter((c) => c.id !== id));
+    void deleteRecord("discover_cards", id);
+  },
   reorder: (id: string, dir: -1 | 1) => discoverStore.set((prev) => {
     const list = [...prev].sort((a, b) => a.order - b.order);
     const idx = list.findIndex((c) => c.id === id);
     const swap = idx + dir;
     if (idx < 0 || swap < 0 || swap >= list.length) return prev;
     const a = list[idx], b = list[swap];
+    void patchRecord("discover_cards", a.id, { order: b.order });
+    void patchRecord("discover_cards", b.id, { order: a.order });
     return prev.map((c) => c.id === a.id ? { ...c, order: b.order } : c.id === b.id ? { ...c, order: a.order } : c);
   }),
 };
@@ -111,7 +117,7 @@ export type TrendingChip = {
   order: number;
   startsAt?: string;
   endsAt?: string;
-  auto?: boolean; // auto-ranked from popularity (mock: order preserved)
+  auto?: boolean;
 };
 
 const DEFAULT_TRENDING: TrendingChip[] = [
@@ -128,9 +134,17 @@ const DEFAULT_TRENDING: TrendingChip[] = [
   { id: "t11", name: "Coffee",        image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200",  enabled: true, order: 11 },
 ];
 
-const trendingStore = createStore<TrendingChip[]>("scoobix_trending_v1", DEFAULT_TRENDING);
+const trendingStore = createStore<TrendingChip[]>(DEFAULT_TRENDING);
+let trendingHydrated = false;
+async function hydrateTrending() {
+  if (trendingHydrated) return;
+  trendingHydrated = true;
+  const rows = await listTable<TrendingChip>("trending_chips");
+  if (rows.length) trendingStore.set(rows);
+}
 
 export function useTrendingChips() {
+  useEffect(() => { void hydrateTrending(); }, []);
   const all = useSyncExternalStore(trendingStore.subscribe, trendingStore.get, () => DEFAULT_TRENDING);
   return [...all].sort((a, b) => a.order - b.order);
 }
@@ -138,19 +152,27 @@ export function useVisibleTrendingChips() {
   return useTrendingChips().filter(isVisible);
 }
 export const trendingActions = {
-  add: (input: Partial<TrendingChip>) => trendingStore.set((prev) => [
-    ...prev,
-    { id: uid(), name: "New", image: "", enabled: true, order: (prev.at(-1)?.order ?? 0) + 1, ...input },
-  ]),
-  update: (id: string, patch: Partial<TrendingChip>) =>
-    trendingStore.set((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c))),
-  remove: (id: string) => trendingStore.set((prev) => prev.filter((c) => c.id !== id)),
+  add: (input: Partial<TrendingChip>) => {
+    const chip: TrendingChip = { id: uid(), name: "New", image: "", enabled: true, order: (trendingStore.get().at(-1)?.order ?? 0) + 1, ...input };
+    trendingStore.set((prev) => [...prev, chip]);
+    void createRecord("trending_chips", chip as unknown as Record<string, unknown>);
+  },
+  update: (id: string, patch: Partial<TrendingChip>) => {
+    trendingStore.set((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    void patchRecord("trending_chips", id, patch as Record<string, unknown>);
+  },
+  remove: (id: string) => {
+    trendingStore.set((prev) => prev.filter((c) => c.id !== id));
+    void deleteRecord("trending_chips", id);
+  },
   reorder: (id: string, dir: -1 | 1) => trendingStore.set((prev) => {
     const list = [...prev].sort((a, b) => a.order - b.order);
     const idx = list.findIndex((c) => c.id === id);
     const swap = idx + dir;
     if (idx < 0 || swap < 0 || swap >= list.length) return prev;
     const a = list[idx], b = list[swap];
+    void patchRecord("trending_chips", a.id, { order: b.order });
+    void patchRecord("trending_chips", b.id, { order: a.order });
     return prev.map((c) => c.id === a.id ? { ...c, order: b.order } : c.id === b.id ? { ...c, order: a.order } : c);
   }),
 };
@@ -160,24 +182,37 @@ export type CollectionRequest = {
   id: string;
   restaurantId: string;
   restaurantName: string;
-  collectionId: string;  // matches a DiscoverCard id
+  collectionId: string;
   collectionTitle: string;
   status: "pending" | "approved" | "rejected";
   createdAt: number;
 };
 
-const reqStore = createStore<CollectionRequest[]>("scoobix_collection_requests_v1", []);
+const reqStore = createStore<CollectionRequest[]>([]);
+let reqHydrated = false;
+async function hydrateReqs() {
+  if (reqHydrated) return;
+  reqHydrated = true;
+  const rows = await listTable<CollectionRequest>("collection_requests");
+  if (rows.length) reqStore.set(rows);
+}
 
 export function useCollectionRequests() {
+  useEffect(() => { void hydrateReqs(); }, []);
   return useSyncExternalStore(reqStore.subscribe, reqStore.get, () => [] as CollectionRequest[]);
 }
 export const collectionRequestActions = {
-  submit: (input: Omit<CollectionRequest, "id" | "status" | "createdAt">) =>
-    reqStore.set((prev) => [
-      { ...input, id: uid(), status: "pending", createdAt: Date.now() },
-      ...prev,
-    ]),
-  setStatus: (id: string, status: CollectionRequest["status"]) =>
-    reqStore.set((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r))),
-  remove: (id: string) => reqStore.set((prev) => prev.filter((r) => r.id !== id)),
+  submit: (input: Omit<CollectionRequest, "id" | "status" | "createdAt">) => {
+    const rec: CollectionRequest = { ...input, id: uid(), status: "pending", createdAt: Date.now() };
+    reqStore.set((prev) => [rec, ...prev]);
+    void createRecord("collection_requests", rec as unknown as Record<string, unknown>);
+  },
+  setStatus: (id: string, status: CollectionRequest["status"]) => {
+    reqStore.set((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    void patchRecord("collection_requests", id, { status });
+  },
+  remove: (id: string) => {
+    reqStore.set((prev) => prev.filter((r) => r.id !== id));
+    void deleteRecord("collection_requests", id);
+  },
 };
