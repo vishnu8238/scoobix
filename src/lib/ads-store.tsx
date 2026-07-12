@@ -111,12 +111,17 @@ function score(ad: RestaurantAd, r: Restaurant): number {
 }
 
 export function AdsProvider({ children }: { children: ReactNode }) {
-  const [ads, setAds] = useState<RestaurantAd[]>(() => load());
+  const [ads, setAds] = useState<RestaurantAd[]>(() => seedAds());
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try { localStorage.setItem(KEY, JSON.stringify(ads)); } catch { /* ignore */ }
-  }, [ads]);
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<RestaurantAd>("restaurant_ads");
+      if (!cancelled && rows.length) setAds(rows);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const ctx: AdsCtx = {
     ads,
