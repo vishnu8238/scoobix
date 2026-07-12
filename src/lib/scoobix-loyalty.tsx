@@ -34,24 +34,49 @@ type WalletCtx = {
 const WKey = "scoobix_wallet_v1";
 const WalletContext = createContext<WalletCtx | null>(null);
 
+type WalletTxnRow = {
+  id?: string;
+  customer_id?: string;
+  amount?: number;
+  kind?: WalletTxn["kind"];
+  note?: string;
+  created_at?: string;
+};
+
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [txns, setTxns] = useState<WalletTxn[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(WKey) : null;
-      if (raw) setTxns(JSON.parse(raw));
-    } catch { /* ignore */ }
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("./insforge-crud");
+      const rows = await listTable<WalletTxnRow>("wallet_transactions");
+      if (cancelled) return;
+      setTxns(rows.map((r) => ({
+        id: r.id ?? uid(),
+        customerId: r.customer_id ?? "",
+        amount: typeof r.amount === "number" ? r.amount : 0,
+        kind: r.kind ?? "credit",
+        note: r.note ?? "",
+        createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+      })));
+    })();
+    return () => { cancelled = true; };
   }, []);
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem(WKey, JSON.stringify(txns));
-  }, [txns]);
+
+  const persist = async (t: WalletTxn) => {
+    const { createRecord } = await import("./insforge-crud");
+    void createRecord("wallet_transactions", {
+      id: t.id, customer_id: t.customerId, amount: t.amount, kind: t.kind, note: t.note,
+    });
+  };
 
   const balanceOf = (cid: string) => txns.filter((t) => t.customerId === cid).reduce((s, t) => s + t.amount, 0);
 
   const credit: WalletCtx["credit"] = (customerId, amount, kind, note) => {
     const txn: WalletTxn = { id: uid(), customerId, amount: Math.abs(amount), kind, note, createdAt: Date.now() };
     setTxns((p) => [txn, ...p]);
+    void persist(txn);
     return txn;
   };
   const debit: WalletCtx["debit"] = (customerId, amount, kind, note) => {
@@ -59,6 +84,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (balanceOf(customerId) < amt) return { ok: false, reason: "Insufficient wallet balance" };
     const txn: WalletTxn = { id: uid(), customerId, amount: -amt, kind, note, createdAt: Date.now() };
     setTxns((p) => [txn, ...p]);
+    void persist(txn);
     return { ok: true, txn };
   };
 
