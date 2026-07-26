@@ -44,6 +44,7 @@ import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as PartnerMealsRouteImport } from './routes/partner.meals'
 import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
+import { Route as PartnerCouponsRouteImport } from './routes/partner.coupons'
 import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
 import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
@@ -266,6 +267,11 @@ const PartnerInvoiceRoute = PartnerInvoiceRouteImport.update({
 const PartnerHoursRoute = PartnerHoursRouteImport.update({
   id: '/hours',
   path: '/hours',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerCouponsRoute = PartnerCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
   getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerCollectionsRoute = PartnerCollectionsRouteImport.update({
@@ -565,6 +571,7 @@ export interface FileRoutesByFullPath {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
+  '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -646,6 +653,7 @@ export interface FileRoutesByTo {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
+  '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -732,6 +740,7 @@ export interface FileRoutesById {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
+  '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -819,6 +828,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/bulk'
     | '/partner/collections'
+    | '/partner/coupons'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -900,6 +910,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/bulk'
     | '/partner/collections'
+    | '/partner/coupons'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -985,6 +996,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/bulk'
     | '/partner/collections'
+    | '/partner/coupons'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -1273,6 +1285,13 @@ declare module '@tanstack/react-router' {
       path: '/hours'
       fullPath: '/partner/hours'
       preLoaderRoute: typeof PartnerHoursRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/coupons': {
+      id: '/partner/coupons'
+      path: '/coupons'
+      fullPath: '/partner/coupons'
+      preLoaderRoute: typeof PartnerCouponsRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/collections': {
@@ -1734,6 +1753,7 @@ interface PartnerRouteChildren {
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
   PartnerBulkRoute: typeof PartnerBulkRoute
   PartnerCollectionsRoute: typeof PartnerCollectionsRoute
+  PartnerCouponsRoute: typeof PartnerCouponsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
   PartnerInvoiceRoute: typeof PartnerInvoiceRoute
   PartnerMealsRoute: typeof PartnerMealsRoute
@@ -1753,6 +1773,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
   PartnerBulkRoute: PartnerBulkRoute,
   PartnerCollectionsRoute: PartnerCollectionsRoute,
+  PartnerCouponsRoute: PartnerCouponsRoute,
   PartnerHoursRoute: PartnerHoursRoute,
   PartnerInvoiceRoute: PartnerInvoiceRoute,
   PartnerMealsRoute: PartnerMealsRoute,
