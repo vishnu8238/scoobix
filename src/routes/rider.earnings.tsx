@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { riderEarnings } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/format";
 import { TrendingUp, Package, Clock, Gift } from "lucide-react";
+import { useDriver } from "@/lib/driver-store";
+import { useLiveOrders } from "@/lib/realtime-hooks";
 
 export const Route = createFileRoute("/rider/earnings")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Earnings" }] }),
@@ -11,12 +12,55 @@ export const Route = createFileRoute("/rider/earnings")({
 });
 
 const TABS = ["Daily", "Weekly", "Monthly"] as const;
+const DAY = 86400000;
+
+type DeliveredOrder = {
+  driver_earnings?: number | null;
+  tip?: number | null;
+  status?: string | null;
+  finalized_at?: string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+};
 
 function RiderEarnings() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Weekly");
-  const e = riderEarnings;
-  const data = tab === "Daily" ? e.today : tab === "Weekly" ? e.week : e.month;
-  const max = Math.max(...e.history.map((d) => d.amount));
+  const { driverId } = useDriver();
+  const { rows } = useLiveOrders(driverId ? { driver_id: driverId } : undefined);
+
+  const delivered = (rows as DeliveredOrder[])
+    .filter((o) => String(o.status ?? "").toUpperCase() === "DELIVERED")
+    .map((o) => ({
+      at: new Date(o.finalized_at ?? o.updated_at ?? o.created_at ?? Date.now()).getTime(),
+      amount: Number(o.driver_earnings ?? 0),
+      tip: Number(o.tip ?? 0),
+    }));
+
+  const windowMs = tab === "Daily" ? DAY : tab === "Weekly" ? 7 * DAY : 30 * DAY;
+  const since = Date.now() - windowMs;
+  const inWindow = delivered.filter((d) => d.at >= since);
+  const data = {
+    total: inWindow.reduce((s, d) => s + d.amount + d.tip, 0),
+    tips: inWindow.reduce((s, d) => s + d.tip, 0),
+    deliveries: inWindow.length,
+    hours: Math.round((inWindow.length * 0.6) * 10) / 10,
+  };
+
+  const history = Array.from({ length: 7 }).map((_, i) => {
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    dayStart.setDate(dayStart.getDate() - (6 - i));
+    const dayEnd = dayStart.getTime() + DAY;
+    return {
+      day: ["S", "M", "T", "W", "T", "F", "S"][dayStart.getDay()],
+      amount: delivered
+        .filter((d) => d.at >= dayStart.getTime() && d.at < dayEnd)
+        .reduce((s, d) => s + d.amount + d.tip, 0),
+    };
+  });
+  const e = { history };
+  const max = Math.max(1, ...history.map((d) => d.amount));
+
 
   return (
     <div className="animate-fade-up space-y-6 px-5 pt-7">
