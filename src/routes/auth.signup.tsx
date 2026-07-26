@@ -23,7 +23,7 @@ const ROLES: { value: Role; label: string; icon: typeof Utensils; next?: string 
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, signInWithProvider } = useAuth();
   const [role, setRole] = useState<Role>("customer");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [busy, setBusy] = useState(false);
@@ -34,10 +34,20 @@ function SignupPage() {
     const res = await signUp({ ...form, role });
     setBusy(false);
     if (!res.ok) { toast.error(res.message ?? "Sign up failed"); return; }
+    if (res.needsVerification) { toast.success(res.message ?? "Verify your email to continue"); return; }
     toast.success("Account created");
     const next = ROLES.find((r) => r.value === role)?.next ?? ROLE_HOME[role];
     navigate({ to: next });
   };
+
+  // OAuth sign-up and sign-in are the same call — the provider account is
+  // linked to the existing user when the email already exists.
+  const oauth = async (provider: "google" | "apple") => {
+    setBusy(true);
+    const res = await signInWithProvider(provider, role);
+    if (!res.ok) { setBusy(false); toast.error(res.message ?? "Could not start sign-up"); }
+  };
+
 
   return (
     <div className="min-h-svh px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-12">
@@ -69,6 +79,24 @@ function SignupPage() {
         <Button type="submit" disabled={busy} className="h-12 w-full rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-glow">
           {busy ? "Creating…" : <>Create account <ArrowRight className="ml-1 h-4 w-4" /></>}
         </Button>
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-border/70" />
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">or sign up with</span>
+          <span className="h-px flex-1 bg-border/70" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button type="button" disabled={busy} onClick={() => void oauth("google")}
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-card text-sm font-bold shadow-soft ring-1 ring-border/60 transition active:scale-95 disabled:opacity-60">
+            Google
+          </button>
+          <button type="button" disabled={busy} onClick={() => void oauth("apple")}
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-card text-sm font-bold shadow-soft ring-1 ring-border/60 transition active:scale-95 disabled:opacity-60">
+            Apple
+          </button>
+        </div>
+
 
         <p className="text-center text-[12.5px] text-muted-foreground">
           Already have one? <Link to="/auth/login" className="font-bold text-primary">Sign in</Link>

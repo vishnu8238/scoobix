@@ -15,8 +15,13 @@ type UserRow = {
   id: string;
   name?: string | null;
   email?: string | null;
+  phone?: string | null;
   role?: string | null;
   status?: string | null;
+  provider?: string | null;
+  providers?: string | null;
+  email_verified?: boolean | null;
+  last_login_at?: string | null;
   registration_timestamp?: string | null;
 };
 
@@ -40,12 +45,22 @@ function AdminUsers() {
       id: u.id,
       name: u.name ?? (u.email ?? "").split("@")[0] ?? "User",
       email: u.email ?? "—",
+      phone: u.phone ?? "—",
+      role: (u.role ?? "customer").toLowerCase(),
+      provider: (u.providers || u.provider || "email").replace(/,/g, " · "),
+      verified: !!u.email_verified,
+      lastLogin: u.last_login_at ? new Date(u.last_login_at).toLocaleString() : "Never",
       orders: orderCounts[u.id] ?? 0,
-
       joined: (u.registration_timestamp ?? "").slice(0, 10) || "—",
       status: u.status ?? "active",
     }))
-    .filter((u) => u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term));
+    .filter((u) =>
+      u.name.toLowerCase().includes(term) ||
+      u.email.toLowerCase().includes(term) ||
+      u.phone.toLowerCase().includes(term) ||
+      u.role.includes(term) ||
+      u.provider.toLowerCase().includes(term));
+
 
 
   return (
@@ -68,16 +83,20 @@ function AdminUsers() {
 
       <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
         <DataTable
-          columns={["ID", "Name", "Email", "Orders", "Joined", "Status", ""]}
+          columns={["Name", "Email", "Phone", "Role", "Provider", "Verified", "Last login", "Orders", "Status", ""]}
           rows={rows.map((u) => {
             const blocked = !!blockedUsers[u.id];
             return [
-              <span className="font-bold text-primary">{u.id}</span>,
               <span className="font-bold">{u.name}</span>,
               <span className="text-muted-foreground">{u.email}</span>,
+              <span className="text-muted-foreground">{u.phone}</span>,
+              <span className="font-bold capitalize text-primary">{u.role}</span>,
+              <span className="capitalize text-muted-foreground">{u.provider}</span>,
+              <StatusBadge label={u.verified ? "Verified" : "Unverified"} />,
+              <span className="text-muted-foreground">{u.lastLogin}</span>,
               u.orders,
-              <span className="text-muted-foreground">{u.joined}</span>,
               <StatusBadge label={blocked ? "Suspended" : u.status} />,
+
               <button
                 onClick={() => { setUserBlocked(u.id, !blocked); toast.success(blocked ? `${u.name} unblocked` : `${u.name} blocked`); }}
                 className={`text-[12px] font-bold ${blocked ? "text-primary" : "text-destructive"}`}
