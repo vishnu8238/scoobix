@@ -15,8 +15,13 @@ type UserRow = {
   id: string;
   name?: string | null;
   email?: string | null;
+  phone?: string | null;
   role?: string | null;
   status?: string | null;
+  provider?: string | null;
+  providers?: string | null;
+  email_verified?: boolean | null;
+  last_login_at?: string | null;
   registration_timestamp?: string | null;
 };
 
@@ -40,12 +45,22 @@ function AdminUsers() {
       id: u.id,
       name: u.name ?? (u.email ?? "").split("@")[0] ?? "User",
       email: u.email ?? "—",
+      phone: u.phone ?? "—",
+      role: (u.role ?? "customer").toLowerCase(),
+      provider: (u.providers || u.provider || "email").replace(/,/g, " · "),
+      verified: !!u.email_verified,
+      lastLogin: u.last_login_at ? new Date(u.last_login_at).toLocaleString() : "Never",
       orders: orderCounts[u.id] ?? 0,
-
       joined: (u.registration_timestamp ?? "").slice(0, 10) || "—",
       status: u.status ?? "active",
     }))
-    .filter((u) => u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term));
+    .filter((u) =>
+      u.name.toLowerCase().includes(term) ||
+      u.email.toLowerCase().includes(term) ||
+      u.phone.toLowerCase().includes(term) ||
+      u.role.includes(term) ||
+      u.provider.toLowerCase().includes(term));
+
 
 
   return (
