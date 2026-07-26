@@ -35,8 +35,8 @@ export async function getWallet(userId: string): Promise<WalletRow | null> {
     if (rows[0]) return rows[0];
   }
   const rows = await listTable<WalletRow>("wallet", { user_id: `eq.${userId}`, limit: 1 });
-  let row = rows[0] ?? null;
-  if (!row) row = await createRecord<WalletRow>("wallet", { user_id: userId, balance: 0 });
+  const row: WalletRow | null =
+    rows[0] ?? (await createRecord<WalletRow>("wallet", { user_id: userId, balance: 0 }));
   if (row?.id) walletIdCache.set(userId, row.id);
   return row;
 }
