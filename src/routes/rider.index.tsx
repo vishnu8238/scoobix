@@ -1,34 +1,90 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { riderEarnings, deliveryRequests } from "@/lib/role-data";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { Bike, TrendingUp, Clock, Package, ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/format";
 import { setDriverOnline } from "@/lib/insforge";
-
-function getDriverId(): string {
-  if (typeof window === "undefined") return "guest";
-  return window.localStorage.getItem("driverId") || "guest";
-}
+import { useDriver } from "@/lib/driver-store";
+import { useAuth } from "@/lib/auth-store";
+import { listTable } from "@/lib/insforge-crud";
 
 export const Route = createFileRoute("/rider/")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Home" }] }),
   component: RiderHome,
 });
 
+type OrderRow = {
+  id: string;
+  status?: string;
+  driver_id?: string | null;
+  delivery_fee?: number;
+  delivery_address?: string;
+  created_at?: string;
+};
+
+const ACTIVE = ["ASSIGNED", "ACCEPTED", "READY", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
+
+function isToday(iso?: string) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+
 function RiderHome() {
-  const [online, setOnline] = useState(true);
-  const { today } = riderEarnings;
+  const { user } = useAuth();
+  const { driver, driverId, update } = useDriver();
+  const [online, setOnline] = useState(false);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [offers, setOffers] = useState<OrderRow[]>([]);
+
+  useEffect(() => { setOnline(Boolean(driver?.online_status)); }, [driver?.online_status]);
+
+  const load = useCallback(async () => {
+    if (!driverId) return;
+    const [mine, pending] = await Promise.all([
+      listTable<OrderRow>("orders", { driver_id: `eq.${driverId}`, order: "created_at.desc", limit: 100 }),
+      listTable<OrderRow>("orders", { driver_id: `eq.${driverId}`, status: "eq.ASSIGNING", limit: 3 }),
+    ]);
+    setOrders(mine);
+    setOffers(pending);
+  }, [driverId]);
+
+  useEffect(() => {
+    void load();
+    const t = window.setInterval(() => void load(), 20000);
+    return () => window.clearInterval(t);
+  }, [load]);
+
+  const today = useMemo(() => {
+    const done = orders.filter((o) => String(o.status ?? "").toUpperCase() === "DELIVERED" && isToday(o.created_at));
+    const total = done.reduce((s, o) => s + (Number(o.delivery_fee ?? 0) || 0), 0);
+    return { total, deliveries: done.length };
+  }, [orders]);
+
+  const active = useMemo(
+    () => orders.find((o) => ACTIVE.includes(String(o.status ?? "").toUpperCase())) ?? null,
+    [orders],
+  );
+
+  const firstName = (user?.name ?? "Rider").split(" ")[0];
+
+  const toggleOnline = async () => {
+    const next = !online;
+    setOnline(next);
+    await update({ online_status: next });
+    if (driverId) void setDriverOnline(driverId, next);
+  };
 
   return (
     <div className="animate-fade-up space-y-6 px-5 pt-7">
       <header className="flex items-center justify-between">
         <div>
           <p className="eyebrow">Rider</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">Hey, Aarav</h1>
+          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">Hey, {firstName}</h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-            <span className="font-bold text-foreground">4.95</span> · 312 trips
+            <span className="font-bold text-foreground">{(driver?.rating ?? 5).toFixed(2)}</span> · {driver?.total_deliveries ?? 0} trips
           </p>
         </div>
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
@@ -49,7 +105,7 @@ function RiderHome() {
             </p>
           </div>
           <button
-            onClick={() => { const next = !online; setOnline(next); void setDriverOnline(getDriverId(), next); }}
+            onClick={() => void toggleOnline()}
             className={cn(
               "relative h-9 w-16 rounded-full p-1 transition",
               online ? "bg-white/30" : "bg-muted",
@@ -67,7 +123,7 @@ function RiderHome() {
       <div className="grid grid-cols-3 gap-3">
         <Stat icon={TrendingUp} label="Earned" value={formatPrice(today.total)} tone="text-primary bg-primary/10" />
         <Stat icon={Package} label="Trips" value={String(today.deliveries)} tone="text-sky-700 bg-sky-100" />
-        <Stat icon={Clock} label="Online" value={`${today.hours}h`} tone="text-amber-700 bg-amber-100" />
+        <Stat icon={Clock} label="Pending" value={formatPrice(driver?.pending_earnings ?? 0)} tone="text-amber-700 bg-amber-100" />
       </div>
 
       <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
@@ -77,30 +133,38 @@ function RiderHome() {
             All requests <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-        <div className="space-y-2.5">
-          {deliveryRequests.slice(0, 2).map((r) => (
-            <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <Package className="h-5 w-5" />
+        {offers.length === 0 ? (
+          <p className="rounded-2xl bg-muted/40 p-4 text-center text-xs text-muted-foreground">
+            {online ? "No requests right now — stay tuned." : "Go online to receive requests."}
+          </p>
+        ) : (
+          <div className="space-y-2.5">
+            {offers.map((r) => (
+              <div key={r.id} className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <Package className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-sm font-bold">#{String(r.id).slice(-5).toUpperCase()}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{r.delivery_address ?? "New request"}</p>
+                </div>
+                <span className="font-display text-sm font-extrabold text-primary">{formatPrice(Number(r.delivery_fee ?? 0))}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="truncate text-sm font-bold">{r.restaurant}</p>
-                <p className="text-[11px] text-muted-foreground">{r.distanceKm} km · {r.etaMins} min</p>
-              </div>
-              <span className="font-display text-sm font-extrabold text-primary">{formatPrice(r.payout)}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      <Link to="/rider/active" className="flex items-center justify-between rounded-3xl bg-foreground p-5 text-background shadow-pop transition active:scale-[0.99]">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-background/70">Active delivery</p>
-          <p className="mt-1 font-display text-lg font-extrabold">DLV-3300 · in progress</p>
-          <p className="mt-0.5 text-xs text-background/70">1.6 km left · ~8 min to customer</p>
-        </div>
-        <ChevronRight className="h-5 w-5" />
-      </Link>
+      {active && (
+        <Link to="/rider/active" className="flex items-center justify-between rounded-3xl bg-foreground p-5 text-background shadow-pop transition active:scale-[0.99]">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-background/70">Active delivery</p>
+            <p className="mt-1 font-display text-lg font-extrabold">#{String(active.id).slice(-5).toUpperCase()} · in progress</p>
+            <p className="mt-0.5 truncate text-xs text-background/70">{active.delivery_address ?? "Tap to continue"}</p>
+          </div>
+          <ChevronRight className="h-5 w-5" />
+        </Link>
+      )}
     </div>
   );
 }
