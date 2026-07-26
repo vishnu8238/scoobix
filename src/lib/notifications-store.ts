@@ -3,7 +3,8 @@
  * No mock fallback: an empty table renders the screen's empty state.
  */
 import { useEffect, useState } from "react";
-import { listTable, patchRecord, deleteRecord } from "./insforge-crud";
+import { listTable, deleteRecord } from "./insforge-crud";
+import { useAuth } from "./auth-store";
 
 export type AppNotification = {
   id: string;
@@ -18,6 +19,7 @@ type NotifRow = {
   id?: string;
   title?: string;
   body?: string;
+  message?: string;
   ago?: string;
   kind?: AppNotification["kind"];
   unread?: boolean;
@@ -39,7 +41,7 @@ function relativeAgo(iso?: string): string {
 const rowToNotif = (r: NotifRow): AppNotification => ({
   id: r.id ?? Math.random().toString(36).slice(2),
   title: r.title ?? "",
-  body: r.body ?? "",
+  body: r.body ?? r.message ?? "",
   ago: r.ago ?? relativeAgo(r.created_at),
   kind: (r.kind ?? "system") as AppNotification["kind"],
   unread: !!r.unread,
