@@ -231,15 +231,15 @@ export function updateDeliveryStatus(orderId: string, status: string) {
   return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { status });
 }
 
-/** Append a live-location ping for the driver. */
+/** Append a live-location ping for the driver (driver_tracking: lat/lng/bearing). */
 export function pingDriverLocation(driverId: string, lat: number, lng: number) {
   return ifWrite(`/api/database/records/driver_tracking`, "POST", {
     driver_id: driverId,
-    latitude: lat,
-    longitude: lng,
-    timestamp: new Date().toISOString(),
+    lat,
+    lng,
   });
 }
+
 
 // ---------- admin-side writes (best-effort, never throw) ----------
 
