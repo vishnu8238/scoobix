@@ -21,13 +21,21 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      navigate({ to: "/auth/login", search: { app: allow, redirect: href }, replace: true } as never);
+      // Never bounce auth screens back into themselves (that nests
+      // ?redirect= params forever).
+      const safeRedirect = href.startsWith("/auth") ? undefined : href;
+      navigate({
+        to: "/auth/login",
+        search: { app: allow, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
+        replace: true,
+      } as never);
       return;
     }
     if (user.role !== allow) {
       navigate({ to: ROLE_HOME[user.role] as never, replace: true });
     }
   }, [user, loading, allow, navigate, href]);
+
 
   if (loading || !user || mismatched) {
     return (
