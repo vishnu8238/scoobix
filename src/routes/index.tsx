@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import splashBg from "@/assets/splash-bg.jpg";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
+import { useAuth, ROLE_HOME } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -13,22 +14,26 @@ export const Route = createFileRoute("/")({
   component: Splash,
 });
 
+/**
+ * Shared splash screen. Each installed app opens on its own scope, so this
+ * only ever routes a session to the surface that owns its role — never to a
+ * portal picker.
+ */
 function Splash() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setExiting(true), 1500);
-    const t2 = setTimeout(() => navigate({ to: "/portal" }), 2100);
+    if (loading) return;
+    const target = user ? ROLE_HOME[user.role] : "/auth/login";
+    const t = setTimeout(() => setExiting(true), 1100);
+    const t2 = setTimeout(() => navigate({ to: target as never, replace: true }), 1600);
     return () => { clearTimeout(t); clearTimeout(t2); };
-  }, [navigate]);
+  }, [navigate, user, loading]);
 
   return (
-    <button
-      onClick={() => navigate({ to: "/portal" })}
-      className="relative block h-full min-h-svh w-full overflow-hidden text-left"
-      aria-label="Enter Scoobix"
-    >
+    <div className="relative block h-full min-h-svh w-full overflow-hidden text-left">
       <img
         src={splashBg}
         alt=""
@@ -49,6 +54,6 @@ function Splash() {
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
