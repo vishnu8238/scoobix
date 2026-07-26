@@ -46,30 +46,41 @@ const rowToNotif = (r: NotifRow): AppNotification => ({
 });
 
 export function useNotifications(audience: "customer" | "partner" | "rider") {
+  const { user } = useAuth();
+  const userId = user?.id;
   const [list, setList] = useState<AppNotification[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty">("loading");
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      // PostgREST equality filter syntax.
-      const rows = await listTable<NotifRow>("notifications", { audience: `eq.${audience}` });
+      // The notifications table is per-user (id, user_id, title, message,
+      // created_at) — there is no audience column, so scope by the signed-in
+      // user and show nothing when signed out.
+      if (!userId) {
+        if (!cancelled) { setList([]); setStatus("empty"); }
+        return;
+      }
+      const rows = await listTable<NotifRow>("notifications", {
+        user_id: `eq.${userId}`,
+        order: "created_at.desc",
+        limit: 100,
+      });
       if (cancelled) return;
       setList(rows.map(rowToNotif));
       setStatus(rows.length ? "ready" : "empty");
     })();
     return () => { cancelled = true; };
-  }, [audience]);
-
+  }, [audience, userId]);
 
   const markRead = (id: string) => {
     setList((p) => p.map((n) => (n.id === id ? { ...n, unread: false } : n)));
-    void patchRecord("notifications", id, { unread: false });
   };
   const dismiss = (id: string) => {
     setList((p) => p.filter((n) => n.id !== id));
     void deleteRecord("notifications", id);
   };
+
 
   return { list, status, markRead, dismiss };
 }
