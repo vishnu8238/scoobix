@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { partnerMenu } from "@/lib/role-data";
 import type { Dish } from "@/lib/mock-data";
 import { Plus, Pencil, Trash2, X, Leaf, Sparkles, Trophy } from "lucide-react";
@@ -7,6 +7,7 @@ import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
 import { partnerRestaurant } from "@/lib/role-data";
 import { upsertMenuItem, deleteMenuItem, upsertAddon, deleteAddon } from "@/lib/insforge";
+import { usePartnerRestaurant } from "@/lib/partner-store";
 
 export const Route = createFileRoute("/partner/menu")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Menu" }] }),
@@ -19,7 +20,20 @@ export type DishAddon = { id: string; name: string; price: number; available: bo
 type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSeller?: boolean; hasAddons?: boolean; addons?: DishAddon[] };
 
 function PartnerMenu() {
-  const [items, setItems] = useState<EditableDish[]>(partnerMenu.map((d) => ({ ...d, available: true })));
+  const { restaurant, restaurantId } = usePartnerRestaurant();
+  const rid = restaurantId || partnerRestaurant.id;
+  const [items, setItems] = useState<EditableDish[]>(() => partnerMenu.map((d) => ({ ...d, available: true })));
+  const syncedFor = useRef<string | null>(null);
+
+  // Load the resolved restaurant's live menu once identity resolves.
+  useEffect(() => {
+    const menu = partnerMenu as Dish[];
+    if (!rid || syncedFor.current === rid) return;
+    if (!menu || menu.length === 0) return;
+    syncedFor.current = rid;
+    setItems(menu.map((d) => ({ available: true, ...d }) as EditableDish));
+  }, [rid, restaurant]);
+
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
   const [editing, setEditing] = useState<EditableDish | null>(null);
   const [showNew, setShowNew] = useState(false);
@@ -29,25 +43,25 @@ function PartnerMenu() {
   const toggle = (id: string) => setItems((prev) => prev.map((d) => {
     if (d.id !== id) return d;
     const next = { ...d, available: !d.available };
-    void upsertMenuItem({ id: next.id, restaurant_id: partnerRestaurant.id, name: next.name, price: next.price, available: next.available });
+    void upsertMenuItem({ id: next.id, restaurant_id: rid, name: next.name, price: next.price, available: next.available });
     return next;
   }));
   const toggleVeg = (id: string) => setItems((prev) => prev.map((d) => {
     if (d.id !== id) return d;
     const next = { ...d, veg: !d.veg };
-    void upsertMenuItem({ id: next.id, restaurant_id: partnerRestaurant.id, name: next.name, price: next.price, veg_type: next.veg ? "veg" : "non_veg" });
+    void upsertMenuItem({ id: next.id, restaurant_id: rid, name: next.name, price: next.price, veg_type: next.veg ? "veg" : "non_veg" });
     return next;
   }));
   const toggleRecommended = (id: string) => setItems((prev) => prev.map((d) => {
     if (d.id !== id) return d;
     const next = { ...d, recommended: !d.recommended };
-    void upsertMenuItem({ id: next.id, restaurant_id: partnerRestaurant.id, name: next.name, price: next.price, recommended: !!next.recommended });
+    void upsertMenuItem({ id: next.id, restaurant_id: rid, name: next.name, price: next.price, recommended: !!next.recommended });
     return next;
   }));
   const toggleBestSeller = (id: string) => setItems((prev) => prev.map((d) => {
     if (d.id !== id) return d;
     const next = { ...d, bestSeller: !d.bestSeller };
-    void upsertMenuItem({ id: next.id, restaurant_id: partnerRestaurant.id, name: next.name, price: next.price, best_seller: !!next.bestSeller });
+    void upsertMenuItem({ id: next.id, restaurant_id: rid, name: next.name, price: next.price, best_seller: !!next.bestSeller });
     return next;
   }));
   const remove = (id: string) => {
@@ -58,7 +72,7 @@ function PartnerMenu() {
   const save = (d: EditableDish) => {
     void upsertMenuItem({
       id: d.id,
-      restaurant_id: partnerRestaurant.id,
+      restaurant_id: rid,
       name: d.name,
       description: d.description,
       price: d.price,

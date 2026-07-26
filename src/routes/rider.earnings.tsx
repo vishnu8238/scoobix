@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { riderEarnings } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/format";
 import { TrendingUp, Package, Clock, Gift } from "lucide-react";
+import { useDriver } from "@/lib/driver-store";
+import { useLiveOrders } from "@/lib/realtime-hooks";
 
 export const Route = createFileRoute("/rider/earnings")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Earnings" }] }),
@@ -11,12 +12,55 @@ export const Route = createFileRoute("/rider/earnings")({
 });
 
 const TABS = ["Daily", "Weekly", "Monthly"] as const;
+const DAY = 86400000;
+
+type DeliveredOrder = {
+  driver_earnings?: number | null;
+  tip?: number | null;
+  status?: string | null;
+  finalized_at?: string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+};
 
 function RiderEarnings() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Weekly");
-  const e = riderEarnings;
-  const data = tab === "Daily" ? e.today : tab === "Weekly" ? e.week : e.month;
-  const max = Math.max(...e.history.map((d) => d.amount));
+  const { driverId } = useDriver();
+  const { rows } = useLiveOrders(driverId ? { driver_id: driverId } : undefined);
+
+  const delivered = (rows as DeliveredOrder[])
+    .filter((o) => String(o.status ?? "").toUpperCase() === "DELIVERED")
+    .map((o) => ({
+      at: new Date(o.finalized_at ?? o.updated_at ?? o.created_at ?? Date.now()).getTime(),
+      amount: Number(o.driver_earnings ?? 0),
+      tip: Number(o.tip ?? 0),
+    }));
+
+  const windowMs = tab === "Daily" ? DAY : tab === "Weekly" ? 7 * DAY : 30 * DAY;
+  const since = Date.now() - windowMs;
+  const inWindow = delivered.filter((d) => d.at >= since);
+  const data = {
+    total: inWindow.reduce((s, d) => s + d.amount + d.tip, 0),
+    tips: inWindow.reduce((s, d) => s + d.tip, 0),
+    deliveries: inWindow.length,
+    hours: Math.round((inWindow.length * 0.6) * 10) / 10,
+  };
+
+  const history = Array.from({ length: 7 }).map((_, i) => {
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    dayStart.setDate(dayStart.getDate() - (6 - i));
+    const dayEnd = dayStart.getTime() + DAY;
+    return {
+      day: ["S", "M", "T", "W", "T", "F", "S"][dayStart.getDay()],
+      amount: delivered
+        .filter((d) => d.at >= dayStart.getTime() && d.at < dayEnd)
+        .reduce((s, d) => s + d.amount + d.tip, 0),
+    };
+  });
+  const e = { history };
+  const max = Math.max(1, ...history.map((d) => d.amount));
+
 
   return (
     <div className="animate-fade-up space-y-6 px-5 pt-7">
@@ -52,8 +96,8 @@ function RiderEarnings() {
       <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
         <h2 className="font-display text-lg font-bold">Last 7 days</h2>
         <div className="mt-4 flex h-32 items-end gap-2">
-          {e.history.map((d) => (
-            <div key={d.day} className="flex flex-1 flex-col items-center gap-1.5">
+          {e.history.map((d, i) => (
+            <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
               <div className="relative flex w-full flex-1 items-end">
                 <div className="w-full rounded-t-lg bg-primary/15" style={{ height: `${(d.amount / max) * 100}%` }} />
                 <div className="absolute inset-x-0 bottom-0 rounded-t-lg bg-primary transition-all" style={{ height: `${(d.amount / max) * 70}%` }} />
@@ -65,26 +109,26 @@ function RiderEarnings() {
       </section>
 
       <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
-        <h2 className="font-display text-lg font-bold">Recent payouts</h2>
+        <h2 className="font-display text-lg font-bold">Recent deliveries</h2>
         <ul className="mt-3 space-y-3">
-          {[
-            { date: "Today · 3:24 PM", from: "Scoobix weekly payout", amount: 612.4 },
-            { date: "Last Mon · 9:01 AM", from: "Scoobix weekly payout", amount: 488.1 },
-            { date: "2 weeks ago", from: "Scoobix weekly payout", amount: 552.7 },
-          ].map((p, i) => (
+          {delivered.length === 0 && (
+            <li className="text-xs text-muted-foreground">Completed deliveries and their payouts appear here.</li>
+          )}
+          {[...delivered].sort((a, b) => b.at - a.at).slice(0, 5).map((p, i) => (
             <li key={i} className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <TrendingUp className="h-4 w-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-bold">{p.from}</p>
-                <p className="text-[11px] text-muted-foreground">{p.date}</p>
+                <p className="text-sm font-bold">Delivery payout</p>
+                <p className="text-[11px] text-muted-foreground">{new Date(p.at).toLocaleString()}</p>
               </div>
-              <span className="font-display text-sm font-extrabold text-primary">+{formatPrice(p.amount)}</span>
+              <span className="font-display text-sm font-extrabold text-primary">+{formatPrice(p.amount + p.tip)}</span>
             </li>
           ))}
         </ul>
       </section>
+
 
       <div className="flex items-center gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
         <Gift className="h-5 w-5 text-amber-700" />

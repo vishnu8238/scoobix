@@ -3,6 +3,7 @@ import { LayoutDashboard, ClipboardList, UtensilsCrossed, Store, Megaphone, Uten
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
+import { usePartnerRestaurant } from "@/lib/partner-store";
 
 export const Route = createFileRoute("/partner")({
   head: () => appHead(APPS.partner),
@@ -23,7 +24,10 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
 
 function PartnerLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Resolves the signed-in owner's restaurant and publishes it app-wide.
+  usePartnerRestaurant();
   return (
+
     <RoleGuard allow="partner">
       <div className="relative pb-24">
         <Outlet />

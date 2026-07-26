@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Printer } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
-import { partnerOrders } from "@/lib/role-data";
 import { partnerRestaurant } from "@/lib/role-data";
+import { usePartnerRestaurant } from "@/lib/partner-store";
+import { useLiveOrders } from "@/lib/realtime-hooks";
+import { rowToOrder, type OrderRow } from "@/lib/orders-api";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -13,14 +15,32 @@ export const Route = createFileRoute("/partner/invoice")({
 });
 
 function InvoicePage() {
-  const order = partnerOrders[5]; // a completed one
+  const { restaurant, restaurantId } = usePartnerRestaurant();
+  const rid = restaurantId || partnerRestaurant.id;
+  const { rows, loading } = useLiveOrders(rid ? { restaurant_id: rid } : undefined);
+  const orders = rows.map((r) => rowToOrder(r as OrderRow));
+  const order = orders.find((o) => o.status === "DELIVERED") ?? orders[0] ?? null;
+
+  if (!order) {
+    return (
+      <div className="mx-auto min-h-svh max-w-[520px] pb-24">
+        <PageHeader title="Invoice" subtitle="No invoices yet" />
+        <p className="mt-10 text-center text-sm text-muted-foreground">
+          {loading ? "Loading invoices…" : "Completed orders will appear here as invoices."}
+        </p>
+      </div>
+    );
+  }
+
+  const commissionPct = Number(restaurant?.commission ?? 18);
   const tax = +(order.total * 0.05).toFixed(2);
-  const platform = +(order.total * 0.18).toFixed(2);
+  const platform = +(order.total * (commissionPct / 100)).toFixed(2);
   const net = +(order.total - tax - platform).toFixed(2);
+  const ago = `${Math.max(1, Math.round((Date.now() - order.placedAt) / 60000))}m`;
 
   return (
     <div className="mx-auto min-h-svh max-w-[520px] pb-24">
-      <PageHeader title="Invoice" subtitle={`#${order.id}`} right={
+      <PageHeader title="Invoice" subtitle={`#${order.id.slice(0, 8)}`} right={
         <button onClick={() => toast.success("Invoice downloaded")} className="grid h-9 w-9 place-items-center rounded-full bg-secondary"><Download className="h-4 w-4" /></button>
       } />
 
@@ -28,11 +48,11 @@ function InvoicePage() {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Scoobix · Tax invoice</p>
-            <h2 className="mt-1 font-display text-xl font-extrabold">{partnerRestaurant.name}</h2>
+            <h2 className="mt-1 font-display text-xl font-extrabold">{restaurant?.name ?? partnerRestaurant.name}</h2>
             <p className="text-xs text-muted-foreground">{partnerRestaurant.cuisine}</p>
           </div>
           <div className="text-right text-[11px] text-muted-foreground">
-            <p>{order.placedAgo} ago</p>
+            <p>{ago} ago</p>
             <p className="mt-1 rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">{order.status}</p>
           </div>
         </div>
@@ -42,21 +62,22 @@ function InvoicePage() {
         <div className="grid grid-cols-2 gap-4 text-xs">
           <div>
             <p className="font-bold uppercase tracking-wider text-muted-foreground">Billed to</p>
-            <p className="mt-1 text-sm font-bold">{order.customer}</p>
-            <p className="text-muted-foreground">{order.address}</p>
+            <p className="mt-1 text-sm font-bold">{order.addressLabel}</p>
+            <p className="text-muted-foreground">{order.addressLine}</p>
           </div>
           <div>
             <p className="font-bold uppercase tracking-wider text-muted-foreground">Payment</p>
-            <p className="mt-1 text-sm font-bold">{order.paymentMethod}</p>
-            <p className="text-muted-foreground">Settled · {order.placedAgo} ago</p>
+            <p className="mt-1 text-sm font-bold">{order.paymentLabel}</p>
+            <p className="text-muted-foreground">{order.paymentStatus ?? "—"} · {ago} ago</p>
           </div>
         </div>
+
 
         <div className="my-5 h-px bg-border" />
 
         <ul className="space-y-2 text-sm">
           {order.items.map((it) => (
-            <li key={it.name} className="flex items-center justify-between">
+            <li key={it.lineId ?? it.name} className="flex items-center justify-between">
               <span>{it.qty} × {it.name}</span>
               <span className="font-medium">{formatPrice(it.price * it.qty)}</span>
             </li>
@@ -68,7 +89,7 @@ function InvoicePage() {
         <dl className="space-y-1.5 text-sm">
           <Row label="Subtotal"          value={formatPrice(order.total)} />
           <Row label="GST (5%)"          value={formatPrice(tax)} />
-          <Row label="Platform fee (18%)" value={`- ${formatPrice(platform)}`} />
+          <Row label={`Platform fee (${commissionPct}%)`} value={`- ${formatPrice(platform)}`} />
           <div className="my-2 h-px bg-border" />
           <Row label="Net payout"        value={formatPrice(net)} strong />
         </dl>

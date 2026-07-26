@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { findRestaurant, type Dish, type Restaurant } from "./mock-data";
 import { useAuth } from "./auth-store";
+import { currentPlatformSettings } from "./cms-store";
+
 
 
 /* ============================================================
@@ -147,11 +149,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
     const itemCount = items.reduce((s, i) => s + i.qty, 0);
     const baseDelivery = subtotal === 0 ? 0 : 2.99;
-    let freeMin = 25;
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem("cravio_cms_v2") : null;
-      if (raw) { const s = JSON.parse(raw)?.settings; if (s && typeof s.freeDeliveryMin === "number") freeMin = s.freeDeliveryMin; }
-    } catch { /* ignore */ }
+    const freeMin = currentPlatformSettings.freeDeliveryMin ?? 25;
+
     const freeShip = coupon?.kind === "freeship" || subtotal >= freeMin;
     const delivery = freeShip ? 0 : baseDelivery;
     const taxes = +(subtotal * 0.08).toFixed(2);
@@ -579,7 +578,6 @@ import { CmsProvider } from "./cms-store";
 import { AuthProvider } from "./auth-store";
 import { AdsProvider } from "./ads-store";
 import { RewardsProvider } from "./rewards-store";
-import { DeliveryProvider } from "./delivery-store";
 import { ScoobixExtrasProviders } from "./scoobix-extras";
 import { ScoobixLoyaltyProviders } from "./scoobix-loyalty";
 
@@ -592,14 +590,13 @@ export function ScoobixProviders({ children }: { children: ReactNode }) {
             <AppUIProvider>
               <FavoritesProvider>
                 <OrdersProvider>
-                  <DeliveryProvider>
-                    <ScoobixLoyaltyProviders>
-                      <ScoobixExtrasProviders>
-                        <CartProvider>{children}</CartProvider>
-                      </ScoobixExtrasProviders>
-                    </ScoobixLoyaltyProviders>
-                  </DeliveryProvider>
+                  <ScoobixLoyaltyProviders>
+                    <ScoobixExtrasProviders>
+                      <CartProvider>{children}</CartProvider>
+                    </ScoobixExtrasProviders>
+                  </ScoobixLoyaltyProviders>
                 </OrdersProvider>
+
               </FavoritesProvider>
             </AppUIProvider>
           </RewardsProvider>

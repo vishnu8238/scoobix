@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { partnerOrders, partnerRestaurant } from "@/lib/role-data";
+import { partnerRestaurant } from "@/lib/role-data";
 import { TrendingUp, Clock, CheckCircle2, DollarSign, BellRing, ChefHat, Power, StoreIcon } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import { useCms } from "@/lib/cms-store";
 import { Switch } from "@/components/ui/switch";
 import { updateRestaurantStatus } from "@/lib/insforge";
+import { useLiveOrders } from "@/lib/realtime-hooks";
+import { rowToOrder, type OrderRow } from "@/lib/orders-api";
+import { usePartnerRestaurant } from "@/lib/partner-store";
 
 export const Route = createFileRoute("/partner/")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Dashboard" }] }),
@@ -13,13 +16,20 @@ export const Route = createFileRoute("/partner/")({
 
 function PartnerDashboard() {
   const { closedRestaurants, setRestaurantClosed, acceptingOrders, setAcceptingOrders } = useCms();
-  const rid = partnerRestaurant.id;
+  const { restaurantId } = usePartnerRestaurant();
+  const rid = restaurantId || partnerRestaurant.id;
   const isClosed = !!closedRestaurants[rid];
   const isAccepting = acceptingOrders[rid] !== false; // default true
-  const todaysSales = partnerOrders.filter((o) => o.status === "COMPLETED").reduce((s, o) => s + o.total, 0) + 412.5;
-  const active = partnerOrders.filter((o) => ["ACCEPTED", "PREPARING", "READY"].includes(o.status)).length;
-  const pending = partnerOrders.filter((o) => o.status === "PLACED").length;
-  const completed = partnerOrders.filter((o) => o.status === "COMPLETED").length + 28;
+  const { rows } = useLiveOrders(rid ? { restaurant_id: rid } : undefined);
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  const orders = rows.map((r) => rowToOrder(r as OrderRow));
+  const today = orders.filter((o) => o.placedAt >= midnight.getTime());
+  const todaysSales = today.filter((o) => o.status === "DELIVERED").reduce((s, o) => s + o.total, 0);
+  const active = orders.filter((o) => ["ACCEPTED", "PREPARING", "READY", "PICKED_UP"].includes(o.status)).length;
+  const pending = orders.filter((o) => o.status === "PLACED").length;
+  const completed = today.filter((o) => o.status === "DELIVERED").length;
+  const openOrders = orders.filter((o) => o.status !== "DELIVERED" && o.status !== "CANCELLED");
+
 
   const STATS = [
     { label: "Today's sales", value: formatPrice(todaysSales), delta: "+12.4%", icon: DollarSign, tone: "bg-primary text-primary-foreground" },
@@ -100,18 +110,19 @@ function PartnerDashboard() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold">Live order queue</h2>
-          <span className="text-[11px] font-bold text-primary">{partnerOrders.filter(o => o.status !== "COMPLETED").length} open</span>
+          <span className="text-[11px] font-bold text-primary">{openOrders.length} open</span>
         </div>
         <div className="space-y-3">
-          {partnerOrders.filter(o => o.status !== "COMPLETED").slice(0, 4).map((o) => (
+          {openOrders.slice(0, 4).map((o) => (
             <div key={o.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-[12px] font-extrabold text-primary">
                 #{o.id.slice(-3)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="truncate text-sm font-bold">{o.customer}</p>
-                <p className="text-[12px] text-muted-foreground">{o.items.length} items · {o.placedAgo} ago</p>
+                <p className="truncate text-sm font-bold">{o.addressLabel}</p>
+                <p className="text-[12px] text-muted-foreground">{o.items.length} items · {Math.max(1, Math.round((Date.now() - o.placedAt) / 60000))}m ago</p>
               </div>
+
               <div className="text-right">
                 <p className="font-display text-sm font-extrabold">{formatPrice(o.total)}</p>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{o.status}</span>

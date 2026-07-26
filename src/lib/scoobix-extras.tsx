@@ -1,31 +1,17 @@
 /**
  * Scoobix feature extensions store.
  *
- * Adds thin, local-first stores for:
- *  - Daily Meal Plan subscriptions
- *  - Corporate / Bulk order requests
- *  - Group cart sessions (shared invite links)
- *  - Weekly Spotlight (admin-controlled featured content)
- *  - Scheduled orders (schedule time held on the order)
+ *  - Daily Meal Plan subscriptions  → `meal_subscriptions`
+ *  - Corporate / Bulk order requests → `bulk_requests`
+ *  - Group cart sessions             → `app_settings` KV rows (`group_cart:<id>`)
+ *  - Weekly Spotlight                → `app_settings` KV row (`spotlight`)
  *
- * Each store persists to localStorage, and best-effort mirrors writes into
- * InsForge using the helpers in `./insforge`. Reads gracefully fall back
- * to the local snapshot if the backend is empty.
+ * Everything is server backed; no localStorage is used in this module.
  */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  createMealSubscription,
-  updateMealSubscription,
-  listMealSubscriptions,
-  createBulkRequest,
-  listBulkRequests,
-  updateBulkStatus,
-  getSpotlightRow,
-  setSpotlight as saveSpotlight,
-  createGroupCart,
-  updateGroupCart as patchGroupCart,
-  getGroupCartRow,
-} from "./insforge";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { listTable, createRecord, patchRecord } from "./insforge-crud";
+import { kvGet, kvSet } from "./kv-store";
+import { useAuth } from "./auth-store";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -39,12 +25,26 @@ export type MealPlanSubscription = {
   restaurantName: string;
   plan: "weekly" | "monthly";
   meals: "lunch" | "dinner" | "both";
-  startsOn: string;      // yyyy-mm-dd
+  startsOn: string; // yyyy-mm-dd
   addressLabel: string;
   price: number;
   paused: boolean;
-  skippedDates: string[]; // ISO dates
+  skippedDates: string[];
   createdAt: number;
+};
+
+type MealRow = {
+  id?: string;
+  customer_id?: string;
+  restaurant_id?: string;
+  plan_name?: string;
+  meal_type?: string;
+  frequency?: string;
+  start_date?: string;
+  end_date?: string;
+  amount?: number;
+  status?: string;
+  created_at?: string;
 };
 
 type MealPlanCtx = {
@@ -54,63 +54,96 @@ type MealPlanCtx = {
   resume: (id: string) => void;
   skipDate: (id: string, isoDate: string) => void;
   cancel: (id: string) => void;
-  /** Aggregate meal count for the next day (used by the partner dashboard). */
   nextDayCount: (restaurantId: string) => { lunch: number; dinner: number };
 };
 
-const MPKey = "scoobix_meal_plan_v1";
 const MPContext = createContext<MealPlanCtx | null>(null);
 
+/** Skips have no column — stored as a KV side-car keyed by subscription id. */
+const SKIP_KEY = "meal_plan_skips";
+
+function rowToSub(r: MealRow, names: Record<string, string>, skips: Record<string, string[]>): MealPlanSubscription {
+  return {
+    id: r.id ?? uid(),
+    restaurantId: r.restaurant_id ?? "",
+    restaurantName: names[r.restaurant_id ?? ""] ?? "Restaurant",
+    plan: (r.frequency as MealPlanSubscription["plan"]) ?? "weekly",
+    meals: (r.meal_type as MealPlanSubscription["meals"]) ?? "lunch",
+    startsOn: (r.start_date ?? "").slice(0, 10),
+    addressLabel: r.plan_name ?? "",
+    price: Number(r.amount ?? 0),
+    paused: r.status === "paused",
+    skippedDates: skips[r.id ?? ""] ?? [],
+    createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+  };
+}
+
 export function MealPlanProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [subs, setSubs] = useState<MealPlanSubscription[]>([]);
+  const [skips, setSkips] = useState<Record<string, string[]>>({});
+
+  const load = useCallback(async () => {
+    const [rows, rests, storedSkips] = await Promise.all([
+      listTable<MealRow>("meal_subscriptions", { limit: 500, order: "-created_at" }),
+      listTable<{ id: string; name?: string }>("restaurants", { limit: 500 }),
+      kvGet<Record<string, string[]>>(SKIP_KEY),
+    ]);
+    const names: Record<string, string> = {};
+    for (const r of rests) names[r.id] = r.name ?? "Restaurant";
+    const sk = storedSkips ?? {};
+    setSkips(sk);
+    setSubs(rows.filter((r) => r.status !== "cancelled").map((r) => rowToSub(r, names, sk)));
+  }, []);
 
   useEffect(() => {
-    void listMealSubscriptions().then((rows) => {
-      if (!rows.length) return;
-      setSubs((prev) => {
-        const map = new Map(prev.map((s) => [s.id, s]));
-        for (const r of rows as unknown as MealPlanSubscription[]) if (r?.id) map.set(r.id, { ...map.get(r.id), ...r } as MealPlanSubscription);
-        return [...map.values()];
-      });
-    });
-  }, []);
+    void load();
+  }, [load]);
 
   const create: MealPlanCtx["create"] = (input) => {
     const sub: MealPlanSubscription = { ...input, id: uid(), paused: false, skippedDates: [], createdAt: Date.now() };
     setSubs((prev) => [sub, ...prev]);
-    void createMealSubscription({
-      customer_id: (typeof localStorage !== "undefined" && localStorage.getItem("cravio_user_v1")) ? JSON.parse(localStorage.getItem("cravio_user_v1")!)?.id ?? "guest" : "guest",
+    void createRecord<MealRow>("meal_subscriptions", {
+      customer_id: user?.id ?? null,
       restaurant_id: sub.restaurantId,
-      plan: sub.plan,
-      meals: sub.meals,
-      starts_on: sub.startsOn,
-      address: sub.addressLabel,
-      price: sub.price,
+      plan_name: sub.addressLabel,
+      meal_type: sub.meals,
+      frequency: sub.plan,
+      start_date: sub.startsOn,
+      amount: sub.price,
+      status: "active",
+    }).then((row) => {
+      if (row?.id) setSubs((prev) => prev.map((s) => (s.id === sub.id ? { ...s, id: row.id! } : s)));
     });
     return sub;
   };
 
-  const patch = (id: string, p: Partial<MealPlanSubscription>) => {
+  const patch = (id: string, p: Partial<MealPlanSubscription>, remote: Record<string, unknown>) => {
     setSubs((prev) => prev.map((s) => (s.id === id ? { ...s, ...p } : s)));
-    void updateMealSubscription(id, p as Record<string, unknown>);
+    void patchRecord("meal_subscriptions", id, remote);
   };
 
-  const pause = (id: string) => patch(id, { paused: true });
-  const resume = (id: string) => patch(id, { paused: false });
+  const pause = (id: string) => patch(id, { paused: true }, { status: "paused" });
+  const resume = (id: string) => patch(id, { paused: false }, { status: "active" });
+
   const skipDate = (id: string, isoDate: string) => {
     const cur = subs.find((s) => s.id === id);
-    if (!cur) return;
-    if (cur.skippedDates.includes(isoDate)) return;
-    patch(id, { skippedDates: [...cur.skippedDates, isoDate] });
+    if (!cur || cur.skippedDates.includes(isoDate)) return;
+    const next = { ...skips, [id]: [...(skips[id] ?? []), isoDate] };
+    setSkips(next);
+    setSubs((prev) => prev.map((s) => (s.id === id ? { ...s, skippedDates: next[id] } : s)));
+    void kvSet(SKIP_KEY, next);
   };
+
   const cancel = (id: string) => {
     setSubs((prev) => prev.filter((s) => s.id !== id));
-    void updateMealSubscription(id, { status: "cancelled" });
+    void patchRecord("meal_subscriptions", id, { status: "cancelled" });
   };
 
   const nextDayCount: MealPlanCtx["nextDayCount"] = (restaurantId) => {
     const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    let lunch = 0, dinner = 0;
+    let lunch = 0,
+      dinner = 0;
     for (const s of subs) {
       if (s.restaurantId !== restaurantId || s.paused) continue;
       if (s.skippedDates.includes(tomorrow)) continue;
@@ -120,7 +153,11 @@ export function MealPlanProvider({ children }: { children: ReactNode }) {
     return { lunch, dinner };
   };
 
-  return <MPContext.Provider value={{ subs, create, pause, resume, skipDate, cancel, nextDayCount }}>{children}</MPContext.Provider>;
+  return (
+    <MPContext.Provider value={{ subs, create, pause, resume, skipDate, cancel, nextDayCount }}>
+      {children}
+    </MPContext.Provider>
+  );
 }
 
 export const useMealPlan = () => {
@@ -148,6 +185,19 @@ export type BulkRequest = {
   createdAt: number;
 };
 
+type BulkRow = {
+  id?: string;
+  customer_id?: string;
+  restaurant_id?: string;
+  company_name?: string;
+  event_date?: string;
+  guests?: number;
+  budget?: number;
+  notes?: string;
+  status?: BulkRequest["status"];
+  created_at?: string;
+};
+
 type BulkCtx = {
   requests: BulkRequest[];
   create: (input: Omit<BulkRequest, "id" | "status" | "createdAt">) => BulkRequest;
@@ -155,43 +205,68 @@ type BulkCtx = {
   forRestaurant: (restaurantId: string) => BulkRequest[];
 };
 
-const BulkKey = "scoobix_bulk_v1";
 const BulkContext = createContext<BulkCtx | null>(null);
 
 export function BulkProvider({ children }: { children: ReactNode }) {
   const [requests, setRequests] = useState<BulkRequest[]>([]);
 
-  useEffect(() => {
-    void listBulkRequests().then((rows) => {
-      if (!rows.length) return;
-      setRequests((prev) => {
-        const map = new Map(prev.map((s) => [s.id, s]));
-        for (const r of rows as unknown as BulkRequest[]) if (r?.id) map.set(r.id, { ...map.get(r.id), ...r } as BulkRequest);
-        return [...map.values()];
-      });
-    });
+  const load = useCallback(async () => {
+    const [rows, rests] = await Promise.all([
+      listTable<BulkRow>("bulk_requests", { limit: 500, order: "-created_at" }),
+      listTable<{ id: string; name?: string }>("restaurants", { limit: 500 }),
+    ]);
+    const names: Record<string, string> = {};
+    for (const r of rests) names[r.id] = r.name ?? "Restaurant";
+    setRequests(
+      rows.map((r) => {
+        const when = r.event_date ?? "";
+        return {
+          id: r.id ?? uid(),
+          customerId: r.customer_id ?? "",
+          customerName: r.company_name ?? "Customer",
+          restaurantId: r.restaurant_id ?? undefined,
+          restaurantName: r.restaurant_id ? names[r.restaurant_id] : undefined,
+          eventDate: when.slice(0, 10),
+          eventTime: when.slice(11, 16),
+          guestCount: Number(r.guests ?? 0),
+          budget: Number(r.budget ?? 0),
+          notes: r.notes ?? undefined,
+          status: r.status ?? "pending",
+          createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+        };
+      }),
+    );
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const create: BulkCtx["create"] = (input) => {
     const req: BulkRequest = { ...input, id: uid(), status: "pending", createdAt: Date.now() };
     setRequests((p) => [req, ...p]);
-    void createBulkRequest({
-      customer_id: input.customerId,
-      restaurant_id: input.restaurantId,
+    void createRecord<BulkRow>("bulk_requests", {
+      customer_id: input.customerId || null,
+      restaurant_id: input.restaurantId || null,
+      company_name: input.customerName,
       event_date: `${input.eventDate}T${input.eventTime || "12:00"}`,
-      guest_count: input.guestCount,
+      guests: input.guestCount,
       budget: input.budget,
-      notes: input.notes,
+      notes: input.notes ?? null,
+      status: "pending",
+    }).then((row) => {
+      if (row?.id) setRequests((p) => p.map((r) => (r.id === req.id ? { ...r, id: row.id! } : r)));
     });
     return req;
   };
 
   const updateStatus: BulkCtx["updateStatus"] = (id, status) => {
     setRequests((p) => p.map((r) => (r.id === id ? { ...r, status } : r)));
-    void updateBulkStatus(id, status);
+    void patchRecord("bulk_requests", id, { status });
   };
 
-  const forRestaurant: BulkCtx["forRestaurant"] = (rid) => requests.filter((r) => !r.restaurantId || r.restaurantId === rid);
+  const forRestaurant: BulkCtx["forRestaurant"] = (rid) =>
+    requests.filter((r) => !r.restaurantId || r.restaurantId === rid);
 
   return <BulkContext.Provider value={{ requests, create, updateStatus, forRestaurant }}>{children}</BulkContext.Provider>;
 }
@@ -211,7 +286,7 @@ export type SpotlightContent = {
   title: string;
   subtitle: string;
   image: string;
-  targetId?: string;    // restaurant/dish id when applicable
+  targetId?: string;
   sponsored?: boolean;
   updatedAt: number;
 };
@@ -227,7 +302,7 @@ const DEFAULT_SPOTLIGHT: SpotlightContent = {
   kind: "cuisine",
   title: "Scoobix Spotlight · This week",
   subtitle: "Handpicked flavours from your city's best kitchens",
-  image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800",
+  image: "",
   updatedAt: Date.now(),
 };
 
@@ -235,16 +310,15 @@ export function SpotlightProvider({ children }: { children: ReactNode }) {
   const [spotlight, setSpot] = useState<SpotlightContent | null>(DEFAULT_SPOTLIGHT);
 
   useEffect(() => {
-    void getSpotlightRow().then((rows) => {
-      const r = rows?.[0] as unknown as SpotlightContent | undefined;
-      if (r?.title) setSpot({ ...DEFAULT_SPOTLIGHT, ...r });
+    void kvGet<SpotlightContent>("spotlight").then((row) => {
+      if (row?.title) setSpot({ ...DEFAULT_SPOTLIGHT, ...row });
     });
   }, []);
 
   const update: SpotlightCtx["update"] = (patch) => {
     const next: SpotlightContent = { ...(spotlight ?? DEFAULT_SPOTLIGHT), ...patch, updatedAt: Date.now() };
     setSpot(next);
-    void saveSpotlight(next as unknown as Record<string, unknown>);
+    void kvSet("spotlight", next);
   };
 
   return <SPContext.Provider value={{ spotlight, update }}>{children}</SPContext.Provider>;
@@ -257,7 +331,7 @@ export const useSpotlight = () => {
 };
 
 /* ============================================================
-   GROUP CART SESSIONS
+   GROUP CART SESSIONS (server backed via KV rows)
    ============================================================ */
 
 export type GroupCartMember = { id: string; name: string; joinedAt: number };
@@ -282,110 +356,131 @@ type GroupCtx = {
   closeSession: (id: string) => void;
   lockSession: (id: string, locked: boolean) => void;
   removeMember: (id: string, memberId: string) => void;
-  syncItems: (id: string, currentMemberId: string, items: Array<{ lineId: string; name: string; price: number; qty: number }>) => void;
+  syncItems: (
+    id: string,
+    currentMemberId: string,
+    items: Array<{ lineId: string; name: string; price: number; qty: number }>,
+  ) => void;
   subtotalFor: (id: string, memberId: string) => number;
 };
 
-const GCKey = "scoobix_group_carts_v1";
 const GCContext = createContext<GroupCtx | null>(null);
+const gcKey = (id: string) => `group_cart:${id}`;
 
 export function GroupCartProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessions] = useState<Record<string, GroupCartSession>>({});
 
-  useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(GCKey) : null;
-      if (raw) setSessions(JSON.parse(raw));
-    } catch { /* ignore */ }
-  }, []);
+  const persist = (s: GroupCartSession) => {
+    setSessions((p) => ({ ...p, [s.id]: s }));
+    void kvSet(gcKey(s.id), s);
+  };
 
+  // Poll open sessions so every participant sees the same server state.
   useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem(GCKey, JSON.stringify(sessions));
+    const ids = Object.keys(sessions).filter((id) => !sessions[id]?.closed);
+    if (!ids.length) return;
+    const t = window.setInterval(() => {
+      for (const id of ids) {
+        void kvGet<GroupCartSession>(gcKey(id)).then((row) => {
+          if (row?.id) setSessions((p) => ({ ...p, [id]: row }));
+        });
+      }
+    }, 5000);
+    return () => window.clearInterval(t);
   }, [sessions]);
 
   const createSession: GroupCtx["createSession"] = ({ hostId, hostName, restaurantId, restaurantName }) => {
     const id = `GRP${uid().toUpperCase()}`;
     const session: GroupCartSession = {
-      id, hostId, restaurantId, restaurantName,
+      id,
+      hostId,
+      restaurantId,
+      restaurantName,
       members: [{ id: hostId, name: hostName, joinedAt: Date.now() }],
       itemOwners: [],
       createdAt: Date.now(),
     };
-    setSessions((p) => ({ ...p, [id]: session }));
-    void createGroupCart({ id, host_id: hostId, restaurant_id: restaurantId });
+    persist(session);
     return session;
   };
 
   const joinSession: GroupCtx["joinSession"] = (id, member) => {
-    let out: GroupCartSession | null = null;
-    setSessions((p) => {
-      const cur = p[id];
-      if (!cur) {
-        const shell: GroupCartSession = {
-          id, hostId: "unknown", restaurantId: "", restaurantName: "Shared cart",
-          members: [{ ...member, joinedAt: Date.now() }],
-          itemOwners: [],
-          createdAt: Date.now(),
-        };
-        out = shell;
-        void getGroupCartRow(id);
-        return { ...p, [id]: shell };
-      }
-      if (cur.members.some((m) => m.id === member.id)) { out = cur; return p; }
-      if (cur.locked || cur.closed) { out = cur; return p; }
-      out = { ...cur, members: [...cur.members, { ...member, joinedAt: Date.now() }] };
-      void patchGroupCart(id, { members: out.members });
-      return { ...p, [id]: out };
-    });
-    return out;
+    const cur = sessions[id];
+    if (!cur) {
+      // Fetch from the server, then add the member.
+      void kvGet<GroupCartSession>(gcKey(id)).then((row) => {
+        if (!row?.id) return;
+        if (row.closed || row.locked || row.members.some((m) => m.id === member.id)) {
+          setSessions((p) => ({ ...p, [id]: row }));
+          return;
+        }
+        persist({ ...row, members: [...row.members, { ...member, joinedAt: Date.now() }] });
+      });
+      return null;
+    }
+    if (cur.members.some((m) => m.id === member.id) || cur.locked || cur.closed) return cur;
+    const next = { ...cur, members: [...cur.members, { ...member, joinedAt: Date.now() }] };
+    persist(next);
+    return next;
   };
 
   const getSession: GroupCtx["getSession"] = (id) => sessions[id] ?? null;
+
   const closeSession: GroupCtx["closeSession"] = (id) => {
-    setSessions((p) => (p[id] ? { ...p, [id]: { ...p[id], closed: true } } : p));
-    void patchGroupCart(id, { closed: true });
+    const cur = sessions[id];
+    if (cur) persist({ ...cur, closed: true });
   };
+
   const lockSession: GroupCtx["lockSession"] = (id, locked) => {
-    setSessions((p) => (p[id] ? { ...p, [id]: { ...p[id], locked } } : p));
-    void patchGroupCart(id, { locked });
+    const cur = sessions[id];
+    if (cur) persist({ ...cur, locked });
   };
+
   const removeMember: GroupCtx["removeMember"] = (id, memberId) => {
-    setSessions((p) => {
-      const cur = p[id]; if (!cur) return p;
-      const next: GroupCartSession = {
-        ...cur,
-        members: cur.members.filter((m) => m.id !== memberId),
-        itemOwners: cur.itemOwners.filter((o) => o.memberId !== memberId),
-      };
-      void patchGroupCart(id, { members: next.members });
-      return { ...p, [id]: next };
+    const cur = sessions[id];
+    if (!cur) return;
+    persist({
+      ...cur,
+      members: cur.members.filter((m) => m.id !== memberId),
+      itemOwners: cur.itemOwners.filter((o) => o.memberId !== memberId),
     });
   };
+
   const syncItems: GroupCtx["syncItems"] = (id, memberId, items) => {
-    setSessions((p) => {
-      const cur = p[id]; if (!cur) return p;
-      // Preserve ownership for lines that already belong to someone;
-      // any new lineId belongs to the current member.
-      const owned = new Map(cur.itemOwners.map((o) => [o.lineId, o] as const));
-      const nextOwners: GroupItemOwner[] = items.map((it) => {
-        const prev = owned.get(it.lineId);
-        return {
-          lineId: it.lineId,
-          memberId: prev?.memberId ?? memberId,
-          name: it.name,
-          price: it.price,
-          qty: it.qty,
-        };
-      });
-      return { ...p, [id]: { ...cur, itemOwners: nextOwners } };
-    });
+    const cur = sessions[id];
+    if (!cur) return;
+    const owned = new Map(cur.itemOwners.map((o) => [o.lineId, o] as const));
+    const nextOwners: GroupItemOwner[] = items.map((it) => ({
+      lineId: it.lineId,
+      memberId: owned.get(it.lineId)?.memberId ?? memberId,
+      name: it.name,
+      price: it.price,
+      qty: it.qty,
+    }));
+    persist({ ...cur, itemOwners: nextOwners });
   };
+
   const subtotalFor: GroupCtx["subtotalFor"] = (id, memberId) => {
-    const cur = sessions[id]; if (!cur) return 0;
+    const cur = sessions[id];
+    if (!cur) return 0;
     return cur.itemOwners.filter((o) => o.memberId === memberId).reduce((s, o) => s + o.price * o.qty, 0);
   };
 
-  const value = useMemo(() => ({ sessions, createSession, joinSession, getSession, closeSession, lockSession, removeMember, syncItems, subtotalFor }), [sessions]);
+  const value = useMemo(
+    () => ({
+      sessions,
+      createSession,
+      joinSession,
+      getSession,
+      closeSession,
+      lockSession,
+      removeMember,
+      syncItems,
+      subtotalFor,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sessions],
+  );
 
   return <GCContext.Provider value={value}>{children}</GCContext.Provider>;
 }

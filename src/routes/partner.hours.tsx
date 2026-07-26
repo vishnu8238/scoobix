@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { openingHours } from "@/lib/mock-extras";
+import { kvGet, kvSet } from "@/lib/kv-store";
+import { usePartnerRestaurant } from "@/lib/partner-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/partner/hours")({
@@ -13,11 +14,40 @@ export const Route = createFileRoute("/partner/hours")({
   component: HoursPage,
 });
 
-function HoursPage() {
-  const [rows, setRows] = useState(openingHours);
+type HourRow = { day: string; open: string; close: string; enabled: boolean };
 
-  const update = (i: number, patch: Partial<typeof rows[0]>) =>
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DEFAULT_ROWS: HourRow[] = DAYS.map((day) => ({ day, open: "10:00", close: "23:00", enabled: true }));
+
+function HoursPage() {
+  const { restaurantId } = usePartnerRestaurant();
+  const key = `opening_hours:${restaurantId ?? "unassigned"}`;
+  const [rows, setRows] = useState<HourRow[]>(DEFAULT_ROWS);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void kvGet<HourRow[]>(key).then((v) => {
+      if (cancelled) return;
+      if (Array.isArray(v) && v.length === 7) setRows(v);
+    });
+    return () => { cancelled = true; };
+  }, [key]);
+
+  const update = (i: number, patch: Partial<HourRow>) =>
     setRows((p) => p.map((r, idx) => (i === idx ? { ...r, ...patch } : r)));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await kvSet(key, rows);
+      toast.success("Opening hours saved");
+    } catch {
+      toast.error("Could not save opening hours");
+    }
+    setSaving(false);
+  };
+
 
   return (
     <div className="mx-auto min-h-svh max-w-[520px] pb-24">
@@ -37,7 +67,7 @@ function HoursPage() {
       </div>
 
       <div className="px-4 pt-6">
-        <Button onClick={() => toast.success("Opening hours saved")} className="h-12 w-full rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-glow">Save schedule</Button>
+        <Button onClick={save} disabled={saving} className="h-12 w-full rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-glow">{saving ? "Saving…" : "Save schedule"}</Button>
       </div>
     </div>
   );
