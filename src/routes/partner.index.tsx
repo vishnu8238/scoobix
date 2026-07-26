@@ -43,9 +43,11 @@ function PartnerDashboard() {
       <header className="flex items-center justify-between">
         <div>
           <p className="eyebrow">Restaurant Partner</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">{partnerRestaurant.name}</h1>
+          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">{restaurant?.name ?? partnerRestaurant.name}</h1>
+          <div className="mt-1.5"><RestaurantIdBadge restaurant={restaurant} /></div>
           <p className="mt-1 text-sm text-muted-foreground">{isClosed ? "Temporarily closed" : isAccepting ? "Open now · accepting orders" : "Open · paused new orders"}</p>
         </div>
+
         <span className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider ${isClosed ? "bg-destructive/10 text-destructive" : isAccepting ? "bg-primary/10 text-primary" : "bg-amber-100 text-amber-700"}`}>
           <span className={`h-2 w-2 animate-pulse-soft rounded-full ${isClosed ? "bg-destructive" : isAccepting ? "bg-primary" : "bg-amber-500"}`} />
           {isClosed ? "Closed" : isAccepting ? "Online" : "Paused"}
