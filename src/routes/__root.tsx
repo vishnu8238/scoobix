@@ -75,17 +75,20 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isDesktop = pathname.startsWith("/admin");
   const isPortal = pathname === "/portal";
+  // Re-mount the routed tree once live catalog data replaces the seed arrays.
+  const catalogVersion = useSyncExternalStore(subscribeCatalog, getCatalogVersion, () => 0);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ScoobixProviders>
         {isDesktop || isPortal ? (
-          <Outlet />
+          <Outlet key={catalogVersion} />
         ) : (
           <PhoneShell>
-            <Outlet />
+            <Outlet key={catalogVersion} />
           </PhoneShell>
         )}
+
         <Toaster position="top-center" richColors closeButton={false} />
         <CartConflictDialog />
         <NetworkBanner />
