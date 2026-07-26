@@ -6,7 +6,7 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { ScoobixProviders } from "@/lib/stores";
@@ -16,6 +16,7 @@ import { CartConflictDialog } from "@/components/cravio/CartConflictDialog";
 import { PWAInstallPrompt } from "@/components/cravio/PWAInstallPrompt";
 import { NetworkBanner } from "@/components/cravio/NetworkBanner";
 import { InsForgeBootstrap } from "@/components/cravio/InsForgeBootstrap";
+import { subscribeCatalog, getCatalogVersion } from "@/lib/insforge";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
