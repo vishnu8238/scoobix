@@ -3,6 +3,7 @@ import { LayoutDashboard, ClipboardList, UtensilsCrossed, Store, Megaphone, Uten
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
+import { usePartnerRestaurant } from "@/lib/partner-store";
 
 export const Route = createFileRoute("/partner")({
   head: () => appHead(APPS.partner),
