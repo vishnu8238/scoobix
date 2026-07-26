@@ -23,6 +23,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as RiderVehicleRouteImport } from './routes/rider.vehicle'
+import { Route as RiderSupportRouteImport } from './routes/rider.support'
 import { Route as RiderRequestsRouteImport } from './routes/rider.requests'
 import { Route as RiderProfileRouteImport } from './routes/rider.profile'
 import { Route as RiderOtpRouteImport } from './routes/rider.otp'
@@ -159,6 +160,11 @@ const TrackOrderIdRoute = TrackOrderIdRouteImport.update({
 const RiderVehicleRoute = RiderVehicleRouteImport.update({
   id: '/vehicle',
   path: '/vehicle',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderSupportRoute = RiderSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => RiderRoute,
 } as any)
 const RiderRequestsRoute = RiderRequestsRouteImport.update({
@@ -572,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -651,6 +658,7 @@ export interface FileRoutesByTo {
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin': typeof AdminIndexRoute
@@ -735,6 +743,7 @@ export interface FileRoutesById {
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -820,6 +829,7 @@ export interface FileRouteTypes {
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
+    | '/rider/support'
     | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin/'
@@ -899,6 +909,7 @@ export interface FileRouteTypes {
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
+    | '/rider/support'
     | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin'
@@ -982,6 +993,7 @@ export interface FileRouteTypes {
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
+    | '/rider/support'
     | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin/'
@@ -1102,6 +1114,13 @@ declare module '@tanstack/react-router' {
       path: '/vehicle'
       fullPath: '/rider/vehicle'
       preLoaderRoute: typeof RiderVehicleRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/support': {
+      id: '/rider/support'
+      path: '/support'
+      fullPath: '/rider/support'
+      preLoaderRoute: typeof RiderSupportRouteImport
       parentRoute: typeof RiderRoute
     }
     '/rider/requests': {
@@ -1739,6 +1758,7 @@ interface RiderRouteChildren {
   RiderOtpRoute: typeof RiderOtpRoute
   RiderProfileRoute: typeof RiderProfileRoute
   RiderRequestsRoute: typeof RiderRequestsRoute
+  RiderSupportRoute: typeof RiderSupportRoute
   RiderVehicleRoute: typeof RiderVehicleRoute
   RiderIndexRoute: typeof RiderIndexRoute
 }
@@ -1753,6 +1773,7 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderOtpRoute: RiderOtpRoute,
   RiderProfileRoute: RiderProfileRoute,
   RiderRequestsRoute: RiderRequestsRoute,
+  RiderSupportRoute: RiderSupportRoute,
   RiderVehicleRoute: RiderVehicleRoute,
   RiderIndexRoute: RiderIndexRoute,
 }
