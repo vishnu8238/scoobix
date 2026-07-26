@@ -7,7 +7,7 @@ import { pingDriverLocation } from "@/lib/insforge";
 import { useCms } from "@/lib/cms-store";
 import { useDriver } from "@/lib/driver-store";
 import { listTable } from "@/lib/insforge-crud";
-import { fetchOrderRow, patchOrder, patchPaymentByOrder, type OrderRow } from "@/lib/orders-api";
+import { patchOrder, patchPaymentByOrder, type OrderRow } from "@/lib/orders-api";
 import { startNavigation } from "@/lib/navigation";
 import { finalizeOrder } from "@/lib/order-completion";
 
@@ -190,7 +190,7 @@ function RiderActive() {
   };
 
   const submitRating = () => {
-    if (order?.id && rating > 0) void patchOrder(String(order.id), { customer_feedback: null, driver_rating: rating });
+
     toast.success("Thanks for the feedback!");
     setTimeout(() => navigate({ to: "/rider" }), 600);
   };
