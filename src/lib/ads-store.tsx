@@ -46,7 +46,6 @@ const AdsContext = createContext<AdsCtx | null>(null);
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const today = () => new Date().toISOString().slice(0, 10);
-const inDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
 
 
 /** Mock auction ranking: bid + rating boost − distance penalty + relevance noise. */
