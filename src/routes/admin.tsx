@@ -1,8 +1,10 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
+import { useAuth } from "@/lib/auth-store";
+import { LogOut } from "lucide-react";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/admin")({
@@ -130,3 +132,16 @@ function AdminLayout() {
   );
 }
 
+
+function SignOutButton() {
+  const { signOut } = useAuth();
+  return (
+    <button
+      onClick={signOut}
+      className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+    >
+      <LogOut className="h-3.5 w-3.5" />
+      Sign out
+    </button>
+  );
+}
