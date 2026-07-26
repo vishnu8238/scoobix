@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/cravio/PageHeader";
 import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { savedLocations } from "@/lib/mock-extras";
+import { useAddresses } from "@/lib/addresses-store";
 import { useAppUI } from "@/lib/stores";
 import { DEFAULT_CUSTOMER, addressCoords, type LatLng } from "@/lib/geo";
 import { toast } from "sonner";
@@ -81,7 +81,12 @@ function LocationPicker() {
       <section className="mt-6 px-4">
         <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Saved places</h3>
         <ul className="space-y-2">
-          {savedLocations.map((l) => (
+          {saved.length === 0 && (
+            <li className="rounded-2xl bg-card p-3 text-xs text-muted-foreground shadow-soft ring-1 ring-border/60">
+              {addressesLoaded ? "No saved places yet." : "Loading saved places…"}
+            </li>
+          )}
+          {saved.map((l) => (
             <li key={l.id}>
               <button onClick={() => select(l.line)} className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left shadow-soft ring-1 ring-border/60 transition active:scale-[0.99]">
                 <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary-soft text-xl">{l.icon}</span>
