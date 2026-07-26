@@ -24,7 +24,7 @@ export const Route = createFileRoute("/auth/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { app: appId, redirect } = Route.useSearch();
+  const { app: appId, redirect } = Route.useSearch() as LoginSearch;
   const app = appId ? APPS[appId] : null;
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
