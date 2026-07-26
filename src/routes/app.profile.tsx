@@ -4,7 +4,8 @@ import { useEffect, useState, type ComponentType } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { useFavorites } from "@/lib/stores";
-import { restaurants, allDishes, savedAddresses, paymentMethods } from "@/lib/mock-data";
+import { restaurants, allDishes } from "@/lib/mock-data";
+import { useAddresses } from "@/lib/addresses-store";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -138,46 +139,26 @@ function ProfilePage() {
   );
 }
 
-type AddressRow = { id: string; label: string; line1: string; line2: string; default: boolean };
-const ADDR_KEY = "cravio_addresses_v1";
-
-function loadAddresses(): AddressRow[] {
-  if (typeof window === "undefined") return savedAddresses.map((a) => ({ ...a }));
-  try {
-    const raw = localStorage.getItem(ADDR_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* */ }
-  return savedAddresses.map((a) => ({ ...a }));
-}
-
 function AddressesEditor() {
-  const [rows, setRows] = useState<AddressRow[]>(() => loadAddresses());
+  const { rows, add, update, remove: removeRow, setDefault } = useAddresses();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ label: string; line1: string; line2: string }>({ label: "", line1: "", line2: "" });
-
-  useEffect(() => { try { localStorage.setItem(ADDR_KEY, JSON.stringify(rows)); } catch { /* */ } }, [rows]);
 
   const startEdit = (a: AddressRow) => { setEditingId(a.id); setDraft({ label: a.label, line1: a.line1, line2: a.line2 }); };
   const startAdd = () => { setEditingId("__new"); setDraft({ label: "Home", line1: "", line2: "" }); };
   const saveDraft = () => {
     if (!draft.label.trim() || !draft.line1.trim()) { toast.error("Label and address line required"); return; }
     if (editingId === "__new") {
-      const id = `a${Date.now().toString(36)}`;
-      setRows((p) => [...p, { id, ...draft, default: p.length === 0 }]);
+      add(draft);
       toast.success("Address added");
     } else if (editingId) {
-      setRows((p) => p.map((r) => (r.id === editingId ? { ...r, ...draft } : r)));
+      update(editingId, draft);
       toast.success("Address updated");
     }
     setEditingId(null);
   };
-  const remove = (id: string) => setRows((p) => {
-    const next = p.filter((r) => r.id !== id);
-    if (next.length > 0 && !next.some((r) => r.default)) next[0] = { ...next[0], default: true };
-    toast.success("Address removed");
-    return next;
-  });
-  const makeDefault = (id: string) => { setRows((p) => p.map((r) => ({ ...r, default: r.id === id }))); toast.success("Default address updated"); };
+  const remove = (id: string) => { removeRow(id); toast.success("Address removed"); };
+  const makeDefault = (id: string) => { setDefault(id); toast.success("Default address updated"); };
 
   return (
     <div className="mt-4 space-y-2">
