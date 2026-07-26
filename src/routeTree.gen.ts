@@ -36,6 +36,7 @@ import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
 import { Route as PartnerSupportRouteImport } from './routes/partner.support'
 import { Route as PartnerSubscriptionRouteImport } from './routes/partner.subscription'
+import { Route as PartnerSettingsRouteImport } from './routes/partner.settings'
 import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
 import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
 import { Route as PartnerOnboardingRouteImport } from './routes/partner.onboarding'
@@ -228,6 +229,11 @@ const PartnerSupportRoute = PartnerSupportRouteImport.update({
 const PartnerSubscriptionRoute = PartnerSubscriptionRouteImport.update({
   id: '/subscription',
   path: '/subscription',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerSettingsRoute = PartnerSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerProfileRoute = PartnerProfileRouteImport.update({
@@ -587,6 +593,7 @@ export interface FileRoutesByFullPath {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
@@ -670,6 +677,7 @@ export interface FileRoutesByTo {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
@@ -758,6 +766,7 @@ export interface FileRoutesById {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
@@ -847,6 +856,7 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
     | '/restaurant/$id'
@@ -930,6 +940,7 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
     | '/restaurant/$id'
@@ -1017,6 +1028,7 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
     | '/restaurant/$id'
@@ -1241,6 +1253,13 @@ declare module '@tanstack/react-router' {
       path: '/subscription'
       fullPath: '/partner/subscription'
       preLoaderRoute: typeof PartnerSubscriptionRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/settings': {
+      id: '/partner/settings'
+      path: '/settings'
+      fullPath: '/partner/settings'
+      preLoaderRoute: typeof PartnerSettingsRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/profile': {
@@ -1782,6 +1801,7 @@ interface PartnerRouteChildren {
   PartnerOnboardingRoute: typeof PartnerOnboardingRoute
   PartnerOrdersRoute: typeof PartnerOrdersRoute
   PartnerProfileRoute: typeof PartnerProfileRoute
+  PartnerSettingsRoute: typeof PartnerSettingsRoute
   PartnerSubscriptionRoute: typeof PartnerSubscriptionRoute
   PartnerSupportRoute: typeof PartnerSupportRoute
   PartnerIndexRoute: typeof PartnerIndexRoute
@@ -1803,6 +1823,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerOnboardingRoute: PartnerOnboardingRoute,
   PartnerOrdersRoute: PartnerOrdersRoute,
   PartnerProfileRoute: PartnerProfileRoute,
+  PartnerSettingsRoute: PartnerSettingsRoute,
   PartnerSubscriptionRoute: PartnerSubscriptionRoute,
   PartnerSupportRoute: PartnerSupportRoute,
   PartnerIndexRoute: PartnerIndexRoute,
