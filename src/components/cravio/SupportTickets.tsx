@@ -23,6 +23,7 @@ import {
   type TicketRole,
 } from "@/lib/support-api";
 import { ImageUploader } from "@/components/cravio/ImageUploader";
+import type { ImageRef } from "@/lib/image-service";
 
 const PRIORITIES: TicketPriority[] = ["low", "normal", "high", "urgent"];
 
@@ -99,7 +100,7 @@ function NewTicketForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("normal");
-  const [attachment, setAttachment] = useState("");
+  const [attachment, setAttachment] = useState<ImageRef | null>(null);
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -111,7 +112,7 @@ function NewTicketForm({
       role,
       createdBy: userId,
       priority,
-      attachments: attachment ? [attachment] : [],
+      attachments: attachment?.image_url ? [attachment.image_url] : [],
       contactName,
       contactPhone,
     });
@@ -150,7 +151,7 @@ function NewTicketForm({
       </div>
       <div>
         <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Attachment (optional)</p>
-        <ImageUploader value={attachment} onChange={(url) => setAttachment(url ?? "")} label="Add screenshot" />
+        <ImageUploader type="banner" value={attachment} onChange={setAttachment} label="Add screenshot" aspect="aspect-[16/9]" />
       </div>
       <div className="flex gap-2">
         <button onClick={submit} disabled={saving} className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-60">
