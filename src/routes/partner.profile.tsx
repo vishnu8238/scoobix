@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { partnerRestaurant } from "@/lib/role-data";
+import { usePartnerRestaurant } from "@/lib/partner-store";
+import { RestaurantIdBadge } from "@/components/cravio/RestaurantIdBadge";
+import { RelationshipManagerCard } from "@/components/cravio/RelationshipManagerCard";
 import { MapPin, Phone, Clock, Star, Tag, Image as ImageIcon } from "lucide-react";
 
 export const Route = createFileRoute("/partner/profile")({
@@ -13,6 +16,7 @@ const HOURS = [
 ] as const;
 
 function PartnerProfile() {
+  const { restaurant } = usePartnerRestaurant();
   return (
     <div className="animate-fade-up pb-8">
       <div className="relative h-56 w-full overflow-hidden">
@@ -20,12 +24,21 @@ function PartnerProfile() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <div className="absolute bottom-4 left-5 right-5 text-white">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Restaurant Profile</p>
-          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">{partnerRestaurant.name}</h1>
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">{restaurant?.name ?? partnerRestaurant.name}</h1>
           <p className="mt-1 text-sm text-white/80">{partnerRestaurant.cuisine}</p>
         </div>
       </div>
 
       <div className="space-y-5 px-5 pt-5">
+        <div className="flex items-center justify-between gap-3 rounded-3xl bg-card p-4 shadow-soft ring-1 ring-border/60">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Restaurant ID</p>
+            <div className="mt-1.5"><RestaurantIdBadge restaurant={restaurant} /></div>
+          </div>
+        </div>
+
+        <RelationshipManagerCard restaurant={restaurant} />
+
         <div className="grid grid-cols-3 gap-3 rounded-3xl bg-card p-4 shadow-card ring-1 ring-border/60">
           <Stat icon={Star} label="Rating" value={partnerRestaurant.rating.toFixed(1)} />
           <Stat icon={Tag} label="Reviews" value={partnerRestaurant.reviews.toLocaleString()} />
@@ -35,7 +48,7 @@ function PartnerProfile() {
         <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
           <h2 className="font-display text-lg font-bold">Details</h2>
           <ul className="mt-3 space-y-3 text-sm">
-            <li className="flex items-start gap-3"><MapPin className="h-4 w-4 mt-0.5 text-primary" /> 12 Hearth Lane, Westside · Stockholm</li>
+            <li className="flex items-start gap-3"><MapPin className="h-4 w-4 mt-0.5 text-primary" /> {restaurant?.address ?? "Address not set"}</li>
             <li className="flex items-start gap-3"><Phone className="h-4 w-4 mt-0.5 text-primary" /> +1 555 0144</li>
           </ul>
         </section>
