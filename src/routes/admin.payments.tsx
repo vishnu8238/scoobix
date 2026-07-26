@@ -77,8 +77,3 @@ function AdminPayments() {
     </div>
   );
 }
-
-      </section>
-    </div>
-  );
-}
