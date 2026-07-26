@@ -221,7 +221,6 @@ type SpotlightCtx = {
   update: (patch: Partial<SpotlightContent>) => void;
 };
 
-const SPKey = "scoobix_spotlight_v1";
 const SPContext = createContext<SpotlightCtx | null>(null);
 
 const DEFAULT_SPOTLIGHT: SpotlightContent = {
@@ -236,19 +235,11 @@ export function SpotlightProvider({ children }: { children: ReactNode }) {
   const [spotlight, setSpot] = useState<SpotlightContent | null>(DEFAULT_SPOTLIGHT);
 
   useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(SPKey) : null;
-      if (raw) setSpot(JSON.parse(raw));
-    } catch { /* ignore */ }
     void getSpotlightRow().then((rows) => {
       const r = rows?.[0] as unknown as SpotlightContent | undefined;
       if (r?.title) setSpot({ ...DEFAULT_SPOTLIGHT, ...r });
     });
   }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem(SPKey, JSON.stringify(spotlight));
-  }, [spotlight]);
 
   const update: SpotlightCtx["update"] = (patch) => {
     const next: SpotlightContent = { ...(spotlight ?? DEFAULT_SPOTLIGHT), ...patch, updatedAt: Date.now() };
