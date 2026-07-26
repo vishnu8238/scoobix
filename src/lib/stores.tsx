@@ -579,7 +579,6 @@ import { CmsProvider } from "./cms-store";
 import { AuthProvider } from "./auth-store";
 import { AdsProvider } from "./ads-store";
 import { RewardsProvider } from "./rewards-store";
-import { DeliveryProvider } from "./delivery-store";
 import { ScoobixExtrasProviders } from "./scoobix-extras";
 import { ScoobixLoyaltyProviders } from "./scoobix-loyalty";
 
@@ -592,14 +591,13 @@ export function ScoobixProviders({ children }: { children: ReactNode }) {
             <AppUIProvider>
               <FavoritesProvider>
                 <OrdersProvider>
-                  <DeliveryProvider>
-                    <ScoobixLoyaltyProviders>
-                      <ScoobixExtrasProviders>
-                        <CartProvider>{children}</CartProvider>
-                      </ScoobixExtrasProviders>
-                    </ScoobixLoyaltyProviders>
-                  </DeliveryProvider>
+                  <ScoobixLoyaltyProviders>
+                    <ScoobixExtrasProviders>
+                      <CartProvider>{children}</CartProvider>
+                    </ScoobixExtrasProviders>
+                  </ScoobixLoyaltyProviders>
                 </OrdersProvider>
+
               </FavoritesProvider>
             </AppUIProvider>
           </RewardsProvider>
