@@ -1,13 +1,15 @@
 /**
  * Discover More cards, Trending Now chips, and Restaurant collection requests.
  *
- * Live-fetches from InsForge (`discover_cards`, `trending_chips`,
- * `collection_requests` tables) with optimistic mutations mirrored to the
- * backend. Falls back to hard-coded defaults on first boot when the table
- * is empty. No localStorage — every visit reflects the current backend row.
+ * Live-fetches from InsForge (`discover_cards`, `trending_chips` tables).
+ * Collection inclusion requests have no dedicated table, so they persist as a
+ * JSON row in `app_settings` via the shared kv helpers. Falls back to
+ * hard-coded defaults on first boot when a table is empty. No localStorage.
  */
 import { useSyncExternalStore, useEffect } from "react";
 import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
+import { kvGet, kvSet } from "./kv-store";
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
