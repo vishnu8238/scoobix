@@ -96,8 +96,8 @@ function RiderEarnings() {
       <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
         <h2 className="font-display text-lg font-bold">Last 7 days</h2>
         <div className="mt-4 flex h-32 items-end gap-2">
-          {e.history.map((d) => (
-            <div key={d.day} className="flex flex-1 flex-col items-center gap-1.5">
+          {e.history.map((d, i) => (
+            <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
               <div className="relative flex w-full flex-1 items-end">
                 <div className="w-full rounded-t-lg bg-primary/15" style={{ height: `${(d.amount / max) * 100}%` }} />
                 <div className="absolute inset-x-0 bottom-0 rounded-t-lg bg-primary transition-all" style={{ height: `${(d.amount / max) * 70}%` }} />
@@ -109,26 +109,26 @@ function RiderEarnings() {
       </section>
 
       <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
-        <h2 className="font-display text-lg font-bold">Recent payouts</h2>
+        <h2 className="font-display text-lg font-bold">Recent deliveries</h2>
         <ul className="mt-3 space-y-3">
-          {[
-            { date: "Today · 3:24 PM", from: "Scoobix weekly payout", amount: 612.4 },
-            { date: "Last Mon · 9:01 AM", from: "Scoobix weekly payout", amount: 488.1 },
-            { date: "2 weeks ago", from: "Scoobix weekly payout", amount: 552.7 },
-          ].map((p, i) => (
+          {delivered.length === 0 && (
+            <li className="text-xs text-muted-foreground">Completed deliveries and their payouts appear here.</li>
+          )}
+          {[...delivered].sort((a, b) => b.at - a.at).slice(0, 5).map((p, i) => (
             <li key={i} className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <TrendingUp className="h-4 w-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-bold">{p.from}</p>
-                <p className="text-[11px] text-muted-foreground">{p.date}</p>
+                <p className="text-sm font-bold">Delivery payout</p>
+                <p className="text-[11px] text-muted-foreground">{new Date(p.at).toLocaleString()}</p>
               </div>
-              <span className="font-display text-sm font-extrabold text-primary">+{formatPrice(p.amount)}</span>
+              <span className="font-display text-sm font-extrabold text-primary">+{formatPrice(p.amount + p.tip)}</span>
             </li>
           ))}
         </ul>
       </section>
+
 
       <div className="flex items-center gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
         <Gift className="h-5 w-5 text-amber-700" />
