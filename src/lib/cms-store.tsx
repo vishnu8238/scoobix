@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { IMAGES, categories as seedCategories, offers as seedOffers, restaurants as seedRestaurants } from "./mock-data";
 
 /* ============================================================
    CMS STORE — Admin-controlled content for the Customer App.
-   Persists to localStorage. Pure frontend, ready for backend swap.
+   Persists to the backend (app_settings KV). No localStorage.
    ============================================================ */
 
 export type Banner = {
@@ -168,7 +168,6 @@ const DEFAULT_SETTINGS: PlatformSettings = {
 
 
 const CmsContext = createContext<CmsCtx | null>(null);
-const KEY = "cravio_cms_v2";
 
 const seedBanners = (): Banner[] =>
   seedOffers.map((o, i) => ({
