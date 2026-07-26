@@ -24,6 +24,14 @@ export type RestaurantRow = {
   auto_accept_orders?: boolean;
   pending_payout?: number;
   payout_cycle_hours?: number;
+  rating?: number;
+  rating_value?: number;
+  /** Permanent readable ID, e.g. SCOO-000001. */
+  code?: string | null;
+  manager_name?: string | null;
+  manager_phone?: string | null;
+  manager_email?: string | null;
+  manager_avatar?: string | null;
 };
 
 /** Restaurant id owned by the signed-in partner (empty until resolved). */

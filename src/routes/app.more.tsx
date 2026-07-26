@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag, LogIn, LogOut, CheckCircle2, Utensils, Building2, Wallet, Gift } from "lucide-react";
+import { ChevronRight, Heart, Bell, MapPin, Tag, Clock, FileText, Shield, Sparkles, AlertOctagon, ShoppingBag, LogIn, LogOut, CheckCircle2, Utensils, Building2, Wallet, Gift , LifeBuoy } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { useAuth } from "@/lib/auth-store";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ const ITEMS = [
   { to: "/app/notifications", icon: Bell,  label: "Notifications",         desc: "Order updates and offers" },
   { to: "/app/coupons",    icon: Tag,      label: "Coupons & offers",      desc: "Active promo codes" },
   { to: "/app/cart",       icon: ShoppingBag, label: "Your cart",          desc: "Review items before checkout" },
+  { to: "/app/support",    icon: LifeBuoy, label: "Help & support",        desc: "Raise a ticket, track replies" },
   { to: "/terms",          icon: FileText, label: "Terms of service",      desc: "Legal · last updated 2026" },
   { to: "/privacy",        icon: Shield,   label: "Privacy policy",        desc: "How we handle your data" },
 ] as const;

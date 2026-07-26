@@ -23,6 +23,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as RiderVehicleRouteImport } from './routes/rider.vehicle'
+import { Route as RiderSupportRouteImport } from './routes/rider.support'
 import { Route as RiderRequestsRouteImport } from './routes/rider.requests'
 import { Route as RiderProfileRouteImport } from './routes/rider.profile'
 import { Route as RiderOtpRouteImport } from './routes/rider.otp'
@@ -33,6 +34,9 @@ import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
+import { Route as PartnerSupportRouteImport } from './routes/partner.support'
+import { Route as PartnerSubscriptionRouteImport } from './routes/partner.subscription'
+import { Route as PartnerSettingsRouteImport } from './routes/partner.settings'
 import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
 import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
 import { Route as PartnerOnboardingRouteImport } from './routes/partner.onboarding'
@@ -42,6 +46,7 @@ import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as PartnerMealsRouteImport } from './routes/partner.meals'
 import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
+import { Route as PartnerCouponsRouteImport } from './routes/partner.coupons'
 import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
 import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
@@ -53,6 +58,7 @@ import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
 import { Route as AppWalletRouteImport } from './routes/app.wallet'
 import { Route as AppValueRouteImport } from './routes/app.value'
 import { Route as AppSwipeRouteImport } from './routes/app.swipe'
+import { Route as AppSupportRouteImport } from './routes/app.support'
 import { Route as AppSuccessRouteImport } from './routes/app.success'
 import { Route as AppSearchRouteImport } from './routes/app.search'
 import { Route as AppReferralRouteImport } from './routes/app.referral'
@@ -72,6 +78,7 @@ import { Route as AppBulkRouteImport } from './routes/app.bulk'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTrendingRouteImport } from './routes/admin.trending'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminSpotlightRouteImport } from './routes/admin.spotlight'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants'
@@ -159,6 +166,11 @@ const RiderVehicleRoute = RiderVehicleRouteImport.update({
   path: '/vehicle',
   getParentRoute: () => RiderRoute,
 } as any)
+const RiderSupportRoute = RiderSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => RiderRoute,
+} as any)
 const RiderRequestsRoute = RiderRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
@@ -209,6 +221,21 @@ const RestaurantIdRoute = RestaurantIdRouteImport.update({
   path: '/restaurant/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PartnerSupportRoute = PartnerSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerSubscriptionRoute = PartnerSubscriptionRouteImport.update({
+  id: '/subscription',
+  path: '/subscription',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerSettingsRoute = PartnerSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const PartnerProfileRoute = PartnerProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -252,6 +279,11 @@ const PartnerInvoiceRoute = PartnerInvoiceRouteImport.update({
 const PartnerHoursRoute = PartnerHoursRouteImport.update({
   id: '/hours',
   path: '/hours',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerCouponsRoute = PartnerCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
   getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerCollectionsRoute = PartnerCollectionsRouteImport.update({
@@ -307,6 +339,11 @@ const AppValueRoute = AppValueRouteImport.update({
 const AppSwipeRoute = AppSwipeRouteImport.update({
   id: '/swipe',
   path: '/swipe',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSupportRoute = AppSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSuccessRoute = AppSuccessRouteImport.update({
@@ -402,6 +439,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
 const AdminTrendingRoute = AdminTrendingRouteImport.update({
   id: '/trending',
   path: '/trending',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminSpotlightRoute = AdminSpotlightRouteImport.update({
@@ -509,6 +551,7 @@ export interface FileRoutesByFullPath {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
@@ -528,6 +571,7 @@ export interface FileRoutesByFullPath {
   '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/support': typeof AppSupportRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
@@ -539,6 +583,7 @@ export interface FileRoutesByFullPath {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
+  '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -548,6 +593,9 @@ export interface FileRoutesByFullPath {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/settings': typeof PartnerSettingsRoute
+  '/partner/subscription': typeof PartnerSubscriptionRoute
+  '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
@@ -558,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -586,6 +635,7 @@ export interface FileRoutesByTo {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
@@ -605,6 +655,7 @@ export interface FileRoutesByTo {
   '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/support': typeof AppSupportRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
@@ -616,6 +667,7 @@ export interface FileRoutesByTo {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
+  '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -625,6 +677,9 @@ export interface FileRoutesByTo {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/settings': typeof PartnerSettingsRoute
+  '/partner/subscription': typeof PartnerSubscriptionRoute
+  '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
@@ -635,6 +690,7 @@ export interface FileRoutesByTo {
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin': typeof AdminIndexRoute
@@ -668,6 +724,7 @@ export interface FileRoutesById {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
@@ -687,6 +744,7 @@ export interface FileRoutesById {
   '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/support': typeof AppSupportRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
@@ -698,6 +756,7 @@ export interface FileRoutesById {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
+  '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
   '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/meals': typeof PartnerMealsRoute
@@ -707,6 +766,9 @@ export interface FileRoutesById {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/settings': typeof PartnerSettingsRoute
+  '/partner/subscription': typeof PartnerSubscriptionRoute
+  '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
@@ -717,6 +779,7 @@ export interface FileRoutesById {
   '/rider/otp': typeof RiderOtpRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
+  '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -751,6 +814,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
@@ -770,6 +834,7 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/search'
     | '/app/success'
+    | '/app/support'
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
@@ -781,6 +846,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/bulk'
     | '/partner/collections'
+    | '/partner/coupons'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -790,6 +856,9 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/settings'
+    | '/partner/subscription'
+    | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
@@ -800,6 +869,7 @@ export interface FileRouteTypes {
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
+    | '/rider/support'
     | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin/'
@@ -828,6 +898,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
@@ -847,6 +918,7 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/search'
     | '/app/success'
+    | '/app/support'
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
@@ -858,6 +930,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/bulk'
     | '/partner/collections'
+    | '/partner/coupons'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -867,6 +940,9 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/settings'
+    | '/partner/subscription'
+    | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
@@ -877,6 +953,7 @@ export interface FileRouteTypes {
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
+    | '/rider/support'
     | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin'
@@ -909,6 +986,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
@@ -928,6 +1006,7 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/search'
     | '/app/success'
+    | '/app/support'
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
@@ -939,6 +1018,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/bulk'
     | '/partner/collections'
+    | '/partner/coupons'
     | '/partner/hours'
     | '/partner/invoice'
     | '/partner/meals'
@@ -948,6 +1028,9 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/settings'
+    | '/partner/subscription'
+    | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
@@ -958,6 +1041,7 @@ export interface FileRouteTypes {
     | '/rider/otp'
     | '/rider/profile'
     | '/rider/requests'
+    | '/rider/support'
     | '/rider/vehicle'
     | '/track/$orderId'
     | '/admin/'
@@ -1080,6 +1164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiderVehicleRouteImport
       parentRoute: typeof RiderRoute
     }
+    '/rider/support': {
+      id: '/rider/support'
+      path: '/support'
+      fullPath: '/rider/support'
+      preLoaderRoute: typeof RiderSupportRouteImport
+      parentRoute: typeof RiderRoute
+    }
     '/rider/requests': {
       id: '/rider/requests'
       path: '/requests'
@@ -1150,6 +1241,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RestaurantIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/partner/support': {
+      id: '/partner/support'
+      path: '/support'
+      fullPath: '/partner/support'
+      preLoaderRoute: typeof PartnerSupportRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/subscription': {
+      id: '/partner/subscription'
+      path: '/subscription'
+      fullPath: '/partner/subscription'
+      preLoaderRoute: typeof PartnerSubscriptionRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/settings': {
+      id: '/partner/settings'
+      path: '/settings'
+      fullPath: '/partner/settings'
+      preLoaderRoute: typeof PartnerSettingsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
     '/partner/profile': {
       id: '/partner/profile'
       path: '/profile'
@@ -1211,6 +1323,13 @@ declare module '@tanstack/react-router' {
       path: '/hours'
       fullPath: '/partner/hours'
       preLoaderRoute: typeof PartnerHoursRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/coupons': {
+      id: '/partner/coupons'
+      path: '/coupons'
+      fullPath: '/partner/coupons'
+      preLoaderRoute: typeof PartnerCouponsRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/collections': {
@@ -1288,6 +1407,13 @@ declare module '@tanstack/react-router' {
       path: '/swipe'
       fullPath: '/app/swipe'
       preLoaderRoute: typeof AppSwipeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/support': {
+      id: '/app/support'
+      path: '/support'
+      fullPath: '/app/support'
+      preLoaderRoute: typeof AppSupportRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/success': {
@@ -1423,6 +1549,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTrendingRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/spotlight': {
       id: '/admin/spotlight'
       path: '/spotlight'
@@ -1554,6 +1687,7 @@ interface AdminRouteChildren {
   AdminRestaurantsRoute: typeof AdminRestaurantsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSpotlightRoute: typeof AdminSpotlightRoute
+  AdminSupportRoute: typeof AdminSupportRoute
   AdminTrendingRoute: typeof AdminTrendingRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminWalletRoute: typeof AdminWalletRoute
@@ -1576,6 +1710,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminRestaurantsRoute: AdminRestaurantsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSpotlightRoute: AdminSpotlightRoute,
+  AdminSupportRoute: AdminSupportRoute,
   AdminTrendingRoute: AdminTrendingRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminWalletRoute: AdminWalletRoute,
@@ -1601,6 +1736,7 @@ interface AppRouteChildren {
   AppReferralRoute: typeof AppReferralRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSuccessRoute: typeof AppSuccessRoute
+  AppSupportRoute: typeof AppSupportRoute
   AppSwipeRoute: typeof AppSwipeRoute
   AppValueRoute: typeof AppValueRoute
   AppWalletRoute: typeof AppWalletRoute
@@ -1625,6 +1761,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppReferralRoute: AppReferralRoute,
   AppSearchRoute: AppSearchRoute,
   AppSuccessRoute: AppSuccessRoute,
+  AppSupportRoute: AppSupportRoute,
   AppSwipeRoute: AppSwipeRoute,
   AppValueRoute: AppValueRoute,
   AppWalletRoute: AppWalletRoute,
@@ -1654,6 +1791,7 @@ interface PartnerRouteChildren {
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
   PartnerBulkRoute: typeof PartnerBulkRoute
   PartnerCollectionsRoute: typeof PartnerCollectionsRoute
+  PartnerCouponsRoute: typeof PartnerCouponsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
   PartnerInvoiceRoute: typeof PartnerInvoiceRoute
   PartnerMealsRoute: typeof PartnerMealsRoute
@@ -1663,6 +1801,9 @@ interface PartnerRouteChildren {
   PartnerOnboardingRoute: typeof PartnerOnboardingRoute
   PartnerOrdersRoute: typeof PartnerOrdersRoute
   PartnerProfileRoute: typeof PartnerProfileRoute
+  PartnerSettingsRoute: typeof PartnerSettingsRoute
+  PartnerSubscriptionRoute: typeof PartnerSubscriptionRoute
+  PartnerSupportRoute: typeof PartnerSupportRoute
   PartnerIndexRoute: typeof PartnerIndexRoute
 }
 
@@ -1672,6 +1813,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
   PartnerBulkRoute: PartnerBulkRoute,
   PartnerCollectionsRoute: PartnerCollectionsRoute,
+  PartnerCouponsRoute: PartnerCouponsRoute,
   PartnerHoursRoute: PartnerHoursRoute,
   PartnerInvoiceRoute: PartnerInvoiceRoute,
   PartnerMealsRoute: PartnerMealsRoute,
@@ -1681,6 +1823,9 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerOnboardingRoute: PartnerOnboardingRoute,
   PartnerOrdersRoute: PartnerOrdersRoute,
   PartnerProfileRoute: PartnerProfileRoute,
+  PartnerSettingsRoute: PartnerSettingsRoute,
+  PartnerSubscriptionRoute: PartnerSubscriptionRoute,
+  PartnerSupportRoute: PartnerSupportRoute,
   PartnerIndexRoute: PartnerIndexRoute,
 }
 
@@ -1697,6 +1842,7 @@ interface RiderRouteChildren {
   RiderOtpRoute: typeof RiderOtpRoute
   RiderProfileRoute: typeof RiderProfileRoute
   RiderRequestsRoute: typeof RiderRequestsRoute
+  RiderSupportRoute: typeof RiderSupportRoute
   RiderVehicleRoute: typeof RiderVehicleRoute
   RiderIndexRoute: typeof RiderIndexRoute
 }
@@ -1711,6 +1857,7 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderOtpRoute: RiderOtpRoute,
   RiderProfileRoute: RiderProfileRoute,
   RiderRequestsRoute: RiderRequestsRoute,
+  RiderSupportRoute: RiderSupportRoute,
   RiderVehicleRoute: RiderVehicleRoute,
   RiderIndexRoute: RiderIndexRoute,
 }

@@ -1,28 +1,78 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { adminRestaurants } from "@/lib/role-data";
-import { formatPrice } from "@/lib/format";
-import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { Star, Plus, Percent, Pencil, Save, X, Check, Ban } from "lucide-react";
-import { useCms } from "@/lib/cms-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Star, Percent, Pencil, Save, X, Check, Ban, Search, Loader2, UserRound } from "lucide-react";
 import { toast } from "sonner";
+import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { formatPrice } from "@/lib/format";
+import { useCms } from "@/lib/cms-store";
+import { listTable, patchRecord } from "@/lib/insforge-crud";
 import { setRestaurantApprovalStatus, setRestaurantCommission, updateRestaurantStatus } from "@/lib/insforge";
+import { ensureRestaurantCode } from "@/lib/restaurant-id";
+import type { RestaurantRow } from "@/lib/partner-store";
 
 export const Route = createFileRoute("/admin/restaurants")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Restaurants" }] }),
   component: AdminRestaurants,
 });
 
-type RowStatus = "Live" | "Pending" | "Suspended" | "Rejected" | string;
+type OwnerRow = { id: string; name?: string | null; phone?: string | null; email?: string | null };
+
+const STATUS_LABEL: Record<string, string> = {
+  active: "Live",
+  approved: "Live",
+  pending: "Pending",
+  suspended: "Suspended",
+  rejected: "Rejected",
+};
 
 function AdminRestaurants() {
-  // Local status overlay — replace with backend mutation later.
-  const [statusOverrides, setStatusOverrides] = useState<Record<string, RowStatus>>({});
-  const updateStatus = (id: string, next: RowStatus, msg: string, backend: "approved" | "rejected" | "suspended") => {
-    void setRestaurantApprovalStatus(id, backend);
-    setStatusOverrides((p) => ({ ...p, [id]: next }));
-    toast.success(msg);
+  const [rows, setRows] = useState<RestaurantRow[]>([]);
+  const [owners, setOwners] = useState<Record<string, OwnerRow>>({});
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [openDetail, setOpenDetail] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const list = await listTable<RestaurantRow>("restaurants", { order: "created_at.desc", limit: 500 });
+    setRows(list);
+    const ownerIds = Array.from(new Set(list.map((r) => r.owner_id).filter(Boolean))) as string[];
+    if (ownerIds.length) {
+      const users = await listTable<OwnerRow>("users", { id: `in.(${ownerIds.join(",")})`, limit: 500 });
+      setOwners(Object.fromEntries(users.map((u) => [u.id, u])));
+    }
+    setLoading(false);
+    // Backfill permanent IDs for any row created before codes existed.
+    const missing = list.filter((r) => !r.code);
+    for (const r of missing) {
+      const code = await ensureRestaurantCode(r);
+      if (code) setRows((p) => p.map((x) => (x.id === r.id ? { ...x, code } : x)));
+    }
+  }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return rows;
+    return rows.filter((r) => {
+      const owner = r.owner_id ? owners[r.owner_id] : undefined;
+      return [r.code, r.name, owner?.name, owner?.phone, owner?.email, r.manager_name]
+        .some((v) => (v ?? "").toString().toLowerCase().includes(term));
+    });
+  }, [rows, owners, q]);
+
+  const updateStatus = async (r: RestaurantRow, backend: "approved" | "rejected" | "suspended", label: string) => {
+    await setRestaurantApprovalStatus(r.id, backend);
+    setRows((p) => p.map((x) => (x.id === r.id ? { ...x, status: backend } : x)));
+    toast.success(`${r.name} ${label}`);
+  };
+
+  const saveManager = async (id: string, patch: Partial<RestaurantRow>) => {
+    await patchRecord("restaurants", id, patch as Record<string, unknown>);
+    setRows((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    toast.success("Relationship manager updated");
   };
 
   return (
@@ -32,39 +82,119 @@ function AdminRestaurants() {
           <p className="eyebrow">Restaurants</p>
           <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Partner restaurants</h1>
         </div>
-        <button className="flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">
-          <Plus className="h-4 w-4" /> Onboard restaurant
-        </button>
+        <div className="flex min-w-[280px] items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-soft ring-1 ring-border/60">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search ID, name, owner or phone"
+            className="w-full bg-transparent text-sm outline-none"
+          />
+        </div>
       </header>
 
       <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
-        <DataTable
-          columns={["Restaurant", "Cuisine", "Rating", "Orders", "Revenue", "Commission %", "Open", "Status", "Actions"]}
-          rows={adminRestaurants.map((r) => {
-            const status = statusOverrides[r.id] ?? r.status;
-            return [
-              <div className="flex items-center gap-3" key={r.id + "name"}>
-                <img src={r.image} alt="" className="h-10 w-10 rounded-xl object-cover" />
-                <span className="font-bold">{r.name}</span>
-              </div>,
-              <span key={r.id + "cuisine"} className="text-muted-foreground">{r.cuisine}</span>,
-              <span key={r.id + "rating"} className="flex items-center gap-1 font-bold"><Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" /> {r.rating.toFixed(1)}</span>,
-              <span key={r.id + "orders"}>{r.orders}</span>,
-              <span key={r.id + "revenue"} className="font-display font-extrabold text-primary">{formatPrice(r.revenue)}</span>,
-              <CommissionCell key={r.id + "comm"} id={r.id} />,
-              <OpenToggle key={r.id + "open"} id={r.id} />,
-              <StatusBadge key={r.id + "status"} label={status} />,
-              <div key={r.id + "act"} className="flex items-center gap-1.5">
-                <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => updateStatus(r.id, "Live", `${r.name} approved`, "approved")} />
-                <ActionButton tone="warn"    icon={Ban}   label="Suspend" onClick={() => updateStatus(r.id, "Suspended", `${r.name} suspended`, "suspended")} />
-                <ActionButton tone="danger"  icon={X}     label="Reject"  onClick={() => updateStatus(r.id, "Rejected", `${r.name} rejected`, "rejected")} />
-
-              </div>,
-            ];
-          })}
-        />
+        {loading ? (
+          <div className="flex justify-center py-10 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        ) : filtered.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">No restaurants match “{q}”.</p>
+        ) : (
+          <DataTable
+            columns={["Restaurant ID", "Restaurant", "Owner", "Rating", "Commission %", "Manager", "Open", "Status", "Actions"]}
+            rows={filtered.map((r) => {
+              const owner = r.owner_id ? owners[r.owner_id] : undefined;
+              const status = STATUS_LABEL[(r.status ?? "").toLowerCase()] ?? (r.status ?? "Pending");
+              return [
+                <button key={r.id + "code"} onClick={() => setOpenDetail(openDetail === r.id ? null : r.id)} className="font-mono text-xs font-extrabold text-primary">{r.code ?? "—"}</button>,
+                <div className="flex items-center gap-3" key={r.id + "name"}>
+                  {r.logo_url ? <img src={r.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover" /> : <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary text-xs font-extrabold">{(r.name ?? "?").slice(0, 2).toUpperCase()}</span>}
+                  <span className="font-bold">{r.name}</span>
+                </div>,
+                <span key={r.id + "owner"} className="text-muted-foreground">{owner?.name ?? "Unassigned"}{owner?.phone ? ` · ${owner.phone}` : ""}</span>,
+                <span key={r.id + "rating"} className="flex items-center gap-1 font-bold"><Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" /> {(r.rating_value ?? 0).toFixed(1)}</span>,
+                <CommissionCell key={r.id + "comm"} id={r.id} saved={r.commission ?? 15} />,
+                <span key={r.id + "mgr"} className="text-muted-foreground">{r.manager_name ?? "—"}</span>,
+                <OpenToggle key={r.id + "open"} id={r.id} />,
+                <StatusBadge key={r.id + "status"} label={status} />,
+                <div key={r.id + "act"} className="flex items-center gap-1.5">
+                  <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => void updateStatus(r, "approved", "approved")} />
+                  <ActionButton tone="warn" icon={Ban} label="Suspend" onClick={() => void updateStatus(r, "suspended", "suspended")} />
+                  <ActionButton tone="danger" icon={X} label="Reject" onClick={() => void updateStatus(r, "rejected", "rejected")} />
+                </div>,
+              ];
+            })}
+          />
+        )}
       </section>
+
+      {openDetail && (() => {
+        const r = rows.find((x) => x.id === openDetail);
+        if (!r) return null;
+        const owner = r.owner_id ? owners[r.owner_id] : undefined;
+        return <RestaurantDetail key={r.id} restaurant={r} owner={owner} onClose={() => setOpenDetail(null)} onSaveManager={saveManager} />;
+      })()}
     </div>
+  );
+}
+
+function RestaurantDetail({
+  restaurant, owner, onClose, onSaveManager,
+}: {
+  restaurant: RestaurantRow;
+  owner?: OwnerRow;
+  onClose: () => void;
+  onSaveManager: (id: string, patch: Partial<RestaurantRow>) => Promise<void>;
+}) {
+  const [form, setForm] = useState({
+    manager_name: restaurant.manager_name ?? "",
+    manager_phone: restaurant.manager_phone ?? "",
+    manager_email: restaurant.manager_email ?? "",
+    manager_avatar: restaurant.manager_avatar ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    await onSaveManager(restaurant.id, form);
+    setSaving(false);
+  };
+
+  return (
+    <section className="space-y-5 rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs font-extrabold uppercase tracking-wider text-primary">{restaurant.code}</p>
+          <h2 className="mt-1 font-display text-xl font-extrabold">{restaurant.name}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{restaurant.address ?? "No address"}</p>
+          <p className="text-sm text-muted-foreground">Owner: {owner?.name ?? "Unassigned"}{owner?.phone ? ` · ${owner.phone}` : ""}{owner?.email ? ` · ${owner.email}` : ""}</p>
+          <p className="text-sm text-muted-foreground">Commission {restaurant.commission ?? 0}% · Payout every {restaurant.payout_cycle_hours ?? 24}h · Pending {formatPrice(restaurant.pending_payout ?? 0)}</p>
+        </div>
+        <button onClick={onClose} className="rounded-xl bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">Close</button>
+      </div>
+
+      <div className="rounded-2xl bg-muted/40 p-4">
+        <p className="flex items-center gap-2 font-display text-sm font-bold"><UserRound className="h-4 w-4 text-primary" /> Relationship manager</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {([
+            ["manager_name", "Manager name"],
+            ["manager_phone", "Manager phone"],
+            ["manager_email", "Manager email"],
+            ["manager_avatar", "Manager avatar URL"],
+          ] as const).map(([key, label]) => (
+            <input
+              key={key}
+              value={form[key]}
+              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+              placeholder={label}
+              className="rounded-2xl bg-background px-3 py-2.5 text-sm outline-none ring-1 ring-border/60 focus:ring-primary/40"
+            />
+          ))}
+        </div>
+        <button onClick={save} disabled={saving} className="mt-3 flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-60">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save manager
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -92,10 +222,10 @@ function ActionButton({ icon: Icon, label, onClick, tone }: { icon: typeof Check
   );
 }
 
-function CommissionCell({ id }: { id: string }) {
+function CommissionCell({ id, saved: initial }: { id: string; saved: number }) {
   const { commissions, setCommission } = useCms();
   const [open, setOpen] = useState(false);
-  const saved = commissions[id] ?? 15;
+  const saved = commissions[id] ?? initial;
   const [value, setValue] = useState(String(saved));
 
   const pct = Math.max(0, Math.min(100, Number(value) || 0));
@@ -153,16 +283,10 @@ function CommissionCell({ id }: { id: string }) {
           </div>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleSave}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-glow transition active:scale-95"
-          >
+          <button onClick={handleSave} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-glow transition active:scale-95">
             <Save className="h-3.5 w-3.5" /> Save
           </button>
-          <button
-            onClick={() => setOpen(false)}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-bold text-muted-foreground transition active:scale-95"
-          >
+          <button onClick={() => setOpen(false)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-bold text-muted-foreground transition active:scale-95">
             <X className="h-3.5 w-3.5" /> Cancel
           </button>
         </div>
