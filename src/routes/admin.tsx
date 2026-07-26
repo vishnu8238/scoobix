@@ -73,9 +73,8 @@ function AdminLayout() {
               <ScoobixMark size={28} />
               <p className="font-display text-base font-extrabold">Admin</p>
             </div>
-            <Link to="/portal" className="rounded-full bg-muted px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Switch
-            </Link>
+            <SignOutButton />
+
           </div>
 
           {/* Desktop top bar */}
