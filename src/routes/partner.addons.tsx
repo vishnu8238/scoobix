@@ -29,9 +29,13 @@ function AddonsPage() {
   const [loaded, setLoaded] = useState(false);
 
   const load = async () => {
-    const rid = partnerRestaurant?.id;
+    const rawId = partnerRestaurant?.id ? String(partnerRestaurant.id) : "";
+    // Backend ids are uuids; skip the filter for seed slugs so PostgREST
+    // doesn't reject the query.
+    const rid = /^[0-9a-f-]{36}$/i.test(rawId) ? rawId : "";
     const [dishes, addons] = await Promise.all([
       listTable<MenuRow>("menu_items", { limit: 500, restaurant_id: rid ? `eq.${rid}` : undefined }),
+
       listTable<AddonRow>("addons", { limit: 2000 }),
     ]);
     const byDish = new Map<string, AddonRow[]>();
