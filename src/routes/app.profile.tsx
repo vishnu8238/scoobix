@@ -5,7 +5,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Input } from "@/components/ui/input";
 import { useFavorites } from "@/lib/stores";
 import { restaurants, allDishes } from "@/lib/mock-data";
-import { useAddresses } from "@/lib/addresses-store";
+import { useAddresses, type AddressRow } from "@/lib/addresses-store";
+import { usePaymentMethods } from "@/lib/payment-methods-store";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -49,9 +50,9 @@ function ProfilePage() {
       <section className="px-4">
         <Group title="Account">
           <Item icon={User} label="My account" onClick={() => setOpen("account")} />
-          <Item icon={MapPin} label="Saved addresses" hint={`${savedAddresses.length}`} onClick={() => setOpen("addresses")} />
+          <Item icon={MapPin} label="Saved addresses" hint={`${addressRows.length}`} onClick={() => setOpen("addresses")} />
           <Item icon={Heart} label="Favorites" hint={`${favR.size + favD.size}`} onClick={() => setOpen("favorites")} />
-          <Item icon={Wallet} label="Payments" hint={`${paymentMethods.length}`} onClick={() => setOpen("payments")} />
+          <Item icon={Wallet} label="Payments" hint={`${payMethods.length}`} onClick={() => setOpen("payments")} />
         </Group>
         <Group title="More">
           <Link to="/app/orders" className="block"><Item icon={ReceiptText} label="Order history" /></Link>
@@ -100,7 +101,7 @@ function ProfilePage() {
         <SheetContent side="bottom" className="rounded-t-3xl">
           <SheetHeader className="text-left"><SheetTitle>Payment methods</SheetTitle></SheetHeader>
           <div className="mt-4 space-y-2">
-            {paymentMethods.map((p) => (
+            {payMethods.map((p) => (
               <div key={p.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-3">
                 <div>
                   <div className="text-sm font-bold">{p.brand}</div>
@@ -109,7 +110,7 @@ function ProfilePage() {
                 {p.default && <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">Default</span>}
               </div>
             ))}
-            <Button variant="outline" className="w-full rounded-full" onClick={() => toast.success("Add card (demo)")}>+ Add payment method</Button>
+            <Button variant="outline" className="w-full rounded-full" onClick={addPayMethod}>+ Add payment method</Button>
           </div>
         </SheetContent>
       </Sheet>
