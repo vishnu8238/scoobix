@@ -11,7 +11,16 @@
  * left in place as a fallback.
  */
 
-import { restaurants, categories, type Restaurant, type Dish, type Category } from "./mock-data";
+import {
+  restaurants,
+  categories,
+  trendingDishIds,
+  recommendedDishIds,
+  type Restaurant,
+  type Dish,
+  type Category,
+} from "./mock-data";
+
 
 export const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";
 export const INSFORGE_ANON_KEY =
