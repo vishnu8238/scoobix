@@ -21,6 +21,16 @@ function ProfilePage() {
   const navigate = useNavigate();
   const { restaurants: favR, dishes: favD } = useFavorites();
   const [open, setOpen] = useState<SheetKind>(null);
+  const { rows: addressRows } = useAddresses();
+  const { rows: payMethods, add: addPayMethodRow } = usePaymentMethods();
+  const addPayMethod = () => {
+    const brand = typeof window !== "undefined" ? window.prompt("Card brand (Visa, Mastercard…)", "Visa") : null;
+    if (!brand) return;
+    const last4 = typeof window !== "undefined" ? window.prompt("Last 4 digits", "4242") : null;
+    if (!last4) return;
+    addPayMethodRow(brand, last4);
+    toast.success("Payment method saved");
+  };
 
   return (
     <div className="min-h-svh">
