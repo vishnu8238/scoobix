@@ -313,12 +313,21 @@ export function updateGroupCart(id: string, patch: Record<string, unknown>) {
   return ifWrite(`/api/database/records/group_carts/${id}`, "PATCH", patch);
 }
 
-export function getSpotlightRow() {
-  return ifFetch<Record<string, unknown>[]>(`/api/database/records/spotlight?limit=1`).catch(() => [] as Record<string, unknown>[]);
+/**
+ * Spotlight has no dedicated table — it is stored as a JSON row in
+ * `app_settings` (key = 'spotlight') through the shared kv helpers.
+ */
+export async function getSpotlightRow(): Promise<Record<string, unknown>[]> {
+  const { kvGet } = await import("./kv-store");
+  const v = await kvGet<Record<string, unknown>>("spotlight");
+  return v ? [v] : [];
 }
-export function setSpotlight(record: Record<string, unknown>) {
-  return ifWrite(`/api/database/records/spotlight`, "POST", record);
+export async function setSpotlight(record: Record<string, unknown>) {
+  const { kvSet } = await import("./kv-store");
+  await kvSet("spotlight", record);
+  return null;
 }
+
 
 export function scheduleOrder(orderId: string, iso: string) {
   return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { scheduled_for: iso });
