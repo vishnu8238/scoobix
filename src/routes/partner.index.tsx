@@ -8,6 +8,7 @@ import { updateRestaurantStatus } from "@/lib/insforge";
 import { useLiveOrders } from "@/lib/realtime-hooks";
 import { rowToOrder, type OrderRow } from "@/lib/orders-api";
 import { usePartnerRestaurant } from "@/lib/partner-store";
+import { RestaurantIdBadge } from "@/components/cravio/RestaurantIdBadge";
 
 export const Route = createFileRoute("/partner/")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Dashboard" }] }),
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/partner/")({
 
 function PartnerDashboard() {
   const { closedRestaurants, setRestaurantClosed, acceptingOrders, setAcceptingOrders } = useCms();
-  const { restaurantId } = usePartnerRestaurant();
+  const { restaurant, restaurantId } = usePartnerRestaurant();
   const rid = restaurantId || partnerRestaurant.id;
   const isClosed = !!closedRestaurants[rid];
   const isAccepting = acceptingOrders[rid] !== false; // default true
