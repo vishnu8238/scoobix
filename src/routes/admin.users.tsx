@@ -28,13 +28,20 @@ function AdminUsers() {
     minMs: 10000,
     maxMs: 60000,
   });
+  const { rows: orders } = useLiveOrders();
+  const orderCounts = orders.reduce<Record<string, number>>((acc, o) => {
+    const cid = String((o as { customer_id?: string }).customer_id ?? "");
+    if (cid) acc[cid] = (acc[cid] ?? 0) + 1;
+    return acc;
+  }, {});
   const term = q.toLowerCase();
   const rows = users
     .map((u) => ({
       id: u.id,
       name: u.name ?? (u.email ?? "").split("@")[0] ?? "User",
       email: u.email ?? "—",
-      orders: 0,
+      orders: orderCounts[u.id] ?? 0,
+
       joined: (u.registration_timestamp ?? "").slice(0, 10) || "—",
       status: u.status ?? "active",
     }))
