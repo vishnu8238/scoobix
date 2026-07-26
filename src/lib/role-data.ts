@@ -1,4 +1,6 @@
 import { restaurants, type Dish, type Restaurant } from "./mock-data";
+import { activePartnerRestaurantId } from "./partner-store";
+
 
 export type Role = "customer" | "partner" | "rider" | "admin";
 
