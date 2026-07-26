@@ -56,9 +56,31 @@ export const partnerOrders: PartnerOrder[] = [
   },
 ];
 
-export const partnerRestaurant = restaurants[1]; // Trattoria Verde
+/**
+ * Live view of the signed-in partner's restaurant. `restaurants` is replaced
+ * in-place once the InsForge bootstrap resolves, so this must resolve lazily
+ * on every property access rather than capture an index at module load.
+ */
+function currentPartnerRestaurant(): Restaurant {
+  return restaurants[1] ?? restaurants[0];
+}
 
-export const partnerMenu: Dish[] = partnerRestaurant.menu;
+export const partnerRestaurant: Restaurant = new Proxy({} as Restaurant, {
+  get: (_t, prop) => Reflect.get(currentPartnerRestaurant() ?? {}, prop),
+  has: (_t, prop) => prop in (currentPartnerRestaurant() ?? {}),
+  ownKeys: () => Reflect.ownKeys(currentPartnerRestaurant() ?? {}),
+  getOwnPropertyDescriptor: (_t, prop) =>
+    Object.getOwnPropertyDescriptor(currentPartnerRestaurant() ?? {}, prop) ?? {
+      configurable: true,
+      enumerable: true,
+      value: undefined,
+    },
+});
+
+export const partnerMenu: Dish[] = new Proxy([] as Dish[], {
+  get: (_t, prop) => Reflect.get(currentPartnerRestaurant()?.menu ?? [], prop),
+});
+
 
 export type DeliveryRequest = {
   id: string;
