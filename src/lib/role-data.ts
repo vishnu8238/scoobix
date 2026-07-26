@@ -62,8 +62,12 @@ export const partnerOrders: PartnerOrder[] = [
  * on every property access rather than capture an index at module load.
  */
 function currentPartnerRestaurant(): Restaurant {
-  return restaurants[1] ?? restaurants[0];
+  const owned = activePartnerRestaurantId
+    ? restaurants.find((r) => r.id === activePartnerRestaurantId)
+    : undefined;
+  return owned ?? restaurants[0];
 }
+
 
 export const partnerRestaurant: Restaurant = new Proxy({} as Restaurant, {
   get: (_t, prop) => Reflect.get(currentPartnerRestaurant() ?? {}, prop),
