@@ -1,4 +1,4 @@
-import { restaurants, type Dish } from "./mock-data";
+import { restaurants, type Dish, type Restaurant } from "./mock-data";
 
 export type Role = "customer" | "partner" | "rider" | "admin";
 
