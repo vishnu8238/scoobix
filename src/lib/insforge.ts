@@ -90,50 +90,6 @@ async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit
 
 // ---------- writes ----------
 
-/**
- * Best-effort: insert an order + its items into InsForge. Never throws —
- * UI keeps working on the local optimistic order if the backend is down.
- */
-export async function submitOrderToBackend(input: {
-  orderId: string;
-  customerId: string;
-  restaurantId: string;
-  total: number;
-  status: string;
-  items: { dish_id: string; name: string; price: number; qty: number; addons?: string[] }[];
-}): Promise<{ ok: boolean }> {
-  try {
-    await ifFetch("/api/database/records/orders", undefined, {
-      method: "POST",
-      body: JSON.stringify({
-        id: input.orderId,
-        customer_id: input.customerId,
-        restaurant_id: input.restaurantId,
-        total_price: input.total,
-        status: input.status,
-      }),
-    });
-    await Promise.all(
-      input.items.map((it) =>
-        ifFetch("/api/database/records/order_items", undefined, {
-          method: "POST",
-          body: JSON.stringify({
-            order_id: input.orderId,
-            dish_id: it.dish_id,
-            name: it.name,
-            price: it.price,
-            quantity: it.qty,
-            addons: it.addons ?? [],
-          }),
-        }).catch(() => null),
-      ),
-    );
-    return { ok: true };
-  } catch {
-    return { ok: false };
-  }
-}
-
 // ---------- partner-side writes (best-effort, never throw) ----------
 
 async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<{ ok: boolean }> {
@@ -158,7 +114,7 @@ export function updateRestaurantStatus(
   id: string,
   patch: { is_open?: boolean; accepting_orders?: boolean; status?: string },
 ) {
-  return ifWrite(`/api/database/records/restaurants/${id}`, "PATCH", patch);
+  return ifWrite(`/api/database/records/restaurants?id=eq.${id}`, "PATCH", patch);
 }
 
 /** Upsert a menu item (insert if new id, patch otherwise). */
@@ -176,13 +132,13 @@ export function upsertMenuItem(item: {
   best_seller?: boolean;
 }) {
   if (item.id && !item.id.startsWith("n")) {
-    return ifWrite(`/api/database/records/menu_items/${item.id}`, "PATCH", item);
+    return ifWrite(`/api/database/records/menu_items?id=eq.${item.id}`, "PATCH", item);
   }
   return ifWrite(`/api/database/records/menu_items`, "POST", item);
 }
 
 export function deleteMenuItem(id: string) {
-  return ifWrite(`/api/database/records/menu_items/${id}`, "DELETE");
+  return ifWrite(`/api/database/records/menu_items?id=eq.${id}`, "DELETE");
 }
 
 /** Addon CRUD. */
@@ -194,13 +150,13 @@ export function upsertAddon(addon: {
   available?: boolean;
 }) {
   if (addon.id && !addon.id.startsWith("a")) {
-    return ifWrite(`/api/database/records/addons/${addon.id}`, "PATCH", addon);
+    return ifWrite(`/api/database/records/addons?id=eq.${addon.id}`, "PATCH", addon);
   }
   return ifWrite(`/api/database/records/addons`, "POST", addon);
 }
 
 export function deleteAddon(id: string) {
-  return ifWrite(`/api/database/records/addons/${id}`, "DELETE");
+  return ifWrite(`/api/database/records/addons?id=eq.${id}`, "DELETE");
 }
 
 /** Order lifecycle for partner. */
@@ -208,19 +164,27 @@ export function updateOrderStatus(
   id: string,
   patch: { status?: string; prep_minutes?: number; reject_reason?: string },
 ) {
-  return ifWrite(`/api/database/records/orders/${id}`, "PATCH", patch);
+  // Only columns that exist on `orders` are sent; prep time is stored as an ETA.
+  const body: Record<string, unknown> = {};
+  if (patch.status) body.status = patch.status;
+  if (typeof patch.prep_minutes === "number") {
+    body.estimated_delivery_time = new Date(Date.now() + patch.prep_minutes * 60_000).toISOString();
+  }
+  if (patch.status === "DELIVERED") body.actual_delivery_time = new Date().toISOString();
+  if (!Object.keys(body).length) return Promise.resolve({ ok: true });
+  return ifWrite(`/api/database/records/orders?id=eq.${id}`, "PATCH", body);
 }
 
 // ---------- rider-side writes (best-effort, never throw) ----------
 
 /** Toggle driver online/offline. */
 export function setDriverOnline(driverId: string, online: boolean) {
-  return ifWrite(`/api/database/records/drivers/${driverId}`, "PATCH", { online_status: online });
+  return ifWrite(`/api/database/records/drivers?id=eq.${driverId}`, "PATCH", { online_status: online });
 }
 
 /** Accept a delivery request — claim the order for this driver. */
 export function acceptDeliveryRequest(orderId: string, driverId: string) {
-  return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", {
+  return ifWrite(`/api/database/records/orders?id=eq.${orderId}`, "PATCH", {
     driver_id: driverId,
     status: "PICKED_UP",
   });
@@ -228,7 +192,7 @@ export function acceptDeliveryRequest(orderId: string, driverId: string) {
 
 /** Driver-side order status update (READY → PICKED_UP → DELIVERED, etc.). */
 export function updateDeliveryStatus(orderId: string, status: string) {
-  return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { status });
+  return ifWrite(`/api/database/records/orders?id=eq.${orderId}`, "PATCH", { status });
 }
 
 /** Append a live-location ping for the driver (driver_tracking: lat/lng/bearing). */
@@ -248,20 +212,20 @@ export function adminCreate(table: string, record: Record<string, unknown>) {
   return ifWrite(`/api/database/records/${table}`, "POST", record);
 }
 export function adminPatch(table: string, id: string, patch: Record<string, unknown>) {
-  return ifWrite(`/api/database/records/${table}/${id}`, "PATCH", patch);
+  return ifWrite(`/api/database/records/${table}?id=eq.${id}`, "PATCH", patch);
 }
 export function adminDelete(table: string, id: string) {
-  return ifWrite(`/api/database/records/${table}/${id}`, "DELETE");
+  return ifWrite(`/api/database/records/${table}?id=eq.${id}`, "DELETE");
 }
 
 /** Admin-set commission %. */
 export function setRestaurantCommission(id: string, commission: number) {
-  return ifWrite(`/api/database/records/restaurants/${id}`, "PATCH", { commission });
+  return ifWrite(`/api/database/records/restaurants?id=eq.${id}`, "PATCH", { commission });
 }
 
 /** Admin approve/reject/suspend a restaurant. */
 export function setRestaurantApprovalStatus(id: string, status: "approved" | "rejected" | "suspended" | "pending") {
-  return ifWrite(`/api/database/records/restaurants/${id}`, "PATCH", { status });
+  return ifWrite(`/api/database/records/restaurants?id=eq.${id}`, "PATCH", { status });
 }
 
 // ---------- Scoobix feature extensions (best-effort, never throw) ----------
@@ -277,7 +241,7 @@ export function createMealSubscription(sub: {
 }) { return ifWrite(`/api/database/records/meal_subscriptions`, "POST", sub); }
 
 export function updateMealSubscription(id: string, patch: Record<string, unknown>) {
-  return ifWrite(`/api/database/records/meal_subscriptions/${id}`, "PATCH", patch);
+  return ifWrite(`/api/database/records/meal_subscriptions?id=eq.${id}`, "PATCH", patch);
 }
 
 export function listMealSubscriptions(params?: { customer_id?: string; restaurant_id?: string }) {
@@ -300,17 +264,17 @@ export function listBulkRequests(params?: { customer_id?: string; restaurant_id?
 }
 
 export function updateBulkStatus(id: string, status: "pending" | "accepted" | "rejected") {
-  return ifWrite(`/api/database/records/bulk_requests/${id}`, "PATCH", { status });
+  return ifWrite(`/api/database/records/bulk_requests?id=eq.${id}`, "PATCH", { status });
 }
 
 export function createGroupCart(session: { id: string; host_id: string; restaurant_id: string }) {
   return ifWrite(`/api/database/records/group_carts`, "POST", session);
 }
 export function getGroupCartRow(id: string) {
-  return ifFetch<Record<string, unknown>>(`/api/database/records/group_carts/${id}`).catch(() => null);
+  return ifFetch<Record<string, unknown>[]>(`/api/database/records/group_carts?id=eq.${id}&limit=1`).then((r) => (Array.isArray(r) ? r[0] ?? null : null)).catch(() => null);
 }
 export function updateGroupCart(id: string, patch: Record<string, unknown>) {
-  return ifWrite(`/api/database/records/group_carts/${id}`, "PATCH", patch);
+  return ifWrite(`/api/database/records/group_carts?id=eq.${id}`, "PATCH", patch);
 }
 
 /**
@@ -329,11 +293,13 @@ export async function setSpotlight(record: Record<string, unknown>) {
 }
 
 
-export function scheduleOrder(orderId: string, iso: string) {
-  return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { scheduled_for: iso });
+/** Scheduling / batching have no backing columns yet — kept as no-ops so
+ *  callers stay stable once the schema gains them. */
+export function scheduleOrder(_orderId: string, _iso: string) {
+  return Promise.resolve({ ok: true });
 }
-export function assignBatch(orderId: string, batchId: string) {
-  return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { batch_id: batchId });
+export function assignBatch(_orderId: string, _batchId: string) {
+  return Promise.resolve({ ok: true });
 }
 
 

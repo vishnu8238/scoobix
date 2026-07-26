@@ -82,46 +82,53 @@ function CheckoutPage() {
     );
   }
 
-  const handlePlace = () => {
+  const handlePlace = async () => {
     if (pay === "wallet" && walletBalance < orderTotal) {
       toast.error("Insufficient wallet balance for wallet-only payment.");
       return;
     }
     setPlacing(true);
     const instructionLabel = INSTRUCTION_OPTIONS.find((i) => i.id === instructionId)?.label;
-    setTimeout(() => {
-      const orderId = placeOrder({
-        items,
-        totals: {
-          subtotal: totals.subtotal,
-          delivery: deliveryObj.price + (totals.delivery > 0 ? totals.delivery : 0),
-          taxes: totals.taxes,
-          discount: totals.discount,
-          total: finalTotal,
-        },
-        restaurant,
-        addressLabel: address.label,
-        addressLine: `${address.line1}, ${address.line2}`,
-        paymentLabel: walletApplied > 0 && pay !== "wallet" ? `${payObj.label} + Wallet` : payObj.label,
-        deliveryInstructions: instructionLabel,
-        contactless,
-        notes: notes.trim() || undefined,
-        couponCode: coupon?.code,
-      });
-      if (scheduledFor) void scheduleOrder(orderId, scheduledFor);
-      if (walletApplied > 0) walletDebit(walletApplied, "debit", `Order ${orderId}`);
-      // Small cashback reward for orders paid entirely or partly online (skip cash).
-      if (pay !== "cash" && finalTotal > 0) {
-        const cashback = Math.round(finalTotal * 0.02);
-        if (cashback > 0) walletCredit(cashback, "cashback", `Cashback · Order ${orderId}`);
-      }
-      clear();
+    const res = await placeOrder({
+      items,
+      totals: {
+        subtotal: totals.subtotal,
+        delivery: deliveryObj.price + (totals.delivery > 0 ? totals.delivery : 0),
+        taxes: totals.taxes,
+        discount: totals.discount,
+        total: finalTotal,
+      },
+      restaurant,
+      addressLabel: address.label,
+      addressLine: `${address.line1}, ${address.line2}`,
+      paymentMethod: pay,
+      paymentLabel: walletApplied > 0 && pay !== "wallet" ? `${payObj.label} + Wallet` : payObj.label,
+      deliveryInstructions: instructionLabel,
+      contactless,
+      notes: notes.trim() || undefined,
+      couponCode: coupon?.code,
+    });
 
-      toast.success("Order placed!", { description: `Tracking #${orderId}` });
-      if (pay === "cash") navigate({ to: "/track/$orderId", params: { orderId } });
-      else navigate({ to: "/app/success" });
-    }, 700);
+    if (!res.ok || !res.orderId) {
+      setPlacing(false);
+      toast.error(res.message ?? "Could not place the order");
+      return;
+    }
+    const orderId = res.orderId;
+    if (scheduledFor) void scheduleOrder(orderId, scheduledFor);
+    if (walletApplied > 0) walletDebit(walletApplied, "debit", `Order ${orderId}`);
+    // Small cashback reward for orders paid entirely or partly online (skip cash).
+    if (pay !== "cash" && finalTotal > 0) {
+      const cashback = Math.round(finalTotal * 0.02);
+      if (cashback > 0) walletCredit(cashback, "cashback", `Cashback · Order ${orderId}`);
+    }
+    clear();
+
+    toast.success("Order placed!", { description: `Tracking #${orderId.slice(-5)}` });
+    if (pay === "cash") navigate({ to: "/track/$orderId", params: { orderId } });
+    else navigate({ to: "/app/success" });
   };
+
 
   const handleApplyCoupon = () => {
     if (!couponCode.trim()) return;

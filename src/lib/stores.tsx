@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { findRestaurant, type Dish, type Restaurant } from "./mock-data";
-import { submitOrderToBackend } from "./insforge";
+import { useAuth } from "./auth-store";
+
 
 /* ============================================================
    CART
@@ -308,15 +309,21 @@ export type Order = {
   paymentLabel: string;
   driver: { name: string; vehicle: string; rating: number; phone: string };
   etaMins: number;
-  // Customer preferences captured at checkout (ready for backend persistence)
+  // Customer preferences captured at checkout (persisted in orders.items.meta)
   deliveryInstructions?: string;
   contactless?: boolean;
   notes?: string;
   couponCode?: string;
+  // Server-side fields
+  driverId?: string;
+  otp?: string;
+  paymentStatus?: string;
 };
 
 type OrdersCtx = {
   orders: Order[];
+  loading: boolean;
+  refresh: () => Promise<void>;
   placeOrder: (input: {
     items: CartItem[];
     totals: { subtotal: number; delivery: number; taxes: number; discount: number; total: number };
@@ -324,147 +331,100 @@ type OrdersCtx = {
     addressLabel: string;
     addressLine: string;
     paymentLabel: string;
+    paymentMethod?: string;
     deliveryInstructions?: string;
     contactless?: boolean;
     notes?: string;
     couponCode?: string;
-  }) => string;
+  }) => Promise<{ ok: boolean; orderId?: string; message?: string }>;
   getOrder: (id: string) => Order | undefined;
   reorder: (id: string) => CartItem[] | null;
-  cancelOrder: (id: string, reason?: string) => { ok: boolean; message: string };
+  cancelOrder: (id: string, reason?: string) => Promise<{ ok: boolean; message: string }>;
   refunds: Record<string, "none" | "pending" | "refunded">;
   setRefundStatus: (id: string, status: "none" | "pending" | "refunded") => void;
 };
 
+
 const OrdersContext = createContext<OrdersCtx | null>(null);
-const ORDERS_KEY = "cravio_orders_v1";
 
-const DRIVERS = [
-  { name: "Aarav Mehta", vehicle: "Scooter · KA 03 9981", rating: 4.95, phone: "+1 555 0192" },
-  { name: "Sofía Reyes", vehicle: "E-bike · CA 7741", rating: 4.9, phone: "+1 555 0144" },
-  { name: "Liam Carter", vehicle: "Bike · NY 2210", rating: 4.88, phone: "+1 555 0177" },
-  { name: "Yuki Tanaka", vehicle: "Scooter · TK 5520", rating: 4.97, phone: "+1 555 0102" },
-];
-
-function loadOrders(): Order[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function advance(status: OrderStatus): OrderStatus {
-  const idx = STATUS_FLOW.indexOf(status);
-  if (idx === -1 || idx === STATUS_FLOW.length - 1) return status;
-  return STATUS_FLOW[idx + 1];
-}
-
-const REFUNDS_KEY = "cravio_refunds_v1";
-
+/**
+ * Orders are server-authoritative: every read comes from InsForge, every
+ * write goes to InsForge first. Nothing is persisted in localStorage, so a
+ * fresh login on any device shows the complete history.
+ */
 export function OrdersProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const customerId = user?.id ?? "";
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
   const [refunds, setRefunds] = useState<Record<string, "none" | "pending" | "refunded">>({});
 
-  useEffect(() => {
-    setOrders(loadOrders());
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(REFUNDS_KEY) : null;
-      if (raw) setRefunds(JSON.parse(raw));
-    } catch { /* */ }
-  }, []);
+  const refresh = useCallback(async () => {
+    if (!customerId) { setOrders([]); return; }
+    const { fetchCustomerOrders } = await import("./orders-api");
+    const rows = await fetchCustomerOrders(customerId);
+    setOrders(rows);
+  }, [customerId]);
 
-  useEffect(() => {
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(REFUNDS_KEY, JSON.stringify(refunds));
-  }, [refunds]);
-
-  // Live server status overlay — subscribes to `orders` and merges the
-  // server-authoritative status into any local order with a matching id.
-  // Falls back to polling (via `subscribeTable`) with exponential backoff.
+  // Initial load + light polling while the tab is visible (server is the
+  // source of truth for live status; no websockets needed for MVP).
   useEffect(() => {
     let cancelled = false;
-    // Lazy-load so SSR bundles don't touch browser-only realtime state.
-    void import("./realtime").then(({ subscribeTable }) => {
-      if (cancelled) return;
-      const unsub = subscribeTable(
-        "orders",
-        { params: { limit: 200, order: "-created_at" }, minMs: 2500, maxMs: 15000 },
-        (rows) => {
-          if (cancelled) return;
-          const remote = new Map<string, string>();
-          for (const r of rows) {
-            const id = (r as { id?: unknown }).id;
-            const status = (r as { status?: unknown }).status;
-            if (typeof id === "string" && typeof status === "string") remote.set(id, status);
-          }
-          if (!remote.size) return;
-          setOrders((prev) => {
-            let changed = false;
-            const next = prev.map((o) => {
-              const s = remote.get(o.id);
-              if (!s) return o;
-              // Map backend statuses that don't exist locally onto the closest local one.
-              const mapped: OrderStatus =
-                s === "ASSIGNING" ? "ACCEPTED" :
-                s === "ARRIVED" ? "ON_THE_WAY" :
-                s === "NO_DRIVERS" ? "READY" :
-                s === "REJECTED" ? "CANCELLED" :
-                (STATUS_FLOW as string[]).includes(s) ? (s as OrderStatus) : o.status;
-              if (mapped !== o.status) { changed = true; return { ...o, status: mapped }; }
-              return o;
-            });
-            return changed ? next : prev;
-          });
-        },
-      );
-      return () => { unsub(); };
-    });
-    return () => { cancelled = true; };
-  }, []);
-
-  const placeOrder: OrdersCtx["placeOrder"] = ({ items, totals, restaurant, addressLabel, addressLine, paymentLabel, deliveryInstructions, contactless, notes, couponCode }) => {
-    const id = `CRV${Math.floor(100000 + Math.random() * 900000)}`;
-    const driver = DRIVERS[Math.floor(Math.random() * DRIVERS.length)];
-    const order: Order = {
-      id, restaurantId: restaurant.id, restaurantName: restaurant.name,
-      restaurantImage: restaurant.cover, items, ...totals,
-      status: "PLACED", placedAt: Date.now(),
-      addressLabel, addressLine, paymentLabel, driver,
-      etaMins: restaurant.deliveryMins,
-      deliveryInstructions, contactless, notes, couponCode,
+    if (!customerId) { setOrders([]); setLoading(false); return; }
+    setLoading(true);
+    const run = async () => {
+      const { fetchCustomerOrders } = await import("./orders-api");
+      const rows = await fetchCustomerOrders(customerId);
+      if (!cancelled) { setOrders(rows); setLoading(false); }
     };
-    setOrders((prev) => [order, ...prev]);
-    // Best-effort backend sync — never blocks the optimistic UI.
-    try {
-      const raw = typeof localStorage !== "undefined" ? localStorage.getItem("cravio_user_v1") : null;
-      const customerId = raw ? (JSON.parse(raw)?.id as string) ?? "guest" : "guest";
-      void submitOrderToBackend({
-        orderId: id,
-        customerId,
-        restaurantId: restaurant.id,
-        total: totals.total,
-        status: "PLACED",
-        items: items.map((i) => ({ dish_id: i.dishId, name: i.name, price: i.price, qty: i.qty, addons: i.customizations })),
-      });
-    } catch { /* ignore */ }
-    return id;
-  };
+    void run();
+    const iv = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      void run();
+    }, 12000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [customerId]);
 
+  const placeOrder: OrdersCtx["placeOrder"] = async ({
+    items, totals, restaurant, addressLabel, addressLine, paymentLabel, paymentMethod,
+    deliveryInstructions, contactless, notes, couponCode,
+  }) => {
+    if (!customerId) return { ok: false, message: "Please sign in to place an order" };
+    const { createOrder } = await import("./orders-api");
+    const created = await createOrder({
+      customerId,
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
+      restaurantImage: restaurant.cover,
+      items,
+      totals,
+      addressLabel,
+      addressLine,
+      paymentMethod: paymentMethod ?? "cash",
+      paymentLabel,
+      deliveryInstructions,
+      contactless,
+      notes,
+      couponCode,
+      etaMins: restaurant.deliveryMins,
+    });
+    if (!created) return { ok: false, message: "Could not place the order. Please try again." };
+    setOrders((prev) => [created, ...prev.filter((o) => o.id !== created.id)]);
+    return { ok: true, orderId: created.id };
+  };
 
   const getOrder = (id: string) => orders.find((o) => o.id === id);
   const reorder = (id: string) => orders.find((x) => x.id === id)?.items ?? null;
 
-  const cancelOrder: OrdersCtx["cancelOrder"] = (id, reason) => {
+  const cancelOrder: OrdersCtx["cancelOrder"] = async (id, reason) => {
     const o = orders.find((x) => x.id === id);
     if (!o) return { ok: false, message: "Order not found" };
-    // Allow cancel only before pickup
     const lockedAfter: OrderStatus[] = ["PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
     if (lockedAfter.includes(o.status)) return { ok: false, message: "Too late to cancel — the rider is on the way" };
+    const { patchOrder, patchPaymentByOrder } = await import("./orders-api");
+    const ok = await patchOrder(id, { status: "CANCELLED", payment_status: "CANCELLED" });
+    if (!ok) return { ok: false, message: "Could not cancel right now — please try again" };
+    void patchPaymentByOrder(id, { status: "CANCELLED" });
     setOrders((prev) => prev.map((x) => (x.id === id ? { ...x, status: "CANCELLED", notes: reason ? `Cancelled: ${reason}` : x.notes } : x)));
     return { ok: true, message: "Order cancelled" };
   };
@@ -472,10 +432,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const setRefundStatus: OrdersCtx["setRefundStatus"] = (id, status) =>
     setRefunds((p) => ({ ...p, [id]: status }));
 
-  void advance;
-
   return (
-    <OrdersContext.Provider value={{ orders, placeOrder, getOrder, reorder, cancelOrder, refunds, setRefundStatus }}>
+    <OrdersContext.Provider value={{ orders, loading, refresh, placeOrder, getOrder, reorder, cancelOrder, refunds, setRefundStatus }}>
       {children}
     </OrdersContext.Provider>
   );
@@ -486,6 +444,9 @@ export const useOrders = () => {
   if (!ctx) throw new Error("useOrders must be used within OrdersProvider");
   return ctx;
 };
+
+
+
 
 /* ============================================================
    APP UI STATE (location, etc.)

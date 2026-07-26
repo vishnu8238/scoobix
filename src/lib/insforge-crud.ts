@@ -83,9 +83,9 @@ export function patchRecord<T = Record<string, unknown>>(
   id: string,
   patch: Record<string, unknown>,
 ): Promise<T | null> {
-  return withRetry(() => once(`${base(table)}/${id}`, "PATCH", patch)) as Promise<T | null>;
+  return withRetry(() => once(`${base(table)}?id=eq.${id}`, "PATCH", patch)) as Promise<T | null>;
 }
 
 export function deleteRecord(table: string, id: string): Promise<null> {
-  return withRetry(() => once(`${base(table)}/${id}`, "DELETE")).then(() => null);
+  return withRetry(() => once(`${base(table)}?id=eq.${id}`, "DELETE")).then(() => null);
 }

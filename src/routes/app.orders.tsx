@@ -110,12 +110,13 @@ function OrdersPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      const res = cancelOrder(o.id);
+                    onClick={async () => {
+                      const res = await cancelOrder(o.id);
                       res.ok ? toast.success(res.message) : toast.error(res.message);
                     }}
                     className="h-8 rounded-full px-3 text-xs font-bold text-destructive"
                   >
+
                     <X className="mr-1 h-3 w-3" /> Cancel
                   </Button>
                 )}

@@ -1,25 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { deliveryRequests, type DeliveryRequest } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
-import { Check, X, MapPin, Package, Clock } from "lucide-react";
+import { Check, X, MapPin, Package, Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { acceptDeliveryRequest } from "@/lib/insforge";
 import { nudgeTable } from "@/lib/realtime";
 import { useLiveOrders } from "@/lib/realtime-hooks";
 import { markOfferAccepted, markOfferRejected, OFFER_TIMEOUT_SEC } from "@/lib/dispatch-engine";
-
-function getDriverId(): string {
-  if (typeof window === "undefined") return "guest";
-  return window.localStorage.getItem("driverId") || "guest";
-}
+import { useDriver } from "@/lib/driver-store";
+import { listTable } from "@/lib/insforge-crud";
 
 export const Route = createFileRoute("/rider/requests")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Requests" }] }),
   component: RiderRequests,
 });
 
-type OrderRow = { id: string; restaurant_id?: string; total_price?: number; status?: string; driver_id?: string | null };
+type OrderRow = {
+  id: string;
+  restaurant_id?: string;
+  customer_id?: string;
+  total_price?: number;
+  delivery_fee?: number;
+  delivery_address?: string;
+  status?: string;
+  driver_id?: string | null;
+  items?: unknown;
+};
+
+type RestaurantRow = { id: string; name?: string; address?: string; latitude?: number; longitude?: number };
 
 function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371, toRad = (x: number) => (x * Math.PI) / 180;
@@ -28,10 +36,25 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
+function countItems(items: unknown): number {
+  const lines = Array.isArray(items) ? items : ((items as { lines?: unknown[] } | null)?.lines ?? []);
+  return Array.isArray(lines) ? lines.reduce((n, l) => n + Number((l as { qty?: number }).qty ?? 1), 0) : 0;
+}
+
 function RiderRequests() {
-  const driverId = getDriverId();
+  const { driver, driverId, loading: driverLoading } = useDriver();
   // Live offers targeted at this driver.
-  const { rows } = useLiveOrders({ driver_id: driverId, status: "ASSIGNING" });
+  const { rows } = useLiveOrders({ driver_id: driverId || "__none__", status: "ASSIGNING" });
+
+  const [restaurants, setRestaurants] = useState<Record<string, RestaurantRow>>({});
+
+  useEffect(() => {
+    void listTable<RestaurantRow>("restaurants", { limit: 300 }).then((rs) => {
+      const map: Record<string, RestaurantRow> = {};
+      for (const r of rs) map[String(r.id)] = r;
+      setRestaurants(map);
+    });
+  }, []);
 
   // Track first-seen time per offer to drive the 60-second countdown.
   const seenRef = useState<Map<string, number>>(new Map())[0];
@@ -52,38 +75,42 @@ function RiderRequests() {
     return () => window.clearInterval(t);
   }, []);
 
-  // Live-mapped requests + fallback to mock when nothing live.
-  const list: DeliveryRequest[] = useMemo(() => {
-    if (!rows.length) return deliveryRequests;
-    return rows.map((r) => {
-      const row = r as OrderRow;
-      const km = 1 + Math.random() * 3; // no rider coords → placeholder
-      const payout = Math.max(35, Math.round(km * 22 + 30));
+  const list = useMemo(() => {
+    const here = typeof driver?.current_lat === "number" && typeof driver?.current_lng === "number"
+      ? { lat: driver.current_lat as number, lng: driver.current_lng as number }
+      : null;
+
+    return (rows as OrderRow[]).map((row) => {
+      const rest = restaurants[String(row.restaurant_id ?? "")];
+      const km = here && typeof rest?.latitude === "number" && typeof rest?.longitude === "number"
+        ? haversineKm(here, { lat: rest.latitude, lng: rest.longitude })
+        : null;
       return {
         id: String(row.id),
-        restaurant: "Restaurant",
-        restaurantAddress: "—",
-        customer: "Customer",
-        customerAddress: "—",
-        distanceKm: Number(km.toFixed(1)),
-        etaMins: Math.max(10, Math.round(km * 4)),
-        itemsCount: 0,
-        payout,
-      } as DeliveryRequest;
+        restaurant: rest?.name ?? "Restaurant",
+        restaurantAddress: rest?.address ?? "—",
+        customerAddress: row.delivery_address ?? "—",
+        distanceKm: km === null ? null : Number(km.toFixed(1)),
+        etaMins: km === null ? null : Math.max(10, Math.round(km * 4)),
+        itemsCount: countItems(row.items),
+        payout: Number(row.delivery_fee ?? 0) || 0,
+      };
     });
-    // haversineKm reserved for when driver coords are known.
-    void haversineKm;
-  }, [rows]);
+  }, [rows, restaurants, driver?.current_lat, driver?.current_lng]);
 
   const decide = async (id: string, accept: boolean) => {
+    if (!driverId) {
+      toast.error("Driver profile not ready — try again in a moment");
+      return;
+    }
     if (accept) {
       markOfferAccepted(id);
-      await acceptDeliveryRequest(id, driverId); // sets driver_id + status=PICKED_UP-ish
+      await acceptDeliveryRequest(id, driverId);
       nudgeTable("orders");
-      toast.success(`Accepted ${id} — head to pickup`);
+      toast.success("Accepted — head to pickup");
     } else {
       await markOfferRejected(id);
-      toast.success(`Rejected ${id}`);
+      toast.success("Request declined");
     }
   };
 
@@ -94,17 +121,20 @@ function RiderRequests() {
         <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">New nearby trips</h1>
       </header>
 
-      {list.length === 0 ? (
+      {driverLoading ? (
+        <div className="flex items-center justify-center gap-2 rounded-3xl bg-card p-10 text-sm text-muted-foreground shadow-soft ring-1 ring-border/60">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+        </div>
+      ) : list.length === 0 ? (
         <div className="rounded-3xl bg-card p-10 text-center shadow-soft ring-1 ring-border/60">
           <p className="font-display text-lg font-bold">No requests yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">We'll ping you when one comes in.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Stay online — we'll ping you when one comes in.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {list.map((r) => {
             const seenAt = seenRef.get(r.id) ?? now;
             const remaining = Math.max(0, OFFER_TIMEOUT_SEC - Math.floor((now - seenAt) / 1000));
-            const isLive = rows.some((x) => String((x as OrderRow).id) === r.id);
             return (
               <div key={r.id} className="overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60">
                 <div className="flex items-start gap-3 bg-gradient-to-br from-primary/10 to-transparent p-4">
@@ -115,15 +145,15 @@ function RiderRequests() {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
-                          {r.id}{isLive && ` · ${remaining}s`}
+                          #{r.id.slice(-5).toUpperCase()} · {remaining}s
                         </p>
                         <h3 className="font-display text-base font-extrabold">{r.restaurant}</h3>
                       </div>
                       <span className="font-display text-xl font-extrabold text-primary">{formatPrice(r.payout)}</span>
                     </div>
                     <div className="mt-2 flex gap-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {r.distanceKm} km</span>
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {r.etaMins} min</span>
+                      {r.distanceKm !== null && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {r.distanceKm} km</span>}
+                      {r.etaMins !== null && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {r.etaMins} min</span>}
                       <span>· {r.itemsCount} items</span>
                     </div>
                   </div>
@@ -141,7 +171,7 @@ function RiderRequests() {
                   <div className="flex gap-2">
                     <span className="mt-0.5 h-2 w-2 rounded-full bg-foreground" />
                     <div>
-                      <p className="font-bold">Drop-off · {r.customer}</p>
+                      <p className="font-bold">Drop-off</p>
                       <p className="text-muted-foreground">{r.customerAddress}</p>
                     </div>
                   </div>
