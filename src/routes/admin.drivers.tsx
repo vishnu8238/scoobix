@@ -85,11 +85,6 @@ function AdminDrivers() {
   );
 }
 
-      </section>
-    </div>
-  );
-}
-
 function Act({ icon: Icon, label, onClick, tone }: { icon: typeof Check; label: string; onClick: () => void; tone: "primary" | "warn" | "danger" }) {
   const cls = tone === "primary" ? "bg-primary-soft text-primary"
     : tone === "warn" ? "bg-amber-100 text-amber-700"
