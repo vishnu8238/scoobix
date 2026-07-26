@@ -1,11 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, ClipboardList, UtensilsCrossed, Store, Megaphone, Utensils, Building2, Compass } from "lucide-react";
-import { RoleSwitch } from "@/components/cravio/RoleSwitch";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
+import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/partner")({
-  head: () => ({ meta: [{ title: "Scoobix Partner · Restaurant" }] }),
+  head: () => appHead(APPS.partner),
   component: PartnerLayout,
 });
 
@@ -46,7 +46,6 @@ function PartnerLayout() {
             );
           })}
         </nav>
-        <RoleSwitch label="Switch role" />
       </div>
     </RoleGuard>
   );

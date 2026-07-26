@@ -1,0 +1,16 @@
+{
+  "id": "/admin",
+  "name": "Scoobix Admin Dashboard",
+  "short_name": "Scoobix Admin",
+  "description": "Operate the Scoobix platform: users, restaurants, drivers, payouts.",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "browser",
+  "background_color": "#ffffff",
+  "theme_color": "#6d28d9",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

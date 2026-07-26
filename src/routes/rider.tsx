@@ -1,11 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Home, Inbox, Navigation, Wallet } from "lucide-react";
-import { RoleSwitch } from "@/components/cravio/RoleSwitch";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
+import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/rider")({
-  head: () => ({ meta: [{ title: "Scoobix Rider · Delivery" }] }),
+  head: () => appHead(APPS.rider),
   component: RiderLayout,
 });
 
@@ -41,7 +41,6 @@ function RiderLayout() {
             );
           })}
         </nav>
-        <RoleSwitch label="Switch role" />
       </div>
     </RoleGuard>
   );

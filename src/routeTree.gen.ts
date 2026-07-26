@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RiderRouteImport } from './routes/rider'
 import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as PortalRouteImport } from './routes/portal'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
@@ -60,7 +59,6 @@ import { Route as AppReferralRouteImport } from './routes/app.referral'
 import { Route as AppRecentRouteImport } from './routes/app.recent'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
-import { Route as AppOnboardingRouteImport } from './routes/app.onboarding'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
 import { Route as AppMoreRouteImport } from './routes/app.more'
 import { Route as AppMealRouteImport } from './routes/app.meal'
@@ -104,11 +102,6 @@ const RiderRoute = RiderRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PortalRoute = PortalRouteImport.update({
-  id: '/portal',
-  path: '/portal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnerRoute = PartnerRouteImport.update({
@@ -346,11 +339,6 @@ const AppOrdersRoute = AppOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AppRoute,
 } as any)
-const AppOnboardingRoute = AppOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppNotificationsRoute = AppNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -503,7 +491,6 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
-  '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
@@ -535,7 +522,6 @@ export interface FileRoutesByFullPath {
   '/app/meal': typeof AppMealRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
-  '/app/onboarding': typeof AppOnboardingRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
@@ -583,7 +569,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
-  '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/ads': typeof AdminAdsRoute
@@ -614,7 +599,6 @@ export interface FileRoutesByTo {
   '/app/meal': typeof AppMealRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
-  '/app/onboarding': typeof AppOnboardingRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
@@ -666,7 +650,6 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
-  '/portal': typeof PortalRoute
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
@@ -698,7 +681,6 @@ export interface FileRoutesById {
   '/app/meal': typeof AppMealRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
-  '/app/onboarding': typeof AppOnboardingRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
@@ -751,7 +733,6 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/partner'
-    | '/portal'
     | '/privacy'
     | '/rider'
     | '/terms'
@@ -783,7 +764,6 @@ export interface FileRouteTypes {
     | '/app/meal'
     | '/app/more'
     | '/app/notifications'
-    | '/app/onboarding'
     | '/app/orders'
     | '/app/profile'
     | '/app/recent'
@@ -831,7 +811,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
-    | '/portal'
     | '/privacy'
     | '/terms'
     | '/admin/ads'
@@ -862,7 +841,6 @@ export interface FileRouteTypes {
     | '/app/meal'
     | '/app/more'
     | '/app/notifications'
-    | '/app/onboarding'
     | '/app/orders'
     | '/app/profile'
     | '/app/recent'
@@ -913,7 +891,6 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/partner'
-    | '/portal'
     | '/privacy'
     | '/rider'
     | '/terms'
@@ -945,7 +922,6 @@ export interface FileRouteTypes {
     | '/app/meal'
     | '/app/more'
     | '/app/notifications'
-    | '/app/onboarding'
     | '/app/orders'
     | '/app/profile'
     | '/app/recent'
@@ -997,7 +973,6 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
-  PortalRoute: typeof PortalRoute
   PrivacyRoute: typeof PrivacyRoute
   RiderRoute: typeof RiderRouteWithChildren
   TermsRoute: typeof TermsRoute
@@ -1026,13 +1001,6 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/portal': {
-      id: '/portal'
-      path: '/portal'
-      fullPath: '/portal'
-      preLoaderRoute: typeof PortalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partner': {
@@ -1364,13 +1332,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrdersRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/onboarding': {
-      id: '/app/onboarding'
-      path: '/onboarding'
-      fullPath: '/app/onboarding'
-      preLoaderRoute: typeof AppOnboardingRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/app/notifications': {
       id: '/app/notifications'
       path: '/notifications'
@@ -1634,7 +1595,6 @@ interface AppRouteChildren {
   AppMealRoute: typeof AppMealRoute
   AppMoreRoute: typeof AppMoreRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
-  AppOnboardingRoute: typeof AppOnboardingRoute
   AppOrdersRoute: typeof AppOrdersRoute
   AppProfileRoute: typeof AppProfileRoute
   AppRecentRoute: typeof AppRecentRoute
@@ -1659,7 +1619,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppMealRoute: AppMealRoute,
   AppMoreRoute: AppMoreRoute,
   AppNotificationsRoute: AppNotificationsRoute,
-  AppOnboardingRoute: AppOnboardingRoute,
   AppOrdersRoute: AppOrdersRoute,
   AppProfileRoute: AppProfileRoute,
   AppRecentRoute: AppRecentRoute,
@@ -1764,7 +1723,6 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
-  PortalRoute: PortalRoute,
   PrivacyRoute: PrivacyRoute,
   RiderRoute: RiderRouteWithChildren,
   TermsRoute: TermsRoute,

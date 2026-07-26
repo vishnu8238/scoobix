@@ -1,0 +1,21 @@
+{
+  "id": "/app",
+  "name": "Scoobix — Crave it. Get it.",
+  "short_name": "Scoobix",
+  "description": "Order food from the best restaurants near you, fast.",
+  "start_url": "/app",
+  "scope": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#28a156",
+  "categories": ["food", "lifestyle", "shopping"],
+  "icons": [
+    { "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "My orders", "url": "/app/orders" },
+    { "name": "Search", "url": "/app/search" }
+  ]
+}

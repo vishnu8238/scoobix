@@ -1,0 +1,21 @@
+{
+  "id": "/partner",
+  "name": "Scoobix Partner",
+  "short_name": "Partner",
+  "description": "Manage your restaurant: orders, menu, hours and payouts.",
+  "start_url": "/partner",
+  "scope": "/partner",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#b45309",
+  "categories": ["business", "food"],
+  "icons": [
+    { "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Live orders", "url": "/partner/orders" },
+    { "name": "Menu", "url": "/partner/menu" }
+  ]
+}
