@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import type { Role, User } from "./types";
 import {
   ifSignup,
@@ -6,28 +6,49 @@ import {
   ifLogout,
   ifGetSession,
   ifSendPasswordReset,
+  ifVerifyEmail,
+  ifResendVerificationEmail,
+  ifStartOAuth,
+  ifCompleteOAuth,
+  readOAuthCallback,
+  clearOAuthParamsFromUrl,
   fetchUserProfile,
+  findUserProfileByEmail,
   upsertUserProfile,
+  referralCodeFor,
   type DbRole,
   type InsForgeUser,
+  type OAuthProvider,
+  type UserProfileRow,
 } from "./insforge-auth";
+import { isPhoneOtpEnabled, sendPhoneOtp, verifyPhoneOtp, normalisePhone } from "./phone-otp";
+import { setTokens } from "./insforge-auth";
 
 /**
  * Auth store backed by InsForge Auth.
  *
- * - Real sign in / sign up / sign out via `/api/auth/*` endpoints.
- * - Session persists across refresh (access + refresh tokens in localStorage).
- * - User role is read from `public.users.role`.
- * - Supported DB roles: customer | restaurant | driver | admin.
- *   The UI still uses the historical Role type (customer|partner|rider|admin) —
- *   we map DB ↔ UI so routes and components stay unchanged.
+ * - Email + password, Google / Apple OAuth (PKCE), and a pluggable phone-OTP layer.
+ * - Session persists across refresh (access + refresh tokens), auto-refreshing
+ *   expired access tokens and clearing revoked ones.
+ * - The authoritative profile lives in `public.users`; every sign-in path funnels
+ *   through `syncProfile` so one person always maps to ONE account row.
+ * - DB roles (customer | restaurant | driver | admin) are mapped to the historical
+ *   UI Role enum (customer | partner | rider | admin) so routes stay unchanged.
  */
+
+type AuthResult = { ok: boolean; user?: User; message?: string; needsVerification?: boolean };
 
 type AuthCtx = {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string, role?: Role) => Promise<{ ok: boolean; user?: User; message?: string }>;
-  signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<{ ok: boolean; user?: User; message?: string }>;
+  signIn: (email: string, password: string, role?: Role) => Promise<AuthResult>;
+  signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<AuthResult>;
+  signInWithProvider: (provider: OAuthProvider, role?: Role) => Promise<{ ok: boolean; message?: string }>;
+  phoneOtpEnabled: boolean;
+  requestPhoneOtp: (phone: string) => Promise<{ ok: boolean; message?: string; resendAfter: number }>;
+  verifyPhoneLogin: (phone: string, otp: string, role?: Role) => Promise<AuthResult>;
+  verifyEmailCode: (email: string, code: string) => Promise<AuthResult>;
+  resendVerification: (email: string) => Promise<{ ok: boolean; message: string }>;
   signOut: () => void;
   resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
 };
@@ -56,24 +77,94 @@ const UI_TO_DB: Record<Role, DbRole> = {
   admin: "admin",
 };
 
-function toUiRole(role: string | undefined | null): Role {
-  if (!role) return "customer";
-  if (role in DB_TO_UI) return DB_TO_UI[role as DbRole];
-  // Some rows may already store the UI role directly.
-  if (["customer", "partner", "rider", "admin"].includes(role)) return role as Role;
-  return "customer";
+function toUiRole(role: string | undefined | null): Role | null {
+  if (!role) return null;
+  const key = String(role).toLowerCase();
+  if (key in DB_TO_UI) return DB_TO_UI[key as DbRole];
+  if (["customer", "partner", "rider", "admin"].includes(key)) return key as Role;
+  return null;
 }
 
-async function assembleUser(sess: InsForgeUser, fallbackRole?: Role, fallbackName?: string, fallbackPhone?: string): Promise<User> {
-  const profile = await fetchUserProfile(sess.id);
-  const role = toUiRole(profile?.role) || fallbackRole || "customer";
+const PENDING_ROLE_KEY = "scoobix_pending_role_v1";
+
+function rememberPendingRole(role?: Role) {
+  try {
+    if (role) sessionStorage.setItem(PENDING_ROLE_KEY, role);
+  } catch { /* */ }
+}
+function takePendingRole(): Role | undefined {
+  try {
+    const value = sessionStorage.getItem(PENDING_ROLE_KEY) as Role | null;
+    sessionStorage.removeItem(PENDING_ROLE_KEY);
+    return value ?? undefined;
+  } catch { return undefined; }
+}
+
+function mergeProviders(existing: string | null | undefined, provider: string): string {
+  const list = new Set((existing ?? "").split(",").map((p) => p.trim()).filter(Boolean));
+  list.add(provider);
+  return Array.from(list).join(",");
+}
+
+type SyncInput = {
+  role?: Role;
+  name?: string;
+  phone?: string;
+  provider?: string;
+};
+
+/**
+ * Creates or updates the `public.users` row for a session and returns the
+ * assembled UI user. Never creates a second row for the same person: the row is
+ * keyed by the auth user id, and an existing row for the same email is adopted.
+ */
+async function syncProfile(sess: InsForgeUser, input: SyncInput = {}): Promise<User> {
+  const provider = input.provider ?? "email";
+  const existing =
+    (await fetchUserProfile(sess.id)) ?? (sess.email ? await findUserProfileByEmail(sess.email) : null);
+
+  const name =
+    existing?.name ||
+    input.name ||
+    (sess.profile?.name as string | undefined) ||
+    (sess.email ? sess.email.split("@")[0] : "User");
+  const avatar =
+    (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
+  const role = toUiRole(existing?.role) ?? input.role ?? "customer";
+  const phone = existing?.phone || input.phone || "";
+
+  const row: UserProfileRow = {
+    id: sess.id,
+    email: sess.email ?? existing?.email ?? "",
+    name,
+    phone: phone || null,
+    role: UI_TO_DB[role],
+    avatar: avatar ?? null,
+    status: existing?.status ?? "active",
+    provider,
+    providers: mergeProviders(existing?.providers, provider),
+    email_verified: sess.emailVerified ?? existing?.email_verified ?? false,
+    last_login_at: new Date().toISOString(),
+    referral_code: existing?.referral_code || referralCodeFor(sess.id, name),
+    wallet_balance: existing?.wallet_balance ?? 0,
+    loyalty_points: existing?.loyalty_points ?? 0,
+    metadata: {
+      ...(existing?.metadata ?? {}),
+      ...(sess.metadata ?? {}),
+      last_provider: provider,
+      updated_at: new Date().toISOString(),
+    },
+  };
+
+  await upsertUserProfile(row);
+
   return {
     id: sess.id,
-    name: profile?.name || fallbackName || sess.profile?.name || sess.email.split("@")[0],
-    email: sess.email,
-    phone: profile?.phone || fallbackPhone || "",
+    name,
+    email: row.email ?? "",
+    phone,
     role,
-    avatar: profile?.avatar_url || (sess.profile?.avatar_url as string | undefined),
+    avatar,
   };
 }
 
@@ -81,14 +172,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Auto-login: hydrate session from stored token on mount.
+  // Auto-login + OAuth return handling.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
+        const callback = readOAuthCallback();
+        if (callback) {
+          try {
+            const { user: sess } = await ifCompleteOAuth(callback.code);
+            const next = await syncProfile(sess, {
+              provider: String(callback.provider),
+              role: takePendingRole(),
+            });
+            if (!cancelled) setUser(next);
+          } catch { /* fall through to normal session hydration */ }
+          clearOAuthParamsFromUrl();
+        }
         const sess = await ifGetSession();
         if (cancelled) return;
-        if (sess) setUser(await assembleUser(sess));
+        if (sess) setUser(await syncProfile(sess));
+        else if (!callback) setUser(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -96,32 +200,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  const signIn: AuthCtx["signIn"] = async (email, password) => {
+  const signIn: AuthCtx["signIn"] = async (email, password, role) => {
     try {
       const { user: sess } = await ifLogin(email.trim(), password);
-      const next = await assembleUser(sess);
+      const next = await syncProfile(sess, { provider: "email", role });
       setUser(next);
       return { ok: true, user: next };
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : "Sign in failed" };
+      const message = err instanceof Error ? err.message : "Sign in failed";
+      return { ok: false, message, needsVerification: /verif/i.test(message) };
     }
   };
 
   const signUp: AuthCtx["signUp"] = async ({ name, email, phone, password, role }) => {
     try {
-      const { user: sess, requireEmailVerification } = await ifSignup(email.trim(), password, name.trim());
-      // Best-effort profile row in public.users with the requested role.
-      await upsertUserProfile({
-        id: sess.id,
-        name,
-        email: sess.email,
-        phone,
-        role: UI_TO_DB[role],
-      });
+      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/login` : undefined;
+      const { user: sess, requireEmailVerification } = await ifSignup(email.trim(), password, name.trim(), redirectTo);
+      const next = await syncProfile(sess, { provider: "email", role, name: name.trim(), phone });
       if (requireEmailVerification) {
-        return { ok: true, message: "Check your email to verify your account before signing in." };
+        return {
+          ok: true,
+          needsVerification: true,
+          message: "Check your email to verify your account before signing in.",
+        };
       }
-      const next = await assembleUser(sess, role, name, phone);
       setUser(next);
       return { ok: true, user: next };
     } catch (err) {
@@ -129,10 +231,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signOut = () => {
+  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role) => {
+    try {
+      rememberPendingRole(role);
+      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+      await ifStartOAuth(provider, redirectUri);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : `Could not sign in with ${provider}` };
+    }
+  };
+
+  const requestPhoneOtp: AuthCtx["requestPhoneOtp"] = async (phone) => {
+    const res = await sendPhoneOtp(phone);
+    return { ok: res.ok, message: res.message, resendAfter: res.resendAfter };
+  };
+
+  const verifyPhoneLogin: AuthCtx["verifyPhoneLogin"] = async (phone, otp, role) => {
+    const res = await verifyPhoneOtp(phone, otp);
+    if (!res.ok || !res.accessToken) return { ok: false, message: res.message ?? "Invalid code" };
+    setTokens(res.accessToken, res.refreshToken ?? null);
+    const sess = await ifGetSession();
+    if (!sess) return { ok: false, message: "Could not start a session" };
+    const next = await syncProfile(sess, { provider: "phone", role, phone: normalisePhone(phone) });
+    setUser(next);
+    return { ok: true, user: next };
+  };
+
+  const verifyEmailCode: AuthCtx["verifyEmailCode"] = async (email, code) => {
+    try {
+      const sess = await ifVerifyEmail(email.trim(), code.trim());
+      if (!sess) return { ok: false, message: "Verification failed" };
+      const next = await syncProfile(sess, { provider: "email" });
+      setUser(next);
+      return { ok: true, user: next };
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : "Verification failed" };
+    }
+  };
+
+  const resendVerification: AuthCtx["resendVerification"] = async (email) => {
+    try {
+      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/login` : undefined;
+      await ifResendVerificationEmail(email.trim(), redirectTo);
+      return { ok: true, message: "Verification email sent" };
+    } catch (err) {
+      return { ok: false, message: err instanceof Error ? err.message : "Could not resend email" };
+    }
+  };
+
+  const signOut = useCallback(() => {
     void ifLogout();
     setUser(null);
-  };
+  }, []);
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {
     try {
@@ -145,7 +296,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, resetPassword }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        signIn,
+        signUp,
+        signInWithProvider,
+        phoneOtpEnabled: isPhoneOtpEnabled(),
+        requestPhoneOtp,
+        verifyPhoneLogin,
+        verifyEmailCode,
+        resendVerification,
+        signOut,
+        resetPassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
