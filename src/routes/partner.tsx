@@ -23,7 +23,10 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
 
 function PartnerLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Resolves the signed-in owner's restaurant and publishes it app-wide.
+  usePartnerRestaurant();
   return (
+
     <RoleGuard allow="partner">
       <div className="relative pb-24">
         <Outlet />
