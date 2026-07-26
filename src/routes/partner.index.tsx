@@ -110,18 +110,19 @@ function PartnerDashboard() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold">Live order queue</h2>
-          <span className="text-[11px] font-bold text-primary">{partnerOrders.filter(o => o.status !== "COMPLETED").length} open</span>
+          <span className="text-[11px] font-bold text-primary">{openOrders.length} open</span>
         </div>
         <div className="space-y-3">
-          {partnerOrders.filter(o => o.status !== "COMPLETED").slice(0, 4).map((o) => (
+          {openOrders.slice(0, 4).map((o) => (
             <div key={o.id} className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-[12px] font-extrabold text-primary">
                 #{o.id.slice(-3)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="truncate text-sm font-bold">{o.customer}</p>
-                <p className="text-[12px] text-muted-foreground">{o.items.length} items · {o.placedAgo} ago</p>
+                <p className="truncate text-sm font-bold">{o.addressLabel}</p>
+                <p className="text-[12px] text-muted-foreground">{o.items.length} items · {Math.max(1, Math.round((Date.now() - o.placedAt) / 60000))}m ago</p>
               </div>
+
               <div className="text-right">
                 <p className="font-display text-sm font-extrabold">{formatPrice(o.total)}</p>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{o.status}</span>
