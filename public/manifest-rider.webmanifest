@@ -1,0 +1,21 @@
+{
+  "id": "/rider",
+  "name": "Scoobix Rider",
+  "short_name": "Rider",
+  "description": "Accept deliveries, navigate and track your earnings.",
+  "start_url": "/rider",
+  "scope": "/rider",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0369a1",
+  "categories": ["business", "navigation"],
+  "icons": [
+    { "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Requests", "url": "/rider/requests" },
+    { "name": "Active delivery", "url": "/rider/active" }
+  ]
+}
