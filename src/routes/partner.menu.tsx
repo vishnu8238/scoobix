@@ -27,11 +27,11 @@ function PartnerMenu() {
 
   // Load the resolved restaurant's live menu once identity resolves.
   useEffect(() => {
-    const menu = restaurant?.menu ?? partnerMenu;
+    const menu = partnerMenu as Dish[];
     if (!rid || syncedFor.current === rid) return;
     if (!menu || menu.length === 0) return;
     syncedFor.current = rid;
-    setItems(menu.map((d) => ({ available: true, ...d })) as EditableDish[]);
+    setItems(menu.map((d) => ({ available: true, ...d }) as EditableDish));
   }, [rid, restaurant]);
 
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
