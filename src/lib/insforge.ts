@@ -11,7 +11,16 @@
  * left in place as a fallback.
  */
 
-import { restaurants, categories, type Restaurant, type Dish, type Category } from "./mock-data";
+import {
+  restaurants,
+  categories,
+  trendingDishIds,
+  recommendedDishIds,
+  type Restaurant,
+  type Dish,
+  type Category,
+} from "./mock-data";
+
 
 export const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";
 export const INSFORGE_ANON_KEY =
@@ -222,15 +231,15 @@ export function updateDeliveryStatus(orderId: string, status: string) {
   return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { status });
 }
 
-/** Append a live-location ping for the driver. */
+/** Append a live-location ping for the driver (driver_tracking: lat/lng/bearing). */
 export function pingDriverLocation(driverId: string, lat: number, lng: number) {
   return ifWrite(`/api/database/records/driver_tracking`, "POST", {
     driver_id: driverId,
-    latitude: lat,
-    longitude: lng,
-    timestamp: new Date().toISOString(),
+    lat,
+    lng,
   });
 }
+
 
 // ---------- admin-side writes (best-effort, never throw) ----------
 
@@ -304,12 +313,21 @@ export function updateGroupCart(id: string, patch: Record<string, unknown>) {
   return ifWrite(`/api/database/records/group_carts/${id}`, "PATCH", patch);
 }
 
-export function getSpotlightRow() {
-  return ifFetch<Record<string, unknown>[]>(`/api/database/records/spotlight?limit=1`).catch(() => [] as Record<string, unknown>[]);
+/**
+ * Spotlight has no dedicated table — it is stored as a JSON row in
+ * `app_settings` (key = 'spotlight') through the shared kv helpers.
+ */
+export async function getSpotlightRow(): Promise<Record<string, unknown>[]> {
+  const { kvGet } = await import("./kv-store");
+  const v = await kvGet<Record<string, unknown>>("spotlight");
+  return v ? [v] : [];
 }
-export function setSpotlight(record: Record<string, unknown>) {
-  return ifWrite(`/api/database/records/spotlight`, "POST", record);
+export async function setSpotlight(record: Record<string, unknown>) {
+  const { kvSet } = await import("./kv-store");
+  await kvSet("spotlight", record);
+  return null;
 }
+
 
 export function scheduleOrder(orderId: string, iso: string) {
   return ifWrite(`/api/database/records/orders/${orderId}`, "PATCH", { scheduled_for: iso });
@@ -378,7 +396,26 @@ let bootstrapPromise: Promise<{ ok: boolean; error?: string }> | null = null;
 
 export type InsForgeStatus = "idle" | "loading" | "ready" | "error" | "empty";
 
+/**
+ * Catalog version — bumped once live restaurants/categories replace the seed
+ * arrays, so screens that read those arrays synchronously can re-render.
+ */
+let catalogVersion = 0;
+const catalogListeners = new Set<() => void>();
+function bumpCatalog() {
+  catalogVersion += 1;
+  catalogListeners.forEach((fn) => fn());
+}
+export function subscribeCatalog(fn: () => void): () => void {
+  catalogListeners.add(fn);
+  return () => catalogListeners.delete(fn);
+}
+export function getCatalogVersion(): number {
+  return catalogVersion;
+}
+
 export const insforgeState: {
+
   status: InsForgeStatus;
   error?: string;
   addonsByDish: Map<string, AddonRow[]>;
@@ -431,22 +468,34 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
       }
       insforgeState.addonsByDish = addonMap;
 
-      // merge restaurants — skip ones that already exist by id
-      const existingRestIds = new Set(restaurants.map((r) => r.id));
-      for (const row of rests) {
-        if (existingRestIds.has(row.id)) continue;
-        restaurants.push(toRestaurant(row, menuByRest.get(row.id) ?? []));
+      // Backend is authoritative: when rows exist, REPLACE the seed arrays
+      // entirely (no mock fallback). Empty tables leave seeds untouched so
+      // screens degrade to their existing empty/demo state.
+      if (rests.length) {
+        restaurants.splice(0, restaurants.length, ...rests.map((row) => toRestaurant(row, menuByRest.get(row.id) ?? [])));
+
+        // Rebuild the curated id lists from backend flags so trending /
+        // recommended rails aren't pointing at removed seed dishes.
+        const backendDishes = restaurants.flatMap((r) => r.menu);
+        const popular = backendDishes.filter((d) => d.popular).map((d) => d.id);
+        const trending = (popular.length ? popular : backendDishes.map((d) => d.id)).slice(0, 8);
+        trendingDishIds.splice(0, trendingDishIds.length, ...trending);
+        const recommended = backendDishes.map((d) => d.id).filter((id) => !trending.includes(id));
+        recommendedDishIds.splice(
+          0,
+          recommendedDishIds.length,
+          ...(recommended.length ? recommended : trending).slice(0, 6),
+        );
       }
 
-      // merge categories — skip duplicates
-      const existingCatIds = new Set(categories.map((c) => c.id));
-      for (const row of cats) {
-        if (existingCatIds.has(row.id)) continue;
-        if (row.active === false) continue;
-        categories.push(toCategory(row));
+      if (cats.length) {
+        categories.splice(0, categories.length, ...cats.filter((c) => c.active !== false).map(toCategory));
       }
+
 
       insforgeState.status = "ready";
+      bumpCatalog();
+
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

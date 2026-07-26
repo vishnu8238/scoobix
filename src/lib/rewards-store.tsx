@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getAppSettings } from "./app-settings";
+import { kvGet, kvSet } from "./kv-store";
 
 /* ============================================================
    REWARDS STORE — Scratch card rewards.
@@ -55,29 +56,27 @@ type Ctx = {
 };
 
 const RewardsContext = createContext<Ctx | null>(null);
-const KEY = "cravio_rewards_v1";
 
 type Snap = { rewards: Reward[]; earned: Record<string, EarnedReward> };
 
-function load(): Snap {
-  if (typeof window === "undefined") return { rewards: DEFAULT_REWARDS, earned: {} };
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return { rewards: DEFAULT_REWARDS, earned: {} };
-    const parsed = JSON.parse(raw);
-    return { rewards: parsed.rewards ?? DEFAULT_REWARDS, earned: parsed.earned ?? {} };
-  } catch { return { rewards: DEFAULT_REWARDS, earned: {} }; }
-}
+
 
 const uid = () => "r-" + Math.random().toString(36).slice(2, 9);
 
 export function RewardsProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<Snap>(() => load());
+  const [state, setState] = useState<Snap>({ rewards: DEFAULT_REWARDS, earned: {} });
 
+  // Reward catalogue has no dedicated table — persisted as a JSON row in
+  // app_settings; earned cards live in `scratch_cards`.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* ignore */ }
-  }, [state]);
+    let cancelled = false;
+    void kvGet<Reward[]>("reward_catalog").then((rows) => {
+      if (!cancelled && Array.isArray(rows) && rows.length) setState((s) => ({ ...s, rewards: rows }));
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const persistCatalog = (rewards: Reward[]) => { void kvSet("reward_catalog", rewards); };
 
   // Hydrate earned scratch cards from InsForge on mount.
   useEffect(() => {
@@ -125,15 +124,31 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
 
   const ctx: Ctx = {
     rewards: state.rewards,
-    addReward: (r) => setState((s) => ({ ...s, rewards: [...s.rewards, { ...r, id: uid(), distributed: 0 }] })),
-    updateReward: (id, patch) => setState((s) => ({ ...s, rewards: s.rewards.map((r) => r.id === id ? { ...r, ...patch } : r) })),
-    deleteReward: (id) => setState((s) => ({ ...s, rewards: s.rewards.filter((r) => r.id !== id) })),
-    toggleReward: (id) => setState((s) => ({ ...s, rewards: s.rewards.map((r) => r.id === id ? { ...r, status: r.status === "active" ? "disabled" : "active" } : r) })),
+    addReward: (r) => setState((s) => {
+      const rewards = [...s.rewards, { ...r, id: uid(), distributed: 0 }];
+      persistCatalog(rewards);
+      return { ...s, rewards };
+    }),
+    updateReward: (id, patch) => setState((s) => {
+      const rewards = s.rewards.map((r) => r.id === id ? { ...r, ...patch } : r);
+      persistCatalog(rewards);
+      return { ...s, rewards };
+    }),
+    deleteReward: (id) => setState((s) => {
+      const rewards = s.rewards.filter((r) => r.id !== id);
+      persistCatalog(rewards);
+      return { ...s, rewards };
+    }),
+    toggleReward: (id) => setState((s) => {
+      const rewards = s.rewards.map((r) => r.id === id ? { ...r, status: (r.status === "active" ? "disabled" : "active") as Reward["status"] } : r);
+      persistCatalog(rewards);
+      return { ...s, rewards };
+    }),
     earned: state.earned,
     drawReward,
     markApplied: (orderId) => {
       setState((s) => s.earned[orderId] ? { ...s, earned: { ...s.earned, [orderId]: { ...s.earned[orderId], applied: true } } } : s);
-      void import("./insforge-crud").then(({ listTable, patchRecord }) => listTable<{ id?: string; order_id?: string }>("scratch_cards", { order_id: orderId, limit: 1 }).then((rs) => {
+      void import("./insforge-crud").then(({ listTable, patchRecord }) => listTable<{ id?: string; order_id?: string }>("scratch_cards", { order_id: `eq.${orderId}`, limit: 1 }).then((rs) => {
         const row = rs[0];
         if (row?.id) void patchRecord("scratch_cards", row.id, { applied: true });
       }));

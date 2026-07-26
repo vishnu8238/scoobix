@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Clock, RotateCcw } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
-import { recentlyViewed } from "@/lib/mock-extras";
+import { restaurants } from "@/lib/mock-data";
 import { useOrders } from "@/lib/stores";
 import { formatPrice } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
@@ -15,6 +15,7 @@ export const Route = createFileRoute("/app/recent")({
 
 function RecentPage() {
   const { orders, reorder } = useOrders();
+  const recentlyViewed = restaurants.slice(0, 5);
   const cart = useCart();
 
   const handleReorder = (id: string) => {

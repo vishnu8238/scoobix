@@ -1,13 +1,15 @@
 /**
  * Discover More cards, Trending Now chips, and Restaurant collection requests.
  *
- * Live-fetches from InsForge (`discover_cards`, `trending_chips`,
- * `collection_requests` tables) with optimistic mutations mirrored to the
- * backend. Falls back to hard-coded defaults on first boot when the table
- * is empty. No localStorage — every visit reflects the current backend row.
+ * Live-fetches from InsForge (`discover_cards`, `trending_chips` tables).
+ * Collection inclusion requests have no dedicated table, so they persist as a
+ * JSON row in `app_settings` via the shared kv helpers. Falls back to
+ * hard-coded defaults on first boot when a table is empty. No localStorage.
  */
 import { useSyncExternalStore, useEffect } from "react";
 import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
+import { kvGet, kvSet } from "./kv-store";
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -193,8 +195,11 @@ let reqHydrated = false;
 async function hydrateReqs() {
   if (reqHydrated) return;
   reqHydrated = true;
-  const rows = await listTable<CollectionRequest>("collection_requests");
-  if (rows.length) reqStore.set(rows);
+  const rows = await kvGet<CollectionRequest[]>("collection_requests");
+  if (Array.isArray(rows) && rows.length) reqStore.set(rows);
+}
+function persistReqs() {
+  void kvSet("collection_requests", reqStore.get());
 }
 
 export function useCollectionRequests() {
@@ -205,14 +210,15 @@ export const collectionRequestActions = {
   submit: (input: Omit<CollectionRequest, "id" | "status" | "createdAt">) => {
     const rec: CollectionRequest = { ...input, id: uid(), status: "pending", createdAt: Date.now() };
     reqStore.set((prev) => [rec, ...prev]);
-    void createRecord("collection_requests", rec as unknown as Record<string, unknown>);
+    persistReqs();
   },
   setStatus: (id: string, status: CollectionRequest["status"]) => {
     reqStore.set((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    void patchRecord("collection_requests", id, { status });
+    persistReqs();
   },
   remove: (id: string) => {
     reqStore.set((prev) => prev.filter((r) => r.id !== id));
-    void deleteRecord("collection_requests", id);
+    persistReqs();
   },
 };
+

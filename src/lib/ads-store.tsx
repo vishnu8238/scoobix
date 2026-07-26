@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { restaurants, allDishes, type Restaurant, type Dish } from "./mock-data";
 
 /* ============================================================
-   ADS STORE — Restaurant advertising (MVP, mock).
-   Schema mirrors future InsForge backend table `restaurant_ads`.
+   ADS STORE — Restaurant advertising.
+   Backed entirely by the InsForge `restaurant_ads` table.
    ============================================================ */
 
 export type AdStatus = "pending" | "active" | "paused" | "rejected" | "ended";
@@ -43,63 +43,10 @@ type AdsCtx = {
 };
 
 const AdsContext = createContext<AdsCtx | null>(null);
-const KEY = "cravio_ads_v1";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const today = () => new Date().toISOString().slice(0, 10);
-const inDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
 
-function seedAds(): RestaurantAd[] {
-  return [
-    {
-      id: "ad_seed1",
-      restaurant_id: "trattoria-verde",
-      campaign_name: "Weekend Pizza Push",
-      budget: 1000, cpc_bid: 12,
-      start_date: today(), end_date: inDays(14),
-      target_radius: 5, target_areas: ["Indiranagar", "Koramangala"],
-      category: "pizza",
-      status: "active",
-      clicks: 142, impressions: 4820, spend: 1704,
-      created_at: today(),
-    },
-    {
-      id: "ad_seed2",
-      restaurant_id: "sakura-sushi",
-      campaign_name: "Sushi Night Deals",
-      budget: 800, cpc_bid: 9,
-      start_date: today(), end_date: inDays(7),
-      target_radius: 3, target_areas: ["HSR Layout"],
-      category: "sushi",
-      status: "active",
-      clicks: 89, impressions: 2310, spend: 801,
-      created_at: today(),
-    },
-    {
-      id: "ad_seed3",
-      restaurant_id: "char-and-crust",
-      campaign_name: "Burger Boost",
-      budget: 1500, cpc_bid: 15,
-      start_date: today(), end_date: inDays(30),
-      target_radius: 7, target_areas: ["Whitefield"],
-      category: "burgers",
-      status: "pending",
-      clicks: 0, impressions: 0, spend: 0,
-      created_at: today(),
-    },
-  ];
-}
-
-function load(): RestaurantAd[] {
-  if (typeof window === "undefined") return seedAds();
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return seedAds();
-    return JSON.parse(raw) as RestaurantAd[];
-  } catch {
-    return seedAds();
-  }
-}
 
 /** Mock auction ranking: bid + rating boost − distance penalty + relevance noise. */
 function score(ad: RestaurantAd, r: Restaurant): number {
@@ -111,14 +58,14 @@ function score(ad: RestaurantAd, r: Restaurant): number {
 }
 
 export function AdsProvider({ children }: { children: ReactNode }) {
-  const [ads, setAds] = useState<RestaurantAd[]>(() => seedAds());
+  const [ads, setAds] = useState<RestaurantAd[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const { listTable } = await import("./insforge-crud");
       const rows = await listTable<RestaurantAd>("restaurant_ads");
-      if (!cancelled && rows.length) setAds(rows);
+      if (!cancelled) setAds(rows);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -149,10 +96,20 @@ export function AdsProvider({ children }: { children: ReactNode }) {
       setAds((p) => p.map((x) => (x.id === id ? { ...x, status } : x)));
       void import("./insforge-crud").then(({ patchRecord }) => patchRecord("restaurant_ads", id, { status }));
     },
-    trackClick: (id) =>
-      setAds((p) => p.map((x) => (x.id === id ? { ...x, clicks: x.clicks + 1, spend: Math.min(x.budget, x.spend + x.cpc_bid) } : x))),
-    trackImpression: (id) =>
-      setAds((p) => p.map((x) => (x.id === id ? { ...x, impressions: x.impressions + 1 } : x))),
+    trackClick: (id) => {
+      const cur = ads.find((x) => x.id === id);
+      if (!cur) return;
+      const next = { clicks: cur.clicks + 1, spend: Math.min(cur.budget, cur.spend + cur.cpc_bid) };
+      setAds((p) => p.map((x) => (x.id === id ? { ...x, ...next } : x)));
+      void import("./insforge-crud").then(({ patchRecord }) => patchRecord("restaurant_ads", id, next));
+    },
+    trackImpression: (id) => {
+      const cur = ads.find((x) => x.id === id);
+      if (!cur) return;
+      const next = { impressions: cur.impressions + 1 };
+      setAds((p) => p.map((x) => (x.id === id ? { ...x, ...next } : x)));
+      void import("./insforge-crud").then(({ patchRecord }) => patchRecord("restaurant_ads", id, next));
+    },
 
     sponsoredRestaurants: () => {
       const active = ads.filter((a) => a.status === "active" && a.spend < a.budget);

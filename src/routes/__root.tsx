@@ -6,7 +6,7 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { ScoobixProviders } from "@/lib/stores";
@@ -16,6 +16,7 @@ import { CartConflictDialog } from "@/components/cravio/CartConflictDialog";
 import { PWAInstallPrompt } from "@/components/cravio/PWAInstallPrompt";
 import { NetworkBanner } from "@/components/cravio/NetworkBanner";
 import { InsForgeBootstrap } from "@/components/cravio/InsForgeBootstrap";
+import { subscribeCatalog, getCatalogVersion } from "@/lib/insforge";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -75,17 +76,20 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isDesktop = pathname.startsWith("/admin");
   const isPortal = pathname === "/portal";
+  // Re-mount the routed tree once live catalog data replaces the seed arrays.
+  const catalogVersion = useSyncExternalStore(subscribeCatalog, getCatalogVersion, () => 0);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ScoobixProviders>
         {isDesktop || isPortal ? (
-          <Outlet />
+          <Outlet key={catalogVersion} />
         ) : (
           <PhoneShell>
-            <Outlet />
+            <Outlet key={catalogVersion} />
           </PhoneShell>
         )}
+
         <Toaster position="top-center" richColors closeButton={false} />
         <CartConflictDialog />
         <NetworkBanner />

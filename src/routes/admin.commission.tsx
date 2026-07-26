@@ -1,25 +1,76 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, IndianRupee, Percent, Banknote, TrendingUp, Search, Save, Calculator } from "lucide-react";
 import { toast } from "sonner";
-import { commissionBreakdown } from "@/lib/mock-extras";
-import { adminStats, adminRestaurants } from "@/lib/role-data";
+import { adminRestaurants } from "@/lib/role-data";
 import { formatPrice } from "@/lib/format";
 import { useCms } from "@/lib/cms-store";
+import { listTable } from "@/lib/insforge-crud";
+import { useAppSettings } from "@/lib/app-settings";
 
 export const Route = createFileRoute("/admin/commission")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Revenue & commission" }] }),
   component: CommissionPage,
 });
 
+type OrderRow = {
+  id: string;
+  total_price?: number;
+  delivery_fee?: number;
+  commission_amount?: number;
+  restaurant_payout?: number;
+  driver_earning?: number;
+  refund_amount?: number;
+  status?: string;
+};
+
 function CommissionPage() {
-  const net = commissionBreakdown.reduce((s, x) => s + x.value, 0);
   const { commissions } = useCms();
+  const settings = useAppSettings();
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void listTable<OrderRow>("orders", { limit: 1000, order: "created_at.desc" }).then((rows) => {
+      if (!cancelled) setOrders(rows);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Live financial breakdown derived from real orders. Falls back to the
+  // configured commission rate when an order has no stored breakdown yet.
+  const { breakdown, net, gross, ordersToday } = useMemo(() => {
+    const rate = (settings.default_commission_pct ?? 0) / 100;
+    let commission = 0, deliveryShare = 0, restPayout = 0, riderPayout = 0, refunds = 0, grossTotal = 0;
+    for (const o of orders) {
+      const total = Number(o.total_price ?? 0);
+      grossTotal += total;
+      commission += Number(o.commission_amount ?? total * rate);
+      deliveryShare += Number(o.delivery_fee ?? 0);
+      restPayout += Number(o.restaurant_payout ?? total * (1 - rate));
+      riderPayout += Number(o.driver_earning ?? 0);
+      refunds += Number(o.refund_amount ?? 0);
+    }
+    const rows = [
+      { label: `Order commission (${settings.default_commission_pct ?? 0}%)`, value: Math.round(commission) },
+      { label: "Delivery fee share", value: Math.round(deliveryShare) },
+      { label: "Restaurant payouts", value: -Math.round(restPayout) },
+      { label: "Rider payouts", value: -Math.round(riderPayout) },
+      { label: "Refunds", value: -Math.round(refunds) },
+    ];
+    return {
+      breakdown: rows,
+      net: rows.reduce((s, x) => s + x.value, 0),
+      gross: Math.round(grossTotal),
+      ordersToday: orders.length,
+    };
+  }, [orders, settings.default_commission_pct]);
+
   const avg = useMemo(() => {
     const vals = Object.values(commissions);
-    if (!vals.length) return 0;
+    if (!vals.length) return settings.default_commission_pct ?? 0;
     return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-  }, [commissions]);
+  }, [commissions, settings.default_commission_pct]);
 
   return (
     <div className="space-y-6">
@@ -29,11 +80,12 @@ function CommissionPage() {
       </header>
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Card icon={IndianRupee} label="Gross revenue"   value={formatPrice(adminStats.revenueToday)} growth={adminStats.growth.revenue} />
-        <Card icon={Percent}     label="Avg commission"  value={`${avg}%`} growth={0.4} />
-        <Card icon={Banknote}    label="Net to Scoobix"   value={formatPrice(net)} growth={11.2} />
-        <Card icon={TrendingUp}  label="Orders today"    value={adminStats.ordersToday.toLocaleString("en-IN")} growth={adminStats.growth.orders} />
+        <Card icon={IndianRupee} label="Gross revenue"   value={formatPrice(gross)} growth={0} />
+        <Card icon={Percent}     label="Avg commission"  value={`${avg}%`} growth={0} />
+        <Card icon={Banknote}    label="Net to Scoobix"   value={formatPrice(net)} growth={0} />
+        <Card icon={TrendingUp}  label="Orders"          value={ordersToday.toLocaleString("en-IN")} growth={0} />
       </div>
+
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <RestaurantCommissionTable />
@@ -43,7 +95,7 @@ function CommissionPage() {
       <div className="rounded-3xl bg-card p-6 shadow-soft ring-1 ring-border/60">
         <h3 className="font-display text-lg font-bold">Breakdown</h3>
         <ul className="mt-4 divide-y divide-border/60">
-          {commissionBreakdown.map((c) => (
+          {breakdown.map((c) => (
             <li key={c.label} className="flex items-center justify-between py-3.5">
               <span className="text-sm">{c.label}</span>
               <span className={`font-display text-base font-bold ${c.value < 0 ? "text-destructive" : "text-foreground"}`}>

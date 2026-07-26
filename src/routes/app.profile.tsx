@@ -4,7 +4,9 @@ import { useEffect, useState, type ComponentType } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { useFavorites } from "@/lib/stores";
-import { restaurants, allDishes, savedAddresses, paymentMethods } from "@/lib/mock-data";
+import { restaurants, allDishes } from "@/lib/mock-data";
+import { useAddresses, type AddressRow } from "@/lib/addresses-store";
+import { usePaymentMethods } from "@/lib/payment-methods-store";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -19,6 +21,16 @@ function ProfilePage() {
   const navigate = useNavigate();
   const { restaurants: favR, dishes: favD } = useFavorites();
   const [open, setOpen] = useState<SheetKind>(null);
+  const { rows: addressRows } = useAddresses();
+  const { rows: payMethods, add: addPayMethodRow } = usePaymentMethods();
+  const addPayMethod = () => {
+    const brand = typeof window !== "undefined" ? window.prompt("Card brand (Visa, Mastercard…)", "Visa") : null;
+    if (!brand) return;
+    const last4 = typeof window !== "undefined" ? window.prompt("Last 4 digits", "4242") : null;
+    if (!last4) return;
+    addPayMethodRow(brand, last4);
+    toast.success("Payment method saved");
+  };
 
   return (
     <div className="min-h-svh">
@@ -48,9 +60,9 @@ function ProfilePage() {
       <section className="px-4">
         <Group title="Account">
           <Item icon={User} label="My account" onClick={() => setOpen("account")} />
-          <Item icon={MapPin} label="Saved addresses" hint={`${savedAddresses.length}`} onClick={() => setOpen("addresses")} />
+          <Item icon={MapPin} label="Saved addresses" hint={`${addressRows.length}`} onClick={() => setOpen("addresses")} />
           <Item icon={Heart} label="Favorites" hint={`${favR.size + favD.size}`} onClick={() => setOpen("favorites")} />
-          <Item icon={Wallet} label="Payments" hint={`${paymentMethods.length}`} onClick={() => setOpen("payments")} />
+          <Item icon={Wallet} label="Payments" hint={`${payMethods.length}`} onClick={() => setOpen("payments")} />
         </Group>
         <Group title="More">
           <Link to="/app/orders" className="block"><Item icon={ReceiptText} label="Order history" /></Link>
@@ -99,7 +111,7 @@ function ProfilePage() {
         <SheetContent side="bottom" className="rounded-t-3xl">
           <SheetHeader className="text-left"><SheetTitle>Payment methods</SheetTitle></SheetHeader>
           <div className="mt-4 space-y-2">
-            {paymentMethods.map((p) => (
+            {payMethods.map((p) => (
               <div key={p.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-3">
                 <div>
                   <div className="text-sm font-bold">{p.brand}</div>
@@ -108,7 +120,7 @@ function ProfilePage() {
                 {p.default && <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary">Default</span>}
               </div>
             ))}
-            <Button variant="outline" className="w-full rounded-full" onClick={() => toast.success("Add card (demo)")}>+ Add payment method</Button>
+            <Button variant="outline" className="w-full rounded-full" onClick={addPayMethod}>+ Add payment method</Button>
           </div>
         </SheetContent>
       </Sheet>
@@ -138,46 +150,26 @@ function ProfilePage() {
   );
 }
 
-type AddressRow = { id: string; label: string; line1: string; line2: string; default: boolean };
-const ADDR_KEY = "cravio_addresses_v1";
-
-function loadAddresses(): AddressRow[] {
-  if (typeof window === "undefined") return savedAddresses.map((a) => ({ ...a }));
-  try {
-    const raw = localStorage.getItem(ADDR_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* */ }
-  return savedAddresses.map((a) => ({ ...a }));
-}
-
 function AddressesEditor() {
-  const [rows, setRows] = useState<AddressRow[]>(() => loadAddresses());
+  const { rows, add, update, remove: removeRow, setDefault } = useAddresses();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ label: string; line1: string; line2: string }>({ label: "", line1: "", line2: "" });
-
-  useEffect(() => { try { localStorage.setItem(ADDR_KEY, JSON.stringify(rows)); } catch { /* */ } }, [rows]);
 
   const startEdit = (a: AddressRow) => { setEditingId(a.id); setDraft({ label: a.label, line1: a.line1, line2: a.line2 }); };
   const startAdd = () => { setEditingId("__new"); setDraft({ label: "Home", line1: "", line2: "" }); };
   const saveDraft = () => {
     if (!draft.label.trim() || !draft.line1.trim()) { toast.error("Label and address line required"); return; }
     if (editingId === "__new") {
-      const id = `a${Date.now().toString(36)}`;
-      setRows((p) => [...p, { id, ...draft, default: p.length === 0 }]);
+      add(draft);
       toast.success("Address added");
     } else if (editingId) {
-      setRows((p) => p.map((r) => (r.id === editingId ? { ...r, ...draft } : r)));
+      update(editingId, draft);
       toast.success("Address updated");
     }
     setEditingId(null);
   };
-  const remove = (id: string) => setRows((p) => {
-    const next = p.filter((r) => r.id !== id);
-    if (next.length > 0 && !next.some((r) => r.default)) next[0] = { ...next[0], default: true };
-    toast.success("Address removed");
-    return next;
-  });
-  const makeDefault = (id: string) => { setRows((p) => p.map((r) => ({ ...r, default: r.id === id }))); toast.success("Default address updated"); };
+  const remove = (id: string) => { removeRow(id); toast.success("Address removed"); };
+  const makeDefault = (id: string) => { setDefault(id); toast.success("Default address updated"); };
 
   return (
     <div className="mt-4 space-y-2">

@@ -52,14 +52,16 @@ export function useLiveOrder(orderId: string | undefined) {
 
 export function useLiveDriverLocations(driverIds?: string[]) {
   const { rows } = useLiveTable<Row>("driver_tracking", {
-    params: { limit: 1000, order: "-timestamp" },
+    params: { limit: 1000 },
     minMs: 3000,
     maxMs: 20000,
   });
   // Keep only latest ping per driver.
   const seen = new Set<string>();
   const latest: Row[] = [];
-  for (const r of rows) {
+  // Newest ping is last in insertion order — walk backwards.
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i];
     const id = String(r.driver_id ?? "");
     if (!id || seen.has(id)) continue;
     if (driverIds && !driverIds.includes(id)) continue;

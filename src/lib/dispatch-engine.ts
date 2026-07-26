@@ -11,7 +11,7 @@
  * Reuses existing tables only:
  *   orders (status, driver_id)
  *   drivers (id, online_status)
- *   driver_tracking (driver_id, latitude, longitude, timestamp)
+ *   driver_tracking (driver_id, lat, lng, bearing)
  *   restaurants (id, latitude, longitude)
  *
  * No new columns. Offer expiry is tracked in memory; if a partner/admin
@@ -74,11 +74,12 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
 }
 
 function latestTrackingFor(driverId: string) {
-  // trackingSnap is order=-timestamp; first match wins.
-  for (const r of trackingSnap) {
+  // trackingSnap is newest-last from the backend; walk backwards for latest.
+  for (let i = trackingSnap.length - 1; i >= 0; i--) {
+    const r = trackingSnap[i];
     if (String(r.driver_id) === driverId) {
-      const lat = toNum(r.latitude);
-      const lng = toNum(r.longitude);
+      const lat = toNum(r.lat);
+      const lng = toNum(r.lng);
       if (lat !== null && lng !== null) return { lat, lng };
     }
   }
@@ -194,7 +195,7 @@ function ensureStreams() {
   subscribeTable("restaurants", { params: { limit: 500 }, minMs: 15000, maxMs: 60000 }, (rs) => {
     restaurantsSnap = rs;
   });
-  subscribeTable("driver_tracking", { params: { limit: 1000, order: "-timestamp" }, minMs: 3000, maxMs: 20000 }, (rs) => {
+  subscribeTable("driver_tracking", { params: { limit: 1000 }, minMs: 3000, maxMs: 20000 }, (rs) => {
     trackingSnap = rs;
   });
   // Local tick for expiry evaluation.
