@@ -40,7 +40,7 @@ function CommissionPage() {
   // Live financial breakdown derived from real orders. Falls back to the
   // configured commission rate when an order has no stored breakdown yet.
   const { breakdown, net, gross, ordersToday } = useMemo(() => {
-    const rate = (settings.restaurant_commission ?? 0) / 100;
+    const rate = (settings.default_commission_pct ?? 0) / 100;
     let commission = 0, deliveryShare = 0, restPayout = 0, riderPayout = 0, refunds = 0, grossTotal = 0;
     for (const o of orders) {
       const total = Number(o.total_price ?? 0);
@@ -52,7 +52,7 @@ function CommissionPage() {
       refunds += Number(o.refund_amount ?? 0);
     }
     const rows = [
-      { label: `Order commission (${settings.restaurant_commission ?? 0}%)`, value: Math.round(commission) },
+      { label: `Order commission (${settings.default_commission_pct ?? 0}%)`, value: Math.round(commission) },
       { label: "Delivery fee share", value: Math.round(deliveryShare) },
       { label: "Restaurant payouts", value: -Math.round(restPayout) },
       { label: "Rider payouts", value: -Math.round(riderPayout) },
@@ -64,13 +64,13 @@ function CommissionPage() {
       gross: Math.round(grossTotal),
       ordersToday: orders.length,
     };
-  }, [orders, settings.restaurant_commission]);
+  }, [orders, settings.default_commission_pct]);
 
   const avg = useMemo(() => {
     const vals = Object.values(commissions);
-    if (!vals.length) return settings.restaurant_commission ?? 0;
+    if (!vals.length) return settings.default_commission_pct ?? 0;
     return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
-  }, [commissions, settings.restaurant_commission]);
+  }, [commissions, settings.default_commission_pct]);
 
   return (
     <div className="space-y-6">
@@ -95,7 +95,7 @@ function CommissionPage() {
       <div className="rounded-3xl bg-card p-6 shadow-soft ring-1 ring-border/60">
         <h3 className="font-display text-lg font-bold">Breakdown</h3>
         <ul className="mt-4 divide-y divide-border/60">
-          {commissionBreakdown.map((c) => (
+          {breakdown.map((c) => (
             <li key={c.label} className="flex items-center justify-between py-3.5">
               <span className="text-sm">{c.label}</span>
               <span className={`font-display text-base font-bold ${c.value < 0 ? "text-destructive" : "text-foreground"}`}>
