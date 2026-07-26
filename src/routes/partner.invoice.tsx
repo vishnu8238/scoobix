@@ -77,7 +77,7 @@ function InvoicePage() {
 
         <ul className="space-y-2 text-sm">
           {order.items.map((it) => (
-            <li key={it.name} className="flex items-center justify-between">
+            <li key={it.lineId ?? it.name} className="flex items-center justify-between">
               <span>{it.qty} × {it.name}</span>
               <span className="font-medium">{formatPrice(it.price * it.qty)}</span>
             </li>
@@ -89,7 +89,7 @@ function InvoicePage() {
         <dl className="space-y-1.5 text-sm">
           <Row label="Subtotal"          value={formatPrice(order.total)} />
           <Row label="GST (5%)"          value={formatPrice(tax)} />
-          <Row label="Platform fee (18%)" value={`- ${formatPrice(platform)}`} />
+          <Row label={`Platform fee (${commissionPct}%)`} value={`- ${formatPrice(platform)}`} />
           <div className="my-2 h-px bg-border" />
           <Row label="Net payout"        value={formatPrice(net)} strong />
         </dl>
