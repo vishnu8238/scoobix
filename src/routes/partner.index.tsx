@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { partnerOrders, partnerRestaurant } from "@/lib/role-data";
+import { partnerRestaurant } from "@/lib/role-data";
 import { TrendingUp, Clock, CheckCircle2, DollarSign, BellRing, ChefHat, Power, StoreIcon } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import { useCms } from "@/lib/cms-store";
 import { Switch } from "@/components/ui/switch";
 import { updateRestaurantStatus } from "@/lib/insforge";
+import { useLiveOrders } from "@/lib/realtime-hooks";
+import { rowToOrder, type OrderRow } from "@/lib/orders-api";
+import { usePartnerRestaurant } from "@/lib/partner-store";
 
 export const Route = createFileRoute("/partner/")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Dashboard" }] }),
@@ -13,13 +16,20 @@ export const Route = createFileRoute("/partner/")({
 
 function PartnerDashboard() {
   const { closedRestaurants, setRestaurantClosed, acceptingOrders, setAcceptingOrders } = useCms();
-  const rid = partnerRestaurant.id;
+  const { restaurantId } = usePartnerRestaurant();
+  const rid = restaurantId || partnerRestaurant.id;
   const isClosed = !!closedRestaurants[rid];
   const isAccepting = acceptingOrders[rid] !== false; // default true
-  const todaysSales = partnerOrders.filter((o) => o.status === "COMPLETED").reduce((s, o) => s + o.total, 0) + 412.5;
-  const active = partnerOrders.filter((o) => ["ACCEPTED", "PREPARING", "READY"].includes(o.status)).length;
-  const pending = partnerOrders.filter((o) => o.status === "PLACED").length;
-  const completed = partnerOrders.filter((o) => o.status === "COMPLETED").length + 28;
+  const { rows } = useLiveOrders(rid ? { restaurant_id: rid } : undefined);
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  const orders = rows.map((r) => rowToOrder(r as OrderRow));
+  const today = orders.filter((o) => o.placedAt >= midnight.getTime());
+  const todaysSales = today.filter((o) => o.status === "DELIVERED").reduce((s, o) => s + o.total, 0);
+  const active = orders.filter((o) => ["ACCEPTED", "PREPARING", "READY", "PICKED_UP"].includes(o.status)).length;
+  const pending = orders.filter((o) => o.status === "PLACED").length;
+  const completed = today.filter((o) => o.status === "DELIVERED").length;
+  const openOrders = orders.filter((o) => o.status !== "DELIVERED" && o.status !== "CANCELLED");
+
 
   const STATS = [
     { label: "Today's sales", value: formatPrice(todaysSales), delta: "+12.4%", icon: DollarSign, tone: "bg-primary text-primary-foreground" },
