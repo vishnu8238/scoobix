@@ -147,11 +147,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
     const itemCount = items.reduce((s, i) => s + i.qty, 0);
     const baseDelivery = subtotal === 0 ? 0 : 2.99;
-    let freeMin = 25;
-    try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem("cravio_cms_v2") : null;
-      if (raw) { const s = JSON.parse(raw)?.settings; if (s && typeof s.freeDeliveryMin === "number") freeMin = s.freeDeliveryMin; }
-    } catch { /* ignore */ }
+    const freeMin = currentPlatformSettings.freeDeliveryMin ?? 25;
+
     const freeShip = coupon?.kind === "freeship" || subtotal >= freeMin;
     const delivery = freeShip ? 0 : baseDelivery;
     const taxes = +(subtotal * 0.08).toFixed(2);
