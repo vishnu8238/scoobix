@@ -3,7 +3,7 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Search, Plus } from "lucide-react";
 import { useState } from "react";
 import { useCms } from "@/lib/cms-store";
-import { useLiveTable } from "@/lib/realtime-hooks";
+import { useLiveTable, useLiveOrders } from "@/lib/realtime-hooks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/users")({
