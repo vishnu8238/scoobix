@@ -23,7 +23,7 @@ const ROLES: { value: Role; label: string; icon: typeof Utensils; next?: string 
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, signInWithProvider } = useAuth();
   const [role, setRole] = useState<Role>("customer");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [busy, setBusy] = useState(false);
@@ -34,10 +34,20 @@ function SignupPage() {
     const res = await signUp({ ...form, role });
     setBusy(false);
     if (!res.ok) { toast.error(res.message ?? "Sign up failed"); return; }
+    if (res.needsVerification) { toast.success(res.message ?? "Verify your email to continue"); return; }
     toast.success("Account created");
     const next = ROLES.find((r) => r.value === role)?.next ?? ROLE_HOME[role];
     navigate({ to: next });
   };
+
+  // OAuth sign-up and sign-in are the same call — the provider account is
+  // linked to the existing user when the email already exists.
+  const oauth = async (provider: "google" | "apple") => {
+    setBusy(true);
+    const res = await signInWithProvider(provider, role);
+    if (!res.ok) { setBusy(false); toast.error(res.message ?? "Could not start sign-up"); }
+  };
+
 
   return (
     <div className="min-h-svh px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-12">
