@@ -349,41 +349,53 @@ function defaultSnapshot(): Snapshot {
   };
 }
 
-function load(): Snapshot {
-  if (typeof window === "undefined") return defaultSnapshot();
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return defaultSnapshot();
-    return { ...defaultSnapshot(), ...JSON.parse(raw) };
-  } catch {
-    return defaultSnapshot();
-  }
-}
-
 const uid = () => Math.random().toString(36).slice(2, 9);
 const reorder = <T extends { order: number }>(arr: T[]) =>
   [...arr].sort((a, b) => a.order - b.order).map((x, i) => ({ ...x, order: i }));
 
+/** Latest platform settings, readable outside React (cart totals, pricing helpers). */
+export let currentPlatformSettings: PlatformSettings = DEFAULT_SETTINGS;
+
+const CMS_KV_KEY = "cms_snapshot";
+
 export function CmsProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<Snapshot>(() => load());
+  const [state, setState] = useState<Snapshot>(() => defaultSnapshot());
+  const hydrated = useRef(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch { /* ignore */ }
-  }, [state]);
-
-  // Hydrate coupons from InsForge on mount (backend wins when non-empty).
+  // Hydrate the whole CMS snapshot from the backend (app_settings KV row).
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const { listTable } = await import("./insforge-crud");
-      const rows = await listTable<CmsCoupon>("coupons");
-      if (!cancelled && rows.length) setState((s) => ({ ...s, coupons: rows }));
+      const [{ kvGet }, { listTable }] = await Promise.all([
+        import("./kv-store"),
+        import("./insforge-crud"),
+      ]);
+      const [snap, coupons] = await Promise.all([
+        kvGet<Partial<Snapshot>>(CMS_KV_KEY),
+        listTable<CmsCoupon>("coupons"),
+      ]);
+      if (cancelled) return;
+      setState((s) => ({
+        ...s,
+        ...(snap ?? {}),
+        settings: { ...DEFAULT_SETTINGS, ...(snap?.settings ?? {}) },
+        ...(coupons.length ? { coupons } : {}),
+      }));
+      hydrated.current = true;
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Persist changes back to the backend (debounced), never to localStorage.
+  useEffect(() => {
+    currentPlatformSettings = state.settings;
+    if (!hydrated.current) return;
+    const t = window.setTimeout(() => {
+      void import("./kv-store").then(({ kvSet }) => kvSet(CMS_KV_KEY, state));
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [state]);
+
 
   const ctx: CmsCtx = {
     banners: reorder(state.banners),
