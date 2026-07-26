@@ -75,6 +75,7 @@ import { Route as AppBulkRouteImport } from './routes/app.bulk'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTrendingRouteImport } from './routes/admin.trending'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminSpotlightRouteImport } from './routes/admin.spotlight'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants'
@@ -422,6 +423,11 @@ const AdminTrendingRoute = AdminTrendingRouteImport.update({
   path: '/trending',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSpotlightRoute = AdminSpotlightRouteImport.update({
   id: '/spotlight',
   path: '/spotlight',
@@ -527,6 +533,7 @@ export interface FileRoutesByFullPath {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
@@ -607,6 +614,7 @@ export interface FileRoutesByTo {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
@@ -692,6 +700,7 @@ export interface FileRoutesById {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/wallet': typeof AdminWalletRoute
@@ -778,6 +787,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
@@ -858,6 +868,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
@@ -942,6 +953,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/wallet'
@@ -1480,6 +1492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTrendingRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/spotlight': {
       id: '/admin/spotlight'
       path: '/spotlight'
@@ -1611,6 +1630,7 @@ interface AdminRouteChildren {
   AdminRestaurantsRoute: typeof AdminRestaurantsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSpotlightRoute: typeof AdminSpotlightRoute
+  AdminSupportRoute: typeof AdminSupportRoute
   AdminTrendingRoute: typeof AdminTrendingRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminWalletRoute: typeof AdminWalletRoute
@@ -1633,6 +1653,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminRestaurantsRoute: AdminRestaurantsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSpotlightRoute: AdminSpotlightRoute,
+  AdminSupportRoute: AdminSupportRoute,
   AdminTrendingRoute: AdminTrendingRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminWalletRoute: AdminWalletRoute,
