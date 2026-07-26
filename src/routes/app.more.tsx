@@ -14,16 +14,12 @@ const ITEMS = [
   { to: "/app/referral",   icon: Gift,       label: "Invite & earn",         desc: "Share your code, earn credit" },
   { to: "/app/meal",       icon: Utensils,   label: "Scoobix Daily Meal",    desc: "Weekly & monthly meal plans" },
   { to: "/app/bulk",       icon: Building2,  label: "Corporate & Bulk",      desc: "Catering & office orders" },
-  { to: "/app/onboarding", icon: Sparkles, label: "Welcome tour",         desc: "Take the intro again" },
-
   { to: "/app/location",   icon: MapPin,   label: "Delivery location",     desc: "Manage saved places" },
   { to: "/app/favorites",  icon: Heart,    label: "Favorites",             desc: "Restaurants & dishes you love" },
   { to: "/app/recent",     icon: Clock,    label: "Recently viewed",       desc: "Quick reorder & history" },
   { to: "/app/notifications", icon: Bell,  label: "Notifications",         desc: "Order updates and offers" },
   { to: "/app/coupons",    icon: Tag,      label: "Coupons & offers",      desc: "Active promo codes" },
-  { to: "/app/cart",       icon: ShoppingBag, label: "Cart & empty states", desc: "Preview empty cart" },
-  { to: "/app/success",    icon: CheckCircle2, label: "Payment success demo", desc: "Confirmation state preview" },
-  { to: "/app/failed",     icon: AlertOctagon, label: "Order failed demo",  desc: "Error state preview" },
+  { to: "/app/cart",       icon: ShoppingBag, label: "Your cart",          desc: "Review items before checkout" },
   { to: "/terms",          icon: FileText, label: "Terms of service",      desc: "Legal · last updated 2026" },
   { to: "/privacy",        icon: Shield,   label: "Privacy policy",        desc: "How we handle your data" },
 ] as const;
