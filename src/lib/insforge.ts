@@ -466,6 +466,8 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
 
 
       insforgeState.status = "ready";
+      bumpCatalog();
+
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
