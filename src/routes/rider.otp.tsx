@@ -50,12 +50,13 @@ function OtpPage() {
       toast.error("Wrong OTP · ask the customer to share again");
       return;
     }
-    const ok = await patchOrder(activeRow.id, {
+    const orderId = String(activeRow.id);
+    const ok = await patchOrder(orderId, {
       status: "DELIVERED",
       actual_delivery_time: new Date().toISOString(),
     });
     if (ok) {
-      await finalizeOrder(activeRow.id);
+      await finalizeOrder(orderId);
       toast.success("Delivery completed");
       navigate({ to: "/rider/earnings" });
     } else {
@@ -69,7 +70,7 @@ function OtpPage() {
 
   return (
     <div className="mx-auto min-h-svh max-w-[520px] pb-24">
-      <PageHeader title="Complete delivery" subtitle={activeRow ? `#${activeRow.id.slice(0, 8)}` : "No active delivery"} />
+      <PageHeader title="Complete delivery" subtitle={activeRow ? `#${String(activeRow.id).slice(0, 8)}` : "No active delivery"} />
 
       <section className="mx-4 mt-3 rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
         <div className="flex items-center gap-3">
