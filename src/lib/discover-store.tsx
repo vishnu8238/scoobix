@@ -193,8 +193,11 @@ let reqHydrated = false;
 async function hydrateReqs() {
   if (reqHydrated) return;
   reqHydrated = true;
-  const rows = await listTable<CollectionRequest>("collection_requests");
-  if (rows.length) reqStore.set(rows);
+  const rows = await kvGet<CollectionRequest[]>("collection_requests");
+  if (Array.isArray(rows) && rows.length) reqStore.set(rows);
+}
+function persistReqs() {
+  void kvSet("collection_requests", reqStore.get());
 }
 
 export function useCollectionRequests() {
@@ -205,14 +208,15 @@ export const collectionRequestActions = {
   submit: (input: Omit<CollectionRequest, "id" | "status" | "createdAt">) => {
     const rec: CollectionRequest = { ...input, id: uid(), status: "pending", createdAt: Date.now() };
     reqStore.set((prev) => [rec, ...prev]);
-    void createRecord("collection_requests", rec as unknown as Record<string, unknown>);
+    persistReqs();
   },
   setStatus: (id: string, status: CollectionRequest["status"]) => {
     reqStore.set((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    void patchRecord("collection_requests", id, { status });
+    persistReqs();
   },
   remove: (id: string) => {
     reqStore.set((prev) => prev.filter((r) => r.id !== id));
-    void deleteRecord("collection_requests", id);
+    persistReqs();
   },
 };
+
