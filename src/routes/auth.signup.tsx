@@ -80,6 +80,24 @@ function SignupPage() {
           {busy ? "Creating…" : <>Create account <ArrowRight className="ml-1 h-4 w-4" /></>}
         </Button>
 
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-border/70" />
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">or sign up with</span>
+          <span className="h-px flex-1 bg-border/70" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button type="button" disabled={busy} onClick={() => void oauth("google")}
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-card text-sm font-bold shadow-soft ring-1 ring-border/60 transition active:scale-95 disabled:opacity-60">
+            Google
+          </button>
+          <button type="button" disabled={busy} onClick={() => void oauth("apple")}
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-card text-sm font-bold shadow-soft ring-1 ring-border/60 transition active:scale-95 disabled:opacity-60">
+            Apple
+          </button>
+        </div>
+
+
         <p className="text-center text-[12.5px] text-muted-foreground">
           Already have one? <Link to="/auth/login" className="font-bold text-primary">Sign in</Link>
         </p>
