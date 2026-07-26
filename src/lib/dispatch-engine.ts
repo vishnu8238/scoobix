@@ -119,7 +119,7 @@ function rankDriversForOrder(order: Row, exclude: Set<string>): string[] {
 
 async function patchOrder(id: string, patch: Row) {
   try {
-    await fetch(`${INSFORGE_URL}/api/database/records/orders/${id}`, {
+    await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${id}`, {
       method: "PATCH",
       headers: {
         apikey: INSFORGE_ANON_KEY,

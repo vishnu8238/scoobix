@@ -151,7 +151,7 @@ export type UserProfileRow = {
 
 export async function fetchUserProfile(userId: string): Promise<UserProfileRow | null> {
   try {
-    const res = await raw(`/api/database/records/users/${userId}`, { method: "GET" });
+    const res = await raw(`/api/database/records/users?id=eq.${userId}&limit=1`, { method: "GET" });
     if (!res.ok) return null;
     const body = await res.json();
     return Array.isArray(body) ? (body[0] ?? null) : body;
@@ -159,14 +159,18 @@ export async function fetchUserProfile(userId: string): Promise<UserProfileRow |
 }
 
 export async function upsertUserProfile(row: UserProfileRow): Promise<void> {
-  // Try PATCH first, fall back to POST insert.
-  const patch = await raw(`/api/database/records/users/${row.id}`, {
-    method: "PATCH",
-    body: JSON.stringify(row),
-  });
-  if (patch.ok) return;
+  // PATCH silently succeeds with 0 rows affected, so check existence first.
+  const existing = await fetchUserProfile(row.id);
+  if (existing) {
+    await raw(`/api/database/records/users?id=eq.${row.id}`, {
+      method: "PATCH",
+      body: JSON.stringify(row),
+    }).catch(() => null);
+    return;
+  }
   await raw(`/api/database/records/users`, {
     method: "POST",
     body: JSON.stringify(row),
   }).catch(() => null);
 }
+

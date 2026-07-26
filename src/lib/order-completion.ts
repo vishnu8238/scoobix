@@ -125,7 +125,7 @@ export async function finalizeOrder(orderId: string): Promise<{ ok: boolean; rea
   if (inflight.has(orderId)) return { ok: false, reason: "inflight" };
   inflight.add(orderId);
   try {
-    const order = await safeJson<Row>(`${base("orders")}/${orderId}`);
+    const order = await safeJson<Row[]>(`${base("orders")}?id=eq.${orderId}&limit=1`).then((r) => (Array.isArray(r) ? r[0] ?? null : null));
     if (!order) return { ok: false, reason: "not-found" };
     if (order.finalized_at) return { ok: true, reason: "already-finalized" };
     const status = String(order.status ?? "");
@@ -134,7 +134,7 @@ export async function finalizeOrder(orderId: string): Promise<{ ok: boolean; rea
     // Restaurant for commission override + payout accumulation.
     const restaurantId = String(order.restaurant_id ?? "");
     const restaurant = restaurantId
-      ? await safeJson<Row>(`${base("restaurants")}/${restaurantId}`)
+      ? await safeJson<Row[]>(`${base("restaurants")}?id=eq.${restaurantId}&limit=1`).then((r) => (Array.isArray(r) ? r[0] ?? null : null))
       : null;
 
     const breakdown = computeBreakdown({
@@ -148,7 +148,7 @@ export async function finalizeOrder(orderId: string): Promise<{ ok: boolean; rea
     const now = new Date().toISOString();
 
     // 5. Persist breakdown on the order (single PATCH — one round trip).
-    await safePatch(`${base("orders")}/${orderId}`, {
+    await safePatch(`${base("orders")}?id=eq.${orderId}`, {
       commission_pct: breakdown.commission_pct,
       commission_amount: breakdown.commission_amount,
       restaurant_payout: breakdown.restaurant_payout,
@@ -160,7 +160,7 @@ export async function finalizeOrder(orderId: string): Promise<{ ok: boolean; rea
     // 6. Restaurant pending payout (read-modify-write).
     if (restaurant) {
       const prev = toNum(restaurant.pending_payout);
-      await safePatch(`${base("restaurants")}/${restaurantId}`, {
+      await safePatch(`${base("restaurants")}?id=eq.${restaurantId}`, {
         pending_payout: prev + breakdown.restaurant_payout,
       });
     }
@@ -168,10 +168,10 @@ export async function finalizeOrder(orderId: string): Promise<{ ok: boolean; rea
     // 7. Driver pending earnings.
     const driverId = String(order.driver_id ?? "");
     if (driverId) {
-      const driver = await safeJson<Row>(`${base("drivers")}/${driverId}`);
+      const driver = await safeJson<Row[]>(`${base("drivers")}?id=eq.${driverId}&limit=1`).then((r) => (Array.isArray(r) ? r[0] ?? null : null));
       if (driver) {
         const prev = toNum(driver.pending_earnings);
-        await safePatch(`${base("drivers")}/${driverId}`, {
+        await safePatch(`${base("drivers")}?id=eq.${driverId}`, {
           pending_earnings: prev + breakdown.driver_earnings,
         });
       }
