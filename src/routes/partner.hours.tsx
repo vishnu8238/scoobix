@@ -39,10 +39,13 @@ function HoursPage() {
 
   const save = async () => {
     setSaving(true);
-    const ok = await kvSet(key, rows);
+    try {
+      await kvSet(key, rows);
+      toast.success("Opening hours saved");
+    } catch {
+      toast.error("Could not save opening hours");
+    }
     setSaving(false);
-    if (ok === false) toast.error("Could not save opening hours");
-    else toast.success("Opening hours saved");
   };
 
 
@@ -64,7 +67,7 @@ function HoursPage() {
       </div>
 
       <div className="px-4 pt-6">
-        <Button onClick={() => toast.success("Opening hours saved")} className="h-12 w-full rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-glow">Save schedule</Button>
+        <Button onClick={save} disabled={saving} className="h-12 w-full rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-glow">{saving ? "Saving…" : "Save schedule"}</Button>
       </div>
     </div>
   );
