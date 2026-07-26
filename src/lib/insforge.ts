@@ -387,7 +387,26 @@ let bootstrapPromise: Promise<{ ok: boolean; error?: string }> | null = null;
 
 export type InsForgeStatus = "idle" | "loading" | "ready" | "error" | "empty";
 
+/**
+ * Catalog version — bumped once live restaurants/categories replace the seed
+ * arrays, so screens that read those arrays synchronously can re-render.
+ */
+let catalogVersion = 0;
+const catalogListeners = new Set<() => void>();
+function bumpCatalog() {
+  catalogVersion += 1;
+  catalogListeners.forEach((fn) => fn());
+}
+export function subscribeCatalog(fn: () => void): () => void {
+  catalogListeners.add(fn);
+  return () => catalogListeners.delete(fn);
+}
+export function getCatalogVersion(): number {
+  return catalogVersion;
+}
+
 export const insforgeState: {
+
   status: InsForgeStatus;
   error?: string;
   addonsByDish: Map<string, AddonRow[]>;
