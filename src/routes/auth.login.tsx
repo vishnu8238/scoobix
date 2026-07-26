@@ -245,3 +245,15 @@ function AppleGlyph() {
   );
 }
 
+
+function Field({ icon: Icon, label, type, value, onChange, placeholder }: { icon: typeof Mail; label: string; type: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="h-11 rounded-2xl bg-secondary/50 pl-9" />
+      </div>
+    </div>
+  );
+}
