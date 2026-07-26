@@ -33,6 +33,7 @@ import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
+import { Route as PartnerSupportRouteImport } from './routes/partner.support'
 import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
 import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
 import { Route as PartnerOnboardingRouteImport } from './routes/partner.onboarding'
@@ -208,6 +209,11 @@ const RestaurantIdRoute = RestaurantIdRouteImport.update({
   id: '/restaurant/$id',
   path: '/restaurant/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PartnerSupportRoute = PartnerSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerProfileRoute = PartnerProfileRouteImport.update({
   id: '/profile',
@@ -548,6 +554,7 @@ export interface FileRoutesByFullPath {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
@@ -625,6 +632,7 @@ export interface FileRoutesByTo {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
@@ -707,6 +715,7 @@ export interface FileRoutesById {
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
   '/partner/profile': typeof PartnerProfileRoute
+  '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
@@ -790,6 +799,7 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
@@ -867,6 +877,7 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
@@ -948,6 +959,7 @@ export interface FileRouteTypes {
     | '/partner/onboarding'
     | '/partner/orders'
     | '/partner/profile'
+    | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/earnings'
@@ -1149,6 +1161,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/restaurant/$id'
       preLoaderRoute: typeof RestaurantIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/partner/support': {
+      id: '/partner/support'
+      path: '/support'
+      fullPath: '/partner/support'
+      preLoaderRoute: typeof PartnerSupportRouteImport
+      parentRoute: typeof PartnerRoute
     }
     '/partner/profile': {
       id: '/partner/profile'
@@ -1663,6 +1682,7 @@ interface PartnerRouteChildren {
   PartnerOnboardingRoute: typeof PartnerOnboardingRoute
   PartnerOrdersRoute: typeof PartnerOrdersRoute
   PartnerProfileRoute: typeof PartnerProfileRoute
+  PartnerSupportRoute: typeof PartnerSupportRoute
   PartnerIndexRoute: typeof PartnerIndexRoute
 }
 
@@ -1681,6 +1701,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerOnboardingRoute: PartnerOnboardingRoute,
   PartnerOrdersRoute: PartnerOrdersRoute,
   PartnerProfileRoute: PartnerProfileRoute,
+  PartnerSupportRoute: PartnerSupportRoute,
   PartnerIndexRoute: PartnerIndexRoute,
 }
 
