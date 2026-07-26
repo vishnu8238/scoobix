@@ -1,8 +1,10 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { BottomNav } from "@/components/cravio/BottomNav";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
+import { APPS, appHead } from "@/lib/apps";
 
 export const Route = createFileRoute("/app")({
+  head: () => appHead(APPS.customer),
   component: AppLayout,
 });
 

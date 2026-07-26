@@ -2,10 +2,11 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Repeat, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
+import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Scoobix Admin · Operations" }] }),
+  head: () => appHead(APPS.admin),
   component: AdminLayout,
 });
 
@@ -62,10 +63,6 @@ function AdminLayout() {
               );
             })}
           </nav>
-          <Link to="/portal" className="flex items-center gap-2 rounded-2xl bg-muted px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground transition hover:bg-foreground/5">
-            <Repeat className="h-3.5 w-3.5" />
-            Switch role
-          </Link>
         </aside>
 
         {/* Main */}
