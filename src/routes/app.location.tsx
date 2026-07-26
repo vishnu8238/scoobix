@@ -21,6 +21,15 @@ function LocationPicker() {
   const { location, setLocation, userCoords, detectLocation, detectingLocation } = useAppUI();
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState<LatLng | null>(userCoords ?? null);
+  const { rows: addressRows, loaded: addressesLoaded } = useAddresses();
+  const saved = addressRows.map((a) => ({
+    id: a.id,
+    label: a.label,
+    tag: a.label,
+    icon: /home/i.test(a.label) ? "🏠" : /work|office/i.test(a.label) ? "💼" : "📍",
+    line: [a.line1, a.line2].filter(Boolean).join(" · "),
+  }));
+
 
   const select = (line: string, coords?: LatLng) => {
     setLocation(line, coords ?? addressCoords(line));
