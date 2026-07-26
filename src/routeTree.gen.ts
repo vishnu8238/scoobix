@@ -54,6 +54,7 @@ import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
 import { Route as AppWalletRouteImport } from './routes/app.wallet'
 import { Route as AppValueRouteImport } from './routes/app.value'
 import { Route as AppSwipeRouteImport } from './routes/app.swipe'
+import { Route as AppSupportRouteImport } from './routes/app.support'
 import { Route as AppSuccessRouteImport } from './routes/app.success'
 import { Route as AppSearchRouteImport } from './routes/app.search'
 import { Route as AppReferralRouteImport } from './routes/app.referral'
@@ -315,6 +316,11 @@ const AppSwipeRoute = AppSwipeRouteImport.update({
   path: '/swipe',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSupportRoute = AppSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSuccessRoute = AppSuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -534,6 +540,7 @@ export interface FileRoutesByFullPath {
   '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/support': typeof AppSupportRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
@@ -612,6 +619,7 @@ export interface FileRoutesByTo {
   '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/support': typeof AppSupportRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
@@ -695,6 +703,7 @@ export interface FileRoutesById {
   '/app/referral': typeof AppReferralRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
+  '/app/support': typeof AppSupportRoute
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
@@ -779,6 +788,7 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/search'
     | '/app/success'
+    | '/app/support'
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
@@ -857,6 +867,7 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/search'
     | '/app/success'
+    | '/app/support'
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
@@ -939,6 +950,7 @@ export interface FileRouteTypes {
     | '/app/referral'
     | '/app/search'
     | '/app/success'
+    | '/app/support'
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
@@ -1309,6 +1321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSwipeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/support': {
+      id: '/app/support'
+      path: '/support'
+      fullPath: '/app/support'
+      preLoaderRoute: typeof AppSupportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/success': {
       id: '/app/success'
       path: '/success'
@@ -1620,6 +1639,7 @@ interface AppRouteChildren {
   AppReferralRoute: typeof AppReferralRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSuccessRoute: typeof AppSuccessRoute
+  AppSupportRoute: typeof AppSupportRoute
   AppSwipeRoute: typeof AppSwipeRoute
   AppValueRoute: typeof AppValueRoute
   AppWalletRoute: typeof AppWalletRoute
@@ -1644,6 +1664,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppReferralRoute: AppReferralRoute,
   AppSearchRoute: AppSearchRoute,
   AppSuccessRoute: AppSuccessRoute,
+  AppSupportRoute: AppSupportRoute,
   AppSwipeRoute: AppSwipeRoute,
   AppValueRoute: AppValueRoute,
   AppWalletRoute: AppWalletRoute,
