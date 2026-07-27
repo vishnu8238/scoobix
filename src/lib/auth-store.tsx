@@ -114,14 +114,26 @@ type SyncInput = {
 };
 
 /**
- * Creates or updates the `public.users` row for a session and returns the
- * assembled UI user. Never creates a second row for the same person: the row is
- * keyed by the auth user id, and an existing row for the same email is adopted.
+ * THE single authentication pipeline. Every path (email login, email signup,
+ * Google, Apple, phone OTP, session restore) funnels through here.
+ *
+ * Guarantees:
+ * - returns null instead of throwing when there is no session user,
+ * - always ensures exactly one `public.users` row for the auth account
+ *   (self-healing for accounts created before the profile write worked),
+ * - never reads a property off a profile that may not exist.
  */
-async function syncProfile(sess: InsForgeUser, input: SyncInput = {}): Promise<User> {
+async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}): Promise<User | null> {
+  if (!sess || typeof sess.id !== "string" || !sess.id) return null;
+
   const provider = input.provider ?? "email";
-  const existing =
-    (await fetchUserProfile(sess.id)) ?? (sess.email ? await findUserProfileByEmail(sess.email) : null);
+  let existing: UserProfileRow | null = null;
+  try {
+    existing =
+      (await fetchUserProfile(sess.id)) ?? (sess.email ? await findUserProfileByEmail(sess.email) : null);
+  } catch {
+    existing = null;
+  }
 
   const name =
     existing?.name ||
@@ -132,10 +144,11 @@ async function syncProfile(sess: InsForgeUser, input: SyncInput = {}): Promise<U
     (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
   const role = toUiRole(existing?.role) ?? input.role ?? "customer";
   const phone = existing?.phone || input.phone || "";
+  const email = sess.email ?? existing?.email ?? "";
 
   const row: UserProfileRow = {
     id: sess.id,
-    email: sess.email ?? existing?.email ?? "",
+    email,
     name,
     phone: phone || null,
     role: UI_TO_DB[role],
@@ -156,17 +169,20 @@ async function syncProfile(sess: InsForgeUser, input: SyncInput = {}): Promise<U
     },
   };
 
-  await upsertUserProfile(row);
+  // Blocking: the profile must exist before the UI ever sees the user.
+  const saved = await upsertUserProfile(row).catch(() => null);
+  const finalRole = toUiRole(saved?.role) ?? role;
 
   return {
     id: sess.id,
-    name,
-    email: row.email ?? "",
-    phone,
-    role,
-    avatar,
+    name: saved?.name || name,
+    email: saved?.email || email,
+    phone: saved?.phone || phone,
+    role: finalRole,
+    avatar: saved?.avatar || avatar,
   };
 }
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -185,14 +201,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               provider: String(callback.provider),
               role: takePendingRole(),
             });
-            if (!cancelled) setUser(next);
+            if (!cancelled && next) setUser(next);
           } catch { /* fall through to normal session hydration */ }
           clearOAuthParamsFromUrl();
         }
         const sess = await ifGetSession();
         if (cancelled) return;
-        if (sess) setUser(await syncProfile(sess));
-        else if (!callback) setUser(null);
+        if (sess) {
+          const next = await syncProfile(sess);
+          if (!cancelled && next) setUser(next);
+        } else if (!callback) setUser(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -204,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { user: sess } = await ifLogin(email.trim(), password);
       const next = await syncProfile(sess, { provider: "email", role });
+      if (!next) return { ok: false, message: "Could not load your account. Please try again." };
       setUser(next);
       return { ok: true, user: next };
     } catch (err) {
@@ -216,6 +235,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/auth/login` : undefined;
       const { user: sess, requireEmailVerification } = await ifSignup(email.trim(), password, name.trim(), redirectTo);
+      // Profile creation is attempted for every signup; when verification is
+      // pending there may be no session user yet — the row is then created on
+      // the first successful login (self-healing).
       const next = await syncProfile(sess, { provider: "email", role, name: name.trim(), phone });
       if (requireEmailVerification) {
         return {
@@ -224,12 +246,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           message: "Check your email to verify your account before signing in.",
         };
       }
+      if (!next) return { ok: false, message: "Account created but sign-in failed. Please sign in." };
       setUser(next);
       return { ok: true, user: next };
     } catch (err) {
       return { ok: false, message: err instanceof Error ? err.message : "Sign up failed" };
     }
   };
+
 
   const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role) => {
     try {
@@ -254,6 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sess = await ifGetSession();
     if (!sess) return { ok: false, message: "Could not start a session" };
     const next = await syncProfile(sess, { provider: "phone", role, phone: normalisePhone(phone) });
+    if (!next) return { ok: false, message: "Could not load your account. Please try again." };
     setUser(next);
     return { ok: true, user: next };
   };
@@ -263,8 +288,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sess = await ifVerifyEmail(email.trim(), code.trim());
       if (!sess) return { ok: false, message: "Verification failed" };
       const next = await syncProfile(sess, { provider: "email" });
+      if (!next) return { ok: false, message: "Could not load your account. Please try again." };
       setUser(next);
       return { ok: true, user: next };
+
     } catch (err) {
       return { ok: false, message: err instanceof Error ? err.message : "Verification failed" };
     }

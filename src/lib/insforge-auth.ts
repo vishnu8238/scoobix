@@ -70,21 +70,47 @@ async function jsonOrThrow(res: Response): Promise<any> {
     const msg = (body && (body.message || body.error)) || `Request failed (${res.status})`;
     throw new Error(msg);
   }
-  return body;
+  if (body && body.error && !body.data) {
+    throw new Error(body.error.message || body.message || "Request failed");
+  }
+  // Some deployments wrap the payload in `{ data, error }` (SDK shape),
+  // others return it flat. Always work with the flat payload.
+  return body && typeof body === "object" && body.data && (body.data.user || body.data.accessToken)
+    ? body.data
+    : body;
+}
+
+/**
+ * Guarantees an authenticated user object. Auth endpoints occasionally return
+ * only tokens (no `user`), which used to crash callers with
+ * "Cannot read properties of undefined (reading 'id')".
+ */
+async function ensureSessionUser(data: any, context: string): Promise<InsForgeUser> {
+  const direct = normalizeSession(data);
+  if (direct?.id) return direct;
+  const fetched = await ifGetSession().catch(() => null);
+  if (fetched?.id) return fetched;
+  throw new Error(`${context} did not return an account. Please try again.`);
 }
 
 // ---------- email + password ----------
 
 export async function ifSignup(email: string, password: string, name: string, redirectTo?: string): Promise<{
-  user: InsForgeUser; accessToken: string | null; refreshToken: string | null; requireEmailVerification?: boolean;
+  user: InsForgeUser | null; accessToken: string | null; refreshToken: string | null; requireEmailVerification?: boolean;
 }> {
   const res = await raw(`/api/auth/users?client_type=mobile`, {
     method: "POST",
     body: JSON.stringify({ email, password, name, ...(redirectTo ? { redirectTo } : {}) }),
   });
   const data = await jsonOrThrow(res);
-  setTokens(data.accessToken ?? null, data.refreshToken ?? null);
-  return data;
+  setTokens(data?.accessToken ?? null, data?.refreshToken ?? null);
+  const requireEmailVerification = !!data?.requireEmailVerification || !data?.accessToken;
+  // Without an access token there is no session yet — the caller must not
+  // attempt profile creation, so `user` may legitimately be null.
+  const user = requireEmailVerification
+    ? normalizeSession(data)
+    : await ensureSessionUser(data, "Sign up");
+  return { ...data, user, requireEmailVerification };
 }
 
 export async function ifLogin(email: string, password: string): Promise<{
@@ -95,9 +121,11 @@ export async function ifLogin(email: string, password: string): Promise<{
     body: JSON.stringify({ email, password }),
   });
   const data = await jsonOrThrow(res);
-  setTokens(data.accessToken ?? null, data.refreshToken ?? null);
-  return data;
+  setTokens(data?.accessToken ?? null, data?.refreshToken ?? null);
+  const user = await ensureSessionUser(data, "Sign in");
+  return { ...data, user };
 }
+
 
 export async function ifLogout(): Promise<void> {
   // Revokes the server-side session for every provider linked to the account.
@@ -127,11 +155,14 @@ export async function ifGetSession(): Promise<InsForgeUser | null> {
 }
 
 function normalizeSession(body: any): InsForgeUser | null {
-  if (!body) return null;
-  if (body.user) return body.user as InsForgeUser;
-  if (body.id) return body as InsForgeUser;
+  if (!body || typeof body !== "object") return null;
+  const candidates = [body.user, body.data?.user, body.data, body];
+  for (const c of candidates) {
+    if (c && typeof c === "object" && typeof c.id === "string" && c.id) return c as InsForgeUser;
+  }
   return null;
 }
+
 
 export async function ifRefresh(): Promise<boolean> {
   const refreshToken = getRefreshToken();
@@ -303,21 +334,49 @@ export async function findUserProfileByEmail(email: string): Promise<UserProfile
   } catch { return null; }
 }
 
-export async function upsertUserProfile(row: UserProfileRow): Promise<void> {
+/** The `users.role` check constraint stores roles in UPPER CASE. */
+export function dbRoleValue(role: string | null | undefined): string {
+  return String(role ?? "customer").toUpperCase();
+}
+
+function cleanRow(row: UserProfileRow): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row)) if (v !== undefined) out[k] = v;
+  if (out.role) out.role = dbRoleValue(out.role as string);
+  return out;
+}
+
+/**
+ * Creates or updates the `public.users` row and ALWAYS returns the stored row
+ * (self-healing: an auth account that lost/never had a profile gets one here).
+ * Returns null only when the backend rejects both write attempts.
+ */
+export async function upsertUserProfile(row: UserProfileRow): Promise<UserProfileRow | null> {
+  const payload = cleanRow(row);
   // PATCH silently succeeds with 0 rows affected, so check existence first.
   const existing = await fetchUserProfile(row.id);
   if (existing) {
-    await raw(`/api/database/records/users?id=eq.${row.id}`, {
+    const { id: _omit, registration_timestamp: _ts, ...patch } = payload as Record<string, unknown>;
+    const res = await raw(`/api/database/records/users?id=eq.${row.id}`, {
       method: "PATCH",
-      body: JSON.stringify(row),
+      body: JSON.stringify(patch),
     }).catch(() => null);
-    return;
+    if (!res || !res.ok) console.warn("[auth] profile update failed", await res?.text?.().catch(() => ""));
+    return (await fetchUserProfile(row.id)) ?? { ...existing, ...(patch as UserProfileRow) };
   }
-  await raw(`/api/database/records/users`, {
+
+  const insert = { registration_timestamp: new Date().toISOString(), ...payload };
+  const res = await raw(`/api/database/records/users`, {
     method: "POST",
-    body: JSON.stringify(row),
+    body: JSON.stringify(insert),
   }).catch(() => null);
+  if (!res || !res.ok) {
+    console.warn("[auth] profile create failed", await res?.text?.().catch(() => ""));
+  }
+  // Re-read: another tab / concurrent login may have created it first.
+  return (await fetchUserProfile(row.id)) ?? (res?.ok ? (insert as UserProfileRow) : null);
 }
+
 
 /** Stable, human-friendly referral code derived from the account id. */
 export function referralCodeFor(userId: string, name?: string | null): string {
