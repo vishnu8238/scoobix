@@ -278,6 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sess = await ifGetSession();
     if (!sess) return { ok: false, message: "Could not start a session" };
     const next = await syncProfile(sess, { provider: "phone", role, phone: normalisePhone(phone) });
+    if (!next) return { ok: false, message: "Could not load your account. Please try again." };
     setUser(next);
     return { ok: true, user: next };
   };
@@ -287,8 +288,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sess = await ifVerifyEmail(email.trim(), code.trim());
       if (!sess) return { ok: false, message: "Verification failed" };
       const next = await syncProfile(sess, { provider: "email" });
+      if (!next) return { ok: false, message: "Could not load your account. Please try again." };
       setUser(next);
       return { ok: true, user: next };
+
     } catch (err) {
       return { ok: false, message: err instanceof Error ? err.message : "Verification failed" };
     }
