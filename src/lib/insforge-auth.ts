@@ -334,21 +334,49 @@ export async function findUserProfileByEmail(email: string): Promise<UserProfile
   } catch { return null; }
 }
 
-export async function upsertUserProfile(row: UserProfileRow): Promise<void> {
+/** The `users.role` check constraint stores roles in UPPER CASE. */
+export function dbRoleValue(role: string | null | undefined): string {
+  return String(role ?? "customer").toUpperCase();
+}
+
+function cleanRow(row: UserProfileRow): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row)) if (v !== undefined) out[k] = v;
+  if (out.role) out.role = dbRoleValue(out.role as string);
+  return out;
+}
+
+/**
+ * Creates or updates the `public.users` row and ALWAYS returns the stored row
+ * (self-healing: an auth account that lost/never had a profile gets one here).
+ * Returns null only when the backend rejects both write attempts.
+ */
+export async function upsertUserProfile(row: UserProfileRow): Promise<UserProfileRow | null> {
+  const payload = cleanRow(row);
   // PATCH silently succeeds with 0 rows affected, so check existence first.
   const existing = await fetchUserProfile(row.id);
   if (existing) {
-    await raw(`/api/database/records/users?id=eq.${row.id}`, {
+    const { id: _omit, registration_timestamp: _ts, ...patch } = payload as Record<string, unknown>;
+    const res = await raw(`/api/database/records/users?id=eq.${row.id}`, {
       method: "PATCH",
-      body: JSON.stringify(row),
+      body: JSON.stringify(patch),
     }).catch(() => null);
-    return;
+    if (!res || !res.ok) console.warn("[auth] profile update failed", await res?.text?.().catch(() => ""));
+    return (await fetchUserProfile(row.id)) ?? { ...existing, ...(patch as UserProfileRow) };
   }
-  await raw(`/api/database/records/users`, {
+
+  const insert = { registration_timestamp: new Date().toISOString(), ...payload };
+  const res = await raw(`/api/database/records/users`, {
     method: "POST",
-    body: JSON.stringify(row),
+    body: JSON.stringify(insert),
   }).catch(() => null);
+  if (!res || !res.ok) {
+    console.warn("[auth] profile create failed", await res?.text?.().catch(() => ""));
+  }
+  // Re-read: another tab / concurrent login may have created it first.
+  return (await fetchUserProfile(row.id)) ?? (res?.ok ? (insert as UserProfileRow) : null);
 }
+
 
 /** Stable, human-friendly referral code derived from the account id. */
 export function referralCodeFor(userId: string, name?: string | null): string {
