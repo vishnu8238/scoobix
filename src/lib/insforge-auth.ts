@@ -155,11 +155,14 @@ export async function ifGetSession(): Promise<InsForgeUser | null> {
 }
 
 function normalizeSession(body: any): InsForgeUser | null {
-  if (!body) return null;
-  if (body.user) return body.user as InsForgeUser;
-  if (body.id) return body as InsForgeUser;
+  if (!body || typeof body !== "object") return null;
+  const candidates = [body.user, body.data?.user, body.data, body];
+  for (const c of candidates) {
+    if (c && typeof c === "object" && typeof c.id === "string" && c.id) return c as InsForgeUser;
+  }
   return null;
 }
+
 
 export async function ifRefresh(): Promise<boolean> {
   const refreshToken = getRefreshToken();
