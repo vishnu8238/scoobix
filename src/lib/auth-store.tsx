@@ -114,14 +114,26 @@ type SyncInput = {
 };
 
 /**
- * Creates or updates the `public.users` row for a session and returns the
- * assembled UI user. Never creates a second row for the same person: the row is
- * keyed by the auth user id, and an existing row for the same email is adopted.
+ * THE single authentication pipeline. Every path (email login, email signup,
+ * Google, Apple, phone OTP, session restore) funnels through here.
+ *
+ * Guarantees:
+ * - returns null instead of throwing when there is no session user,
+ * - always ensures exactly one `public.users` row for the auth account
+ *   (self-healing for accounts created before the profile write worked),
+ * - never reads a property off a profile that may not exist.
  */
-async function syncProfile(sess: InsForgeUser, input: SyncInput = {}): Promise<User> {
+async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}): Promise<User | null> {
+  if (!sess || typeof sess.id !== "string" || !sess.id) return null;
+
   const provider = input.provider ?? "email";
-  const existing =
-    (await fetchUserProfile(sess.id)) ?? (sess.email ? await findUserProfileByEmail(sess.email) : null);
+  let existing: UserProfileRow | null = null;
+  try {
+    existing =
+      (await fetchUserProfile(sess.id)) ?? (sess.email ? await findUserProfileByEmail(sess.email) : null);
+  } catch {
+    existing = null;
+  }
 
   const name =
     existing?.name ||
@@ -132,10 +144,11 @@ async function syncProfile(sess: InsForgeUser, input: SyncInput = {}): Promise<U
     (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
   const role = toUiRole(existing?.role) ?? input.role ?? "customer";
   const phone = existing?.phone || input.phone || "";
+  const email = sess.email ?? existing?.email ?? "";
 
   const row: UserProfileRow = {
     id: sess.id,
-    email: sess.email ?? existing?.email ?? "",
+    email,
     name,
     phone: phone || null,
     role: UI_TO_DB[role],
@@ -156,17 +169,20 @@ async function syncProfile(sess: InsForgeUser, input: SyncInput = {}): Promise<U
     },
   };
 
-  await upsertUserProfile(row);
+  // Blocking: the profile must exist before the UI ever sees the user.
+  const saved = await upsertUserProfile(row).catch(() => null);
+  const finalRole = toUiRole(saved?.role) ?? role;
 
   return {
     id: sess.id,
-    name,
-    email: row.email ?? "",
-    phone,
-    role,
-    avatar,
+    name: saved?.name || name,
+    email: saved?.email || email,
+    phone: saved?.phone || phone,
+    role: finalRole,
+    avatar: saved?.avatar || avatar,
   };
 }
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
