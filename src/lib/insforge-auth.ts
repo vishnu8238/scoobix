@@ -244,8 +244,19 @@ export async function ifStartOAuth(
   url.searchParams.set("code_challenge_method", "S256");
   const res = await fetch(url.toString(), { headers: { apikey: INSFORGE_ANON_KEY } });
   const data = await jsonOrThrow(res);
-  if (!data?.authUrl) throw new Error("Could not start sign-in with this provider");
-  window.location.href = data.authUrl as string;
+  const authUrl =
+    data?.authUrl ??
+    data?.url ??
+    data?.authorizationUrl ??
+    data?.redirectUrl ??
+    data?.data?.authUrl ??
+    data?.data?.url ??
+    data?.data?.authorizationUrl ??
+    data?.data?.redirectUrl;
+  if (typeof authUrl !== "string" || !/^https?:\/\//i.test(authUrl)) {
+    throw new Error("Could not start sign-in with this provider");
+  }
+  window.location.assign(authUrl);
 }
 
 export type OAuthCallback = {
@@ -277,8 +288,7 @@ export async function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUse
   const data = await jsonOrThrow(res);
   setTokens(data.accessToken ?? null, data.refreshToken ?? null);
   try { sessionStorage.removeItem(PKCE_KEY); } catch { /* */ }
-  const user = normalizeSession(data);
-  if (!user) throw new Error("Provider did not return an account");
+  const user = await ensureSessionUser(data, "Provider sign-in");
   return { user, isNewUser: !!data.isNewUser };
 }
 
@@ -287,7 +297,7 @@ export function clearOAuthParamsFromUrl() {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   let touched = false;
-  for (const key of ["insforge_code", "code", "state", "insforge_status", "insforge_type", "insforge_error"]) {
+  for (const key of ["insforge_code", "code", "state", "insforge_status", "insforge_type", "insforge_error", "error", "error_description"]) {
     if (url.searchParams.has(key)) { url.searchParams.delete(key); touched = true; }
   }
   if (touched) window.history.replaceState({}, "", url.toString());
