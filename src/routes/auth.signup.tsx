@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Utensils, Store, Bike } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,15 @@ const ROLES: { value: Role; label: string; icon: typeof Utensils; next?: string 
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { signUp, signInWithProvider } = useAuth();
+  const { user, loading, signUp, signInWithProvider } = useAuth();
   const [role, setRole] = useState<Role>("customer");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    navigate({ to: ROLE_HOME[user.role] as never, replace: true });
+  }, [loading, navigate, user]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

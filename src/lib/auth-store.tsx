@@ -192,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      let handledOAuth = false;
       try {
         const callback = readOAuthCallback();
         if (callback) {
@@ -201,10 +202,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               provider: String(callback.provider),
               role: takePendingRole(),
             });
-            if (!cancelled && next) setUser(next);
-          } catch { /* fall through to normal session hydration */ }
+            if (!cancelled && next) {
+              setUser(next);
+              handledOAuth = true;
+            }
+          } catch (err) {
+            console.error("[auth] OAuth callback failed", err);
+          }
           clearOAuthParamsFromUrl();
         }
+        if (handledOAuth) return;
         const sess = await ifGetSession();
         if (cancelled) return;
         if (sess) {
@@ -226,6 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(next);
       return { ok: true, user: next };
     } catch (err) {
+      console.error("[auth] Email sign-in failed", err);
       const message = err instanceof Error ? err.message : "Sign in failed";
       return { ok: false, message, needsVerification: /verif/i.test(message) };
     }
@@ -250,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(next);
       return { ok: true, user: next };
     } catch (err) {
+      console.error("[auth] Email sign-up failed", err);
       return { ok: false, message: err instanceof Error ? err.message : "Sign up failed" };
     }
   };
@@ -262,6 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await ifStartOAuth(provider, redirectUri);
       return { ok: true };
     } catch (err) {
+      console.error(`[auth] ${provider} sign-in failed`, err);
       return { ok: false, message: err instanceof Error ? err.message : `Could not sign in with ${provider}` };
     }
   };
@@ -293,6 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: true, user: next };
 
     } catch (err) {
+      console.error("[auth] Email verification failed", err);
       return { ok: false, message: err instanceof Error ? err.message : "Verification failed" };
     }
   };
@@ -303,6 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await ifResendVerificationEmail(email.trim(), redirectTo);
       return { ok: true, message: "Verification email sent" };
     } catch (err) {
+      console.error("[auth] Verification resend failed", err);
       return { ok: false, message: err instanceof Error ? err.message : "Could not resend email" };
     }
   };
@@ -318,6 +330,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await ifSendPasswordReset(email.trim(), redirectTo);
       return { ok: true, message: "Reset link sent — check your inbox" };
     } catch (err) {
+      console.error("[auth] Password reset failed", err);
       return { ok: false, message: err instanceof Error ? err.message : "Could not send reset email" };
     }
   };

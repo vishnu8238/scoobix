@@ -29,6 +29,8 @@ function LoginPage() {
   const { app: appId, redirect } = Route.useSearch() as LoginSearch;
   const app = appId ? APPS[appId] : null;
   const {
+    user,
+    loading,
     signIn,
     signInWithProvider,
     phoneOtpEnabled,
@@ -54,6 +56,13 @@ function LoginPage() {
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    const home = ROLE_HOME[user.role];
+    const canResume = !!redirect && (!app || app.role === user.role) && redirect.startsWith(home);
+    navigate({ to: (canResume ? redirect : home) as never, replace: true });
+  }, [app, loading, navigate, redirect, user]);
 
   const land = (user: User) => {
     toast.success(`Welcome back, ${user.name}`);
