@@ -91,23 +91,31 @@ function toUiRole(role: string | undefined | null): Role | null {
 }
 
 const PENDING_ROLE_KEY = "scoobix_pending_role_v1";
+const PENDING_ROLE_CLAIM_KEY = "scoobix_pending_role_claim_v1";
 
-function rememberPendingRole(role?: Role) {
+function rememberPendingRole(role?: Role, claim = false) {
   try {
     if (role) sessionStorage.setItem(PENDING_ROLE_KEY, role);
+    if (role && claim) sessionStorage.setItem(PENDING_ROLE_CLAIM_KEY, "1");
   } catch { /* */ }
   try {
     if (role) localStorage.setItem(PENDING_ROLE_KEY, role);
+    if (role && claim) localStorage.setItem(PENDING_ROLE_CLAIM_KEY, "1");
   } catch { /* */ }
 }
-function takePendingRole(): Role | undefined {
+function takePendingRole(): { role?: Role; claim: boolean } {
   try {
     const value = (sessionStorage.getItem(PENDING_ROLE_KEY) ?? localStorage.getItem(PENDING_ROLE_KEY)) as Role | null;
+    const claim =
+      (sessionStorage.getItem(PENDING_ROLE_CLAIM_KEY) ?? localStorage.getItem(PENDING_ROLE_CLAIM_KEY)) === "1";
     sessionStorage.removeItem(PENDING_ROLE_KEY);
     localStorage.removeItem(PENDING_ROLE_KEY);
-    return value ?? undefined;
-  } catch { return undefined; }
+    sessionStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
+    localStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
+    return { role: value ?? undefined, claim };
+  } catch { return { claim: false }; }
 }
+
 
 function mergeProviders(existing: string | null | undefined, provider: string): string {
   const list = new Set((existing ?? "").split(",").map((p) => p.trim()).filter(Boolean));
