@@ -8,7 +8,7 @@
  * restaurant_id, …) so the API contract stays stable.
  */
 
-export type Role = "customer" | "partner" | "rider" | "admin";
+export type Role = "customer" | "partner" | "rider" | "admin" | "manager";
 
 export type User = {
   id: string;
