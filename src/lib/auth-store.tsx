@@ -211,9 +211,21 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
 
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
+  const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
+
+  /**
+   * Every session update also mirrors the resolved role to local storage, so a
+   * refresh or cold app start can route to the right surface before the
+   * profile round-trip finishes.
+   */
+  const setUser = useCallback((next: User | null) => {
+    setUserState(next);
+    writeCachedRole(next?.role ?? null);
+    setCachedRole(next?.role ?? null);
+  }, []);
 
   // Auto-login + OAuth return handling.
   useEffect(() => {
