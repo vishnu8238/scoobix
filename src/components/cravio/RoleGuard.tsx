@@ -12,14 +12,24 @@ import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
  *   their own application home. There is no manual portal switching.
  */
 export function RoleGuard({ allow, children }: { allow: Role; children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, cachedRole } = useAuth();
   const navigate = useNavigate();
   const href = useRouterState({ select: (s) => s.location.href });
 
   const mismatched = !!user && user.role !== allow;
+  // Before the session resolves, trust the persisted role from the last visit
+  // so a refresh never parks the user on the wrong app's shell.
+  const optimistic = loading && !user && cachedRole === allow;
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      // Known-wrong surface on a cold reload: leave immediately instead of
+      // waiting for the profile round-trip.
+      if (cachedRole && cachedRole !== allow) {
+        navigate({ to: ROLE_HOME[cachedRole] as never, replace: true });
+      }
+      return;
+    }
     if (!user) {
       // Never bounce auth screens back into themselves (that nests
       // ?redirect= params forever).
@@ -34,10 +44,10 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
     if (user.role !== allow) {
       navigate({ to: ROLE_HOME[user.role] as never, replace: true });
     }
-  }, [user, loading, allow, navigate, href]);
+  }, [user, loading, allow, navigate, href, cachedRole]);
 
 
-  if (loading || !user || mismatched) {
+  if ((loading && !optimistic) || (!loading && !user) || mismatched) {
     return (
       <div className="flex min-h-svh w-full items-center justify-center bg-background">
         <div className="animate-pulse-soft">
@@ -46,6 +56,7 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
       </div>
     );
   }
+
 
   return <>{children}</>;
 }
