@@ -45,7 +45,7 @@ type AuthCtx = {
   loading: boolean;
   signIn: (email: string, password: string, role?: Role) => Promise<AuthResult>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<AuthResult>;
-  signInWithProvider: (provider: OAuthProvider, role?: Role) => Promise<{ ok: boolean; message?: string }>;
+  signInWithProvider: (provider: OAuthProvider, role?: Role, claimRole?: boolean) => Promise<{ ok: boolean; message?: string }>;
   phoneOtpEnabled: boolean;
   requestPhoneOtp: (phone: string) => Promise<{ ok: boolean; message?: string; resendAfter: number }>;
   verifyPhoneLogin: (phone: string, otp: string, role?: Role) => Promise<AuthResult>;
@@ -91,23 +91,31 @@ function toUiRole(role: string | undefined | null): Role | null {
 }
 
 const PENDING_ROLE_KEY = "scoobix_pending_role_v1";
+const PENDING_ROLE_CLAIM_KEY = "scoobix_pending_role_claim_v1";
 
-function rememberPendingRole(role?: Role) {
+function rememberPendingRole(role?: Role, claim = false) {
   try {
     if (role) sessionStorage.setItem(PENDING_ROLE_KEY, role);
+    if (role && claim) sessionStorage.setItem(PENDING_ROLE_CLAIM_KEY, "1");
   } catch { /* */ }
   try {
     if (role) localStorage.setItem(PENDING_ROLE_KEY, role);
+    if (role && claim) localStorage.setItem(PENDING_ROLE_CLAIM_KEY, "1");
   } catch { /* */ }
 }
-function takePendingRole(): Role | undefined {
+function takePendingRole(): { role?: Role; claim: boolean } {
   try {
     const value = (sessionStorage.getItem(PENDING_ROLE_KEY) ?? localStorage.getItem(PENDING_ROLE_KEY)) as Role | null;
+    const claim =
+      (sessionStorage.getItem(PENDING_ROLE_CLAIM_KEY) ?? localStorage.getItem(PENDING_ROLE_CLAIM_KEY)) === "1";
     sessionStorage.removeItem(PENDING_ROLE_KEY);
     localStorage.removeItem(PENDING_ROLE_KEY);
-    return value ?? undefined;
-  } catch { return undefined; }
+    sessionStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
+    localStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
+    return { role: value ?? undefined, claim };
+  } catch { return { claim: false }; }
 }
+
 
 function mergeProviders(existing: string | null | undefined, provider: string): string {
   const list = new Set((existing ?? "").split(",").map((p) => p.trim()).filter(Boolean));
@@ -117,6 +125,8 @@ function mergeProviders(existing: string | null | undefined, provider: string): 
 
 type SyncInput = {
   role?: Role;
+  /** Signup paths claim the chosen role even if a default profile row exists. */
+  forceRole?: boolean;
   name?: string;
   phone?: string;
   provider?: string;
@@ -153,7 +163,10 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     (sess.email ? sess.email.split("@")[0] : provider === "apple" ? "Apple User" : "User");
   const avatar =
     (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
-  const role = toUiRole(existing?.role) ?? input.role ?? "customer";
+  // On signup the user explicitly picks their app, so that choice overrides the
+  // default profile row the backend may have already created as CUSTOMER.
+  const role =
+    (input.forceRole ? input.role : undefined) ?? toUiRole(existing?.role) ?? input.role ?? "customer";
   const phone = existing?.phone || input.phone || "";
   // Apple can withhold the address entirely — never write an empty string into
   // a unique column, and never crash on the missing value.
@@ -184,7 +197,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
 
   // Blocking: the profile must exist before the UI ever sees the user.
   const saved = await upsertUserProfile(row).catch(() => null);
-  const finalRole = toUiRole(saved?.role) ?? role;
+  const finalRole = input.forceRole ? role : toUiRole(saved?.role) ?? role;
 
   return {
     id: sess.id,
@@ -218,9 +231,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (callback) {
           try {
             const { user: sess } = await ifCompleteOAuth(callback.code);
+            const pending = takePendingRole();
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
-              role: takePendingRole(),
+              role: pending.role,
+              forceRole: pending.claim,
             });
             if (!cancelled && next) {
               setUser(next);
@@ -298,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Profile creation is attempted for every signup; when verification is
       // pending there may be no session user yet — the row is then created on
       // the first successful login (self-healing).
-      const next = await syncProfile(sess, { provider: "email", role, name: name.trim(), phone });
+      const next = await syncProfile(sess, { provider: "email", role, forceRole: true, name: name.trim(), phone });
       if (requireEmailVerification) {
         return {
           ok: true,
@@ -316,10 +331,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role) => {
+  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false) => {
     try {
       setOauthError(null);
-      rememberPendingRole(role);
+      rememberPendingRole(role, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
       const authUrl = await ifCreateOAuthUrl(provider, redirectUri);
       navigateToOAuthUrl(authUrl);
