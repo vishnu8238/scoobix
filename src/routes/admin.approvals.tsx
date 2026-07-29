@@ -4,6 +4,7 @@ import { Check, X, FileCheck2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { listTable, patchRecord } from "@/lib/insforge-crud";
+import { notifyManagerDecision, type ManagedRestaurant } from "@/lib/manager-api";
 
 export const Route = createFileRoute("/admin/approvals")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Restaurant approvals" }] }),
@@ -40,11 +41,26 @@ function ApprovalsPage() {
   }, []);
 
   const act = async (id: string, ok: boolean) => {
+    const row = list.find((r) => r.id === id);
     setList((p) => p.filter((r) => r.id !== id));
     const status = ok ? "active" : "rejected";
-    const res = await patchRecord("restaurants", id, { status });
+    const res = await patchRecord("restaurants", id, {
+      status,
+      onboarding_status: ok ? "live" : "rejected",
+      ...(ok ? { approved_at: new Date().toISOString() } : {}),
+    });
     if (res === null) toast.error("Backend update failed — retry later");
     else toast.success(ok ? "Restaurant approved" : "Application rejected");
+    if (res !== null && row) {
+      const full = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 });
+      if (full[0]) {
+        await notifyManagerDecision({
+          restaurant: full[0],
+          decision: ok ? "live" : "rejected",
+          note: ok ? "Approved and set live." : "Application rejected by admin.",
+        });
+      }
+    }
   };
 
   return (
