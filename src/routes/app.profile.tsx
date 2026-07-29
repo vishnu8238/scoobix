@@ -79,7 +79,7 @@ function ProfilePage() {
           <Item icon={Settings} label="Settings" onClick={() => setOpen("settings")} />
         </Group>
         <button
-          onClick={() => { toast.success("Signed out (demo)"); navigate({ to: "/" }); }}
+          onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/auth/login" }); }}
           className="mt-4 mb-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-bold text-destructive"
         >
           <LogOut className="h-4 w-4" /> Sign out
