@@ -60,6 +60,7 @@ import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
 import { Route as ManagerOnboardingRouteImport } from './routes/manager.onboarding'
 import { Route as ManagerNotificationsRouteImport } from './routes/manager.notifications'
 import { Route as ManagerMoreRouteImport } from './routes/manager.more'
+import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
@@ -361,6 +362,11 @@ const ManagerMoreRoute = ManagerMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => ManagerRoute,
 } as any)
+const ManagerLeadsRoute = ManagerLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const ManagerHistoryRoute = ManagerHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -641,6 +647,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/manager/history': typeof ManagerHistoryRoute
+  '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -734,6 +741,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/manager/history': typeof ManagerHistoryRoute
+  '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -833,6 +841,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/manager/history': typeof ManagerHistoryRoute
+  '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -933,6 +942,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/manager/history'
+    | '/manager/leads'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1026,6 +1036,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/manager/history'
+    | '/manager/leads'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1124,6 +1135,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/manager/history'
+    | '/manager/leads'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1540,6 +1552,13 @@ declare module '@tanstack/react-router' {
       path: '/more'
       fullPath: '/manager/more'
       preLoaderRoute: typeof ManagerMoreRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/leads': {
+      id: '/manager/leads'
+      path: '/leads'
+      fullPath: '/manager/leads'
+      preLoaderRoute: typeof ManagerLeadsRouteImport
       parentRoute: typeof ManagerRoute
     }
     '/manager/history': {
@@ -1978,6 +1997,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ManagerRouteChildren {
   ManagerHistoryRoute: typeof ManagerHistoryRoute
+  ManagerLeadsRoute: typeof ManagerLeadsRoute
   ManagerMoreRoute: typeof ManagerMoreRoute
   ManagerNotificationsRoute: typeof ManagerNotificationsRoute
   ManagerOnboardingRoute: typeof ManagerOnboardingRoute
@@ -1989,6 +2009,7 @@ interface ManagerRouteChildren {
 
 const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerHistoryRoute: ManagerHistoryRoute,
+  ManagerLeadsRoute: ManagerLeadsRoute,
   ManagerMoreRoute: ManagerMoreRoute,
   ManagerNotificationsRoute: ManagerNotificationsRoute,
   ManagerOnboardingRoute: ManagerOnboardingRoute,
