@@ -8,7 +8,6 @@ import {
   ifSendPasswordReset,
   ifVerifyEmail,
   ifResendVerificationEmail,
-  ifStartOAuth,
   ifCreateOAuthUrl,
   navigateToOAuthUrl,
   ifCompleteOAuth,
@@ -245,6 +244,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const restoreFromSharedSession = async () => {
+      const sess = await ifGetSession();
+      if (cancelled) return;
+      const next = await syncProfile(sess);
+      if (!cancelled && next) setUser(next);
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key && event.key.startsWith("scoobix_if_")) void restoreFromSharedSession();
+    };
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin === window.location.origin && event.data?.type === "scoobix_oauth_complete") {
+        void restoreFromSharedSession();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("message", onMessage);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("message", onMessage);
+    };
+  }, []);
+
   const signIn: AuthCtx["signIn"] = async (email, password, role) => {
     try {
       const { user: sess } = await ifLogin(email.trim(), password);
@@ -291,7 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       rememberPendingRole(role);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
       if (provider === "apple") {
-        popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+        popup = window.open("about:blank", "_blank", "popup,width=480,height=720");
       }
       const authUrl = await ifCreateOAuthUrl(provider, redirectUri);
       if (popup && !popup.closed) {
