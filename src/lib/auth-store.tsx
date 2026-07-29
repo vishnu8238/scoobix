@@ -68,6 +68,7 @@ export const ROLE_HOME: Record<Role, string> = {
   partner: "/partner",
   rider: "/rider",
   admin: "/admin",
+  manager: "/manager",
 };
 
 // ---------- role mapping between DB and existing UI enum ----------
@@ -77,12 +78,14 @@ const DB_TO_UI: Record<DbRole, Role> = {
   restaurant: "partner",
   driver: "rider",
   admin: "admin",
+  merchant_manager: "manager",
 };
 const UI_TO_DB: Record<Role, DbRole> = {
   customer: "customer",
   partner: "restaurant",
   rider: "driver",
   admin: "admin",
+  manager: "merchant_manager",
 };
 
 function toUiRole(role: string | undefined | null): Role | null {
