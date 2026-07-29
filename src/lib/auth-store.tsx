@@ -96,11 +96,15 @@ function rememberPendingRole(role?: Role) {
   try {
     if (role) sessionStorage.setItem(PENDING_ROLE_KEY, role);
   } catch { /* */ }
+  try {
+    if (role) localStorage.setItem(PENDING_ROLE_KEY, role);
+  } catch { /* */ }
 }
 function takePendingRole(): Role | undefined {
   try {
-    const value = sessionStorage.getItem(PENDING_ROLE_KEY) as Role | null;
+    const value = (sessionStorage.getItem(PENDING_ROLE_KEY) ?? localStorage.getItem(PENDING_ROLE_KEY)) as Role | null;
     sessionStorage.removeItem(PENDING_ROLE_KEY);
+    localStorage.removeItem(PENDING_ROLE_KEY);
     return value ?? undefined;
   } catch { return undefined; }
 }
@@ -384,6 +388,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(null, null);
     try {
       sessionStorage.removeItem(PENDING_ROLE_KEY);
+      localStorage.removeItem(PENDING_ROLE_KEY);
     } catch { /* */ }
     setUser(null);
     void ifLogout();
