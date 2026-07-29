@@ -317,23 +317,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role) => {
-    let popup: Window | null = null;
     try {
       setOauthError(null);
       rememberPendingRole(role);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
-      if (provider === "apple") {
-        popup = window.open("about:blank", "_blank", "popup,width=480,height=720");
-      }
       const authUrl = await ifCreateOAuthUrl(provider, redirectUri);
-      if (popup && !popup.closed) {
-        popup.location.href = authUrl;
-      } else {
-        navigateToOAuthUrl(authUrl);
-      }
+      navigateToOAuthUrl(authUrl);
       return { ok: true };
     } catch (err) {
-      try { popup?.close(); } catch { /* */ }
       console.error(`[auth] ${provider} sign-in failed`, err);
       return { ok: false, message: err instanceof Error ? err.message : `Could not sign in with ${provider}` };
     }
