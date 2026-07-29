@@ -46,10 +46,16 @@ function ProfilePage() {
 
       <section className="px-4 py-6">
         <div className="flex items-center gap-4">
-          <div className="grid h-16 w-16 place-items-center rounded-full gradient-primary text-xl font-extrabold text-primary-foreground shadow-glow">A</div>
+          {user?.avatar ? (
+            <img src={user.avatar} alt={user.name ?? "Profile photo"} className="h-16 w-16 rounded-full object-cover shadow-glow" />
+          ) : (
+            <div className="grid h-16 w-16 place-items-center rounded-full gradient-primary text-xl font-extrabold text-primary-foreground shadow-glow">
+              {(user?.name ?? "S").charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="min-w-0">
-            <h2 className="font-display text-xl font-bold">Alex Morgan</h2>
-            <p className="text-xs text-muted-foreground">alex@cravio.app · Scoobix Gold</p>
+            <h2 className="truncate font-display text-xl font-bold">{user?.name ?? "Guest"}</h2>
+            <p className="truncate text-xs text-muted-foreground">{user?.email ?? "Not signed in"}</p>
           </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
