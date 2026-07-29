@@ -6,7 +6,7 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { ScoobixProviders } from "@/lib/stores";
@@ -17,6 +17,7 @@ import { PWAInstallPrompt } from "@/components/cravio/PWAInstallPrompt";
 import { NetworkBanner } from "@/components/cravio/NetworkBanner";
 import { InsForgeBootstrap } from "@/components/cravio/InsForgeBootstrap";
 import { subscribeCatalog, getCatalogVersion } from "@/lib/insforge";
+import { writeLastRoute } from "@/lib/last-route";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -77,6 +78,10 @@ function RootComponent() {
   const isDesktop = pathname.startsWith("/admin");
   // Re-mount the routed tree once live catalog data replaces the seed arrays.
   const catalogVersion = useSyncExternalStore(subscribeCatalog, getCatalogVersion, () => 0);
+  const href = useRouterState({ select: (s) => s.location.href });
+
+  // Remember the last app screen so refreshes resume exactly where you were.
+  useEffect(() => { writeLastRoute(href); }, [href]);
 
   return (
     <QueryClientProvider client={queryClient}>

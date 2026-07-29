@@ -8,6 +8,7 @@ import { updateRestaurantStatus } from "@/lib/insforge";
 import { useLiveOrders } from "@/lib/realtime-hooks";
 import { rowToOrder, type OrderRow } from "@/lib/orders-api";
 import { usePartnerRestaurant } from "@/lib/partner-store";
+import { useAuth } from "@/lib/auth-store";
 import { RestaurantIdBadge } from "@/components/cravio/RestaurantIdBadge";
 
 export const Route = createFileRoute("/partner/")({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/partner/")({
 
 function PartnerDashboard() {
   const { closedRestaurants, setRestaurantClosed, acceptingOrders, setAcceptingOrders } = useCms();
+  const { user } = useAuth();
   const { restaurant, restaurantId } = usePartnerRestaurant();
   const rid = restaurantId || partnerRestaurant.id;
   const isClosed = !!closedRestaurants[rid];
@@ -44,7 +46,7 @@ function PartnerDashboard() {
       <header className="flex items-center justify-between">
         <div>
           <p className="eyebrow">Restaurant Partner</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">{restaurant?.name ?? partnerRestaurant.name}</h1>
+          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">{restaurant?.name ?? user?.name ?? "Your restaurant"}</h1>
           <div className="mt-1.5"><RestaurantIdBadge restaurant={restaurant} /></div>
           <p className="mt-1 text-sm text-muted-foreground">{isClosed ? "Temporarily closed" : isAccepting ? "Open now · accepting orders" : "Open · paused new orders"}</p>
         </div>
