@@ -60,7 +60,9 @@ import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
 import { Route as ManagerOnboardingRouteImport } from './routes/manager.onboarding'
 import { Route as ManagerNotificationsRouteImport } from './routes/manager.notifications'
 import { Route as ManagerMoreRouteImport } from './routes/manager.more'
+import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
+import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
@@ -104,6 +106,7 @@ import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAdsRouteImport } from './routes/admin.ads'
+import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -361,9 +364,19 @@ const ManagerMoreRoute = ManagerMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => ManagerRoute,
 } as any)
+const ManagerLeadsRoute = ManagerLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const ManagerHistoryRoute = ManagerHistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerCalendarRoute = ManagerCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => ManagerRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -581,6 +594,11 @@ const AdminAdsRoute = AdminAdsRouteImport.update({
   path: '/ads',
   getParentRoute: () => AdminRoute,
 } as any)
+const ManagerLeadIdRoute = ManagerLeadIdRouteImport.update({
+  id: '/lead/$id',
+  path: '/lead/$id',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const AppGroupSessionIdRoute = AppGroupSessionIdRouteImport.update({
   id: '/group/$sessionId',
   path: '/group/$sessionId',
@@ -640,7 +658,9 @@ export interface FileRoutesByFullPath {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
+  '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -684,6 +704,7 @@ export interface FileRoutesByFullPath {
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -733,7 +754,9 @@ export interface FileRoutesByTo {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
+  '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -777,6 +800,7 @@ export interface FileRoutesByTo {
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -832,7 +856,9 @@ export interface FileRoutesById {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
+  '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -876,6 +902,7 @@ export interface FileRoutesById {
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -932,7 +959,9 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/calendar'
     | '/manager/history'
+    | '/manager/leads'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -976,6 +1005,7 @@ export interface FileRouteTypes {
     | '/partner/'
     | '/rider/'
     | '/app/group/$sessionId'
+    | '/manager/lead/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1025,7 +1055,9 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/calendar'
     | '/manager/history'
+    | '/manager/leads'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1069,6 +1101,7 @@ export interface FileRouteTypes {
     | '/partner'
     | '/rider'
     | '/app/group/$sessionId'
+    | '/manager/lead/$id'
   id:
     | '__root__'
     | '/'
@@ -1123,7 +1156,9 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/calendar'
     | '/manager/history'
+    | '/manager/leads'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1167,6 +1202,7 @@ export interface FileRouteTypes {
     | '/partner/'
     | '/rider/'
     | '/app/group/$sessionId'
+    | '/manager/lead/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1542,11 +1578,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerMoreRouteImport
       parentRoute: typeof ManagerRoute
     }
+    '/manager/leads': {
+      id: '/manager/leads'
+      path: '/leads'
+      fullPath: '/manager/leads'
+      preLoaderRoute: typeof ManagerLeadsRouteImport
+      parentRoute: typeof ManagerRoute
+    }
     '/manager/history': {
       id: '/manager/history'
       path: '/history'
       fullPath: '/manager/history'
       preLoaderRoute: typeof ManagerHistoryRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/calendar': {
+      id: '/manager/calendar'
+      path: '/calendar'
+      fullPath: '/manager/calendar'
+      preLoaderRoute: typeof ManagerCalendarRouteImport
       parentRoute: typeof ManagerRoute
     }
     '/auth/signup': {
@@ -1850,6 +1900,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/manager/lead/$id': {
+      id: '/manager/lead/$id'
+      path: '/lead/$id'
+      fullPath: '/manager/lead/$id'
+      preLoaderRoute: typeof ManagerLeadIdRouteImport
+      parentRoute: typeof ManagerRoute
+    }
     '/app/group/$sessionId': {
       id: '/app/group/$sessionId'
       path: '/group/$sessionId'
@@ -1977,7 +2034,9 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ManagerRouteChildren {
+  ManagerCalendarRoute: typeof ManagerCalendarRoute
   ManagerHistoryRoute: typeof ManagerHistoryRoute
+  ManagerLeadsRoute: typeof ManagerLeadsRoute
   ManagerMoreRoute: typeof ManagerMoreRoute
   ManagerNotificationsRoute: typeof ManagerNotificationsRoute
   ManagerOnboardingRoute: typeof ManagerOnboardingRoute
@@ -1985,10 +2044,13 @@ interface ManagerRouteChildren {
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
   ManagerSupportRoute: typeof ManagerSupportRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
+  ManagerLeadIdRoute: typeof ManagerLeadIdRoute
 }
 
 const ManagerRouteChildren: ManagerRouteChildren = {
+  ManagerCalendarRoute: ManagerCalendarRoute,
   ManagerHistoryRoute: ManagerHistoryRoute,
+  ManagerLeadsRoute: ManagerLeadsRoute,
   ManagerMoreRoute: ManagerMoreRoute,
   ManagerNotificationsRoute: ManagerNotificationsRoute,
   ManagerOnboardingRoute: ManagerOnboardingRoute,
@@ -1996,6 +2058,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
   ManagerSupportRoute: ManagerSupportRoute,
   ManagerIndexRoute: ManagerIndexRoute,
+  ManagerLeadIdRoute: ManagerLeadIdRoute,
 }
 
 const ManagerRouteWithChildren =
