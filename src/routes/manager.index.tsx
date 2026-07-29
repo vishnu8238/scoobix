@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Store, Clock3, CheckCircle2, FileEdit, Target, TrendingUp, PlusCircle } from "lucide-react";
+import { Store, Clock3, CheckCircle2, FileEdit, Target, TrendingUp, PlusCircle, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import {
   useManager,
@@ -9,6 +9,7 @@ import {
   ONBOARDING_LABEL,
   ONBOARDING_TONE,
 } from "@/lib/manager-api";
+import { useLeads, leadStats } from "@/lib/leads-api";
 
 export const Route = createFileRoute("/manager/")({
   head: () => ({
@@ -25,6 +26,8 @@ function ManagerDashboard() {
   const { manager, loading } = useManager();
   const { list, loading: loadingList } = useManagerRestaurants(manager?.id);
   const stats = managerStats(list, manager?.monthly_target ?? 10);
+  const { list: leads, loading: leadLoading } = useLeads(manager?.id);
+  const crm = leadStats(leads);
 
   return (
     <div className="mx-auto max-w-[520px] px-5 pt-[max(1rem,env(safe-area-inset-top))]">
