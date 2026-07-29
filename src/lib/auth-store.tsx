@@ -331,10 +331,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role) => {
+  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false) => {
     try {
       setOauthError(null);
-      rememberPendingRole(role);
+      rememberPendingRole(role, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
       const authUrl = await ifCreateOAuthUrl(provider, redirectUri);
       navigateToOAuthUrl(authUrl);
