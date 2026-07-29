@@ -231,9 +231,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (callback) {
           try {
             const { user: sess } = await ifCompleteOAuth(callback.code);
+            const pending = takePendingRole();
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
-              role: takePendingRole(),
+              role: pending.role,
+              forceRole: pending.claim,
             });
             if (!cancelled && next) {
               setUser(next);
