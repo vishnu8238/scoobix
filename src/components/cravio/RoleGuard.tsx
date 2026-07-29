@@ -44,7 +44,7 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
   }, [user, loading, allow, navigate, href, cachedRole]);
 
 
-  if ((loading && !optimistic) || (!loading && !user) || mismatched) {
+  if (loading || !user || mismatched) {
     return (
       <div className="flex min-h-svh w-full items-center justify-center bg-background">
         <div className="animate-pulse-soft">
