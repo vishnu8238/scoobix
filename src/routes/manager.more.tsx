@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LifeBuoy, Bell, User, LogOut, ChevronRight } from "lucide-react";
+import { LifeBuoy, Bell, User, LogOut, ChevronRight, History, CalendarDays } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { useAuth } from "@/lib/auth-store";
 import { useManager } from "@/lib/manager-api";
@@ -15,10 +15,13 @@ export const Route = createFileRoute("/manager/more")({
 });
 
 const LINKS = [
+  { to: "/manager/calendar", label: "Meetings & follow-ups", icon: CalendarDays },
+  { to: "/manager/history", label: "Onboarding history", icon: History },
   { to: "/manager/support", label: "Restaurant support tickets", icon: LifeBuoy },
   { to: "/manager/notifications", label: "Notifications", icon: Bell },
   { to: "/manager/profile", label: "My profile", icon: User },
 ];
+
 
 function ManagerMore() {
   const { user, signOut } = useAuth();
