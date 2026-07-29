@@ -197,7 +197,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
 
   // Blocking: the profile must exist before the UI ever sees the user.
   const saved = await upsertUserProfile(row).catch(() => null);
-  const finalRole = toUiRole(saved?.role) ?? role;
+  const finalRole = input.forceRole ? role : toUiRole(saved?.role) ?? role;
 
   return {
     id: sess.id,
