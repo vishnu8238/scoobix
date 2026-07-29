@@ -125,6 +125,8 @@ function mergeProviders(existing: string | null | undefined, provider: string): 
 
 type SyncInput = {
   role?: Role;
+  /** Signup paths claim the chosen role even if a default profile row exists. */
+  forceRole?: boolean;
   name?: string;
   phone?: string;
   provider?: string;
