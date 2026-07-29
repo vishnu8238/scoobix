@@ -221,6 +221,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!cancelled && next) {
               setUser(next);
               handledOAuth = true;
+              try {
+                window.opener?.postMessage({ type: "scoobix_oauth_complete" }, window.location.origin);
+                if (window.opener && !window.opener.closed) window.setTimeout(() => window.close(), 250);
+              } catch { /* */ }
             }
           } catch (err) {
             console.error("[auth] OAuth callback failed", err);
