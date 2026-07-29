@@ -452,6 +452,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
+        cachedRole,
         signIn,
         signUp,
         signInWithProvider,
