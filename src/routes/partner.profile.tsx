@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { partnerRestaurant } from "@/lib/role-data";
 import { usePartnerRestaurant } from "@/lib/partner-store";
+import { useAuth } from "@/lib/auth-store";
 import { RestaurantIdBadge } from "@/components/cravio/RestaurantIdBadge";
 import { RelationshipManagerCard } from "@/components/cravio/RelationshipManagerCard";
 import { MapPin, Phone, Clock, Star, Tag, Image as ImageIcon } from "lucide-react";
@@ -17,6 +18,7 @@ const HOURS = [
 
 function PartnerProfile() {
   const { restaurant } = usePartnerRestaurant();
+  const { user } = useAuth();
   return (
     <div className="animate-fade-up pb-8">
       <div className="relative h-56 w-full overflow-hidden">
