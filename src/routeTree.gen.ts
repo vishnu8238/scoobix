@@ -95,6 +95,7 @@ import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminManagersRouteImport } from './routes/admin.managers'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
@@ -535,6 +536,11 @@ const AdminOrdersRoute = AdminOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminManagersRoute = AdminManagersRouteImport.update({
+  id: '/managers',
+  path: '/managers',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLiveRoute = AdminLiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -599,6 +605,7 @@ export interface FileRoutesByFullPath {
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -691,6 +698,7 @@ export interface FileRoutesByTo {
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -789,6 +797,7 @@ export interface FileRoutesById {
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -888,6 +897,7 @@ export interface FileRouteTypes {
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
+    | '/admin/managers'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/referrals'
@@ -980,6 +990,7 @@ export interface FileRouteTypes {
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
+    | '/admin/managers'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/referrals'
@@ -1077,6 +1088,7 @@ export interface FileRouteTypes {
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
+    | '/admin/managers'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/referrals'
@@ -1775,6 +1787,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/managers': {
+      id: '/admin/managers'
+      path: '/managers'
+      fullPath: '/admin/managers'
+      preLoaderRoute: typeof AdminManagersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/live': {
       id: '/admin/live'
       path: '/live'
@@ -1850,6 +1869,7 @@ interface AdminRouteChildren {
   AdminDiscoverRoute: typeof AdminDiscoverRoute
   AdminDriversRoute: typeof AdminDriversRoute
   AdminLiveRoute: typeof AdminLiveRoute
+  AdminManagersRoute: typeof AdminManagersRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
@@ -1873,6 +1893,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDiscoverRoute: AdminDiscoverRoute,
   AdminDriversRoute: AdminDriversRoute,
   AdminLiveRoute: AdminLiveRoute,
+  AdminManagersRoute: AdminManagersRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminReferralsRoute: AdminReferralsRoute,
