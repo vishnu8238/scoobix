@@ -93,9 +93,9 @@ function ProfilePage() {
             <SheetDescription>Manage your basic info.</SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-3 text-sm">
-            <Field label="Full name" value="Alex Morgan" />
-            <Field label="Email" value="alex@cravio.app" />
-            <Field label="Phone" value="+1 555 0118" />
+            <Field label="Full name" value={user?.name ?? "—"} />
+            <Field label="Email" value={user?.email ?? "—"} />
+            <Field label="Phone" value={user?.phone || "—"} />
             <Button onClick={() => { toast.success("Profile updated"); setOpen(null); }} className="w-full rounded-full">Save changes</Button>
           </div>
         </SheetContent>
