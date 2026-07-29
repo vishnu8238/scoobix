@@ -7,6 +7,7 @@ import { useFavorites } from "@/lib/stores";
 import { restaurants, allDishes } from "@/lib/mock-data";
 import { useAddresses, type AddressRow } from "@/lib/addresses-store";
 import { usePaymentMethods } from "@/lib/payment-methods-store";
+import { useAuth } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -19,6 +20,7 @@ type SheetKind = null | "account" | "addresses" | "favorites" | "payments" | "he
 
 function ProfilePage() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const { restaurants: favR, dishes: favD } = useFavorites();
   const [open, setOpen] = useState<SheetKind>(null);
   const { rows: addressRows } = useAddresses();
@@ -44,10 +46,16 @@ function ProfilePage() {
 
       <section className="px-4 py-6">
         <div className="flex items-center gap-4">
-          <div className="grid h-16 w-16 place-items-center rounded-full gradient-primary text-xl font-extrabold text-primary-foreground shadow-glow">A</div>
+          {user?.avatar ? (
+            <img src={user.avatar} alt={user.name ?? "Profile photo"} className="h-16 w-16 rounded-full object-cover shadow-glow" />
+          ) : (
+            <div className="grid h-16 w-16 place-items-center rounded-full gradient-primary text-xl font-extrabold text-primary-foreground shadow-glow">
+              {(user?.name ?? "S").charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="min-w-0">
-            <h2 className="font-display text-xl font-bold">Alex Morgan</h2>
-            <p className="text-xs text-muted-foreground">alex@cravio.app · Scoobix Gold</p>
+            <h2 className="truncate font-display text-xl font-bold">{user?.name ?? "Guest"}</h2>
+            <p className="truncate text-xs text-muted-foreground">{user?.email ?? "Not signed in"}</p>
           </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
@@ -71,7 +79,7 @@ function ProfilePage() {
           <Item icon={Settings} label="Settings" onClick={() => setOpen("settings")} />
         </Group>
         <button
-          onClick={() => { toast.success("Signed out (demo)"); navigate({ to: "/" }); }}
+          onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/auth/login" }); }}
           className="mt-4 mb-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-bold text-destructive"
         >
           <LogOut className="h-4 w-4" /> Sign out
@@ -85,9 +93,9 @@ function ProfilePage() {
             <SheetDescription>Manage your basic info.</SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-3 text-sm">
-            <Field label="Full name" value="Alex Morgan" />
-            <Field label="Email" value="alex@cravio.app" />
-            <Field label="Phone" value="+1 555 0118" />
+            <Field label="Full name" value={user?.name ?? "—"} />
+            <Field label="Email" value={user?.email ?? "—"} />
+            <Field label="Phone" value={user?.phone || "—"} />
             <Button onClick={() => { toast.success("Profile updated"); setOpen(null); }} className="w-full rounded-full">Save changes</Button>
           </div>
         </SheetContent>

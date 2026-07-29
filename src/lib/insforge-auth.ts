@@ -265,9 +265,20 @@ export type OAuthCallback = {
   meta: Record<string, string>;
 };
 
+/**
+ * Snapshot of the URL as the document was first loaded.
+ *
+ * The router's `validateSearch` normalises the address bar (dropping unknown
+ * params such as `insforge_code`) before React effects run, so reading
+ * `window.location.search` later loses the OAuth callback entirely.
+ */
+const INITIAL_SEARCH = typeof window !== "undefined" ? window.location.search : "";
+
 /** Detects an OAuth return in the current URL (does not consume it). */
-export function readOAuthCallback(search: string = typeof window !== "undefined" ? window.location.search : ""): OAuthCallback | null {
-  const params = new URLSearchParams(search);
+export function readOAuthCallback(search?: string): OAuthCallback | null {
+  const live = typeof window !== "undefined" ? window.location.search : "";
+  const source = search ?? (new URLSearchParams(live).get("insforge_code") || new URLSearchParams(live).get("code") ? live : INITIAL_SEARCH);
+  const params = new URLSearchParams(source);
   const code = params.get("insforge_code") ?? params.get("code");
   if (!code) return null;
   let meta: Record<string, string> = {};

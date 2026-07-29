@@ -320,8 +320,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = useCallback(() => {
-    void ifLogout();
+    // Clear the local session FIRST so no in-flight request can revive it,
+    // then revoke server-side in the background.
+    setTokens(null, null);
+    try {
+      sessionStorage.removeItem(PENDING_ROLE_KEY);
+    } catch { /* */ }
     setUser(null);
+    void ifLogout();
   }, []);
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {
