@@ -25,6 +25,7 @@ import {
 } from "./insforge-auth";
 import { isPhoneOtpEnabled, sendPhoneOtp, verifyPhoneOtp, normalisePhone } from "./phone-otp";
 import { setTokens } from "./insforge-auth";
+import { clearLastRoute } from "./last-route";
 
 /**
  * Auth store backed by InsForge Auth.
@@ -428,6 +429,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Clear the local session FIRST so no in-flight request can revive it,
     // then revoke server-side in the background.
     setTokens(null, null);
+    clearLastRoute();
     try {
       sessionStorage.removeItem(PENDING_ROLE_KEY);
       localStorage.removeItem(PENDING_ROLE_KEY);
