@@ -17,9 +17,6 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
   const href = useRouterState({ select: (s) => s.location.href });
 
   const mismatched = !!user && user.role !== allow;
-  // Before the session resolves, trust the persisted role from the last visit
-  // so a refresh never parks the user on the wrong app's shell.
-  const optimistic = loading && !user && cachedRole === allow;
 
   useEffect(() => {
     if (loading) {
