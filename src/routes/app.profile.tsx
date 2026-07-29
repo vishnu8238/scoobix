@@ -7,6 +7,7 @@ import { useFavorites } from "@/lib/stores";
 import { restaurants, allDishes } from "@/lib/mock-data";
 import { useAddresses, type AddressRow } from "@/lib/addresses-store";
 import { usePaymentMethods } from "@/lib/payment-methods-store";
+import { useAuth } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
