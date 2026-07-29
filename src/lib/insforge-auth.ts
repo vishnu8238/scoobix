@@ -291,6 +291,19 @@ export type OAuthCallback = {
  */
 const INITIAL_SEARCH = typeof window !== "undefined" ? window.location.search : "";
 
+/** Reads a provider-side failure (`?insforge_error=...`) from the return URL. */
+export function readOAuthError(): string | null {
+  if (typeof window === "undefined") return null;
+  const live = window.location.search;
+  const params = new URLSearchParams(
+    new URLSearchParams(live).get("insforge_error") || new URLSearchParams(live).get("error") ? live : INITIAL_SEARCH,
+  );
+  const err = params.get("insforge_error") ?? params.get("error");
+  if (!err) return null;
+  const desc = params.get("error_description") ?? params.get("insforge_error_description");
+  return desc ? `${err}: ${desc}` : err;
+}
+
 /** Detects an OAuth return in the current URL (does not consume it). */
 export function readOAuthCallback(search?: string): OAuthCallback | null {
   const live = typeof window !== "undefined" ? window.location.search : "";
@@ -306,19 +319,36 @@ export function readOAuthCallback(search?: string): OAuthCallback | null {
 /** Exchanges the returned code + stored PKCE verifier for a session. */
 export async function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUser; isNewUser?: boolean }> {
   const verifier = readOAuthState(PKCE_KEY);
-  if (!verifier) throw new Error("Sign-in session expired — please try again");
-  const res = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange?client_type=mobile`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: INSFORGE_ANON_KEY },
-    body: JSON.stringify({ code, code_verifier: verifier }),
-  });
-  const data = await jsonOrThrow(res);
+  if (!verifier) {
+    // The verifier can be lost when the provider (Apple, form_post) returns in
+    // a fresh browsing context. The exchange may still have set a session, so
+    // fall back to it before failing the sign-in outright.
+    const fallback = await ifGetSession().catch(() => null);
+    if (fallback?.id) return { user: fallback };
+    throw new Error("Sign-in session expired — please try again");
+  }
+  let data: any;
+  try {
+    const res = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange?client_type=mobile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: INSFORGE_ANON_KEY },
+      body: JSON.stringify({ code, code_verifier: verifier }),
+    });
+    data = await jsonOrThrow(res);
+  } catch (err) {
+    dropOAuthState(PKCE_KEY);
+    dropOAuthState(OAUTH_META_KEY);
+    const fallback = await ifGetSession().catch(() => null);
+    if (fallback?.id) return { user: fallback };
+    throw err;
+  }
   setTokens(data.accessToken ?? null, data.refreshToken ?? null);
   dropOAuthState(PKCE_KEY);
   dropOAuthState(OAUTH_META_KEY);
   const user = await ensureSessionUser(data, "Provider sign-in");
   return { user, isNewUser: !!data.isNewUser };
 }
+
 
 /** Strips OAuth params from the address bar without a navigation. */
 export function clearOAuthParamsFromUrl() {
