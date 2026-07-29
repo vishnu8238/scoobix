@@ -525,11 +525,12 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
       }
       setDetecting(true);
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const label = mockReverseGeocode(pos.coords.latitude, pos.coords.longitude);
-          setLocationState(label);
-          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        async (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          setUserCoords({ lat, lng });
           setLocationPermission("granted");
+          const label = await reverseGeocode(lat, lng);
+          setLocationState(label);
           setDetecting(false);
           resolve({ ok: true, message: label });
         },
@@ -538,11 +539,13 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
           if (err.code === err.PERMISSION_DENIED) {
             setLocationPermission("denied");
             resolve({ ok: false, message: "Location permission denied" });
+          } else if (err.code === err.TIMEOUT) {
+            resolve({ ok: false, message: "Location request timed out — try again" });
           } else {
             resolve({ ok: false, message: "Couldn't fetch your location" });
           }
         },
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
       );
     });
 
