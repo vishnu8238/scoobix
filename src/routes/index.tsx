@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import splashBg from "@/assets/splash-bg.jpg";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { useAuth, ROLE_HOME } from "@/lib/auth-store";
+import { readLastRoute } from "@/lib/last-route";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,7 +30,7 @@ function Splash() {
     // head to the right app — the route guard re-validates on arrival.
     if (loading && !cachedRole) return;
     const role = user?.role ?? cachedRole;
-    const target = role ? ROLE_HOME[role] : "/auth/login";
+    const target = role ? (readLastRoute(role) ?? ROLE_HOME[role]) : "/auth/login";
     const t = setTimeout(() => setExiting(true), 1100);
     const t2 = setTimeout(() => navigate({ to: target as never, replace: true }), 1600);
     return () => { clearTimeout(t); clearTimeout(t2); };

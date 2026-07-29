@@ -24,7 +24,7 @@ function PartnerProfile() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <div className="absolute bottom-4 left-5 right-5 text-white">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Restaurant Profile</p>
-          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">{restaurant?.name ?? partnerRestaurant.name}</h1>
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">{restaurant?.name ?? user?.name ?? "Your restaurant"}</h1>
           <p className="mt-1 text-sm text-white/80">{partnerRestaurant.cuisine}</p>
         </div>
       </div>

@@ -66,7 +66,7 @@ function PartnerMore() {
       <PageHeader title="More" subtitle="Setup, growth & operations" />
 
       <section className="mx-4 mt-4 rounded-3xl bg-card p-4 shadow-soft ring-1 ring-border/60">
-        <p className="font-display text-lg font-extrabold">{restaurant?.name ?? "Your restaurant"}</p>
+        <p className="font-display text-lg font-extrabold">{restaurant?.name ?? user?.name ?? "Your restaurant"}</p>
         <div className="mt-2"><RestaurantIdBadge restaurant={restaurant} /></div>
       </section>
 
