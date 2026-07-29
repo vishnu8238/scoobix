@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Search, MapPin, Navigation, Plus, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, MapPin, Navigation, Plus, Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAddresses } from "@/lib/addresses-store";
 import { useAppUI } from "@/lib/stores";
 import { DEFAULT_CUSTOMER, addressCoords, type LatLng } from "@/lib/geo";
+import { reverseGeocode, searchPlaces, type GeoPlace } from "@/lib/geocode";
 import { toast } from "sonner";
 
 
@@ -29,7 +30,34 @@ function LocationPicker() {
     icon: /home/i.test(a.label) ? "🏠" : /work|office/i.test(a.label) ? "💼" : "📍",
     line: [a.line1, a.line2].filter(Boolean).join(" · "),
   }));
+  const [pickedLabel, setPickedLabel] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<GeoPlace[]>([]);
 
+  // Reverse-geocode the dropped pin so the user sees the exact address.
+  useEffect(() => {
+    if (!picked) { setPickedLabel(null); return; }
+    let cancelled = false;
+    setPickedLabel("Locating…");
+    void reverseGeocode(picked.lat, picked.lng).then((l) => { if (!cancelled) setPickedLabel(l); });
+    return () => { cancelled = true; };
+  }, [picked]);
+
+  // Live place search (debounced).
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 3) { setResults([]); setSearching(false); return; }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(() => {
+      void searchPlaces(term, userCoords ?? DEFAULT_CUSTOMER).then((r) => {
+        if (cancelled) return;
+        setResults(r);
+        setSearching(false);
+      });
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [q, userCoords]);
 
   const select = (line: string, coords?: LatLng) => {
     setLocation(line, coords ?? addressCoords(line));
@@ -43,8 +71,6 @@ function LocationPicker() {
     else toast.error(r.message);
   };
 
-  const suggestions = ["Westside · Apt 4", "MG Road, Bengaluru", "Bandra West, Mumbai", "Connaught Place, Delhi", "Indiranagar 100ft Rd"]
-    .filter((s) => s.toLowerCase().includes(q.toLowerCase()));
 
   return (
     <div className="min-h-svh pb-10">
@@ -69,7 +95,7 @@ function LocationPicker() {
           </button>
           {picked && (
             <button
-              onClick={() => select("Pinned on map", picked)}
+              onClick={() => select(pickedLabel && pickedLabel !== "Locating…" ? pickedLabel : "Pinned on map", picked)}
               className="pointer-events-auto inline-flex items-center gap-2 rounded-full gradient-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-glow"
             >
               <Check className="h-4 w-4" strokeWidth={2.5} /> Use this pin
@@ -77,7 +103,10 @@ function LocationPicker() {
           )}
         </div>
       </div>
-      <p className="mt-2 px-5 text-[11px] text-muted-foreground">Tap the map to drop a pin, then drag it to fine-tune.</p>
+      <p className="mt-2 px-5 text-[11px] text-muted-foreground">
+        {pickedLabel ?? "Tap the map to drop a pin, then drag it to fine-tune."}
+      </p>
+
 
 
       <div className="mt-5 px-4">
@@ -116,23 +145,28 @@ function LocationPicker() {
         </ul>
       </section>
 
-      {q && (
+      {q.trim().length >= 3 && (
         <section className="mt-6 px-4">
           <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Search results</h3>
           <ul className="space-y-2">
-            {suggestions.length === 0 ? (
+            {searching ? (
+              <li className="flex items-center justify-center gap-2 rounded-2xl bg-card p-4 text-xs text-muted-foreground shadow-soft ring-1 ring-border/60">
+                <Loader2 className="h-4 w-4 animate-spin" /> Searching…
+              </li>
+            ) : results.length === 0 ? (
               <li className="rounded-2xl bg-card p-4 text-center text-xs text-muted-foreground shadow-soft ring-1 ring-border/60">No matches for "{q}"</li>
-            ) : suggestions.map((s) => (
-              <li key={s}>
-                <button onClick={() => select(s)} className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left shadow-soft ring-1 ring-border/60 transition active:scale-[0.99]">
+            ) : results.map((s) => (
+              <li key={`${s.lat},${s.lng},${s.label}`}>
+                <button onClick={() => select(s.label, { lat: s.lat, lng: s.lng })} className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left shadow-soft ring-1 ring-border/60 transition active:scale-[0.99]">
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-muted-foreground"><MapPin className="h-4 w-4" /></span>
-                  <span className="text-sm">{s}</span>
+                  <span className="text-sm">{s.label}</span>
                 </button>
               </li>
             ))}
           </ul>
         </section>
       )}
+
 
       <div className="px-4 pt-8">
         <Button onClick={() => navigate({ to: "/app" })} className="h-12 w-full rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-glow">Confirm and continue</Button>

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { findRestaurant, type Dish, type Restaurant } from "./mock-data";
 import { useAuth } from "./auth-store";
 import { currentPlatformSettings } from "./cms-store";
+import { reverseGeocode } from "./geocode";
 
 
 
@@ -471,20 +472,8 @@ type AppUICtx = {
 const AppUIContext = createContext<AppUICtx | null>(null);
 const UI_KEY = "cravio_ui_v1";
 
-// Tiny mock reverse-geocoder: turns coords into a nice-looking area name.
-// Backend swap point: replace with a real geocoding call later.
-function mockReverseGeocode(lat: number, lng: number): string {
-  const areas = [
-    "Indiranagar, Bengaluru",
-    "Bandra West, Mumbai",
-    "Connaught Place, Delhi",
-    "Koramangala, Bengaluru",
-    "Powai, Mumbai",
-    "HSR Layout, Bengaluru",
-  ];
-  const idx = Math.abs(Math.round(lat * 7 + lng * 3)) % areas.length;
-  return `${areas[idx]} · Current location`;
-}
+// Reverse geocoding is handled by src/lib/geocode.ts (OpenStreetMap Nominatim).
+
 
 export function AppUIProvider({ children }: { children: ReactNode }) {
   const [location, setLocationState] = useState("Westside · Apt 4");
@@ -536,11 +525,12 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
       }
       setDetecting(true);
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const label = mockReverseGeocode(pos.coords.latitude, pos.coords.longitude);
-          setLocationState(label);
-          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        async (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          setUserCoords({ lat, lng });
           setLocationPermission("granted");
+          const label = await reverseGeocode(lat, lng);
+          setLocationState(label);
           setDetecting(false);
           resolve({ ok: true, message: label });
         },
@@ -549,11 +539,13 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
           if (err.code === err.PERMISSION_DENIED) {
             setLocationPermission("denied");
             resolve({ ok: false, message: "Location permission denied" });
+          } else if (err.code === err.TIMEOUT) {
+            resolve({ ok: false, message: "Location request timed out — try again" });
           } else {
             resolve({ ok: false, message: "Couldn't fetch your location" });
           }
         },
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
       );
     });
 
