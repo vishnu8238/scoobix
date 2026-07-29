@@ -11,6 +11,7 @@ import {
   ifStartOAuth,
   ifCompleteOAuth,
   readOAuthCallback,
+  readOAuthError,
   clearOAuthParamsFromUrl,
   fetchUserProfile,
   findUserProfileByEmail,
@@ -50,6 +51,9 @@ type AuthCtx = {
   verifyEmailCode: (email: string, code: string) => Promise<AuthResult>;
   resendVerification: (email: string) => Promise<{ ok: boolean; message: string }>;
   signOut: () => void;
+  /** Last provider sign-in failure (Google / Apple), surfaced by the login UI. */
+  oauthError: string | null;
+  clearOAuthError: () => void;
   resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
 };
 
@@ -139,16 +143,20 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     existing?.name ||
     input.name ||
     (sess.profile?.name as string | undefined) ||
-    (sess.email ? sess.email.split("@")[0] : "User");
+    (sess.profile?.full_name as string | undefined) ||
+    ((sess.metadata?.name ?? sess.metadata?.full_name) as string | undefined) ||
+    (sess.email ? sess.email.split("@")[0] : provider === "apple" ? "Apple User" : "User");
   const avatar =
     (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
   const role = toUiRole(existing?.role) ?? input.role ?? "customer";
   const phone = existing?.phone || input.phone || "";
-  const email = sess.email ?? existing?.email ?? "";
+  // Apple can withhold the address entirely — never write an empty string into
+  // a unique column, and never crash on the missing value.
+  const email = sess.email || existing?.email || "";
 
   const row: UserProfileRow = {
     id: sess.id,
-    email,
+    email: email || null,
     name,
     phone: phone || null,
     role: UI_TO_DB[role],
@@ -187,6 +195,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   // Auto-login + OAuth return handling.
   useEffect(() => {
@@ -194,6 +203,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       let handledOAuth = false;
       try {
+        const providerError = readOAuthError();
+        if (providerError) {
+          console.error("[auth] OAuth provider returned an error", providerError);
+          if (!cancelled) setOauthError(providerError);
+          clearOAuthParamsFromUrl();
+        }
         const callback = readOAuthCallback();
         if (callback) {
           try {
@@ -208,6 +223,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           } catch (err) {
             console.error("[auth] OAuth callback failed", err);
+            if (!cancelled) {
+              setOauthError(err instanceof Error ? err.message : "Provider sign-in failed");
+            }
           }
           clearOAuthParamsFromUrl();
         }
@@ -266,6 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role) => {
     try {
+      setOauthError(null);
       rememberPendingRole(role);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
       await ifStartOAuth(provider, redirectUri);
@@ -349,6 +368,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signInWithProvider,
+        oauthError,
+        clearOAuthError: () => setOauthError(null),
         phoneOtpEnabled: isPhoneOtpEnabled(),
         requestPhoneOtp,
         verifyPhoneLogin,
