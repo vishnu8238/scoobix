@@ -371,38 +371,68 @@ export function readOAuthCallback(search?: string): OAuthCallback | null {
   return { code, provider: meta.provider ?? params.get("provider") ?? "google", meta };
 }
 
-/** Exchanges the returned code + stored PKCE verifier for a session. */
-export async function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUser; isNewUser?: boolean }> {
-  const verifier = readOAuthState(PKCE_KEY);
-  if (!verifier) {
-    // The verifier can be lost when the provider (Apple, form_post) returns in
-    // a fresh browsing context. The exchange may still have set a session, so
-    // fall back to it before failing the sign-in outright.
-    const fallback = await ifGetSession().catch(() => null);
-    if (fallback?.id) return { user: fallback };
-    throw new Error("Sign-in session expired — please try again");
-  }
-  let data: any;
-  try {
-    const res = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange?client_type=mobile`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: INSFORGE_ANON_KEY },
-      body: JSON.stringify({ code, code_verifier: verifier }),
-    });
-    data = await jsonOrThrow(res);
-  } catch (err) {
+/**
+ * Exchanges the returned code + stored PKCE verifier for a session.
+ *
+ * Hardened for Apple: the same code can be delivered twice (StrictMode remount,
+ * bfcache restore, form_post replay) and the verifier can be missing when the
+ * return lands in a fresh browsing context. Both cases used to surface as
+ * "auth failed" on some phones while working fine on others.
+ */
+const inflightExchanges = new Map<string, Promise<{ user: InsForgeUser; isNewUser?: boolean }>>();
+
+async function exchangeOAuthCode(code: string, verifier: string | null): Promise<any> {
+  const body: Record<string, string> = { code };
+  if (verifier) body.code_verifier = verifier;
+  const res = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange?client_type=mobile`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: INSFORGE_ANON_KEY },
+    body: JSON.stringify(body),
+  });
+  return jsonOrThrow(res);
+}
+
+export function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUser; isNewUser?: boolean }> {
+  const existing = inflightExchanges.get(code);
+  if (existing) return existing;
+  const run = (async () => {
+    const verifier = readOAuthState(PKCE_KEY) || null;
+    let data: any = null;
+    let firstError: unknown = null;
+
+    if (verifier) {
+      try { data = await exchangeOAuthCode(code, verifier); } catch (err) { firstError = err; }
+    }
+    // Verifier missing or rejected (lost/partitioned storage): try once without
+    // it — some providers/configs complete the exchange server-side.
+    if (!data) {
+      try { data = await exchangeOAuthCode(code, null); } catch (err) { firstError ??= err; }
+    }
+
     dropOAuthState(PKCE_KEY);
     dropOAuthState(OAUTH_META_KEY);
+
+    if (data) {
+      setTokens(data.accessToken ?? null, data.refreshToken ?? null);
+      const user = await ensureSessionUser(data, "Provider sign-in");
+      return { user, isNewUser: !!data.isNewUser };
+    }
+
+    // The exchange may already have succeeded (duplicate delivery of the same
+    // code). Trust an existing session before failing the sign-in.
     const fallback = await ifGetSession().catch(() => null);
     if (fallback?.id) return { user: fallback };
-    throw err;
-  }
-  setTokens(data.accessToken ?? null, data.refreshToken ?? null);
-  dropOAuthState(PKCE_KEY);
-  dropOAuthState(OAUTH_META_KEY);
-  const user = await ensureSessionUser(data, "Provider sign-in");
-  return { user, isNewUser: !!data.isNewUser };
+    throw firstError instanceof Error
+      ? firstError
+      : new Error("Sign-in session expired — please try again");
+  })();
+  inflightExchanges.set(code, run);
+  // Keep successful results cached briefly so a remount reuses them.
+  void run.catch(() => { inflightExchanges.delete(code); });
+  setTimeout(() => inflightExchanges.delete(code), 60_000);
+  return run;
 }
+
 
 
 /** Strips OAuth params from the address bar without a navigation. */
