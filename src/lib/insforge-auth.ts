@@ -24,18 +24,41 @@ const OAUTH_META_KEY = "scoobix_if_oauth_meta_v1";
  * in-app webviews) the return lands in a *new* browsing context where
  * `sessionStorage` is empty. Mirror everything into `localStorage` too.
  */
+function writeCookie(key: string, value: string, maxAge = 600) {
+  try {
+    const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${key}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax${secure}`;
+  } catch { /* */ }
+}
+function readCookie(key: string): string {
+  try {
+    const hit = document.cookie.split("; ").find((c) => c.startsWith(`${key}=`));
+    return hit ? decodeURIComponent(hit.slice(key.length + 1)) : "";
+  } catch { return ""; }
+}
+function clearCookie(key: string) {
+  try { document.cookie = `${key}=; Max-Age=0; Path=/; SameSite=Lax`; } catch { /* */ }
+}
+
 function stashOAuthState(key: string, value: string) {
   try { sessionStorage.setItem(key, value); } catch { /* */ }
   try { localStorage.setItem(key, value); } catch { /* */ }
+  // iOS Safari / in-app webviews can hand the form_post return to a fresh
+  // browsing context with partitioned (empty) web storage. A first-party
+  // SameSite=Lax cookie survives that hop, so mirror the state there too.
+  writeCookie(key, value);
 }
 function readOAuthState(key: string): string {
   try { const v = sessionStorage.getItem(key); if (v) return v; } catch { /* */ }
-  try { return localStorage.getItem(key) ?? ""; } catch { return ""; }
+  try { const v = localStorage.getItem(key); if (v) return v; } catch { /* */ }
+  return readCookie(key);
 }
 function dropOAuthState(key: string) {
   try { sessionStorage.removeItem(key); } catch { /* */ }
   try { localStorage.removeItem(key); } catch { /* */ }
+  clearCookie(key);
 }
+
 
 export type DbRole = "customer" | "restaurant" | "driver" | "admin";
 
