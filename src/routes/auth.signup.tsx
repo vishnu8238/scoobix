@@ -55,7 +55,7 @@ function SignupPage() {
 
   const oauth = async (provider: "google" | "apple") => {
     setBusy(true);
-    const res = await signInWithProvider(provider, role);
+    const res = await signInWithProvider(provider, role, true);
     if (!res.ok) { setBusy(false); toast.error(res.message ?? "Could not start sign-up"); }
   };
 
