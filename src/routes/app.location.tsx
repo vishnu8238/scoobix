@@ -142,23 +142,28 @@ function LocationPicker() {
         </ul>
       </section>
 
-      {q && (
+      {q.trim().length >= 3 && (
         <section className="mt-6 px-4">
           <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Search results</h3>
           <ul className="space-y-2">
-            {suggestions.length === 0 ? (
+            {searching ? (
+              <li className="flex items-center justify-center gap-2 rounded-2xl bg-card p-4 text-xs text-muted-foreground shadow-soft ring-1 ring-border/60">
+                <Loader2 className="h-4 w-4 animate-spin" /> Searching…
+              </li>
+            ) : results.length === 0 ? (
               <li className="rounded-2xl bg-card p-4 text-center text-xs text-muted-foreground shadow-soft ring-1 ring-border/60">No matches for "{q}"</li>
-            ) : suggestions.map((s) => (
-              <li key={s}>
-                <button onClick={() => select(s)} className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left shadow-soft ring-1 ring-border/60 transition active:scale-[0.99]">
+            ) : results.map((s) => (
+              <li key={`${s.lat},${s.lng},${s.label}`}>
+                <button onClick={() => select(s.label, { lat: s.lat, lng: s.lng })} className="flex w-full items-center gap-3 rounded-2xl bg-card p-3 text-left shadow-soft ring-1 ring-border/60 transition active:scale-[0.99]">
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-secondary text-muted-foreground"><MapPin className="h-4 w-4" /></span>
-                  <span className="text-sm">{s}</span>
+                  <span className="text-sm">{s.label}</span>
                 </button>
               </li>
             ))}
           </ul>
         </section>
       )}
+
 
       <div className="px-4 pt-8">
         <Button onClick={() => navigate({ to: "/app" })} className="h-12 w-full rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-glow">Confirm and continue</Button>
