@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Store, PlusCircle, History, MoreHorizontal } from "lucide-react";
+import { LayoutDashboard, Store, PlusCircle, Users, MoreHorizontal } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
@@ -13,11 +13,12 @@ export const Route = createFileRoute("/manager")({
 
 const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/manager", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/manager/leads", label: "Leads", icon: Users },
   { to: "/manager/restaurants", label: "Restaurants", icon: Store },
   { to: "/manager/onboarding", label: "Onboard", icon: PlusCircle },
-  { to: "/manager/history", label: "History", icon: History },
   { to: "/manager/more", label: "More", icon: MoreHorizontal },
 ];
+
 
 const PRIMARY = new Set(NAV.map((n) => n.to));
 

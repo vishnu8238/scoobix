@@ -62,6 +62,7 @@ import { Route as ManagerNotificationsRouteImport } from './routes/manager.notif
 import { Route as ManagerMoreRouteImport } from './routes/manager.more'
 import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
+import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
@@ -373,6 +374,11 @@ const ManagerHistoryRoute = ManagerHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => ManagerRoute,
 } as any)
+const ManagerCalendarRoute = ManagerCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -652,6 +658,7 @@ export interface FileRoutesByFullPath {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
@@ -747,6 +754,7 @@ export interface FileRoutesByTo {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
@@ -848,6 +856,7 @@ export interface FileRoutesById {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
   '/manager/more': typeof ManagerMoreRoute
@@ -950,6 +959,7 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
     | '/manager/more'
@@ -1045,6 +1055,7 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
     | '/manager/more'
@@ -1145,6 +1156,7 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
     | '/manager/more'
@@ -1578,6 +1590,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/manager/history'
       preLoaderRoute: typeof ManagerHistoryRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/calendar': {
+      id: '/manager/calendar'
+      path: '/calendar'
+      fullPath: '/manager/calendar'
+      preLoaderRoute: typeof ManagerCalendarRouteImport
       parentRoute: typeof ManagerRoute
     }
     '/auth/signup': {
@@ -2015,6 +2034,7 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ManagerRouteChildren {
+  ManagerCalendarRoute: typeof ManagerCalendarRoute
   ManagerHistoryRoute: typeof ManagerHistoryRoute
   ManagerLeadsRoute: typeof ManagerLeadsRoute
   ManagerMoreRoute: typeof ManagerMoreRoute
@@ -2028,6 +2048,7 @@ interface ManagerRouteChildren {
 }
 
 const ManagerRouteChildren: ManagerRouteChildren = {
+  ManagerCalendarRoute: ManagerCalendarRoute,
   ManagerHistoryRoute: ManagerHistoryRoute,
   ManagerLeadsRoute: ManagerLeadsRoute,
   ManagerMoreRoute: ManagerMoreRoute,
