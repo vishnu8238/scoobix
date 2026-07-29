@@ -30,7 +30,34 @@ function LocationPicker() {
     icon: /home/i.test(a.label) ? "🏠" : /work|office/i.test(a.label) ? "💼" : "📍",
     line: [a.line1, a.line2].filter(Boolean).join(" · "),
   }));
+  const [pickedLabel, setPickedLabel] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<GeoPlace[]>([]);
 
+  // Reverse-geocode the dropped pin so the user sees the exact address.
+  useEffect(() => {
+    if (!picked) { setPickedLabel(null); return; }
+    let cancelled = false;
+    setPickedLabel("Locating…");
+    void reverseGeocode(picked.lat, picked.lng).then((l) => { if (!cancelled) setPickedLabel(l); });
+    return () => { cancelled = true; };
+  }, [picked]);
+
+  // Live place search (debounced).
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 3) { setResults([]); setSearching(false); return; }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(() => {
+      void searchPlaces(term, userCoords ?? DEFAULT_CUSTOMER).then((r) => {
+        if (cancelled) return;
+        setResults(r);
+        setSearching(false);
+      });
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [q, userCoords]);
 
   const select = (line: string, coords?: LatLng) => {
     setLocation(line, coords ?? addressCoords(line));
@@ -44,8 +71,6 @@ function LocationPicker() {
     else toast.error(r.message);
   };
 
-  const suggestions = ["Westside · Apt 4", "MG Road, Bengaluru", "Bandra West, Mumbai", "Connaught Place, Delhi", "Indiranagar 100ft Rd"]
-    .filter((s) => s.toLowerCase().includes(q.toLowerCase()));
 
   return (
     <div className="min-h-svh pb-10">
