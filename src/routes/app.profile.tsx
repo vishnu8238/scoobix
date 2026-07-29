@@ -20,6 +20,7 @@ type SheetKind = null | "account" | "addresses" | "favorites" | "payments" | "he
 
 function ProfilePage() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const { restaurants: favR, dishes: favD } = useFavorites();
   const [open, setOpen] = useState<SheetKind>(null);
   const { rows: addressRows } = useAddresses();
