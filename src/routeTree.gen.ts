@@ -54,8 +54,13 @@ import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
+import { Route as ManagerSupportRouteImport } from './routes/manager.support'
 import { Route as ManagerRestaurantsRouteImport } from './routes/manager.restaurants'
+import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
 import { Route as ManagerOnboardingRouteImport } from './routes/manager.onboarding'
+import { Route as ManagerNotificationsRouteImport } from './routes/manager.notifications'
+import { Route as ManagerMoreRouteImport } from './routes/manager.more'
+import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
@@ -325,14 +330,39 @@ const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
   path: '/addons',
   getParentRoute: () => PartnerRoute,
 } as any)
+const ManagerSupportRoute = ManagerSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const ManagerRestaurantsRoute = ManagerRestaurantsRouteImport.update({
   id: '/restaurants',
   path: '/restaurants',
   getParentRoute: () => ManagerRoute,
 } as any)
+const ManagerProfileRoute = ManagerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const ManagerOnboardingRoute = ManagerOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerNotificationsRoute = ManagerNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerMoreRoute = ManagerMoreRouteImport.update({
+  id: '/more',
+  path: '/more',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerHistoryRoute = ManagerHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => ManagerRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -603,8 +633,13 @@ export interface FileRoutesByFullPath {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/history': typeof ManagerHistoryRoute
+  '/manager/more': typeof ManagerMoreRoute
+  '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
+  '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
+  '/manager/support': typeof ManagerSupportRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -690,8 +725,13 @@ export interface FileRoutesByTo {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/history': typeof ManagerHistoryRoute
+  '/manager/more': typeof ManagerMoreRoute
+  '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
+  '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
+  '/manager/support': typeof ManagerSupportRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -783,8 +823,13 @@ export interface FileRoutesById {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/history': typeof ManagerHistoryRoute
+  '/manager/more': typeof ManagerMoreRoute
+  '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
+  '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
+  '/manager/support': typeof ManagerSupportRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -877,8 +922,13 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/history'
+    | '/manager/more'
+    | '/manager/notifications'
     | '/manager/onboarding'
+    | '/manager/profile'
     | '/manager/restaurants'
+    | '/manager/support'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -964,8 +1014,13 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/history'
+    | '/manager/more'
+    | '/manager/notifications'
     | '/manager/onboarding'
+    | '/manager/profile'
     | '/manager/restaurants'
+    | '/manager/support'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1056,8 +1111,13 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/history'
+    | '/manager/more'
+    | '/manager/notifications'
     | '/manager/onboarding'
+    | '/manager/profile'
     | '/manager/restaurants'
+    | '/manager/support'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1428,6 +1488,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
     }
+    '/manager/support': {
+      id: '/manager/support'
+      path: '/support'
+      fullPath: '/manager/support'
+      preLoaderRoute: typeof ManagerSupportRouteImport
+      parentRoute: typeof ManagerRoute
+    }
     '/manager/restaurants': {
       id: '/manager/restaurants'
       path: '/restaurants'
@@ -1435,11 +1502,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerRestaurantsRouteImport
       parentRoute: typeof ManagerRoute
     }
+    '/manager/profile': {
+      id: '/manager/profile'
+      path: '/profile'
+      fullPath: '/manager/profile'
+      preLoaderRoute: typeof ManagerProfileRouteImport
+      parentRoute: typeof ManagerRoute
+    }
     '/manager/onboarding': {
       id: '/manager/onboarding'
       path: '/onboarding'
       fullPath: '/manager/onboarding'
       preLoaderRoute: typeof ManagerOnboardingRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/notifications': {
+      id: '/manager/notifications'
+      path: '/notifications'
+      fullPath: '/manager/notifications'
+      preLoaderRoute: typeof ManagerNotificationsRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/more': {
+      id: '/manager/more'
+      path: '/more'
+      fullPath: '/manager/more'
+      preLoaderRoute: typeof ManagerMoreRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/history': {
+      id: '/manager/history'
+      path: '/history'
+      fullPath: '/manager/history'
+      preLoaderRoute: typeof ManagerHistoryRouteImport
       parentRoute: typeof ManagerRoute
     }
     '/auth/signup': {
@@ -1861,14 +1956,24 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ManagerRouteChildren {
+  ManagerHistoryRoute: typeof ManagerHistoryRoute
+  ManagerMoreRoute: typeof ManagerMoreRoute
+  ManagerNotificationsRoute: typeof ManagerNotificationsRoute
   ManagerOnboardingRoute: typeof ManagerOnboardingRoute
+  ManagerProfileRoute: typeof ManagerProfileRoute
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
+  ManagerSupportRoute: typeof ManagerSupportRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
 }
 
 const ManagerRouteChildren: ManagerRouteChildren = {
+  ManagerHistoryRoute: ManagerHistoryRoute,
+  ManagerMoreRoute: ManagerMoreRoute,
+  ManagerNotificationsRoute: ManagerNotificationsRoute,
   ManagerOnboardingRoute: ManagerOnboardingRoute,
+  ManagerProfileRoute: ManagerProfileRoute,
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
+  ManagerSupportRoute: ManagerSupportRoute,
   ManagerIndexRoute: ManagerIndexRoute,
 }
 
