@@ -11,6 +11,7 @@ const ROLE_PREFIX: Record<Role, string> = {
   partner: "/partner",
   rider: "/rider",
   admin: "/admin",
+  manager: "/manager",
 };
 
 function roleForPath(path: string): Role | null {

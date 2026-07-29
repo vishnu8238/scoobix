@@ -15,7 +15,7 @@ type LoginSearch = { app?: AppId; redirect?: string };
 
 export const Route = createFileRoute("/auth/login")({
   validateSearch: (search: Record<string, unknown>): LoginSearch => ({
-    app: (["customer", "partner", "rider", "admin"] as const).includes(search.app as AppId)
+    app: (["customer", "partner", "rider", "admin", "manager"] as const).includes(search.app as AppId)
       ? (search.app as AppId)
       : undefined,
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,

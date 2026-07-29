@@ -13,12 +13,14 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RiderRouteImport } from './routes/rider'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PartnerRouteImport } from './routes/partner'
+import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RiderIndexRouteImport } from './routes/rider.index'
 import { Route as PartnerIndexRouteImport } from './routes/partner.index'
+import { Route as ManagerIndexRouteImport } from './routes/manager.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
@@ -52,6 +54,13 @@ import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
+import { Route as ManagerSupportRouteImport } from './routes/manager.support'
+import { Route as ManagerRestaurantsRouteImport } from './routes/manager.restaurants'
+import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
+import { Route as ManagerOnboardingRouteImport } from './routes/manager.onboarding'
+import { Route as ManagerNotificationsRouteImport } from './routes/manager.notifications'
+import { Route as ManagerMoreRouteImport } from './routes/manager.more'
+import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
@@ -86,6 +95,7 @@ import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminManagersRouteImport } from './routes/admin.managers'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
@@ -114,6 +124,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const PartnerRoute = PartnerRouteImport.update({
   id: '/partner',
   path: '/partner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagerRoute = ManagerRouteImport.update({
+  id: '/manager',
+  path: '/manager',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -145,6 +160,11 @@ const PartnerIndexRoute = PartnerIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PartnerRoute,
+} as any)
+const ManagerIndexRoute = ManagerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ManagerRoute,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
@@ -310,6 +330,41 @@ const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
   id: '/addons',
   path: '/addons',
   getParentRoute: () => PartnerRoute,
+} as any)
+const ManagerSupportRoute = ManagerSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerRestaurantsRoute = ManagerRestaurantsRouteImport.update({
+  id: '/restaurants',
+  path: '/restaurants',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerProfileRoute = ManagerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerOnboardingRoute = ManagerOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerNotificationsRoute = ManagerNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerMoreRoute = ManagerMoreRouteImport.update({
+  id: '/more',
+  path: '/more',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerHistoryRoute = ManagerHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => ManagerRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
@@ -481,6 +536,11 @@ const AdminOrdersRoute = AdminOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminManagersRoute = AdminManagersRouteImport.update({
+  id: '/managers',
+  path: '/managers',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLiveRoute = AdminLiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -532,6 +592,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/manager': typeof ManagerRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
@@ -544,6 +605,7 @@ export interface FileRoutesByFullPath {
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -578,6 +640,13 @@ export interface FileRoutesByFullPath {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/history': typeof ManagerHistoryRoute
+  '/manager/more': typeof ManagerMoreRoute
+  '/manager/notifications': typeof ManagerNotificationsRoute
+  '/manager/onboarding': typeof ManagerOnboardingRoute
+  '/manager/profile': typeof ManagerProfileRoute
+  '/manager/restaurants': typeof ManagerRestaurantsRoute
+  '/manager/support': typeof ManagerSupportRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -611,6 +680,7 @@ export interface FileRoutesByFullPath {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
@@ -628,6 +698,7 @@ export interface FileRoutesByTo {
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -662,6 +733,13 @@ export interface FileRoutesByTo {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/history': typeof ManagerHistoryRoute
+  '/manager/more': typeof ManagerMoreRoute
+  '/manager/notifications': typeof ManagerNotificationsRoute
+  '/manager/onboarding': typeof ManagerOnboardingRoute
+  '/manager/profile': typeof ManagerProfileRoute
+  '/manager/restaurants': typeof ManagerRestaurantsRoute
+  '/manager/support': typeof ManagerSupportRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -695,6 +773,7 @@ export interface FileRoutesByTo {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/manager': typeof ManagerIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
@@ -705,6 +784,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/manager': typeof ManagerRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
@@ -717,6 +797,7 @@ export interface FileRoutesById {
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -751,6 +832,13 @@ export interface FileRoutesById {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/history': typeof ManagerHistoryRoute
+  '/manager/more': typeof ManagerMoreRoute
+  '/manager/notifications': typeof ManagerNotificationsRoute
+  '/manager/onboarding': typeof ManagerOnboardingRoute
+  '/manager/profile': typeof ManagerProfileRoute
+  '/manager/restaurants': typeof ManagerRestaurantsRoute
+  '/manager/support': typeof ManagerSupportRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -784,6 +872,7 @@ export interface FileRoutesById {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
@@ -795,6 +884,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/auth'
+    | '/manager'
     | '/partner'
     | '/privacy'
     | '/rider'
@@ -807,6 +897,7 @@ export interface FileRouteTypes {
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
+    | '/admin/managers'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/referrals'
@@ -841,6 +932,13 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/history'
+    | '/manager/more'
+    | '/manager/notifications'
+    | '/manager/onboarding'
+    | '/manager/profile'
+    | '/manager/restaurants'
+    | '/manager/support'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -874,6 +972,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
+    | '/manager/'
     | '/partner/'
     | '/rider/'
     | '/app/group/$sessionId'
@@ -891,6 +990,7 @@ export interface FileRouteTypes {
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
+    | '/admin/managers'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/referrals'
@@ -925,6 +1025,13 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/history'
+    | '/manager/more'
+    | '/manager/notifications'
+    | '/manager/onboarding'
+    | '/manager/profile'
+    | '/manager/restaurants'
+    | '/manager/support'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -958,6 +1065,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin'
     | '/app'
+    | '/manager'
     | '/partner'
     | '/rider'
     | '/app/group/$sessionId'
@@ -967,6 +1075,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/auth'
+    | '/manager'
     | '/partner'
     | '/privacy'
     | '/rider'
@@ -979,6 +1088,7 @@ export interface FileRouteTypes {
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/live'
+    | '/admin/managers'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/referrals'
@@ -1013,6 +1123,13 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/history'
+    | '/manager/more'
+    | '/manager/notifications'
+    | '/manager/onboarding'
+    | '/manager/profile'
+    | '/manager/restaurants'
+    | '/manager/support'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1046,6 +1163,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
+    | '/manager/'
     | '/partner/'
     | '/rider/'
     | '/app/group/$sessionId'
@@ -1056,6 +1174,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  ManagerRoute: typeof ManagerRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RiderRoute: typeof RiderRouteWithChildren
@@ -1092,6 +1211,13 @@ declare module '@tanstack/react-router' {
       path: '/partner'
       fullPath: '/partner'
       preLoaderRoute: typeof PartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manager': {
+      id: '/manager'
+      path: '/manager'
+      fullPath: '/manager'
+      preLoaderRoute: typeof ManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -1135,6 +1261,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/'
       preLoaderRoute: typeof PartnerIndexRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/manager/': {
+      id: '/manager/'
+      path: '/'
+      fullPath: '/manager/'
+      preLoaderRoute: typeof ManagerIndexRouteImport
+      parentRoute: typeof ManagerRoute
     }
     '/app/': {
       id: '/app/'
@@ -1366,6 +1499,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/addons'
       preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/manager/support': {
+      id: '/manager/support'
+      path: '/support'
+      fullPath: '/manager/support'
+      preLoaderRoute: typeof ManagerSupportRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/restaurants': {
+      id: '/manager/restaurants'
+      path: '/restaurants'
+      fullPath: '/manager/restaurants'
+      preLoaderRoute: typeof ManagerRestaurantsRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/profile': {
+      id: '/manager/profile'
+      path: '/profile'
+      fullPath: '/manager/profile'
+      preLoaderRoute: typeof ManagerProfileRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/onboarding': {
+      id: '/manager/onboarding'
+      path: '/onboarding'
+      fullPath: '/manager/onboarding'
+      preLoaderRoute: typeof ManagerOnboardingRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/notifications': {
+      id: '/manager/notifications'
+      path: '/notifications'
+      fullPath: '/manager/notifications'
+      preLoaderRoute: typeof ManagerNotificationsRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/more': {
+      id: '/manager/more'
+      path: '/more'
+      fullPath: '/manager/more'
+      preLoaderRoute: typeof ManagerMoreRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/history': {
+      id: '/manager/history'
+      path: '/history'
+      fullPath: '/manager/history'
+      preLoaderRoute: typeof ManagerHistoryRouteImport
+      parentRoute: typeof ManagerRoute
     }
     '/auth/signup': {
       id: '/auth/signup'
@@ -1605,6 +1787,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/managers': {
+      id: '/admin/managers'
+      path: '/managers'
+      fullPath: '/admin/managers'
+      preLoaderRoute: typeof AdminManagersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/live': {
       id: '/admin/live'
       path: '/live'
@@ -1680,6 +1869,7 @@ interface AdminRouteChildren {
   AdminDiscoverRoute: typeof AdminDiscoverRoute
   AdminDriversRoute: typeof AdminDriversRoute
   AdminLiveRoute: typeof AdminLiveRoute
+  AdminManagersRoute: typeof AdminManagersRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
@@ -1703,6 +1893,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDiscoverRoute: AdminDiscoverRoute,
   AdminDriversRoute: AdminDriversRoute,
   AdminLiveRoute: AdminLiveRoute,
+  AdminManagersRoute: AdminManagersRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminReferralsRoute: AdminReferralsRoute,
@@ -1784,6 +1975,31 @@ const AuthRouteChildren: AuthRouteChildren = {
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface ManagerRouteChildren {
+  ManagerHistoryRoute: typeof ManagerHistoryRoute
+  ManagerMoreRoute: typeof ManagerMoreRoute
+  ManagerNotificationsRoute: typeof ManagerNotificationsRoute
+  ManagerOnboardingRoute: typeof ManagerOnboardingRoute
+  ManagerProfileRoute: typeof ManagerProfileRoute
+  ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
+  ManagerSupportRoute: typeof ManagerSupportRoute
+  ManagerIndexRoute: typeof ManagerIndexRoute
+}
+
+const ManagerRouteChildren: ManagerRouteChildren = {
+  ManagerHistoryRoute: ManagerHistoryRoute,
+  ManagerMoreRoute: ManagerMoreRoute,
+  ManagerNotificationsRoute: ManagerNotificationsRoute,
+  ManagerOnboardingRoute: ManagerOnboardingRoute,
+  ManagerProfileRoute: ManagerProfileRoute,
+  ManagerRestaurantsRoute: ManagerRestaurantsRoute,
+  ManagerSupportRoute: ManagerSupportRoute,
+  ManagerIndexRoute: ManagerIndexRoute,
+}
+
+const ManagerRouteWithChildren =
+  ManagerRoute._addFileChildren(ManagerRouteChildren)
 
 interface PartnerRouteChildren {
   PartnerAddonsRoute: typeof PartnerAddonsRoute
@@ -1869,6 +2085,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  ManagerRoute: ManagerRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RiderRoute: RiderRouteWithChildren,

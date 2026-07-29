@@ -60,7 +60,7 @@ function dropOAuthState(key: string) {
 }
 
 
-export type DbRole = "customer" | "restaurant" | "driver" | "admin";
+export type DbRole = "customer" | "restaurant" | "driver" | "admin" | "merchant_manager";
 
 /** OAuth providers wired into the login screens. */
 export type OAuthProvider = "google" | "apple";

@@ -68,6 +68,7 @@ export const ROLE_HOME: Record<Role, string> = {
   partner: "/partner",
   rider: "/rider",
   admin: "/admin",
+  manager: "/manager",
 };
 
 // ---------- role mapping between DB and existing UI enum ----------
@@ -77,18 +78,21 @@ const DB_TO_UI: Record<DbRole, Role> = {
   restaurant: "partner",
   driver: "rider",
   admin: "admin",
+  merchant_manager: "manager",
 };
 const UI_TO_DB: Record<Role, DbRole> = {
   customer: "customer",
   partner: "restaurant",
   rider: "driver",
   admin: "admin",
+  manager: "merchant_manager",
 };
 
 function toUiRole(role: string | undefined | null): Role | null {
   if (!role) return null;
   const key = String(role).toLowerCase();
   if (key in DB_TO_UI) return DB_TO_UI[key as DbRole];
+  if (key === "merchant_manager" || key === "manager") return "manager";
   if (["customer", "partner", "rider", "admin"].includes(key)) return key as Role;
   return null;
 }
@@ -98,7 +102,7 @@ const PENDING_ROLE_CLAIM_KEY = "scoobix_pending_role_claim_v1";
 /** Last resolved role, mirrored locally so reloads route instantly. */
 const CACHED_ROLE_KEY = "scoobix_role_v1";
 
-const ALL_ROLES: Role[] = ["customer", "partner", "rider", "admin"];
+const ALL_ROLES: Role[] = ["customer", "partner", "rider", "admin", "manager"];
 
 export function readCachedRole(): Role | null {
   if (typeof window === "undefined") return null;
