@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Store, PlusCircle, History, LifeBuoy, MoreHorizontal } from "lucide-react";
+import { LayoutDashboard, Store, PlusCircle, History, MoreHorizontal } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
@@ -77,5 +77,3 @@ function ManagerShell({ pathname }: { pathname: string }) {
     </div>
   );
 }
-
-export { LifeBuoy };
