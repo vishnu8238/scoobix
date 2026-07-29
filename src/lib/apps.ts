@@ -8,7 +8,7 @@ import type { Role } from "./types";
  * links. There is NO portal switcher — a signed-in user only ever sees the
  * surface that matches their role.
  */
-export type AppId = "customer" | "partner" | "rider" | "admin";
+export type AppId = "customer" | "partner" | "rider" | "admin" | "manager";
 
 export type ScoobixApp = {
   id: AppId;
@@ -88,6 +88,20 @@ export const APPS: Record<AppId, ScoobixApp> = {
     deepLinkHost: "admin.scoobix.app",
     platform: "web",
   },
+  manager: {
+    id: "manager",
+    role: "manager",
+    name: "Scoobix Merchant Manager",
+    shortName: "Merchant Manager",
+    applicationId: "app.scoobix.manager",
+    scope: "/manager",
+    home: "/manager",
+    manifest: "/manifest-manager.webmanifest",
+    themeColor: "#0f766e",
+    deepLinkScheme: "scoobix-manager",
+    deepLinkHost: "manager.scoobix.app",
+    platform: "mobile",
+  },
 };
 
 export const APP_BY_ROLE: Record<Role, ScoobixApp> = {
@@ -95,6 +109,7 @@ export const APP_BY_ROLE: Record<Role, ScoobixApp> = {
   partner: APPS.partner,
   rider: APPS.rider,
   admin: APPS.admin,
+  manager: APPS.manager,
 };
 
 export function appForPath(pathname: string): ScoobixApp | null {
