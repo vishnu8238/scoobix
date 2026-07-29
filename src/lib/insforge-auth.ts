@@ -18,6 +18,25 @@ const REFRESH_KEY = "scoobix_if_refresh_v1";
 const PKCE_KEY = "scoobix_if_pkce_v1";
 const OAUTH_META_KEY = "scoobix_if_oauth_meta_v1";
 
+/**
+ * OAuth hand-off state must survive the provider round-trip. Apple uses
+ * `response_mode=form_post`, and on some browsers (notably iOS Safari and
+ * in-app webviews) the return lands in a *new* browsing context where
+ * `sessionStorage` is empty. Mirror everything into `localStorage` too.
+ */
+function stashOAuthState(key: string, value: string) {
+  try { sessionStorage.setItem(key, value); } catch { /* */ }
+  try { localStorage.setItem(key, value); } catch { /* */ }
+}
+function readOAuthState(key: string): string {
+  try { const v = sessionStorage.getItem(key); if (v) return v; } catch { /* */ }
+  try { return localStorage.getItem(key) ?? ""; } catch { return ""; }
+}
+function dropOAuthState(key: string) {
+  try { sessionStorage.removeItem(key); } catch { /* */ }
+  try { localStorage.removeItem(key); } catch { /* */ }
+}
+
 export type DbRole = "customer" | "restaurant" | "driver" | "admin";
 
 /** OAuth providers wired into the login screens. */
@@ -233,10 +252,8 @@ export async function ifStartOAuth(
 ): Promise<void> {
   const verifier = randomVerifier();
   const challenge = await challengeFor(verifier);
-  try {
-    sessionStorage.setItem(PKCE_KEY, verifier);
-    sessionStorage.setItem(OAUTH_META_KEY, JSON.stringify({ provider, ...(meta ?? {}) }));
-  } catch { /* */ }
+  stashOAuthState(PKCE_KEY, verifier);
+  stashOAuthState(OAUTH_META_KEY, JSON.stringify({ provider, ...(meta ?? {}) }));
 
   const url = new URL(`${INSFORGE_URL}/api/auth/oauth/${provider}`);
   url.searchParams.set("redirect_uri", redirectUri);
@@ -274,6 +291,19 @@ export type OAuthCallback = {
  */
 const INITIAL_SEARCH = typeof window !== "undefined" ? window.location.search : "";
 
+/** Reads a provider-side failure (`?insforge_error=...`) from the return URL. */
+export function readOAuthError(): string | null {
+  if (typeof window === "undefined") return null;
+  const live = window.location.search;
+  const params = new URLSearchParams(
+    new URLSearchParams(live).get("insforge_error") || new URLSearchParams(live).get("error") ? live : INITIAL_SEARCH,
+  );
+  const err = params.get("insforge_error") ?? params.get("error");
+  if (!err) return null;
+  const desc = params.get("error_description") ?? params.get("insforge_error_description");
+  return desc ? `${err}: ${desc}` : err;
+}
+
 /** Detects an OAuth return in the current URL (does not consume it). */
 export function readOAuthCallback(search?: string): OAuthCallback | null {
   const live = typeof window !== "undefined" ? window.location.search : "";
@@ -282,26 +312,43 @@ export function readOAuthCallback(search?: string): OAuthCallback | null {
   const code = params.get("insforge_code") ?? params.get("code");
   if (!code) return null;
   let meta: Record<string, string> = {};
-  try { meta = JSON.parse(sessionStorage.getItem(OAUTH_META_KEY) ?? "{}"); } catch { /* */ }
+  try { meta = JSON.parse(readOAuthState(OAUTH_META_KEY) || "{}"); } catch { /* */ }
   return { code, provider: meta.provider ?? params.get("provider") ?? "google", meta };
 }
 
 /** Exchanges the returned code + stored PKCE verifier for a session. */
 export async function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUser; isNewUser?: boolean }> {
-  let verifier = "";
-  try { verifier = sessionStorage.getItem(PKCE_KEY) ?? ""; } catch { /* */ }
-  if (!verifier) throw new Error("Sign-in session expired — please try again");
-  const res = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange?client_type=mobile`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: INSFORGE_ANON_KEY },
-    body: JSON.stringify({ code, code_verifier: verifier }),
-  });
-  const data = await jsonOrThrow(res);
+  const verifier = readOAuthState(PKCE_KEY);
+  if (!verifier) {
+    // The verifier can be lost when the provider (Apple, form_post) returns in
+    // a fresh browsing context. The exchange may still have set a session, so
+    // fall back to it before failing the sign-in outright.
+    const fallback = await ifGetSession().catch(() => null);
+    if (fallback?.id) return { user: fallback };
+    throw new Error("Sign-in session expired — please try again");
+  }
+  let data: any;
+  try {
+    const res = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange?client_type=mobile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: INSFORGE_ANON_KEY },
+      body: JSON.stringify({ code, code_verifier: verifier }),
+    });
+    data = await jsonOrThrow(res);
+  } catch (err) {
+    dropOAuthState(PKCE_KEY);
+    dropOAuthState(OAUTH_META_KEY);
+    const fallback = await ifGetSession().catch(() => null);
+    if (fallback?.id) return { user: fallback };
+    throw err;
+  }
   setTokens(data.accessToken ?? null, data.refreshToken ?? null);
-  try { sessionStorage.removeItem(PKCE_KEY); } catch { /* */ }
+  dropOAuthState(PKCE_KEY);
+  dropOAuthState(OAUTH_META_KEY);
   const user = await ensureSessionUser(data, "Provider sign-in");
   return { user, isNewUser: !!data.isNewUser };
 }
+
 
 /** Strips OAuth params from the address bar without a navigation. */
 export function clearOAuthParamsFromUrl() {

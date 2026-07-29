@@ -37,6 +37,8 @@ function LoginPage() {
     requestPhoneOtp,
     verifyPhoneLogin,
     resendVerification,
+    oauthError,
+    clearOAuthError,
   } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -84,6 +86,12 @@ function LoginPage() {
     }
     land(res.user!);
   };
+
+  useEffect(() => {
+    if (!oauthError) return;
+    toast.error(oauthError);
+    clearOAuthError();
+  }, [oauthError, clearOAuthError]);
 
   const oauth = async (provider: "google" | "apple") => {
     setBusy(true);

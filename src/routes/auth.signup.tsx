@@ -23,7 +23,7 @@ const ROLES: { value: Role; label: string; icon: typeof Utensils; next?: string 
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { user, loading, signUp, signInWithProvider } = useAuth();
+  const { user, loading, signUp, signInWithProvider, oauthError, clearOAuthError } = useAuth();
   const [role, setRole] = useState<Role>("customer");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [busy, setBusy] = useState(false);
@@ -47,6 +47,12 @@ function SignupPage() {
 
   // OAuth sign-up and sign-in are the same call — the provider account is
   // linked to the existing user when the email already exists.
+  useEffect(() => {
+    if (!oauthError) return;
+    toast.error(oauthError);
+    clearOAuthError();
+  }, [oauthError, clearOAuthError]);
+
   const oauth = async (provider: "google" | "apple") => {
     setBusy(true);
     const res = await signInWithProvider(provider, role);
