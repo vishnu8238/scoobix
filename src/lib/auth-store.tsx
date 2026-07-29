@@ -8,7 +8,8 @@ import {
   ifSendPasswordReset,
   ifVerifyEmail,
   ifResendVerificationEmail,
-  ifStartOAuth,
+  ifCreateOAuthUrl,
+  navigateToOAuthUrl,
   ifCompleteOAuth,
   readOAuthCallback,
   readOAuthError,
@@ -95,11 +96,15 @@ function rememberPendingRole(role?: Role) {
   try {
     if (role) sessionStorage.setItem(PENDING_ROLE_KEY, role);
   } catch { /* */ }
+  try {
+    if (role) localStorage.setItem(PENDING_ROLE_KEY, role);
+  } catch { /* */ }
 }
 function takePendingRole(): Role | undefined {
   try {
-    const value = sessionStorage.getItem(PENDING_ROLE_KEY) as Role | null;
+    const value = (sessionStorage.getItem(PENDING_ROLE_KEY) ?? localStorage.getItem(PENDING_ROLE_KEY)) as Role | null;
     sessionStorage.removeItem(PENDING_ROLE_KEY);
+    localStorage.removeItem(PENDING_ROLE_KEY);
     return value ?? undefined;
   } catch { return undefined; }
 }
@@ -220,6 +225,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!cancelled && next) {
               setUser(next);
               handledOAuth = true;
+              try {
+                window.opener?.postMessage({ type: "scoobix_oauth_complete" }, window.location.origin);
+                if (window.opener && !window.opener.closed) window.setTimeout(() => window.close(), 250);
+              } catch { /* */ }
             }
           } catch (err) {
             console.error("[auth] OAuth callback failed", err);
@@ -241,6 +250,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const restoreFromSharedSession = async () => {
+      const sess = await ifGetSession();
+      if (cancelled) return;
+      const next = await syncProfile(sess);
+      if (!cancelled && next) setUser(next);
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key && event.key.startsWith("scoobix_if_")) void restoreFromSharedSession();
+    };
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin === window.location.origin && event.data?.type === "scoobix_oauth_complete") {
+        void restoreFromSharedSession();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("message", onMessage);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("message", onMessage);
+    };
   }, []);
 
   const signIn: AuthCtx["signIn"] = async (email, password, role) => {
@@ -283,13 +317,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role) => {
+    let popup: Window | null = null;
     try {
       setOauthError(null);
       rememberPendingRole(role);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
-      await ifStartOAuth(provider, redirectUri);
+      if (provider === "apple") {
+        popup = window.open("about:blank", "_blank", "popup,width=480,height=720");
+      }
+      const authUrl = await ifCreateOAuthUrl(provider, redirectUri);
+      if (popup && !popup.closed) {
+        popup.location.href = authUrl;
+      } else {
+        navigateToOAuthUrl(authUrl);
+      }
       return { ok: true };
     } catch (err) {
+      try { popup?.close(); } catch { /* */ }
       console.error(`[auth] ${provider} sign-in failed`, err);
       return { ok: false, message: err instanceof Error ? err.message : `Could not sign in with ${provider}` };
     }
@@ -344,6 +388,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(null, null);
     try {
       sessionStorage.removeItem(PENDING_ROLE_KEY);
+      localStorage.removeItem(PENDING_ROLE_KEY);
     } catch { /* */ }
     setUser(null);
     void ifLogout();

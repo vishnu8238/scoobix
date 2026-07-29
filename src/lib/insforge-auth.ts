@@ -250,6 +250,19 @@ export async function ifStartOAuth(
   redirectUri: string,
   meta?: Record<string, string>,
 ): Promise<void> {
+  const authUrl = await ifCreateOAuthUrl(provider, redirectUri, meta);
+  navigateToOAuthUrl(authUrl);
+}
+
+/**
+ * Creates the provider URL and stores the PKCE hand-off state. Kept separate
+ * so callers can open a popup synchronously, then assign its URL after fetch.
+ */
+export async function ifCreateOAuthUrl(
+  provider: OAuthProvider,
+  redirectUri: string,
+  meta?: Record<string, string>,
+): Promise<string> {
   const verifier = randomVerifier();
   const challenge = await challengeFor(verifier);
   stashOAuthState(PKCE_KEY, verifier);
@@ -273,6 +286,17 @@ export async function ifStartOAuth(
   if (typeof authUrl !== "string" || !/^https?:\/\//i.test(authUrl)) {
     throw new Error("Could not start sign-in with this provider");
   }
+  return authUrl;
+}
+
+export function navigateToOAuthUrl(authUrl: string) {
+  if (typeof window === "undefined") return;
+  try {
+    if (window.self !== window.top) {
+      window.open(authUrl, "_top");
+      return;
+    }
+  } catch { /* cross-origin frame access can throw */ }
   window.location.assign(authUrl);
 }
 
@@ -290,14 +314,24 @@ export type OAuthCallback = {
  * `window.location.search` later loses the OAuth callback entirely.
  */
 const INITIAL_SEARCH = typeof window !== "undefined" ? window.location.search : "";
+const INITIAL_HASH = typeof window !== "undefined" ? window.location.hash : "";
+
+function paramsFromLocation(search?: string): URLSearchParams {
+  const liveSearch = typeof window !== "undefined" ? window.location.search : "";
+  const liveHash = typeof window !== "undefined" ? window.location.hash : "";
+  const sources = [search, liveSearch, liveHash.replace(/^#/, "?"), INITIAL_SEARCH, INITIAL_HASH.replace(/^#/, "?")].filter(Boolean) as string[];
+  const merged = new URLSearchParams();
+  for (const source of sources) {
+    const params = new URLSearchParams(source.startsWith("?") ? source : `?${source}`);
+    params.forEach((value, key) => { if (!merged.has(key)) merged.set(key, value); });
+  }
+  return merged;
+}
 
 /** Reads a provider-side failure (`?insforge_error=...`) from the return URL. */
 export function readOAuthError(): string | null {
   if (typeof window === "undefined") return null;
-  const live = window.location.search;
-  const params = new URLSearchParams(
-    new URLSearchParams(live).get("insforge_error") || new URLSearchParams(live).get("error") ? live : INITIAL_SEARCH,
-  );
+  const params = paramsFromLocation();
   const err = params.get("insforge_error") ?? params.get("error");
   if (!err) return null;
   const desc = params.get("error_description") ?? params.get("insforge_error_description");
@@ -306,9 +340,7 @@ export function readOAuthError(): string | null {
 
 /** Detects an OAuth return in the current URL (does not consume it). */
 export function readOAuthCallback(search?: string): OAuthCallback | null {
-  const live = typeof window !== "undefined" ? window.location.search : "";
-  const source = search ?? (new URLSearchParams(live).get("insforge_code") || new URLSearchParams(live).get("code") ? live : INITIAL_SEARCH);
-  const params = new URLSearchParams(source);
+  const params = paramsFromLocation(search);
   const code = params.get("insforge_code") ?? params.get("code");
   if (!code) return null;
   let meta: Record<string, string> = {};
@@ -357,6 +389,14 @@ export function clearOAuthParamsFromUrl() {
   let touched = false;
   for (const key of ["insforge_code", "code", "state", "insforge_status", "insforge_type", "insforge_error", "error", "error_description"]) {
     if (url.searchParams.has(key)) { url.searchParams.delete(key); touched = true; }
+  }
+  if (url.hash) {
+    const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+    for (const key of ["insforge_code", "code", "state", "insforge_status", "insforge_type", "insforge_error", "error", "error_description"]) {
+      if (hashParams.has(key)) { hashParams.delete(key); touched = true; }
+    }
+    const nextHash = hashParams.toString();
+    url.hash = nextHash ? `#${nextHash}` : "";
   }
   if (touched) window.history.replaceState({}, "", url.toString());
 }
