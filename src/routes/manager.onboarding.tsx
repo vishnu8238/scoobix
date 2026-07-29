@@ -1,0 +1,447 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { Store, User, MapPin, FileText, Banknote, Percent, Check, ChevronRight, Save } from "lucide-react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/cravio/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { ImageUploader } from "@/components/cravio/ImageUploader";
+import type { ImageRef } from "@/lib/image-service";
+import { listTable } from "@/lib/insforge-crud";
+import { cn } from "@/lib/format";
+import {
+  useManager,
+  saveOnboardingDraft,
+  logOnboardingEvent,
+  nextRstCode,
+  provisionAccount,
+  onboardingStatus,
+  ONBOARDING_LABEL,
+  ONBOARDING_TONE,
+  type ManagedRestaurant,
+} from "@/lib/manager-api";
+
+type Search = { id?: string };
+
+export const Route = createFileRoute("/manager/onboarding")({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    id: typeof s.id === "string" ? s.id : undefined,
+  }),
+  head: () => ({
+    meta: [
+      { title: "Scoobix Merchant Manager · Onboard a restaurant" },
+      { name: "description", content: "Collect restaurant, owner, location, document and payout details." },
+    ],
+  }),
+  component: OnboardingFlow,
+});
+
+const STEPS = [
+  { key: "business", title: "Restaurant details", icon: Store },
+  { key: "owner", title: "Owner & contact", icon: User },
+  { key: "location", title: "Location & hours", icon: MapPin },
+  { key: "docs", title: "Documents & branding", icon: FileText },
+  { key: "bank", title: "Bank & compliance", icon: Banknote },
+  { key: "terms", title: "Delivery & commission", icon: Percent },
+];
+
+type Form = {
+  name: string;
+  cuisine: string;
+  owner_name: string;
+  owner_email: string;
+  owner_phone: string;
+  contact_phone: string;
+  contact_email: string;
+  address: string;
+  city: string;
+  pincode: string;
+  latitude: number | null;
+  longitude: number | null;
+  opening_time: string;
+  closing_time: string;
+  logo_url: string;
+  cover_url: string;
+  documents: { label: string; url: string }[];
+  bank_holder: string;
+  bank_account: string;
+  bank_ifsc: string;
+  bank_name: string;
+  gst_number: string;
+  fssai_number: string;
+  delivery_radius: string;
+  commission: string;
+};
+
+const EMPTY: Form = {
+  name: "", cuisine: "", owner_name: "", owner_email: "", owner_phone: "",
+  contact_phone: "", contact_email: "", address: "", city: "", pincode: "",
+  latitude: null, longitude: null, opening_time: "10:00", closing_time: "23:00",
+  logo_url: "", cover_url: "", documents: [],
+  bank_holder: "", bank_account: "", bank_ifsc: "", bank_name: "",
+  gst_number: "", fssai_number: "", delivery_radius: "5", commission: "20",
+};
+
+const DOC_SLOTS = ["FSSAI licence", "GST certificate", "Owner ID proof"];
+
+function OnboardingFlow() {
+  const navigate = useNavigate();
+  const { id } = Route.useSearch();
+  const { manager } = useManager();
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState<Form>(EMPTY);
+  const [record, setRecord] = useState<ManagedRestaurant | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(!!id);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    void (async () => {
+      const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 });
+      const r = rows[0];
+      if (cancelled || !r) { setLoading(false); return; }
+      setRecord(r);
+      setForm({
+        ...EMPTY,
+        name: r.name ?? "",
+        cuisine: r.cuisine ?? "",
+        owner_name: r.owner_name ?? "",
+        owner_email: r.owner_email ?? "",
+        owner_phone: r.owner_phone ?? "",
+        contact_phone: r.contact_phone ?? "",
+        contact_email: r.contact_email ?? "",
+        address: r.address ?? "",
+        city: r.city ?? "",
+        pincode: r.pincode ?? "",
+        latitude: r.latitude ?? null,
+        longitude: r.longitude ?? null,
+        opening_time: r.opening_time ?? "10:00",
+        closing_time: r.closing_time ?? "23:00",
+        logo_url: r.logo_url ?? r.logo ?? "",
+        cover_url: r.cover_url ?? r.cover_image ?? "",
+        documents: Array.isArray(r.documents) ? (r.documents as Form["documents"]) : [],
+        bank_holder: r.bank_holder ?? "",
+        bank_account: r.bank_account ?? "",
+        bank_ifsc: r.bank_ifsc ?? "",
+        bank_name: r.bank_name ?? "",
+        gst_number: r.gst_number ?? "",
+        fssai_number: r.fssai_number ?? "",
+        delivery_radius: String(r.delivery_radius ?? 5),
+        commission: String(r.commission ?? 20),
+      });
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
+
+  const payload = useMemo(
+    () => ({
+      name: form.name.trim(),
+      cuisine: form.cuisine.trim() || null,
+      owner_name: form.owner_name.trim() || null,
+      owner_email: form.owner_email.trim().toLowerCase() || null,
+      owner_phone: form.owner_phone.trim() || null,
+      contact_phone: form.contact_phone.trim() || null,
+      contact_email: form.contact_email.trim().toLowerCase() || null,
+      address: form.address.trim() || null,
+      city: form.city.trim() || null,
+      pincode: form.pincode.trim() || null,
+      latitude: form.latitude,
+      longitude: form.longitude,
+      opening_time: form.opening_time || null,
+      closing_time: form.closing_time || null,
+      logo_url: form.logo_url || null,
+      cover_url: form.cover_url || null,
+      documents: form.documents,
+      bank_holder: form.bank_holder.trim() || null,
+      bank_account: form.bank_account.trim() || null,
+      bank_ifsc: form.bank_ifsc.trim().toUpperCase() || null,
+      bank_name: form.bank_name.trim() || null,
+      gst_number: form.gst_number.trim().toUpperCase() || null,
+      fssai_number: form.fssai_number.trim() || null,
+      delivery_radius: Number(form.delivery_radius) || 5,
+      commission: Number(form.commission) || 20,
+      manager_id: manager?.id ?? null,
+      onboarded_by: manager?.id ?? null,
+    }),
+    [form, manager?.id],
+  );
+
+  const persist = async (extra: Record<string, unknown>, statusLabel: string) => {
+    if (!form.name.trim()) {
+      toast.error("Restaurant name is required");
+      return null;
+    }
+    if (!manager?.id) {
+      toast.error("Your manager profile is still loading");
+      return null;
+    }
+    setBusy(true);
+    const rst = record?.rst_code || (await nextRstCode());
+    const saved = await saveOnboardingDraft(record?.id ?? id ?? null, {
+      ...payload,
+      rst_code: rst,
+      ...extra,
+    });
+    if (saved) {
+      setRecord(saved);
+      await logOnboardingEvent({
+        restaurantId: saved.id,
+        managerId: manager.id,
+        status: String(extra.onboarding_status ?? "draft"),
+        note: statusLabel,
+      });
+    }
+    setBusy(false);
+    return saved;
+  };
+
+  const saveDraft = async () => {
+    const missingDocs = form.documents.length < DOC_SLOTS.length;
+    const saved = await persist(
+      { onboarding_status: missingDocs ? "document_pending" : "draft", status: "pending" },
+      missingDocs ? "Saved with documents pending" : "Draft saved",
+    );
+    if (saved) toast.success(`Draft saved · ${saved.rst_code}`);
+  };
+
+  const submit = async () => {
+    if (!form.owner_email.trim()) {
+      toast.error("Owner email is required to create the restaurant account");
+      return;
+    }
+    if (form.documents.length < DOC_SLOTS.length) {
+      toast.error("Upload all required documents before submitting");
+      return;
+    }
+    const account = await provisionAccount({
+      email: form.owner_email,
+      name: form.owner_name || form.name,
+      phone: form.owner_phone,
+      role: "RESTAURANT",
+    });
+    if (!account.ok) {
+      toast.error(account.message ?? "Could not create the restaurant account");
+      return;
+    }
+    const saved = await persist(
+      {
+        onboarding_status: "submitted",
+        status: "pending",
+        owner_id: account.userId ?? null,
+        submitted_at: new Date().toISOString(),
+      },
+      "Submitted for admin approval",
+    );
+    if (!saved) return;
+    toast.success(`Submitted · ${saved.rst_code}`, {
+      description: `Owner login: ${form.owner_email} · temporary password ${account.password}`,
+      duration: 12000,
+    });
+    navigate({ to: "/manager/restaurants" });
+  };
+
+  const StepIcon = STEPS[step].icon;
+  const last = step === STEPS.length - 1;
+  const current = record ? onboardingStatus(record) : "draft";
+
+  if (loading) {
+    return <div className="mx-auto max-w-[520px] px-5 py-10"><div className="h-40 animate-pulse rounded-3xl bg-muted/60" /></div>;
+  }
+
+  return (
+    <div className="mx-auto max-w-[520px] pb-8">
+      <PageHeader
+        title={record ? record.name || "Onboarding" : "New restaurant"}
+        subtitle={record?.rst_code ?? "ID assigned on first save"}
+        right={
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${ONBOARDING_TONE[current]}`}>
+            {ONBOARDING_LABEL[current]}
+          </span>
+        }
+      />
+
+      <div className="px-5 pt-4">
+        <div className="flex items-center gap-1.5">
+          {STEPS.map((s, i) => (
+            <button
+              key={s.key}
+              onClick={() => setStep(i)}
+              className={cn("h-1.5 flex-1 rounded-full transition-all", i <= step ? "bg-primary" : "bg-foreground/10")}
+              aria-label={s.title}
+            />
+          ))}
+        </div>
+
+        <div className="mt-5 grid h-14 w-14 place-items-center rounded-2xl bg-primary-soft text-primary">
+          <StepIcon className="h-7 w-7" strokeWidth={2.5} />
+        </div>
+        <h1 className="mt-4 font-display text-2xl font-extrabold tracking-tight">{STEPS[step].title}</h1>
+        <p className="mt-1 text-[13px] text-muted-foreground">
+          Step {step + 1} of {STEPS.length} · everything is saved to your Scoobix account.
+        </p>
+
+        <div className="mt-5 space-y-4 rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
+          {step === 0 && (
+            <>
+              <Field label="Restaurant name" value={form.name} onChange={(v) => set({ name: v })} placeholder="Trattoria Verde" />
+              <Field label="Cuisine" value={form.cuisine} onChange={(v) => set({ cuisine: v })} placeholder="Italian · Pizza · Pasta" />
+            </>
+          )}
+
+          {step === 1 && (
+            <>
+              <Field label="Owner name" value={form.owner_name} onChange={(v) => set({ owner_name: v })} placeholder="Marco Bianchi" />
+              <Field label="Owner email (becomes the login)" value={form.owner_email} onChange={(v) => set({ owner_email: v })} placeholder="owner@restaurant.com" />
+              <Field label="Owner phone" value={form.owner_phone} onChange={(v) => set({ owner_phone: v })} placeholder="+91 98xxxxxx02" />
+              <Field label="Support phone" value={form.contact_phone} onChange={(v) => set({ contact_phone: v })} placeholder="+91 98xxxxxx03" />
+              <Field label="Support email" value={form.contact_email} onChange={(v) => set({ contact_email: v })} placeholder="hello@restaurant.com" />
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <Field label="Street address" value={form.address} onChange={(v) => set({ address: v })} placeholder="12 Hearth Lane" />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="City" value={form.city} onChange={(v) => set({ city: v })} placeholder="Mumbai" />
+                <Field label="Pincode" value={form.pincode} onChange={(v) => set({ pincode: v })} placeholder="400001" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Pin the exact location
+                </Label>
+                <div className="overflow-hidden rounded-2xl ring-1 ring-border/60">
+                  <LeafletMap
+                    height={220}
+                    zoom={form.latitude ? 16 : 11}
+                    center={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : undefined}
+                    pickedAt={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : null}
+                    onPick={(c) => set({ latitude: c.lat, longitude: c.lng })}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {form.latitude && form.longitude
+                    ? `Pinned at ${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
+                    : "Tap the map to drop the restaurant pin."}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Opens at" value={form.opening_time} onChange={(v) => set({ opening_time: v })} placeholder="10:00" />
+                <Field label="Closes at" value={form.closing_time} onChange={(v) => set({ closing_time: v })} placeholder="23:00" />
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <ImageUploader
+                  type="logo"
+                  label="Logo"
+                  value={form.logo_url ? ({ image_url: form.logo_url } as ImageRef) : null}
+                  onChange={(ref) => set({ logo_url: ref?.image_url ?? "" })}
+                />
+                <ImageUploader
+                  type="cover"
+                  label="Cover image"
+                  aspect="aspect-[16/9]"
+                  value={form.cover_url ? ({ image_url: form.cover_url } as ImageRef) : null}
+                  onChange={(ref) => set({ cover_url: ref?.image_url ?? "" })}
+                />
+              </div>
+              <div className="space-y-3">
+                {DOC_SLOTS.map((label) => {
+                  const doc = form.documents.find((d) => d.label === label);
+                  return (
+                    <ImageUploader
+                      key={label}
+                      type="banner"
+                      label={label}
+                      aspect="aspect-[16/10]"
+                      value={doc ? ({ image_url: doc.url } as ImageRef) : null}
+                      onChange={(ref) =>
+                        set({
+                          documents: ref?.image_url
+                            ? [...form.documents.filter((d) => d.label !== label), { label, url: ref.image_url }]
+                            : form.documents.filter((d) => d.label !== label),
+                        })
+                      }
+                    />
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {step === 4 && (
+            <>
+              <Field label="Account holder" value={form.bank_holder} onChange={(v) => set({ bank_holder: v })} placeholder="Trattoria Verde LLP" />
+              <Field label="Bank account number" value={form.bank_account} onChange={(v) => set({ bank_account: v })} placeholder="000123456789" />
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="IFSC" value={form.bank_ifsc} onChange={(v) => set({ bank_ifsc: v })} placeholder="HDFC0001234" />
+                <Field label="Bank name" value={form.bank_name} onChange={(v) => set({ bank_name: v })} placeholder="HDFC Bank" />
+              </div>
+              <Field label="GSTIN" value={form.gst_number} onChange={(v) => set({ gst_number: v })} placeholder="27ABCDE1234F1Z5" />
+              <Field label="FSSAI licence number" value={form.fssai_number} onChange={(v) => set({ fssai_number: v })} placeholder="11223344556677" />
+            </>
+          )}
+
+          {step === 5 && (
+            <>
+              <Field label="Delivery radius (km)" value={form.delivery_radius} onChange={(v) => set({ delivery_radius: v })} placeholder="5" />
+              <Field label="Commission (%)" value={form.commission} onChange={(v) => set({ commission: v })} placeholder="20" />
+              <p className="rounded-2xl bg-secondary/60 px-3 py-2.5 text-[12px] text-muted-foreground">
+                On submit, Scoobix creates the restaurant account, issues a temporary password and
+                sends the application to admin for approval.
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="mt-5 flex items-center gap-2">
+          {step > 0 && (
+            <Button variant="ghost" className="rounded-full" onClick={() => setStep(step - 1)}>
+              Back
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            className="rounded-full"
+            disabled={busy}
+            onClick={() => void saveDraft()}
+          >
+            <Save className="mr-1.5 h-4 w-4" /> Save draft
+          </Button>
+          <Button
+            className="ml-auto h-12 rounded-full gradient-primary px-6 text-sm font-bold text-primary-foreground shadow-glow"
+            disabled={busy}
+            onClick={() => (last ? void submit() : setStep(step + 1))}
+          >
+            {last ? <>Submit for approval <Check className="ml-1 h-4 w-4" /></> : <>Continue <ChevronRight className="ml-1 h-4 w-4" /></>}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label, value, onChange, placeholder,
+}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-11 rounded-2xl bg-secondary/50"
+      />
+    </div>
+  );
+}
