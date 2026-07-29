@@ -105,6 +105,7 @@ import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAdsRouteImport } from './routes/admin.ads'
+import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -587,6 +588,11 @@ const AdminAdsRoute = AdminAdsRouteImport.update({
   path: '/ads',
   getParentRoute: () => AdminRoute,
 } as any)
+const ManagerLeadIdRoute = ManagerLeadIdRouteImport.update({
+  id: '/lead/$id',
+  path: '/lead/$id',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const AppGroupSessionIdRoute = AppGroupSessionIdRouteImport.update({
   id: '/group/$sessionId',
   path: '/group/$sessionId',
@@ -691,6 +697,7 @@ export interface FileRoutesByFullPath {
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -785,6 +792,7 @@ export interface FileRoutesByTo {
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -885,6 +893,7 @@ export interface FileRoutesById {
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -986,6 +995,7 @@ export interface FileRouteTypes {
     | '/partner/'
     | '/rider/'
     | '/app/group/$sessionId'
+    | '/manager/lead/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1080,6 +1090,7 @@ export interface FileRouteTypes {
     | '/partner'
     | '/rider'
     | '/app/group/$sessionId'
+    | '/manager/lead/$id'
   id:
     | '__root__'
     | '/'
@@ -1179,6 +1190,7 @@ export interface FileRouteTypes {
     | '/partner/'
     | '/rider/'
     | '/app/group/$sessionId'
+    | '/manager/lead/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1869,6 +1881,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/manager/lead/$id': {
+      id: '/manager/lead/$id'
+      path: '/lead/$id'
+      fullPath: '/manager/lead/$id'
+      preLoaderRoute: typeof ManagerLeadIdRouteImport
+      parentRoute: typeof ManagerRoute
+    }
     '/app/group/$sessionId': {
       id: '/app/group/$sessionId'
       path: '/group/$sessionId'
@@ -2005,6 +2024,7 @@ interface ManagerRouteChildren {
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
   ManagerSupportRoute: typeof ManagerSupportRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
+  ManagerLeadIdRoute: typeof ManagerLeadIdRoute
 }
 
 const ManagerRouteChildren: ManagerRouteChildren = {
@@ -2017,6 +2037,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
   ManagerSupportRoute: ManagerSupportRoute,
   ManagerIndexRoute: ManagerIndexRoute,
+  ManagerLeadIdRoute: ManagerLeadIdRoute,
 }
 
 const ManagerRouteWithChildren =
