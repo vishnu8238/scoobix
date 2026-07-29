@@ -45,7 +45,7 @@ type AuthCtx = {
   loading: boolean;
   signIn: (email: string, password: string, role?: Role) => Promise<AuthResult>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<AuthResult>;
-  signInWithProvider: (provider: OAuthProvider, role?: Role) => Promise<{ ok: boolean; message?: string }>;
+  signInWithProvider: (provider: OAuthProvider, role?: Role, claimRole?: boolean) => Promise<{ ok: boolean; message?: string }>;
   phoneOtpEnabled: boolean;
   requestPhoneOtp: (phone: string) => Promise<{ ok: boolean; message?: string; resendAfter: number }>;
   verifyPhoneLogin: (phone: string, otp: string, role?: Role) => Promise<AuthResult>;
