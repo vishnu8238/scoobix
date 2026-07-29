@@ -313,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Profile creation is attempted for every signup; when verification is
       // pending there may be no session user yet — the row is then created on
       // the first successful login (self-healing).
-      const next = await syncProfile(sess, { provider: "email", role, name: name.trim(), phone });
+      const next = await syncProfile(sess, { provider: "email", role, forceRole: true, name: name.trim(), phone });
       if (requireEmailVerification) {
         return {
           ok: true,
