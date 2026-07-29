@@ -79,8 +79,8 @@ export type ManagedRestaurant = {
   address?: string | null;
   city?: string | null;
   pincode?: string | null;
-  lat?: number | null;
-  lng?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   delivery_radius?: number | null;
   commission?: number | null;
   opening_time?: string | null;
@@ -93,7 +93,9 @@ export type ManagedRestaurant = {
   fssai_number?: string | null;
   documents?: unknown;
   logo?: string | null;
-  cover?: string | null;
+  logo_url?: string | null;
+  cover_url?: string | null;
+  cover_image?: string | null;
   status?: string | null;
   onboarding_status?: OnboardingStatus | string | null;
   rejection_reason?: string | null;
