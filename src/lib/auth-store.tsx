@@ -43,6 +43,8 @@ type AuthResult = { ok: boolean; user?: User; message?: string; needsVerificatio
 type AuthCtx = {
   user: User | null;
   loading: boolean;
+  /** Persisted role from the previous session; used to route before `user` resolves. */
+  cachedRole: Role | null;
   signIn: (email: string, password: string, role?: Role) => Promise<AuthResult>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<AuthResult>;
   signInWithProvider: (provider: OAuthProvider, role?: Role, claimRole?: boolean) => Promise<{ ok: boolean; message?: string }>;
