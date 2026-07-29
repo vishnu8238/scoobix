@@ -92,6 +92,28 @@ function toUiRole(role: string | undefined | null): Role | null {
 
 const PENDING_ROLE_KEY = "scoobix_pending_role_v1";
 const PENDING_ROLE_CLAIM_KEY = "scoobix_pending_role_claim_v1";
+/** Last resolved role, mirrored locally so reloads route instantly. */
+const CACHED_ROLE_KEY = "scoobix_role_v1";
+
+const ALL_ROLES: Role[] = ["customer", "partner", "rider", "admin"];
+
+export function readCachedRole(): Role | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = localStorage.getItem(CACHED_ROLE_KEY) as Role | null;
+    return value && ALL_ROLES.includes(value) ? value : null;
+  } catch { return null; }
+}
+
+function writeCachedRole(role: Role | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (role) localStorage.setItem(CACHED_ROLE_KEY, role);
+    else localStorage.removeItem(CACHED_ROLE_KEY);
+  } catch { /* */ }
+}
+
+
 
 function rememberPendingRole(role?: Role, claim = false) {
   try {
