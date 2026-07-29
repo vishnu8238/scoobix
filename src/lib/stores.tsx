@@ -472,20 +472,8 @@ type AppUICtx = {
 const AppUIContext = createContext<AppUICtx | null>(null);
 const UI_KEY = "cravio_ui_v1";
 
-// Tiny mock reverse-geocoder: turns coords into a nice-looking area name.
-// Backend swap point: replace with a real geocoding call later.
-function mockReverseGeocode(lat: number, lng: number): string {
-  const areas = [
-    "Indiranagar, Bengaluru",
-    "Bandra West, Mumbai",
-    "Connaught Place, Delhi",
-    "Koramangala, Bengaluru",
-    "Powai, Mumbai",
-    "HSR Layout, Bengaluru",
-  ];
-  const idx = Math.abs(Math.round(lat * 7 + lng * 3)) % areas.length;
-  return `${areas[idx]} · Current location`;
-}
+// Reverse geocoding is handled by src/lib/geocode.ts (OpenStreetMap Nominatim).
+
 
 export function AppUIProvider({ children }: { children: ReactNode }) {
   const [location, setLocationState] = useState("Westside · Apt 4");
