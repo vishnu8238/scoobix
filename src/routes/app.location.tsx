@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Search, MapPin, Navigation, Plus, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, MapPin, Navigation, Plus, Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { LeafletMap } from "@/components/cravio/LeafletMap";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAddresses } from "@/lib/addresses-store";
 import { useAppUI } from "@/lib/stores";
 import { DEFAULT_CUSTOMER, addressCoords, type LatLng } from "@/lib/geo";
+import { reverseGeocode, searchPlaces, type GeoPlace } from "@/lib/geocode";
 import { toast } from "sonner";
 
 
