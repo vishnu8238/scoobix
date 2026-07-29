@@ -55,6 +55,7 @@ import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
 import { Route as ManagerRestaurantsRouteImport } from './routes/manager.restaurants'
+import { Route as ManagerOnboardingRouteImport } from './routes/manager.onboarding'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
@@ -329,6 +330,11 @@ const ManagerRestaurantsRoute = ManagerRestaurantsRouteImport.update({
   path: '/restaurants',
   getParentRoute: () => ManagerRoute,
 } as any)
+const ManagerOnboardingRoute = ManagerOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -597,6 +603,7 @@ export interface FileRoutesByFullPath {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/onboarding': typeof ManagerOnboardingRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
@@ -683,6 +690,7 @@ export interface FileRoutesByTo {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/onboarding': typeof ManagerOnboardingRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
@@ -775,6 +783,7 @@ export interface FileRoutesById {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/manager/onboarding': typeof ManagerOnboardingRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
@@ -868,6 +877,7 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/onboarding'
     | '/manager/restaurants'
     | '/partner/addons'
     | '/partner/ads'
@@ -954,6 +964,7 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/onboarding'
     | '/manager/restaurants'
     | '/partner/addons'
     | '/partner/ads'
@@ -1045,6 +1056,7 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
+    | '/manager/onboarding'
     | '/manager/restaurants'
     | '/partner/addons'
     | '/partner/ads'
@@ -1421,6 +1433,13 @@ declare module '@tanstack/react-router' {
       path: '/restaurants'
       fullPath: '/manager/restaurants'
       preLoaderRoute: typeof ManagerRestaurantsRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/onboarding': {
+      id: '/manager/onboarding'
+      path: '/onboarding'
+      fullPath: '/manager/onboarding'
+      preLoaderRoute: typeof ManagerOnboardingRouteImport
       parentRoute: typeof ManagerRoute
     }
     '/auth/signup': {
@@ -1842,11 +1861,13 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ManagerRouteChildren {
+  ManagerOnboardingRoute: typeof ManagerOnboardingRoute
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
 }
 
 const ManagerRouteChildren: ManagerRouteChildren = {
+  ManagerOnboardingRoute: ManagerOnboardingRoute,
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
   ManagerIndexRoute: ManagerIndexRoute,
 }
