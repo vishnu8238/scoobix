@@ -95,7 +95,7 @@ function LocationPicker() {
           </button>
           {picked && (
             <button
-              onClick={() => select("Pinned on map", picked)}
+              onClick={() => select(pickedLabel && pickedLabel !== "Locating…" ? pickedLabel : "Pinned on map", picked)}
               className="pointer-events-auto inline-flex items-center gap-2 rounded-full gradient-primary px-4 py-2 text-[12px] font-bold text-primary-foreground shadow-glow"
             >
               <Check className="h-4 w-4" strokeWidth={2.5} /> Use this pin
@@ -103,7 +103,10 @@ function LocationPicker() {
           )}
         </div>
       </div>
-      <p className="mt-2 px-5 text-[11px] text-muted-foreground">Tap the map to drop a pin, then drag it to fine-tune.</p>
+      <p className="mt-2 px-5 text-[11px] text-muted-foreground">
+        {pickedLabel ?? "Tap the map to drop a pin, then drag it to fine-tune."}
+      </p>
+
 
 
       <div className="mt-5 px-4">
