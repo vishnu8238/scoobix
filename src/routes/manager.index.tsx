@@ -55,6 +55,25 @@ function ManagerDashboard() {
         <Stat icon={FileEdit} label="Draft applications" value={stats.drafts} />
       </div>
 
+      <Link
+        to="/manager/leads"
+        className="mt-4 flex items-center gap-3 rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60"
+      >
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary-soft text-primary">
+          <Users className="h-5 w-5" strokeWidth={2.4} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold">Lead pipeline</p>
+          <p className="truncate text-[12px] text-muted-foreground">
+            {leadLoading
+              ? "Loading leads…"
+              : `${crm.open} open · ${crm.overdue} overdue · ${crm.conversionRate}% conversion`}
+          </p>
+        </div>
+        <span className="font-display text-lg font-extrabold">{crm.total}</span>
+      </Link>
+
+
       <section className="mt-4 rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4 text-primary" strokeWidth={2.6} />
