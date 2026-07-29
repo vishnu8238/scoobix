@@ -43,6 +43,8 @@ type AuthResult = { ok: boolean; user?: User; message?: string; needsVerificatio
 type AuthCtx = {
   user: User | null;
   loading: boolean;
+  /** Persisted role from the previous session; used to route before `user` resolves. */
+  cachedRole: Role | null;
   signIn: (email: string, password: string, role?: Role) => Promise<AuthResult>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<AuthResult>;
   signInWithProvider: (provider: OAuthProvider, role?: Role, claimRole?: boolean) => Promise<{ ok: boolean; message?: string }>;
@@ -92,6 +94,28 @@ function toUiRole(role: string | undefined | null): Role | null {
 
 const PENDING_ROLE_KEY = "scoobix_pending_role_v1";
 const PENDING_ROLE_CLAIM_KEY = "scoobix_pending_role_claim_v1";
+/** Last resolved role, mirrored locally so reloads route instantly. */
+const CACHED_ROLE_KEY = "scoobix_role_v1";
+
+const ALL_ROLES: Role[] = ["customer", "partner", "rider", "admin"];
+
+export function readCachedRole(): Role | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = localStorage.getItem(CACHED_ROLE_KEY) as Role | null;
+    return value && ALL_ROLES.includes(value) ? value : null;
+  } catch { return null; }
+}
+
+function writeCachedRole(role: Role | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (role) localStorage.setItem(CACHED_ROLE_KEY, role);
+    else localStorage.removeItem(CACHED_ROLE_KEY);
+  } catch { /* */ }
+}
+
+
 
 function rememberPendingRole(role?: Role, claim = false) {
   try {
@@ -211,9 +235,21 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
 
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
+  const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
+
+  /**
+   * Every session update also mirrors the resolved role to local storage, so a
+   * refresh or cold app start can route to the right surface before the
+   * profile round-trip finishes.
+   */
+  const setUser = useCallback((next: User | null) => {
+    setUserState(next);
+    writeCachedRole(next?.role ?? null);
+    setCachedRole(next?.role ?? null);
+  }, []);
 
   // Auto-login + OAuth return handling.
   useEffect(() => {
@@ -416,6 +452,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
+        cachedRole,
         signIn,
         signUp,
         signInWithProvider,

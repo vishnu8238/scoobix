@@ -21,16 +21,19 @@ export const Route = createFileRoute("/")({
  */
 function Splash() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, cachedRole } = useAuth();
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
-    const target = user ? ROLE_HOME[user.role] : "/auth/login";
+    // While the session is still restoring, the last known role is enough to
+    // head to the right app — the route guard re-validates on arrival.
+    if (loading && !cachedRole) return;
+    const role = user?.role ?? cachedRole;
+    const target = role ? ROLE_HOME[role] : "/auth/login";
     const t = setTimeout(() => setExiting(true), 1100);
     const t2 = setTimeout(() => navigate({ to: target as never, replace: true }), 1600);
     return () => { clearTimeout(t); clearTimeout(t2); };
-  }, [navigate, user, loading]);
+  }, [navigate, user, loading, cachedRole]);
 
   return (
     <div className="relative block h-full min-h-svh w-full overflow-hidden text-left">
