@@ -23,8 +23,7 @@ const ROLES: { value: Role; label: string; icon: typeof Utensils; next?: string 
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { user, loading, signUp, signInWithProvider } = useAuth();
-  const { oauthError, clearOAuthError } = useAuth();
+  const { user, loading, signUp, signInWithProvider, oauthError, clearOAuthError } = useAuth();
   const [role, setRole] = useState<Role>("customer");
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [busy, setBusy] = useState(false);
