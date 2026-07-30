@@ -172,6 +172,9 @@ function RestaurantDetail({
         <button onClick={onClose} className="rounded-xl bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">Close</button>
       </div>
 
+      <AdminGoLivePanel restaurant={restaurant as GoLiveRow} />
+
+
       <div className="rounded-2xl bg-muted/40 p-4">
         <p className="flex items-center gap-2 font-display text-sm font-bold"><UserRound className="h-4 w-4 text-primary" /> Relationship manager</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
