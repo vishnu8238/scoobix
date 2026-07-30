@@ -57,16 +57,24 @@ function PartnerDashboard() {
         </span>
       </header>
 
+      <GoLiveCard
+        restaurant={restaurant}
+        items={goLive.items}
+        percent={goLive.percent}
+        eligible={goLive.eligible}
+        isLive={live}
+      />
+
       <section className="rounded-3xl bg-card p-4 shadow-soft ring-1 ring-border/60">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-2xl bg-primary/10 text-primary"><Power className="h-4 w-4" strokeWidth={2.4} /></span>
             <div>
               <p className="text-sm font-bold">Accept new orders</p>
-              <p className="text-[11px] text-muted-foreground">Toggle off to pause incoming orders.</p>
+              <p className="text-[11px] text-muted-foreground">{live ? "Toggle off to pause incoming orders." : "Available once your store is live."}</p>
             </div>
           </div>
-          <Switch checked={isAccepting && !isClosed} disabled={isClosed} onCheckedChange={(v) => { void updateRestaurantStatus(rid, { accepting_orders: v }); setAcceptingOrders(rid, v); }} />
+          <Switch checked={isAccepting && !isClosed && live} disabled={isClosed || !live} onCheckedChange={(v) => { void updateRestaurantStatus(rid, { accepting_orders: v }); setAcceptingOrders(rid, v); }} />
         </div>
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
           <div className="flex items-center gap-3">
@@ -76,9 +84,10 @@ function PartnerDashboard() {
               <p className="text-[11px] text-muted-foreground">Hide your restaurant from customers for now.</p>
             </div>
           </div>
-          <Switch checked={isClosed} onCheckedChange={(v) => { void updateRestaurantStatus(rid, { is_open: !v, status: v ? "closed" : "approved" }); setRestaurantClosed(rid, v); }} />
+          <Switch checked={isClosed} disabled={!live} onCheckedChange={(v) => { void updateRestaurantStatus(rid, { is_open: !v, status: v ? "closed" : "approved" }); setRestaurantClosed(rid, v); }} />
         </div>
       </section>
+
 
       <div className="grid grid-cols-2 gap-3">
         {STATS.map((s) => (
