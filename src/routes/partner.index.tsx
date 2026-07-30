@@ -10,6 +10,8 @@ import { rowToOrder, type OrderRow } from "@/lib/orders-api";
 import { usePartnerRestaurant } from "@/lib/partner-store";
 import { useAuth } from "@/lib/auth-store";
 import { RestaurantIdBadge } from "@/components/cravio/RestaurantIdBadge";
+import { GoLiveCard, useGoLiveChecklist } from "@/components/cravio/GoLiveChecklist";
+import type { GoLiveRow } from "@/lib/go-live";
 
 export const Route = createFileRoute("/partner/")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Dashboard" }] }),
@@ -21,6 +23,8 @@ function PartnerDashboard() {
   const { user } = useAuth();
   const { restaurant, restaurantId } = usePartnerRestaurant();
   const rid = restaurantId || partnerRestaurant.id;
+  const goLive = useGoLiveChecklist(restaurant as GoLiveRow | null);
+  const live = !!(restaurant as GoLiveRow | null)?.is_live;
   const isClosed = !!closedRestaurants[rid];
   const isAccepting = acceptingOrders[rid] !== false; // default true
   const { rows } = useLiveOrders(rid ? { restaurant_id: rid } : undefined);
