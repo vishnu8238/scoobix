@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Star, Percent, Pencil, Save, X, Check, Ban, Search, Loader2, UserRound } from "lucide-react";
+import { Star, Percent, Pencil, Save, X, Check, Ban, Search, Loader2, UserRound, Rocket, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -10,6 +10,8 @@ import { listTable, patchRecord } from "@/lib/insforge-crud";
 import { setRestaurantApprovalStatus, setRestaurantCommission, updateRestaurantStatus } from "@/lib/insforge";
 import { ensureRestaurantCode } from "@/lib/restaurant-id";
 import type { RestaurantRow } from "@/lib/partner-store";
+import { ChecklistList, ChecklistProgress, useGoLiveChecklist } from "@/components/cravio/GoLiveChecklist";
+import { setGoLiveOverride, setRestaurantLive, setVerificationFlag, type ChecklistItem, type GoLiveRow } from "@/lib/go-live";
 
 export const Route = createFileRoute("/admin/restaurants")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Restaurants" }] }),
@@ -172,6 +174,9 @@ function RestaurantDetail({
         <button onClick={onClose} className="rounded-xl bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">Close</button>
       </div>
 
+      <AdminGoLivePanel restaurant={restaurant as GoLiveRow} />
+
+
       <div className="rounded-2xl bg-muted/40 p-4">
         <p className="flex items-center gap-2 font-display text-sm font-bold"><UserRound className="h-4 w-4 text-primary" /> Relationship manager</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -292,5 +297,69 @@ function CommissionCell({ id, saved: initial }: { id: string; saved: number }) {
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function AdminGoLivePanel({ restaurant }: { restaurant: GoLiveRow }) {
+  const [row, setRow] = useState<GoLiveRow>(restaurant);
+  const { items, percent, complete, eligible } = useGoLiveChecklist(row);
+  const live = !!row.is_live;
+
+  const toggleVerify = async (item: ChecklistItem) => {
+    const field = item.key === "bank" ? "bank_verified" : "docs_verified";
+    const next = !item.done;
+    setRow((p) => ({ ...p, [field]: next }));
+    await setVerificationFlag(row.id, field, next);
+    toast.success(`${item.label} ${next ? "verified" : "unverified"}`);
+  };
+
+  const toggleOverride = async () => {
+    const next = !row.go_live_override;
+    setRow((p) => ({ ...p, go_live_override: next }));
+    await setGoLiveOverride(row.id, next);
+    toast.success(next ? "Admin override enabled" : "Admin override removed");
+  };
+
+  const toggleLive = async () => {
+    const next = !live;
+    if (next && !eligible) {
+      toast.error("Checklist incomplete — complete it or enable admin override.");
+      return;
+    }
+    setRow((p) => ({ ...p, is_live: next }));
+    await setRestaurantLive(row.id, next);
+    toast.success(next ? `${row.name} is now live` : `${row.name} taken offline`);
+  };
+
+  return (
+    <div className="rounded-2xl bg-muted/40 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 font-display text-sm font-bold"><Rocket className="h-4 w-4 text-primary" /> Go-live checklist</p>
+        <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider ${live ? "bg-emerald-100 text-emerald-700" : eligible ? "bg-primary-soft text-primary" : "bg-amber-100 text-amber-700"}`}>
+          {live ? "Live" : eligible ? "Ready" : "Not live"}
+        </span>
+      </div>
+      <div className="mt-3"><ChecklistProgress percent={percent} /></div>
+      <div className="mt-3"><ChecklistList items={items} onToggleAdmin={toggleVerify} /></div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => void toggleLive()}
+          disabled={!live && !eligible}
+          className={`rounded-2xl px-4 py-2.5 text-sm font-bold transition active:scale-95 disabled:opacity-50 ${live ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground shadow-glow"}`}
+        >
+          {live ? "Take offline" : "Set live"}
+        </button>
+        <button
+          onClick={() => void toggleOverride()}
+          className={`flex items-center gap-1.5 rounded-2xl px-4 py-2.5 text-sm font-bold transition active:scale-95 ${row.go_live_override ? "bg-amber-100 text-amber-700" : "bg-card text-muted-foreground ring-1 ring-border/60"}`}
+        >
+          <ShieldCheck className="h-4 w-4" /> {row.go_live_override ? "Override on" : "Override checklist"}
+        </button>
+        {!complete && !row.go_live_override && (
+          <span className="text-[11px] text-muted-foreground">Restaurant stays hidden until 100% or override.</span>
+        )}
+      </div>
+    </div>
   );
 }
