@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/cravio/PageHeader";
 import { toast } from "sonner";
 import { listTable } from "@/lib/insforge-crud";
 import { EmptyState } from "@/components/cravio/EmptyState";
+import { listCampaigns, effectiveStatus, CAMPAIGN_TYPE_LABEL, type Campaign } from "@/lib/campaigns-api";
 
 export const Route = createFileRoute("/app/coupons")({
   head: () => ({ meta: [{ title: "Scoobix · Coupons & offers" }] }),
@@ -35,14 +36,19 @@ function fmtExpiry(row: CouponRow): string {
 
 function CouponsPage() {
   const [list, setList] = useState<CouponRow[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const rows = await listTable<CouponRow>("coupons", { limit: 100 });
+      const [rows, camps] = await Promise.all([
+        listTable<CouponRow>("coupons", { limit: 100 }),
+        listCampaigns(),
+      ]);
       if (cancelled) return;
       setList(rows.filter((c) => c.active !== false && !!c.code));
+      setCampaigns(camps.filter((c) => effectiveStatus(c) === "active"));
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -55,7 +61,7 @@ function CouponsPage() {
 
   return (
     <div className="min-h-svh pb-16">
-      <PageHeader title="Coupons & offers" subtitle={loading ? "Loading…" : `${list.length} active`} />
+      <PageHeader title="Coupons & offers" subtitle={loading ? "Loading…" : `${list.length + campaigns.length} active`} />
 
       <div className="px-4 pt-4">
         <div className="rounded-3xl gradient-primary p-5 text-primary-foreground shadow-glow">
@@ -65,7 +71,42 @@ function CouponsPage() {
         </div>
       </div>
 
-      {!loading && list.length === 0 ? (
+      {campaigns.length > 0 && (
+        <ul className="mt-6 space-y-3 px-4">
+          {campaigns.map((c) => (
+            <li key={c.id} className="overflow-hidden rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-bold">{c.name}</h3>
+                  <p className="text-xs text-muted-foreground">{c.description ?? CAMPAIGN_TYPE_LABEL[c.type]}</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                  {CAMPAIGN_TYPE_LABEL[c.type]}
+                </span>
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                {c.promo_code ? (
+                  <span className="rounded-md bg-secondary px-2 py-1 font-mono text-[12px] font-bold tracking-wider">{c.promo_code}</span>
+                ) : (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Applies automatically</span>
+                )}
+                {c.promo_code && (
+                  <button onClick={() => copy(String(c.promo_code))} className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+                    <Copy className="h-3 w-3" /> Copy
+                  </button>
+                )}
+              </div>
+              {c.end_at && (
+                <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Ends {new Date(c.end_at).toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!loading && list.length === 0 && campaigns.length === 0 ? (
         <div className="px-4 pt-6"><EmptyState icon={<Tag className="h-6 w-6" />} title="No offers yet" description="Check back soon for coupons and discounts." /></div>
       ) : (
         <ul className="mt-6 space-y-3 px-4">
