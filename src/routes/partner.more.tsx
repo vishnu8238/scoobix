@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronRight, Store, Clock, Compass, Tag, Megaphone, CreditCard, FileText, LifeBuoy, Settings,
-  LogOut, Sparkles, Layers, Bell, Utensils, Building2, Shield,
+  LogOut, Sparkles, Layers, Bell, Utensils, Building2, Shield, GitBranch,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/cravio/PageHeader";
@@ -25,6 +25,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       { to: "/partner/hours",        icon: Clock,     label: "Restaurant hours",  desc: "When you accept orders" },
       { to: "/partner/collections",  icon: Compass,   label: "Collections",       desc: "Curated listing requests" },
       { to: "/partner/addons",       icon: Layers,    label: "Add-ons & variants",desc: "Sizes, toppings, choices" },
+      { to: "/partner/branches",     icon: GitBranch, label: "Branches & ownership", desc: "Outlets, duplicate checks, transfers" },
     ],
   },
   {
