@@ -23,6 +23,7 @@ import {
   type OAuthProvider,
   type UserProfileRow,
 } from "./insforge-auth";
+import { listTable } from "./insforge-crud";
 import { isPhoneOtpEnabled, sendPhoneOtp, verifyPhoneOtp, normalisePhone } from "./phone-otp";
 import { setTokens } from "./insforge-auth";
 import { clearLastRoute } from "./last-route";
@@ -194,8 +195,9 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
   // On signup the user explicitly picks their app, so that choice overrides the
   // default profile row the backend may have already created as CUSTOMER.
+  const existingRole = toUiRole(existing?.role);
   const role =
-    (input.forceRole ? input.role : undefined) ?? toUiRole(existing?.role) ?? input.role ?? "customer";
+    (input.forceRole ? input.role : undefined) ?? existingRole ?? input.role ?? "customer";
   const phone = existing?.phone || input.phone || "";
   // Apple can withhold the address entirely — never write an empty string into
   // a unique column, and never crash on the missing value.
@@ -225,8 +227,18 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   };
 
   // Blocking: the profile must exist before the UI ever sees the user.
-  const saved = await upsertUserProfile(row).catch(() => null);
-  const finalRole = input.forceRole ? role : toUiRole(saved?.role) ?? role;
+  const saved = await upsertUserProfile(row, { writeRole: input.forceRole || !existing }).catch(() => null);
+  let finalRole = input.forceRole ? role : toUiRole(saved?.role) ?? role;
+
+  // Safety net: a provisioned merchant manager must always land in /manager,
+  // even if their profile row was created (or reset) as CUSTOMER.
+  if (!input.forceRole && finalRole === "customer") {
+    const isManager = await userIsMerchantManager(sess.id);
+    if (isManager) {
+      finalRole = "manager";
+      await upsertUserProfile({ id: sess.id, role: UI_TO_DB.manager }, { writeRole: true }).catch(() => null);
+    }
+  }
 
   return {
     id: sess.id,
@@ -236,6 +248,20 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     role: finalRole,
     avatar: saved?.avatar || avatar,
   };
+}
+
+/** True when this auth account owns an active merchant_managers record. */
+async function userIsMerchantManager(userId: string): Promise<boolean> {
+  try {
+    const rows = await listTable<{ id: string }>("merchant_managers", {
+      user_id: `eq.${userId}`,
+      select: "id",
+      limit: 1,
+    });
+    return !!rows[0]?.id;
+  } catch {
+    return false;
+  }
 }
 
 
