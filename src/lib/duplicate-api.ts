@@ -392,7 +392,13 @@ export async function logDuplicateCheck(input: {
     decision: input.decision ?? (input.result.level === "none" ? "clear" : "pending"),
   });
   const row = Array.isArray(created) ? created[0] : created;
-  return (row as DuplicateCheckRow) ?? null;
+  if (row && (row as DuplicateCheckRow).id) return row as DuplicateCheckRow;
+  // Some InsForge deployments return an empty body on insert — read it back.
+  const latest = await listTable<DuplicateCheckRow>("duplicate_checks", {
+    order: "created_at.desc",
+    limit: 1,
+  });
+  return latest[0] ?? null;
 }
 
 export async function listDuplicateChecks(params?: {
@@ -482,6 +488,11 @@ export async function resolveDuplicate(input: {
   });
 }
 
+/** Column defaults can arrive quoted from the backend — normalise them. */
+export function unquote(v?: string | null) {
+  return (v ?? "").replace(/^'|'$/g, "");
+}
+
 export function duplicateStats(rows: DuplicateCheckRow[]) {
   const by = (fn: (r: DuplicateCheckRow) => boolean) => rows.filter(fn).length;
   return {
@@ -489,7 +500,7 @@ export function duplicateStats(rows: DuplicateCheckRow[]) {
     exact: by((r) => r.level === "exact"),
     possible: by((r) => r.level === "possible"),
     clear: by((r) => r.level === "none"),
-    pending: by((r) => (r.decision ?? "pending") === "pending" && r.level !== "none"),
+    pending: by((r) => (unquote(r.decision) || "pending") === "pending" && r.level !== "none"),
     merged: by((r) => r.decision === "merge"),
     rejected: by((r) => r.decision === "reject"),
     branches: by((r) => r.decision === "approve_branch"),

@@ -47,7 +47,7 @@ export type TransferRow = {
 };
 
 export function transferStatus(row: TransferRow): TransferStatus {
-  const s = (row.status ?? "pending") as TransferStatus;
+  const s = ((row.status ?? "pending").replace(/^'|'$/g, "") || "pending") as TransferStatus;
   return TRANSFER_STATUSES.includes(s) ? s : "pending";
 }
 
@@ -73,7 +73,15 @@ export async function requestOwnershipTransfer(input: {
     status: "pending",
     duplicate_check_id: input.duplicateCheckId ?? null,
   });
-  const row = (Array.isArray(created) ? created[0] : created) as TransferRow | null;
+  let row = (Array.isArray(created) ? created[0] : created) as TransferRow | null;
+  if (!row?.id) {
+    const latest = await listTable<TransferRow>("ownership_transfers", {
+      restaurant_id: `eq.${input.restaurant.id}`,
+      order: "created_at.desc",
+      limit: 1,
+    });
+    row = latest[0] ?? null;
+  }
   if (row && input.restaurant.id) {
     await logOnboardingEvent({
       restaurantId: input.restaurant.id,

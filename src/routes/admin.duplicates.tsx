@@ -9,6 +9,7 @@ import { cn } from "@/lib/format";
 import { useAuth } from "@/lib/auth-store";
 import { patchAppSettings, useAppSettings } from "@/lib/app-settings";
 import {
+  unquote,
   listDuplicateChecks,
   resolveDuplicate,
   duplicateStats,
@@ -80,10 +81,10 @@ function AdminDuplicates() {
   const alerts = useMemo(() => rows.filter((r) => r.level === "exact" || r.level === "possible"), [rows]);
 
   const visible = useMemo(() => {
-    if (tab === "pending") return alerts.filter((r) => (r.decision ?? "pending") === "pending");
+    if (tab === "pending") return alerts.filter((r) => (unquote(r.decision) || "pending") === "pending");
     if (tab === "exact") return alerts.filter((r) => r.level === "exact");
     if (tab === "possible") return alerts.filter((r) => r.level === "possible");
-    if (tab === "merged") return rows.filter((r) => r.decision === "merge" || r.decision === "approve_branch");
+    if (tab === "merged") return rows.filter((r) => unquote(r.decision) === "merge" || unquote(r.decision) === "approve_branch");
     if (tab === "log") return rows;
     return [];
   }, [tab, alerts, rows]);
@@ -188,7 +189,7 @@ function CheckCard({
   const [target, setTarget] = useState<string | null>(matches[0]?.id ?? null);
   const [remarks, setRemarks] = useState("");
   const [busy, setBusy] = useState(false);
-  const decided = (row.decision ?? "pending") !== "pending";
+  const decided = (unquote(row.decision) || "pending") !== "pending";
 
   const act = async (action: AdminDuplicateAction) => {
     setBusy(true);
