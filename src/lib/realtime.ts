@@ -9,8 +9,8 @@
  *
  * Design goals
  *  - No new tables. Uses existing InsForge tables verbatim.
- *  - Battery-friendly: 2 s while active, backs off to 15 s when quiet, jumps
- *    back to 1 s on any local write.
+ *  - Battery-friendly: 4 s while active, backs off to 60 s when quiet, jumps
+ *    straight back to the fast interval on any local write.
  *  - Visibility-aware: pauses when the tab is hidden, resumes on focus.
  *  - Filter-aware: matches server params locally so multiple subscribers on
  *    the same table share a single request.
@@ -27,9 +27,9 @@ export type SubscribeOptions = {
   params?: Record<string, string | number | undefined>;
   /** Local filter applied to every row before emission. */
   match?: Filter;
-  /** Base poll interval in ms. Defaults to 2000. */
+  /** Base poll interval in ms. Defaults to 4000. */
   minMs?: number;
-  /** Max poll interval when idle. Defaults to 15000. */
+  /** Max poll interval when idle. Defaults to 60000. */
   maxMs?: number;
 };
 
@@ -171,9 +171,12 @@ export function subscribeTable(
       lastRows: [],
       lastKey: "__init__",
       timer: null,
-      currentMs: opts.minMs ?? 2000,
-      minMs: opts.minMs ?? 2000,
-      maxMs: opts.maxMs ?? 15000,
+      // Cost guard: 4 s while something is actually changing, backing off to
+      // 60 s when a screen is idle. A mutation calls `nudgeTable` and snaps
+      // the stream back to the fast interval, so this is not felt in the UI.
+      currentMs: opts.minMs ?? 4000,
+      minMs: opts.minMs ?? 4000,
+      maxMs: opts.maxMs ?? 60000,
       inFlight: false,
       disposed: false,
     };
