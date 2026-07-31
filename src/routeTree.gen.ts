@@ -106,6 +106,7 @@ import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
+import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAdsRouteImport } from './routes/admin.ads'
@@ -597,6 +598,11 @@ const AdminCmsRoute = AdminCmsRouteImport.update({
   path: '/cms',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCampaignsRoute = AdminCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBulkRoute = AdminBulkRouteImport.update({
   id: '/bulk',
   path: '/bulk',
@@ -636,6 +642,7 @@ export interface FileRoutesByFullPath {
   '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
@@ -735,6 +742,7 @@ export interface FileRoutesByTo {
   '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
@@ -840,6 +848,7 @@ export interface FileRoutesById {
   '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
@@ -946,6 +955,7 @@ export interface FileRouteTypes {
     | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
+    | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
     | '/admin/discover'
@@ -1045,6 +1055,7 @@ export interface FileRouteTypes {
     | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
+    | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
     | '/admin/discover'
@@ -1149,6 +1160,7 @@ export interface FileRouteTypes {
     | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
+    | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
     | '/admin/discover'
@@ -1936,6 +1948,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCmsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/campaigns': {
+      id: '/admin/campaigns'
+      path: '/campaigns'
+      fullPath: '/admin/campaigns'
+      preLoaderRoute: typeof AdminCampaignsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/bulk': {
       id: '/admin/bulk'
       path: '/bulk'
@@ -1978,6 +1997,7 @@ interface AdminRouteChildren {
   AdminAdsRoute: typeof AdminAdsRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminBulkRoute: typeof AdminBulkRoute
+  AdminCampaignsRoute: typeof AdminCampaignsRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminCommissionRoute: typeof AdminCommissionRoute
   AdminDiscoverRoute: typeof AdminDiscoverRoute
@@ -2003,6 +2023,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdsRoute: AdminAdsRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminBulkRoute: AdminBulkRoute,
+  AdminCampaignsRoute: AdminCampaignsRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminCommissionRoute: AdminCommissionRoute,
   AdminDiscoverRoute: AdminDiscoverRoute,
