@@ -113,6 +113,7 @@ import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
+import { Route as AdminAiRouteImport } from './routes/admin.ai'
 import { Route as AdminAdsRouteImport } from './routes/admin.ads'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
@@ -639,6 +640,11 @@ const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAiRoute = AdminAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAdsRoute = AdminAdsRouteImport.update({
   id: '/ads',
   path: '/ads',
@@ -676,6 +682,7 @@ export interface FileRoutesByFullPath {
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/ads': typeof AdminAdsRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -782,6 +789,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/ads': typeof AdminAdsRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -894,6 +902,7 @@ export interface FileRoutesById {
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/ads': typeof AdminAdsRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -1007,6 +1016,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/admin/ads'
+    | '/admin/ai'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -1113,6 +1123,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/ads'
+    | '/admin/ai'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -1224,6 +1235,7 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/admin/ads'
+    | '/admin/ai'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -2070,6 +2082,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminApprovalsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/ai': {
+      id: '/admin/ai'
+      path: '/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AdminAiRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/ads': {
       id: '/admin/ads'
       path: '/ads'
@@ -2110,6 +2129,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAdsRoute: typeof AdminAdsRoute
+  AdminAiRoute: typeof AdminAiRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminBulkRoute: typeof AdminBulkRoute
   AdminCampaignsRoute: typeof AdminCampaignsRoute
@@ -2136,6 +2156,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdsRoute: AdminAdsRoute,
+  AdminAiRoute: AdminAiRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminBulkRoute: AdminBulkRoute,
   AdminCampaignsRoute: AdminCampaignsRoute,
