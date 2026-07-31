@@ -183,6 +183,11 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   } catch {
     existing = null;
   }
+  // The same email can own several independent accounts (one per app). Only the
+  // row that belongs to THIS auth account may dictate the role — otherwise an
+  // older CUSTOMER row for the same address drags every new account (admin,
+  // partner, rider…) back into the customer app.
+  const ownRow = existing && existing.id === sess.id ? existing : null;
 
   const name =
     existing?.name ||
@@ -195,13 +200,18 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
   // On signup the user explicitly picks their app, so that choice overrides the
   // default profile row the backend may have already created as CUSTOMER.
-  const existingRole = toUiRole(existing?.role);
-  const role =
-    (input.forceRole ? input.role : undefined) ?? existingRole ?? input.role ?? "customer";
+  const existingRole = toUiRole(ownRow?.role);
   const phone = existing?.phone || input.phone || "";
   // Apple can withhold the address entirely — never write an empty string into
   // a unique column, and never crash on the missing value.
   const email = sess.email || existing?.email || "";
+  // The admin role can never be claimed from a form — only the backend
+  // allow list grants it (checked after the profile write below).
+  const requested =
+    input.role === "admin" && !(await userIsPlatformAdmin(sess.id, email)) ? undefined : input.role;
+  const role =
+    (input.forceRole ? requested : undefined) ?? existingRole ?? requested ?? "customer";
+
 
   const row: UserProfileRow = {
     id: sess.id,
@@ -227,7 +237,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   };
 
   // Blocking: the profile must exist before the UI ever sees the user.
-  const saved = await upsertUserProfile(row, { writeRole: input.forceRole || !existing }).catch(() => null);
+  const saved = await upsertUserProfile(row, { writeRole: input.forceRole || !ownRow }).catch(() => null);
   let finalRole = input.forceRole ? role : toUiRole(saved?.role) ?? role;
 
   // Safety net: a provisioned merchant manager must always land in /manager,
@@ -238,6 +248,13 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
       finalRole = "manager";
       await upsertUserProfile({ id: sess.id, role: UI_TO_DB.manager }, { writeRole: true }).catch(() => null);
     }
+  }
+
+  // Same safety net for platform operators: an allow-listed account always
+  // resolves to /admin, whatever its profile row currently says.
+  if (finalRole !== "admin" && (await userIsPlatformAdmin(sess.id, email))) {
+    finalRole = "admin";
+    await upsertUserProfile({ id: sess.id, role: UI_TO_DB.admin }, { writeRole: true }).catch(() => null);
   }
 
   return {
@@ -263,6 +280,31 @@ async function userIsMerchantManager(userId: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * True when the account is on the platform-admin allow list (`platform_admins`),
+ * matched by auth id or by email. Admin access is granted from the backend only
+ * — never from the login form or from local storage.
+ */
+async function userIsPlatformAdmin(userId: string, email: string): Promise<boolean> {
+  const hit = async (params: Record<string, string | number>) => {
+    try {
+      const rows = await listTable<{ id: string; status?: string }>("platform_admins", {
+        select: "id,status",
+        limit: 1,
+        ...params,
+      });
+      const row = rows[0];
+      return !!row?.id && (row.status ?? "active") !== "disabled";
+    } catch {
+      return false;
+    }
+  };
+  if (await hit({ user_id: `eq.${userId}` })) return true;
+  if (email && (await hit({ email: `eq.${email.toLowerCase()}` }))) return true;
+  return false;
+}
+
 
 
 export function AuthProvider({ children }: { children: ReactNode }) {
