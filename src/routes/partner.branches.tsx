@@ -75,7 +75,7 @@ function PartnerBranches() {
   const createBranch = async (flag?: string) => {
     if (!restaurant?.id) return;
     setBusy(true);
-    const parent = { id: parentId, rst_code: restaurant.rst_code as string | null };
+    const parent = { id: parentId, rst_code: (restaurant as { rst_code?: string | null }).rst_code ?? null };
     const branchCode = await nextBranchCode(parent);
     const created = await createRecord("restaurants", {
       name: `${restaurant.name} — ${form.branch_name || form.city || "Branch"}`,
