@@ -210,15 +210,25 @@ function OnboardingFlow() {
     if (saved) toast.success(`Draft saved · ${saved.rst_code}`);
   };
 
-  const submit = async () => {
-    if (!form.owner_email.trim()) {
-      toast.error("Owner email is required to create the restaurant account");
-      return;
-    }
-    if (form.documents.length < DOC_SLOTS.length) {
-      toast.error("Upload all required documents before submitting");
-      return;
-    }
+  const candidate = useMemo(
+    () => ({
+      restaurantId: record?.id ?? id ?? null,
+      name: form.name,
+      phone: form.owner_phone || form.contact_phone,
+      email: form.owner_email || form.contact_email,
+      gst: form.gst_number,
+      fssai: form.fssai_number,
+      pan: form.pan_number,
+      bankAccount: form.bank_account,
+      latitude: form.latitude,
+      longitude: form.longitude,
+      address: [form.address, form.city].filter(Boolean).join(", "),
+      city: form.city,
+    }),
+    [form, record?.id, id],
+  );
+
+  const finalizeSubmit = async (extra: Record<string, unknown> = {}) => {
     const account = await provisionAccount({
       email: form.owner_email,
       name: form.owner_name || form.name,
@@ -235,6 +245,7 @@ function OnboardingFlow() {
         status: "pending",
         owner_id: account.userId ?? null,
         submitted_at: new Date().toISOString(),
+        ...extra,
       },
       "Submitted for admin approval",
     );
@@ -245,6 +256,107 @@ function OnboardingFlow() {
     });
     navigate({ to: "/manager/restaurants" });
   };
+
+  const submit = async () => {
+    if (!form.owner_email.trim()) {
+      toast.error("Owner email is required to create the restaurant account");
+      return;
+    }
+    if (form.documents.length < DOC_SLOTS.length) {
+      toast.error("Upload all required documents before submitting");
+      return;
+    }
+    setBusy(true);
+    const res = await dup.run(candidate);
+    setBusy(false);
+    if (res.level === "none") {
+      await logDuplicateCheck({
+        candidate,
+        result: res,
+        restaurantId: record?.id ?? id ?? null,
+        attemptedBy: manager?.id ?? null,
+        attemptedByName: manager?.name ?? null,
+        action: "submit",
+        decision: "clear",
+      });
+      await finalizeSubmit();
+      return;
+    }
+    setDupOpen(true);
+  };
+
+  const resolveDuplicate = async (choice: DuplicateChoice) => {
+    const res = dup.result;
+    if (!res) return;
+    const log = (action: string, justification?: string, decision?: string) =>
+      logDuplicateCheck({
+        candidate,
+        result: res,
+        restaurantId: record?.id ?? id ?? null,
+        attemptedBy: manager?.id ?? null,
+        attemptedByName: manager?.name ?? null,
+        action,
+        justification,
+        decision,
+      });
+
+    if (choice.kind === "cancel") {
+      await log("cancelled", undefined, "cancelled_by_manager");
+      setDupOpen(false);
+      toast.info("Onboarding cancelled — the duplicate check was logged.");
+      return;
+    }
+
+    if (choice.kind === "report") {
+      await log("reported", choice.reason, "pending");
+      setDupOpen(false);
+      toast.success("Duplicate listing reported to admin.");
+      return;
+    }
+
+    if (choice.kind === "transfer") {
+      await log("transfer_requested", choice.reason, "pending");
+      const created = await requestOwnershipTransfer({
+        restaurant: {
+          id: choice.match.id,
+          name: choice.match.name,
+          rst_code: choice.match.rst_code,
+          manager_id: choice.match.manager_id,
+          manager_name: choice.match.manager_name,
+        },
+        toManager: manager ? { id: manager.id, name: manager.name ?? null } : null,
+        requestedBy: manager?.id ?? null,
+        requestedByName: manager?.name ?? null,
+        reason: choice.reason,
+      });
+      setDupOpen(false);
+      toast[created ? "success" : "error"](
+        created ? "Ownership transfer requested — admin will review it." : "Could not send the transfer request",
+      );
+      return;
+    }
+
+    if (choice.kind === "branch") {
+      await log("continued_as_branch", choice.justification, "pending");
+      const parent = choice.match;
+      const branchCode = await nextBranchCode({ id: parent.id, rst_code: parent.rst_code });
+      setDupOpen(false);
+      await finalizeSubmit({
+        is_branch: true,
+        parent_restaurant_id: parent.id,
+        branch_code: branchCode,
+        branch_name: form.branch_name.trim() || form.city.trim() || form.name.trim(),
+        duplicate_flag: "branch_pending",
+      });
+      return;
+    }
+
+    // continue with justification
+    await log("continued", choice.justification, "pending");
+    setDupOpen(false);
+    await finalizeSubmit({ duplicate_flag: `flagged_${dup.result?.level ?? "possible"}` });
+  };
+
 
   const StepIcon = STEPS[step].icon;
   const last = step === STEPS.length - 1;
