@@ -7,6 +7,7 @@
  * derived from local/demo state.
  */
 import { listTable, patchRecord } from "./insforge-crud";
+import { isKycComplete } from "./kyc-api";
 import type { RestaurantRow } from "./partner-store";
 
 export const MIN_MENU_ITEMS = 5;
@@ -38,7 +39,8 @@ export type ChecklistKey =
   | "timings"
   | "radius"
   | "payment"
-  | "owner";
+  | "owner"
+  | "kyc";
 
 export type ChecklistItem = {
   key: ChecklistKey;
@@ -52,6 +54,7 @@ export type ChecklistItem = {
 export type ChecklistContext = {
   menuCount?: number;
   ownerActive?: boolean;
+  kycVerified?: boolean;
 };
 
 const has = (v: unknown) => typeof v === "string" && v.trim().length > 0;
@@ -73,6 +76,13 @@ export function buildChecklist(r: GoLiveRow | null, ctx: ChecklistContext = {}):
       done: has(r?.bank_account) && has(r?.bank_ifsc) && has(r?.bank_holder),
     },
     { key: "owner", label: "Owner account activated", hint: "Signed-in, active owner", done: !!ctx.ownerActive },
+    {
+      key: "kyc",
+      label: "KYC documents verified",
+      hint: "FSSAI, PAN, Aadhaar, bank account and cancelled cheque",
+      done: !!ctx.kycVerified,
+      adminOnly: true,
+    },
   ];
 }
 
@@ -87,6 +97,9 @@ export function isChecklistComplete(items: ChecklistItem[]): boolean {
 
 /** True when the restaurant may be shown to customers. */
 export function canGoLive(r: GoLiveRow | null, items: ChecklistItem[]): boolean {
+  // Mandatory KYC can never be overridden — it is a compliance gate.
+  const kycOk = items.find((i) => i.key === "kyc")?.done ?? false;
+  if (!kycOk) return false;
   return !!r?.go_live_override || isChecklistComplete(items);
 }
 
@@ -115,12 +128,13 @@ export async function fetchOwnerActive(ownerId?: string | null): Promise<boolean
 
 /** Load everything needed to evaluate the checklist for one restaurant. */
 export async function loadChecklistContext(r: GoLiveRow | null): Promise<ChecklistContext> {
-  if (!r?.id) return { menuCount: 0, ownerActive: false };
-  const [menuCount, ownerActive] = await Promise.all([
+  if (!r?.id) return { menuCount: 0, ownerActive: false, kycVerified: false };
+  const [menuCount, ownerActive, kycVerified] = await Promise.all([
     fetchMenuCount(r.id),
     fetchOwnerActive(r.owner_id),
+    isKycComplete(r.id),
   ]);
-  return { menuCount, ownerActive };
+  return { menuCount, ownerActive, kycVerified };
 }
 
 /** Persist the live flag. Returns the patch applied. */
