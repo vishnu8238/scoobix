@@ -5,7 +5,9 @@
  * — stores stay usable when the backend is unreachable.
  */
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
-import { cached, cacheDrop } from "./request-cache";
+import { cached, cacheDrop, cacheGet } from "./request-cache";
+import { recordMetric } from "./perf-metrics";
+
 
 /** Default read TTL (seconds). Short enough to feel live, long enough to
  *  collapse the repeated reads a multi-panel dashboard fires on mount. */
@@ -27,11 +29,24 @@ class HttpError extends Error {
   }
 }
 
+function metricName(method: Method, url: string) {
+  const table = url.split("/records/")[1]?.split("?")[0] ?? url;
+  return `${method} ${table}`;
+}
+
 async function once(url: string, method: Method, body?: unknown) {
+  const t0 = Date.now();
   const res = await fetch(url, {
     method,
     headers: HEADERS,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  recordMetric({
+    kind: "api",
+    name: metricName(method, url),
+    ms: Date.now() - t0,
+    ok: res.ok,
+    status: res.status,
   });
   if (!res.ok) throw new HttpError(res.status, `${method} ${url} → ${res.status}`);
   // Some DELETE responses have no body.
@@ -111,6 +126,10 @@ export function listTable<T = Record<string, unknown>>(
   const qs = buildQuery(params);
   const url = `${base(table)}${qs}`;
   const load = () => withRetry(() => once(url, "GET")).then((v) => (Array.isArray(v) ? (v as T[]) : []));
+  // Cache hits are recorded too, so the dashboard can show a real hit rate.
+  if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
+    recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
+  }
   if (opts?.fresh) {
     invalidateTable(table);
     return load();

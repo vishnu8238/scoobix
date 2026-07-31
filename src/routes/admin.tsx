@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, LifeBuoy, Copy } from "lucide-react";
+import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, LifeBuoy, Copy, Gauge } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth-store";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/format";
 import { AiAssistant } from "@/components/ai/AiAssistant";
+import { warmAnalytics } from "@/lib/analytics-jobs";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/admin")({
   head: () => appHead(APPS.admin),
@@ -36,11 +38,14 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
   { to: "/admin/reports", label: "Reports", icon: BarChart3 },
   { to: "/admin/support", label: "Support", icon: LifeBuoy },
+  { to: "/admin/performance", label: "Performance & Cost", icon: Gauge },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Heavy aggregation runs in the background, never during a user request.
+  useEffect(() => { warmAnalytics(); }, []);
   return (
     <RoleGuard allow="admin">
     <div className="min-h-svh w-full bg-[radial-gradient(circle_at_top_left,_oklch(0.96_0.04_148_/_0.4),_oklch(0.99_0.005_120)_45%)]">
