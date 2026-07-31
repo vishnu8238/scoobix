@@ -6,6 +6,7 @@ import { APPS, appHead } from "@/lib/apps";
 import { useAuth } from "@/lib/auth-store";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/format";
+import { AiAssistant } from "@/components/ai/AiAssistant";
 
 export const Route = createFileRoute("/admin")({
   head: () => appHead(APPS.admin),
@@ -130,6 +131,7 @@ function AdminLayout() {
 
           <div className="animate-fade-up">
             <Outlet />
+        <AiAssistant app="admin" title="Scoobix AI" greeting="Ask about platform metrics, tickets or operations." supportHref="/admin/support" />
           </div>
         </main>
       </div>
