@@ -3,6 +3,7 @@ import { Home, Inbox, Navigation, Wallet } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
+import { AiAssistant } from "@/components/ai/AiAssistant";
 
 export const Route = createFileRoute("/rider")({
   head: () => appHead(APPS.rider),
@@ -22,6 +23,7 @@ function RiderLayout() {
     <RoleGuard allow="rider">
       <div className="relative pb-24">
         <Outlet />
+        <AiAssistant app="rider" title="Scoobix AI" greeting="Ask about trips, earnings, COD or app issues." supportHref="/rider/support" />
         <nav className="glass fixed bottom-3 left-1/2 z-40 flex w-[min(440px,calc(100%-1.5rem))] -translate-x-1/2 items-center justify-between rounded-full px-2 py-2 shadow-float">
           {NAV.map((n) => {
             const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);

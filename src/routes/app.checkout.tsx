@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { AiUpsell } from "@/components/ai/AiUpsell";
 import { currency, cn } from "@/lib/format";
 import { savedAddresses, paymentMethods } from "@/lib/mock-data";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -362,6 +363,8 @@ function CheckoutPage() {
           )}
         </section>
 
+
+        <AiUpsell />
 
         {/* Summary */}
         <section className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">

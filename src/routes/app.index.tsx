@@ -15,6 +15,7 @@ import { useSpotlight } from "@/lib/scoobix-extras";
 import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
 import { DiscoverMore, TrendingNow } from "@/components/cravio/DiscoverMore";
 import { CampaignBanners } from "@/components/cravio/CampaignBanners";
+import { AiRecommendations } from "@/components/ai/AiRecommendations";
 
 import {
   filterVeg, filterVegDishes, isPureVeg, extrasFor,
@@ -223,6 +224,8 @@ function Home() {
 
       {/* Discover More — horizontal shortcut rail */}
       <CampaignBanners />
+
+      <AiRecommendations />
 
       <DiscoverMore />
 

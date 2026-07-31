@@ -6,6 +6,7 @@ import { APPS, appHead } from "@/lib/apps";
 import { useAuth } from "@/lib/auth-store";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/format";
+import { AiAssistant } from "@/components/ai/AiAssistant";
 
 export const Route = createFileRoute("/admin")({
   head: () => appHead(APPS.admin),
@@ -15,6 +16,8 @@ export const Route = createFileRoute("/admin")({
 const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/cms", label: "CMS Studio", icon: Sparkles },
+  { to: "/admin/ai", label: "AI Insights", icon: Sparkles },
+  { to: "/admin/ai-console", label: "AI Console", icon: Sparkles },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/restaurants", label: "Restaurants", icon: Store },
   { to: "/admin/managers", label: "Merchant Managers", icon: Building2 },
@@ -128,6 +131,7 @@ function AdminLayout() {
 
           <div className="animate-fade-up">
             <Outlet />
+        <AiAssistant app="admin" title="Scoobix AI" greeting="Ask about platform metrics, tickets or operations." supportHref="/admin/support" />
           </div>
         </main>
       </div>
