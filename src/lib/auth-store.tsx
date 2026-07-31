@@ -183,6 +183,11 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   } catch {
     existing = null;
   }
+  // The same email can own several independent accounts (one per app). Only the
+  // row that belongs to THIS auth account may dictate the role — otherwise an
+  // older CUSTOMER row for the same address drags every new account (admin,
+  // partner, rider…) back into the customer app.
+  const ownRow = existing && existing.id === sess.id ? existing : null;
 
   const name =
     existing?.name ||
@@ -195,9 +200,10 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
   // On signup the user explicitly picks their app, so that choice overrides the
   // default profile row the backend may have already created as CUSTOMER.
-  const existingRole = toUiRole(existing?.role);
+  const existingRole = toUiRole(ownRow?.role);
   const role =
     (input.forceRole ? input.role : undefined) ?? existingRole ?? input.role ?? "customer";
+
   const phone = existing?.phone || input.phone || "";
   // Apple can withhold the address entirely — never write an empty string into
   // a unique column, and never crash on the missing value.
