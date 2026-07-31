@@ -194,8 +194,9 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
   // On signup the user explicitly picks their app, so that choice overrides the
   // default profile row the backend may have already created as CUSTOMER.
+  const existingRole = toUiRole(existing?.role);
   const role =
-    (input.forceRole ? input.role : undefined) ?? toUiRole(existing?.role) ?? input.role ?? "customer";
+    (input.forceRole ? input.role : undefined) ?? existingRole ?? input.role ?? "customer";
   const phone = existing?.phone || input.phone || "";
   // Apple can withhold the address entirely — never write an empty string into
   // a unique column, and never crash on the missing value.
