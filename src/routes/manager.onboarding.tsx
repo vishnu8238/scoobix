@@ -22,6 +22,9 @@ import {
   ONBOARDING_TONE,
   type ManagedRestaurant,
 } from "@/lib/manager-api";
+import { logDuplicateCheck, nextBranchCode } from "@/lib/duplicate-api";
+import { requestOwnershipTransfer } from "@/lib/transfers-api";
+import { DuplicateDialog, useDuplicateCheck, type DuplicateChoice } from "@/components/cravio/DuplicateCheck";
 
 type Search = { id?: string };
 
@@ -71,6 +74,8 @@ type Form = {
   bank_name: string;
   gst_number: string;
   fssai_number: string;
+  pan_number: string;
+  branch_name: string;
   delivery_radius: string;
   commission: string;
 };
@@ -81,7 +86,8 @@ const EMPTY: Form = {
   latitude: null, longitude: null, opening_time: "10:00", closing_time: "23:00",
   logo_url: "", cover_url: "", documents: [],
   bank_holder: "", bank_account: "", bank_ifsc: "", bank_name: "",
-  gst_number: "", fssai_number: "", delivery_radius: "5", commission: "20",
+  gst_number: "", fssai_number: "", pan_number: "", branch_name: "",
+  delivery_radius: "5", commission: "20",
 };
 
 const DOC_SLOTS = ["FSSAI licence", "GST certificate", "Owner ID proof"];
@@ -95,6 +101,8 @@ function OnboardingFlow() {
   const [record, setRecord] = useState<ManagedRestaurant | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(!!id);
+  const dup = useDuplicateCheck();
+  const [dupOpen, setDupOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -129,6 +137,8 @@ function OnboardingFlow() {
         bank_name: r.bank_name ?? "",
         gst_number: r.gst_number ?? "",
         fssai_number: r.fssai_number ?? "",
+        pan_number: (r as { pan_number?: string | null }).pan_number ?? "",
+        branch_name: (r as { branch_name?: string | null }).branch_name ?? "",
         delivery_radius: String(r.delivery_radius ?? 5),
         commission: String(r.commission ?? 20),
       });
@@ -164,6 +174,7 @@ function OnboardingFlow() {
       bank_name: form.bank_name.trim() || null,
       gst_number: form.gst_number.trim().toUpperCase() || null,
       fssai_number: form.fssai_number.trim() || null,
+      pan_number: form.pan_number.trim().toUpperCase() || null,
       delivery_radius: Number(form.delivery_radius) || 5,
       commission: Number(form.commission) || 20,
       manager_id: manager?.id ?? null,
@@ -210,15 +221,25 @@ function OnboardingFlow() {
     if (saved) toast.success(`Draft saved · ${saved.rst_code}`);
   };
 
-  const submit = async () => {
-    if (!form.owner_email.trim()) {
-      toast.error("Owner email is required to create the restaurant account");
-      return;
-    }
-    if (form.documents.length < DOC_SLOTS.length) {
-      toast.error("Upload all required documents before submitting");
-      return;
-    }
+  const candidate = useMemo(
+    () => ({
+      restaurantId: record?.id ?? id ?? null,
+      name: form.name,
+      phone: form.owner_phone || form.contact_phone,
+      email: form.owner_email || form.contact_email,
+      gst: form.gst_number,
+      fssai: form.fssai_number,
+      pan: form.pan_number,
+      bankAccount: form.bank_account,
+      latitude: form.latitude,
+      longitude: form.longitude,
+      address: [form.address, form.city].filter(Boolean).join(", "),
+      city: form.city,
+    }),
+    [form, record?.id, id],
+  );
+
+  const finalizeSubmit = async (extra: Record<string, unknown> = {}) => {
     const account = await provisionAccount({
       email: form.owner_email,
       name: form.owner_name || form.name,
@@ -235,6 +256,7 @@ function OnboardingFlow() {
         status: "pending",
         owner_id: account.userId ?? null,
         submitted_at: new Date().toISOString(),
+        ...extra,
       },
       "Submitted for admin approval",
     );
@@ -245,6 +267,107 @@ function OnboardingFlow() {
     });
     navigate({ to: "/manager/restaurants" });
   };
+
+  const submit = async () => {
+    if (!form.owner_email.trim()) {
+      toast.error("Owner email is required to create the restaurant account");
+      return;
+    }
+    if (form.documents.length < DOC_SLOTS.length) {
+      toast.error("Upload all required documents before submitting");
+      return;
+    }
+    setBusy(true);
+    const res = await dup.run(candidate);
+    setBusy(false);
+    if (res.level === "none") {
+      await logDuplicateCheck({
+        candidate,
+        result: res,
+        restaurantId: record?.id ?? id ?? null,
+        attemptedBy: manager?.id ?? null,
+        attemptedByName: manager?.name ?? null,
+        action: "submit",
+        decision: "clear",
+      });
+      await finalizeSubmit();
+      return;
+    }
+    setDupOpen(true);
+  };
+
+  const resolveDuplicate = async (choice: DuplicateChoice) => {
+    const res = dup.result;
+    if (!res) return;
+    const log = (action: string, justification?: string, decision?: string) =>
+      logDuplicateCheck({
+        candidate,
+        result: res,
+        restaurantId: record?.id ?? id ?? null,
+        attemptedBy: manager?.id ?? null,
+        attemptedByName: manager?.name ?? null,
+        action,
+        justification,
+        decision,
+      });
+
+    if (choice.kind === "cancel") {
+      await log("cancelled", undefined, "cancelled_by_manager");
+      setDupOpen(false);
+      toast.info("Onboarding cancelled — the duplicate check was logged.");
+      return;
+    }
+
+    if (choice.kind === "report") {
+      await log("reported", choice.reason, "pending");
+      setDupOpen(false);
+      toast.success("Duplicate listing reported to admin.");
+      return;
+    }
+
+    if (choice.kind === "transfer") {
+      await log("transfer_requested", choice.reason, "pending");
+      const created = await requestOwnershipTransfer({
+        restaurant: {
+          id: choice.match.id,
+          name: choice.match.name,
+          rst_code: choice.match.rst_code,
+          manager_id: choice.match.manager_id,
+          manager_name: choice.match.manager_name,
+        },
+        toManager: manager ? { id: manager.id, name: manager.name ?? null } : null,
+        requestedBy: manager?.id ?? null,
+        requestedByName: manager?.name ?? null,
+        reason: choice.reason,
+      });
+      setDupOpen(false);
+      toast[created ? "success" : "error"](
+        created ? "Ownership transfer requested — admin will review it." : "Could not send the transfer request",
+      );
+      return;
+    }
+
+    if (choice.kind === "branch") {
+      await log("continued_as_branch", choice.justification, "pending");
+      const parent = choice.match;
+      const branchCode = await nextBranchCode({ id: parent.id, rst_code: parent.rst_code });
+      setDupOpen(false);
+      await finalizeSubmit({
+        is_branch: true,
+        parent_restaurant_id: parent.id,
+        branch_code: branchCode,
+        branch_name: form.branch_name.trim() || form.city.trim() || form.name.trim(),
+        duplicate_flag: "branch_pending",
+      });
+      return;
+    }
+
+    // continue with justification
+    await log("continued", choice.justification, "pending");
+    setDupOpen(false);
+    await finalizeSubmit({ duplicate_flag: `flagged_${dup.result?.level ?? "possible"}` });
+  };
+
 
   const StepIcon = STEPS[step].icon;
   const last = step === STEPS.length - 1;
@@ -290,6 +413,7 @@ function OnboardingFlow() {
           {step === 0 && (
             <>
               <Field label="Restaurant name" value={form.name} onChange={(v) => set({ name: v })} placeholder="Trattoria Verde" />
+              <Field label="Branch / outlet name (optional)" value={form.branch_name} onChange={(v) => set({ branch_name: v })} placeholder="Indiranagar outlet" />
               <Field label="Cuisine" value={form.cuisine} onChange={(v) => set({ cuisine: v })} placeholder="Italian · Pizza · Pasta" />
             </>
           )}
@@ -388,6 +512,7 @@ function OnboardingFlow() {
               </div>
               <Field label="GSTIN" value={form.gst_number} onChange={(v) => set({ gst_number: v })} placeholder="27ABCDE1234F1Z5" />
               <Field label="FSSAI licence number" value={form.fssai_number} onChange={(v) => set({ fssai_number: v })} placeholder="11223344556677" />
+              <Field label="PAN (optional)" value={form.pan_number} onChange={(v) => set({ pan_number: v })} placeholder="ABCDE1234F" />
             </>
           )}
 
@@ -426,6 +551,14 @@ function OnboardingFlow() {
           </Button>
         </div>
       </div>
+
+      <DuplicateDialog
+        open={dupOpen}
+        onOpenChange={setDupOpen}
+        result={dup.result}
+        onView={(m) => window.open(`/restaurant/${m.id}`, "_blank")}
+        onResolve={resolveDuplicate}
+      />
     </div>
   );
 }

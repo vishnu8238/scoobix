@@ -51,9 +51,11 @@ import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
 import { Route as PartnerCouponsRouteImport } from './routes/partner.coupons'
 import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
 import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
+import { Route as PartnerBranchesRouteImport } from './routes/partner.branches'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
+import { Route as ManagerTransfersRouteImport } from './routes/manager.transfers'
 import { Route as ManagerSupportRouteImport } from './routes/manager.support'
 import { Route as ManagerRestaurantsRouteImport } from './routes/manager.restaurants'
 import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
@@ -99,6 +101,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminManagersRouteImport } from './routes/admin.managers'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
+import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
@@ -319,6 +322,11 @@ const PartnerBulkRoute = PartnerBulkRouteImport.update({
   path: '/bulk',
   getParentRoute: () => PartnerRoute,
 } as any)
+const PartnerBranchesRoute = PartnerBranchesRouteImport.update({
+  id: '/branches',
+  path: '/branches',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const PartnerAnalyticsRoute = PartnerAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -333,6 +341,11 @@ const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
   id: '/addons',
   path: '/addons',
   getParentRoute: () => PartnerRoute,
+} as any)
+const ManagerTransfersRoute = ManagerTransfersRouteImport.update({
+  id: '/transfers',
+  path: '/transfers',
+  getParentRoute: () => ManagerRoute,
 } as any)
 const ManagerSupportRoute = ManagerSupportRouteImport.update({
   id: '/support',
@@ -559,6 +572,11 @@ const AdminLiveRoute = AdminLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDuplicatesRoute = AdminDuplicatesRouteImport.update({
+  id: '/duplicates',
+  path: '/duplicates',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDriversRoute = AdminDriversRouteImport.update({
   id: '/drivers',
   path: '/drivers',
@@ -622,6 +640,7 @@ export interface FileRoutesByFullPath {
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -667,9 +686,11 @@ export interface FileRoutesByFullPath {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
+  '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
@@ -718,6 +739,7 @@ export interface FileRoutesByTo {
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -763,9 +785,11 @@ export interface FileRoutesByTo {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
+  '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
@@ -820,6 +844,7 @@ export interface FileRoutesById {
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -865,9 +890,11 @@ export interface FileRoutesById {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
+  '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
@@ -923,6 +950,7 @@ export interface FileRouteTypes {
     | '/admin/commission'
     | '/admin/discover'
     | '/admin/drivers'
+    | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
     | '/admin/orders'
@@ -968,9 +996,11 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
+    | '/partner/branches'
     | '/partner/bulk'
     | '/partner/collections'
     | '/partner/coupons'
@@ -1019,6 +1049,7 @@ export interface FileRouteTypes {
     | '/admin/commission'
     | '/admin/discover'
     | '/admin/drivers'
+    | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
     | '/admin/orders'
@@ -1064,9 +1095,11 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
+    | '/partner/branches'
     | '/partner/bulk'
     | '/partner/collections'
     | '/partner/coupons'
@@ -1120,6 +1153,7 @@ export interface FileRouteTypes {
     | '/admin/commission'
     | '/admin/discover'
     | '/admin/drivers'
+    | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
     | '/admin/orders'
@@ -1165,9 +1199,11 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
+    | '/partner/branches'
     | '/partner/bulk'
     | '/partner/collections'
     | '/partner/coupons'
@@ -1515,6 +1551,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerBulkRouteImport
       parentRoute: typeof PartnerRoute
     }
+    '/partner/branches': {
+      id: '/partner/branches'
+      path: '/branches'
+      fullPath: '/partner/branches'
+      preLoaderRoute: typeof PartnerBranchesRouteImport
+      parentRoute: typeof PartnerRoute
+    }
     '/partner/analytics': {
       id: '/partner/analytics'
       path: '/analytics'
@@ -1535,6 +1578,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/addons'
       preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/manager/transfers': {
+      id: '/manager/transfers'
+      path: '/transfers'
+      fullPath: '/manager/transfers'
+      preLoaderRoute: typeof ManagerTransfersRouteImport
+      parentRoute: typeof ManagerRoute
     }
     '/manager/support': {
       id: '/manager/support'
@@ -1851,6 +1901,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLiveRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/duplicates': {
+      id: '/admin/duplicates'
+      path: '/duplicates'
+      fullPath: '/admin/duplicates'
+      preLoaderRoute: typeof AdminDuplicatesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/drivers': {
       id: '/admin/drivers'
       path: '/drivers'
@@ -1925,6 +1982,7 @@ interface AdminRouteChildren {
   AdminCommissionRoute: typeof AdminCommissionRoute
   AdminDiscoverRoute: typeof AdminDiscoverRoute
   AdminDriversRoute: typeof AdminDriversRoute
+  AdminDuplicatesRoute: typeof AdminDuplicatesRoute
   AdminLiveRoute: typeof AdminLiveRoute
   AdminManagersRoute: typeof AdminManagersRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
@@ -1949,6 +2007,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCommissionRoute: AdminCommissionRoute,
   AdminDiscoverRoute: AdminDiscoverRoute,
   AdminDriversRoute: AdminDriversRoute,
+  AdminDuplicatesRoute: AdminDuplicatesRoute,
   AdminLiveRoute: AdminLiveRoute,
   AdminManagersRoute: AdminManagersRoute,
   AdminOrdersRoute: AdminOrdersRoute,
@@ -2043,6 +2102,7 @@ interface ManagerRouteChildren {
   ManagerProfileRoute: typeof ManagerProfileRoute
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
   ManagerSupportRoute: typeof ManagerSupportRoute
+  ManagerTransfersRoute: typeof ManagerTransfersRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
   ManagerLeadIdRoute: typeof ManagerLeadIdRoute
 }
@@ -2057,6 +2117,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerProfileRoute: ManagerProfileRoute,
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
   ManagerSupportRoute: ManagerSupportRoute,
+  ManagerTransfersRoute: ManagerTransfersRoute,
   ManagerIndexRoute: ManagerIndexRoute,
   ManagerLeadIdRoute: ManagerLeadIdRoute,
 }
@@ -2068,6 +2129,7 @@ interface PartnerRouteChildren {
   PartnerAddonsRoute: typeof PartnerAddonsRoute
   PartnerAdsRoute: typeof PartnerAdsRoute
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
+  PartnerBranchesRoute: typeof PartnerBranchesRoute
   PartnerBulkRoute: typeof PartnerBulkRoute
   PartnerCollectionsRoute: typeof PartnerCollectionsRoute
   PartnerCouponsRoute: typeof PartnerCouponsRoute
@@ -2090,6 +2152,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerAddonsRoute: PartnerAddonsRoute,
   PartnerAdsRoute: PartnerAdsRoute,
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
+  PartnerBranchesRoute: PartnerBranchesRoute,
   PartnerBulkRoute: PartnerBulkRoute,
   PartnerCollectionsRoute: PartnerCollectionsRoute,
   PartnerCouponsRoute: PartnerCouponsRoute,
