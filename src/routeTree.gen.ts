@@ -50,6 +50,7 @@ import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
 import { Route as PartnerCouponsRouteImport } from './routes/partner.coupons'
 import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
+import { Route as PartnerCampaignsRouteImport } from './routes/partner.campaigns'
 import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerBranchesRouteImport } from './routes/partner.branches'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
@@ -316,6 +317,11 @@ const PartnerCouponsRoute = PartnerCouponsRouteImport.update({
 const PartnerCollectionsRoute = PartnerCollectionsRouteImport.update({
   id: '/collections',
   path: '/collections',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerCampaignsRoute = PartnerCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
   getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerBulkRoute = PartnerBulkRouteImport.update({
@@ -699,6 +705,7 @@ export interface FileRoutesByFullPath {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/campaigns': typeof PartnerCampaignsRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -799,6 +806,7 @@ export interface FileRoutesByTo {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/campaigns': typeof PartnerCampaignsRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -905,6 +913,7 @@ export interface FileRoutesById {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/campaigns': typeof PartnerCampaignsRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -1012,6 +1021,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
+    | '/partner/campaigns'
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
@@ -1112,6 +1122,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
+    | '/partner/campaigns'
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
@@ -1217,6 +1228,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
+    | '/partner/campaigns'
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
@@ -1554,6 +1566,13 @@ declare module '@tanstack/react-router' {
       path: '/collections'
       fullPath: '/partner/collections'
       preLoaderRoute: typeof PartnerCollectionsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/campaigns': {
+      id: '/partner/campaigns'
+      path: '/campaigns'
+      fullPath: '/partner/campaigns'
+      preLoaderRoute: typeof PartnerCampaignsRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/bulk': {
@@ -2152,6 +2171,7 @@ interface PartnerRouteChildren {
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
   PartnerBranchesRoute: typeof PartnerBranchesRoute
   PartnerBulkRoute: typeof PartnerBulkRoute
+  PartnerCampaignsRoute: typeof PartnerCampaignsRoute
   PartnerCollectionsRoute: typeof PartnerCollectionsRoute
   PartnerCouponsRoute: typeof PartnerCouponsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
@@ -2175,6 +2195,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
   PartnerBranchesRoute: PartnerBranchesRoute,
   PartnerBulkRoute: PartnerBulkRoute,
+  PartnerCampaignsRoute: PartnerCampaignsRoute,
   PartnerCollectionsRoute: PartnerCollectionsRoute,
   PartnerCouponsRoute: PartnerCouponsRoute,
   PartnerHoursRoute: PartnerHoursRoute,
