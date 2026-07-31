@@ -99,6 +99,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminManagersRouteImport } from './routes/admin.managers'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
+import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
@@ -559,6 +560,11 @@ const AdminLiveRoute = AdminLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDuplicatesRoute = AdminDuplicatesRouteImport.update({
+  id: '/duplicates',
+  path: '/duplicates',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDriversRoute = AdminDriversRouteImport.update({
   id: '/drivers',
   path: '/drivers',
@@ -622,6 +628,7 @@ export interface FileRoutesByFullPath {
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -718,6 +725,7 @@ export interface FileRoutesByTo {
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -820,6 +828,7 @@ export interface FileRoutesById {
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
+  '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -923,6 +932,7 @@ export interface FileRouteTypes {
     | '/admin/commission'
     | '/admin/discover'
     | '/admin/drivers'
+    | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
     | '/admin/orders'
@@ -1019,6 +1029,7 @@ export interface FileRouteTypes {
     | '/admin/commission'
     | '/admin/discover'
     | '/admin/drivers'
+    | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
     | '/admin/orders'
@@ -1120,6 +1131,7 @@ export interface FileRouteTypes {
     | '/admin/commission'
     | '/admin/discover'
     | '/admin/drivers'
+    | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
     | '/admin/orders'
@@ -1851,6 +1863,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLiveRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/duplicates': {
+      id: '/admin/duplicates'
+      path: '/duplicates'
+      fullPath: '/admin/duplicates'
+      preLoaderRoute: typeof AdminDuplicatesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/drivers': {
       id: '/admin/drivers'
       path: '/drivers'
@@ -1925,6 +1944,7 @@ interface AdminRouteChildren {
   AdminCommissionRoute: typeof AdminCommissionRoute
   AdminDiscoverRoute: typeof AdminDiscoverRoute
   AdminDriversRoute: typeof AdminDriversRoute
+  AdminDuplicatesRoute: typeof AdminDuplicatesRoute
   AdminLiveRoute: typeof AdminLiveRoute
   AdminManagersRoute: typeof AdminManagersRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
@@ -1949,6 +1969,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCommissionRoute: AdminCommissionRoute,
   AdminDiscoverRoute: AdminDiscoverRoute,
   AdminDriversRoute: AdminDriversRoute,
+  AdminDuplicatesRoute: AdminDuplicatesRoute,
   AdminLiveRoute: AdminLiveRoute,
   AdminManagersRoute: AdminManagersRoute,
   AdminOrdersRoute: AdminOrdersRoute,
