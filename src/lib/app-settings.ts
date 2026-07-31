@@ -54,10 +54,10 @@ export type AppSettings = {
   flavour52_enabled: boolean;
 
   // --- loyalty
-  wallet_cashback_pct: number;
+  wallet_cashback_pct: number;         // % of order total credited on delivery
 
   // --- duplicate detection
-  duplicate_radius_m: number;      // GPS radius (metres) for duplicate matches         // % of order total credited on delivery
+  duplicate_radius_m: number;          // GPS radius (metres) for duplicate matches
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
