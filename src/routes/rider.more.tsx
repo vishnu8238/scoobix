@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, User, Bike, KeyRound, FileText, Wallet, Shield, Bell , LifeBuoy } from "lucide-react";
+import { ChevronRight, User, Bike, KeyRound, FileText, Wallet, Shield, Bell , LifeBuoy } , Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 
 export const Route = createFileRoute("/rider/more")({
@@ -8,6 +8,7 @@ export const Route = createFileRoute("/rider/more")({
 });
 
 const ITEMS = [
+  { to: "/rider/ai",      icon: Sparkles, label: "AI Coach",            desc: "Routes, earnings & peak hours" },
   { to: "/rider/profile", icon: User,     label: "Rider profile",       desc: "Your account & rating" },
   { to: "/rider/vehicle", icon: Bike,     label: "Vehicle & documents", desc: "RC, licence, insurance" },
   { to: "/rider/otp",     icon: KeyRound, label: "Complete delivery (OTP)", desc: "Hand-off verification" },
