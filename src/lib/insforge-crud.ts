@@ -5,6 +5,13 @@
  * — stores stay usable when the backend is unreachable.
  */
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { cached, cacheDrop } from "./request-cache";
+
+/** Default read TTL (seconds). Short enough to feel live, long enough to
+ *  collapse the repeated reads a multi-panel dashboard fires on mount. */
+const READ_TTL = 20;
+/** Hard page size — never let a query pull an unbounded table. */
+const MAX_ROWS = 200;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -14,22 +21,36 @@ const HEADERS = {
   "Content-Type": "application/json",
 };
 
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
 async function once(url: string, method: Method, body?: unknown) {
   const res = await fetch(url, {
     method,
     headers: HEADERS,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`${method} ${url} → ${res.status}`);
+  if (!res.ok) throw new HttpError(res.status, `${method} ${url} → ${res.status}`);
   // Some DELETE responses have no body.
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
 }
 
+/**
+ * Retry ONLY when it can help: network failures, 429 and 5xx. A 4xx is a bad
+ * request — retrying just doubles the cost and the latency.
+ */
 async function withRetry<T>(fn: () => Promise<T>): Promise<T | null> {
   try {
     return await fn();
-  } catch {
+  } catch (err) {
+    const status = err instanceof HttpError ? err.status : 0;
+    const retryable = status === 0 || status === 429 || status >= 500;
+    if (!retryable) return null;
+    await new Promise((r) => setTimeout(r, 300));
     try {
       return await fn();
     } catch {
@@ -37,6 +58,7 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T | null> {
     }
   }
 }
+
 
 const base = (table: string) => `${INSFORGE_URL}/api/database/records/${table}`;
 
@@ -57,25 +79,78 @@ function normalizeParam(k: string, v: string | number): string {
   return String(v);
 }
 
+function buildQuery(params?: Record<string, string | number | undefined>): string {
+  const entries = Object.entries(params ?? {}).filter(([, v]) => v !== undefined && v !== "");
+  // Always bound the result set — an unbounded read is the single biggest
+  // source of egress cost and slow screens.
+  if (!entries.some(([k]) => k === "limit")) entries.push(["limit", MAX_ROWS]);
+  const capped = entries.map(([k, v]) =>
+    k === "limit" ? [k, Math.min(Number(v) || MAX_ROWS, MAX_ROWS)] : [k, v],
+  ) as [string, string | number][];
+  return (
+    "?" +
+    capped
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(normalizeParam(k, v))}`)
+      .join("&")
+  );
+}
+
+/**
+ * Read rows. Cached + de-duplicated: identical queries fired by several
+ * panels in the same moment collapse into one request, and repeats inside
+ * `ttl` seconds are served from memory.
+ *
+ * Pass `select` to limit returned fields, and `limit`/`offset` for
+ * server-side pagination.
+ */
 export function listTable<T = Record<string, unknown>>(
   table: string,
   params?: Record<string, string | number | undefined>,
+  opts?: { ttl?: number; fresh?: boolean },
 ): Promise<T[]> {
-  const qs = params
-    ? "?" +
-      Object.entries(params)
-        .filter(([, v]) => v !== undefined && v !== "")
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(normalizeParam(k, v as string | number))}`)
-        .join("&")
-    : "";
-  return withRetry(() => once(`${base(table)}${qs}`, "GET")).then((v) => (Array.isArray(v) ? (v as T[]) : []));
+  const qs = buildQuery(params);
+  const url = `${base(table)}${qs}`;
+  const load = () => withRetry(() => once(url, "GET")).then((v) => (Array.isArray(v) ? (v as T[]) : []));
+  if (opts?.fresh) {
+    invalidateTable(table);
+    return load();
+  }
+  return cached<T[]>(`db:${table}${qs}`, opts?.ttl ?? READ_TTL, load);
+}
+
+/** Server-side pagination helper. */
+export function listPage<T = Record<string, unknown>>(
+  table: string,
+  page: number,
+  pageSize: number,
+  params?: Record<string, string | number | undefined>,
+  opts?: { ttl?: number },
+): Promise<T[]> {
+  const size = Math.min(Math.max(pageSize, 1), MAX_ROWS);
+  return listTable<T>(table, { ...params, limit: size, offset: Math.max(page, 0) * size }, opts);
+}
+
+/** Drop cached reads for a table (called automatically after every write). */
+export function invalidateTable(table: string) {
+  cacheDrop(`db:${table}?`);
 }
 
 export function createRecord<T = Record<string, unknown>>(
   table: string,
   record: Record<string, unknown>,
 ): Promise<T | null> {
+  invalidateTable(table);
   return withRetry(() => once(base(table), "POST", record)) as Promise<T | null>;
+}
+
+/** Batch insert — one round trip instead of N. */
+export function createRecords<T = Record<string, unknown>>(
+  table: string,
+  records: Record<string, unknown>[],
+): Promise<T[] | null> {
+  if (!records.length) return Promise.resolve([]);
+  invalidateTable(table);
+  return withRetry(() => once(base(table), "POST", records)) as Promise<T[] | null>;
 }
 
 export function patchRecord<T = Record<string, unknown>>(
@@ -83,9 +158,24 @@ export function patchRecord<T = Record<string, unknown>>(
   id: string,
   patch: Record<string, unknown>,
 ): Promise<T | null> {
+  invalidateTable(table);
   return withRetry(() => once(`${base(table)}?id=eq.${id}`, "PATCH", patch)) as Promise<T | null>;
 }
 
+/** Batch update — apply the same patch to many ids in one request. */
+export function patchWhereIn<T = Record<string, unknown>>(
+  table: string,
+  ids: string[],
+  patch: Record<string, unknown>,
+): Promise<T | null> {
+  if (!ids.length) return Promise.resolve(null);
+  invalidateTable(table);
+  const filter = `id=in.(${ids.join(",")})`;
+  return withRetry(() => once(`${base(table)}?${filter}`, "PATCH", patch)) as Promise<T | null>;
+}
+
 export function deleteRecord(table: string, id: string): Promise<null> {
+  invalidateTable(table);
   return withRetry(() => once(`${base(table)}?id=eq.${id}`, "DELETE")).then(() => null);
 }
+

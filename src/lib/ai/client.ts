@@ -3,9 +3,19 @@
  *
  * Components call `runAI` / `useAiTask` only — never a provider, never a
  * prompt. Everything is proxied to the server gateway at /api/public/ai.
+ *
+ * Cost controls applied here, before a request ever leaves the browser:
+ *  - **Policy gate** — only capabilities in `AI_ALLOWED_TASKS` may call a model.
+ *    Blocked surfaces (home, menu, cart, checkout, tracking, CMS, profile,
+ *    settings) degrade to rule-based logic with zero provider spend.
+ *  - **Persistent response cache** — identical task+input inside the task TTL
+ *    is answered from localStorage, surviving reloads and navigation.
+ *  - **De-duplication** — concurrent identical calls share one request.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AiTask } from "./tasks";
+import { taskDef, type AiTask } from "./tasks";
+import { aiTaskAllowed, effectiveTtl } from "./policy";
+import { cacheGet, cacheSet, dedupe } from "../request-cache";
 import { createRecord, listTable, patchRecord } from "../insforge-crud";
 
 export type AiResponse<T = unknown> = {
@@ -31,9 +41,8 @@ const EMPTY: AiResponse = {
   degraded: true,
 };
 
-/** Fire an AI task through the gateway. Never throws — degrades to `ok:false`. */
-export async function runAI<T = unknown>(
-  task: AiTask,
+async function post<T>(
+  task: string,
   input: unknown,
   opts?: { app?: string; userId?: string; fresh?: boolean; signal?: AbortSignal },
 ): Promise<AiResponse<T>> {
@@ -50,6 +59,43 @@ export async function runAI<T = unknown>(
     return { ...EMPTY, error: err instanceof Error ? err.message : "network" } as AiResponse<T>;
   }
 }
+
+function hashInput(value: unknown): string {
+  const s = JSON.stringify(value ?? null);
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return `${s.length}${(h >>> 0).toString(36)}`;
+}
+
+/** Fire an AI task through the gateway. Never throws — degrades to `ok:false`. */
+export async function runAI<T = unknown>(
+  task: AiTask,
+  input: unknown,
+  opts?: { app?: string; userId?: string; fresh?: boolean; signal?: AbortSignal },
+): Promise<AiResponse<T>> {
+  if (!aiTaskAllowed(task)) {
+    return { ...EMPTY, error: "task_not_permitted" } as AiResponse<T>;
+  }
+
+  const ttl = effectiveTtl(task, taskDef(task)?.ttl ?? 0);
+  const key = `ai:${task}:${hashInput(input)}`;
+
+  if (opts?.fresh || ttl <= 0) {
+    const res = await dedupe(key + ":live", () => post<T>(task, input, opts));
+    if (res.ok && ttl > 0) cacheSet(key, res, ttl, { persist: true });
+    return res;
+  }
+
+  const hit = cacheGet<AiResponse<T>>(key, { persist: true });
+  if (hit) return { ...hit, cached: true };
+
+  // Only successful answers are cached — a failure must be retryable.
+  const res = await dedupe(key, () => post<T>(task, input, opts));
+  if (res.ok) cacheSet(key, res, ttl, { persist: true });
+  return res;
+}
+
+
 
 /**
  * Declarative hook for panels that render an AI result.

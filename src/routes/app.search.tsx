@@ -13,6 +13,8 @@ import { filterVeg, filterVegDishes } from "@/lib/restaurant-extras";
 import { cn } from "@/lib/format";
 import { Sparkles } from "lucide-react";
 import { runAI, logAiSearch, markSearchConverted } from "@/lib/ai/client";
+import { isNaturalLanguageQuery } from "@/lib/ai/policy";
+import { getPopularSearches } from "@/lib/search-suggestions";
 import { useAuth } from "@/lib/auth-store";
 import { z } from "zod";
 
@@ -59,6 +61,18 @@ function SearchPage() {
   const [listening, setListening] = useState(false);
   const [intent, setIntent] = useState<SearchIntent | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
+  const [popular, setPopular] = useState<string[]>(popularSearches);
+
+  // Cached + background-refreshed: no query on every visit to the search tab.
+  useEffect(() => {
+    let alive = true;
+    void getPopularSearches(10).then((list) => {
+      if (alive && list.length) setPopular(list);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const startVoice = () => {
     if (typeof window === "undefined") return;
@@ -94,24 +108,38 @@ function SearchPage() {
     return () => clearTimeout(t);
   }, [q, pushRecent]);
 
-  // Semantic intent parsing — AI understands the query instead of matching keywords.
+  // Semantic intent parsing — AI runs ONLY for natural-language queries
+  // ("healthy dinner under 200"). Plain keyword searches stay rule-based and
+  // free. Debounced, cancellable, and cached for a day per query.
   useEffect(() => {
     const term = q.trim();
-    if (term.length < 3) {
+    if (!isNaturalLanguageQuery(term)) {
       setIntent(null);
+      setAiBusy(false);
       return;
     }
     let cancelled = false;
+    const controller = new AbortController();
     setAiBusy(true);
     const t = setTimeout(() => {
-      void runAI<SearchIntent>("search_intent", { query: term, vegMode }, { app: "customer", userId: user?.id }).then((res) => {
+      void runAI<SearchIntent>(
+        "search_intent",
+        { query: term.toLowerCase(), vegMode },
+        { app: "customer", userId: user?.id, signal: controller.signal },
+      ).then((res) => {
         if (cancelled) return;
         setIntent(res.ok && res.data ? res.data : null);
         setAiBusy(false);
       });
-    }, 600);
-    return () => { cancelled = true; clearTimeout(t); setAiBusy(false); };
+    }, 700);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(t);
+      setAiBusy(false);
+    };
   }, [q, vegMode, user?.id]);
+
 
   const dishes = useMemo(() => allDishes(), []);
 
@@ -282,7 +310,7 @@ function SearchPage() {
             <section>
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Popular searches</h3>
               <div className="mt-2 flex flex-wrap gap-2">
-                {popularSearches.map((s) => (
+                {popular.map((s) => (
                   <button key={s} onClick={() => setQ(s)} className="rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium hover:border-primary/40 hover:bg-primary-soft/40">{s}</button>
                 ))}
               </div>

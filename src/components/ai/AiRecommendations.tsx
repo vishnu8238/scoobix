@@ -13,6 +13,7 @@ import { DishCard } from "@/components/cravio/DishCard";
 import { useAuth } from "@/lib/auth-store";
 import { logRecommendation, runAI, getCustomerPreferences } from "@/lib/ai/client";
 import { fetchCustomerOrders } from "@/lib/orders-api";
+import { behaviourSignature } from "@/lib/ai/policy";
 
 type Section = { key: string; title: string; reason: string; restaurantIds: string[]; dishIds: string[] };
 
@@ -60,18 +61,29 @@ export function AiRecommendations() {
         user?.id ? getCustomerPreferences(user.id).catch(() => null) : Promise.resolve(null),
       ]);
 
+      const orders = history as { id?: string; total?: number; restaurantId?: string; restaurantName?: string }[];
+
+      // Recommendations are generated once per behaviour state and reused from
+      // cache (6h TTL) — visiting the home screen again costs nothing. The
+      // signature only changes when the customer's behaviour actually moves:
+      // a new order, a new favourite, veg mode, or a different part of the day.
+      const signature = behaviourSignature({
+        userId: user?.id,
+        orderCount: orders.length,
+        lastOrderId: orders[0]?.id,
+      });
+
       const res = await runAI<{ sections: Section[] }>(
         "recommend_sections",
         {
+          signature,
           sections: SECTION_KEYS,
           catalog,
           preferences: prefs,
-          hour: now.getHours(),
-          dayOfWeek: now.toLocaleDateString("en-IN", { weekday: "long" }),
+          dayPart: Math.floor(now.getHours() / 6),
+          weekend: now.getDay() >= 5,
           city: "Vadodara",
-          recentOrders: (history as { total?: number; restaurantId?: string; restaurantName?: string }[])
-            .slice(0, 8)
-            .map((o) => ({ restaurant: o.restaurantName, total: o.total })),
+          recentOrders: orders.slice(0, 8).map((o) => ({ restaurant: o.restaurantName, total: o.total })),
         },
         { app: "customer", userId: user?.id },
       );
@@ -80,12 +92,17 @@ export function AiRecommendations() {
       const list = Array.isArray(res.data?.sections) ? res.data!.sections : [];
       setSections(list.filter((s) => s.restaurantIds?.length || s.dishIds?.length).slice(0, 6));
       setLoading(false);
-      if (res.ok && list.length) void logRecommendation({ userId: user?.id, section: "home", payload: list });
+      // Only log freshly generated blocks — cached reuse costs nothing and
+      // should not inflate analytics writes.
+      if (res.ok && !res.cached && list.length) {
+        void logRecommendation({ userId: user?.id, section: "home", payload: list });
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, [user?.id, catalog]);
+
 
   if (loading || !sections.length) return null;
 
