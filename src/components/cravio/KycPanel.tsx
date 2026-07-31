@@ -136,7 +136,7 @@ export function KycUploadCard({ restaurantId, actor }: { restaurantId?: string |
                           type="banner"
                           aspect="aspect-[4/3]"
                           label="Upload"
-                          value={row?.file_url ? { image_url: row.file_url } : null}
+                          value={row?.file_url ? { image_url: row.file_url, image_type: "banner" as const } : null}
                           onChange={(ref) => void save(def, row, ref?.image_url ?? null)}
                         />
                       </div>
