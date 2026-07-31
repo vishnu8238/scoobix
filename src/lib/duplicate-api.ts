@@ -189,6 +189,9 @@ const SELECT =
 
 type Row = ManagedRestaurant & {
   pan_number?: string | null;
+  manager_name?: string | null;
+  branch_name?: string | null;
+  branch_code?: string | null;
   is_live?: boolean | null;
   is_branch?: boolean | null;
   parent_restaurant_id?: string | null;
