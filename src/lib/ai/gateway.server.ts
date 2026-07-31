@@ -15,6 +15,7 @@
  */
 import { AI_SETTINGS_KEY, DEFAULT_AI_SETTINGS, mergeAiSettings, type AiSettings } from "./settings";
 import { taskDef } from "./tasks";
+import { aiTaskAllowed, effectiveTtl } from "./policy";
 import { PROVIDERS, callProvider, providerById, providerConfigured, type ChatMessage } from "./providers.server";
 import { dbInsert, dbPatch, dbSelect } from "./db.server";
 
@@ -217,6 +218,8 @@ export async function runAiTask(req: AiRunInput): Promise<AiRunResult> {
   if (!def) return fail("unknown_task");
   if (!settings.enabled) return fail("ai_disabled", true);
   if (settings.disabledTasks.includes(req.task)) return fail("task_disabled", true);
+  // Cost policy: only allow-listed capabilities may reach a provider.
+  if (!aiTaskAllowed(req.task)) return fail("task_not_permitted", true);
 
   const rlKey = `${req.userId ?? "anon"}:${req.app ?? def.app}`;
   if (rateLimited(rlKey, settings.rateLimitPerMin)) return fail("rate_limited");
@@ -225,7 +228,8 @@ export async function runAiTask(req: AiRunInput): Promise<AiRunResult> {
   const payload = typeof safeInput === "string" ? safeInput : JSON.stringify(safeInput ?? {});
   const cacheKey = await hashKey(req.task, payload);
 
-  const ttl = Math.round((def.ttl ?? 0) * (settings.cacheTtlFactor || 1));
+  // Aggressive caching: the policy TTL floor beats a short registry TTL.
+  const ttl = Math.round(effectiveTtl(req.task, def.ttl ?? 0) * (settings.cacheTtlFactor || 1));
   const useCache = settings.cache && ttl > 0 && !req.fresh;
 
   if (useCache) {
