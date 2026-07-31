@@ -54,6 +54,7 @@ import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
+import { Route as ManagerTransfersRouteImport } from './routes/manager.transfers'
 import { Route as ManagerSupportRouteImport } from './routes/manager.support'
 import { Route as ManagerRestaurantsRouteImport } from './routes/manager.restaurants'
 import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
@@ -334,6 +335,11 @@ const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
   id: '/addons',
   path: '/addons',
   getParentRoute: () => PartnerRoute,
+} as any)
+const ManagerTransfersRoute = ManagerTransfersRouteImport.update({
+  id: '/transfers',
+  path: '/transfers',
+  getParentRoute: () => ManagerRoute,
 } as any)
 const ManagerSupportRoute = ManagerSupportRouteImport.update({
   id: '/support',
@@ -674,6 +680,7 @@ export interface FileRoutesByFullPath {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -771,6 +778,7 @@ export interface FileRoutesByTo {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -874,6 +882,7 @@ export interface FileRoutesById {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -978,6 +987,7 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1075,6 +1085,7 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1177,6 +1188,7 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1547,6 +1559,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/addons'
       preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/manager/transfers': {
+      id: '/manager/transfers'
+      path: '/transfers'
+      fullPath: '/manager/transfers'
+      preLoaderRoute: typeof ManagerTransfersRouteImport
+      parentRoute: typeof ManagerRoute
     }
     '/manager/support': {
       id: '/manager/support'
@@ -2064,6 +2083,7 @@ interface ManagerRouteChildren {
   ManagerProfileRoute: typeof ManagerProfileRoute
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
   ManagerSupportRoute: typeof ManagerSupportRoute
+  ManagerTransfersRoute: typeof ManagerTransfersRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
   ManagerLeadIdRoute: typeof ManagerLeadIdRoute
 }
@@ -2078,6 +2098,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerProfileRoute: ManagerProfileRoute,
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
   ManagerSupportRoute: ManagerSupportRoute,
+  ManagerTransfersRoute: ManagerTransfersRoute,
   ManagerIndexRoute: ManagerIndexRoute,
   ManagerLeadIdRoute: ManagerLeadIdRoute,
 }
