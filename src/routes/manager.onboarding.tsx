@@ -22,6 +22,9 @@ import {
   ONBOARDING_TONE,
   type ManagedRestaurant,
 } from "@/lib/manager-api";
+import { logDuplicateCheck, nextBranchCode } from "@/lib/duplicate-api";
+import { requestOwnershipTransfer } from "@/lib/transfers-api";
+import { DuplicateDialog, useDuplicateCheck, type DuplicateChoice } from "@/components/cravio/DuplicateCheck";
 
 type Search = { id?: string };
 
@@ -71,6 +74,8 @@ type Form = {
   bank_name: string;
   gst_number: string;
   fssai_number: string;
+  pan_number: string;
+  branch_name: string;
   delivery_radius: string;
   commission: string;
 };
@@ -81,7 +86,8 @@ const EMPTY: Form = {
   latitude: null, longitude: null, opening_time: "10:00", closing_time: "23:00",
   logo_url: "", cover_url: "", documents: [],
   bank_holder: "", bank_account: "", bank_ifsc: "", bank_name: "",
-  gst_number: "", fssai_number: "", delivery_radius: "5", commission: "20",
+  gst_number: "", fssai_number: "", pan_number: "", branch_name: "",
+  delivery_radius: "5", commission: "20",
 };
 
 const DOC_SLOTS = ["FSSAI licence", "GST certificate", "Owner ID proof"];
@@ -95,6 +101,8 @@ function OnboardingFlow() {
   const [record, setRecord] = useState<ManagedRestaurant | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(!!id);
+  const dup = useDuplicateCheck();
+  const [dupOpen, setDupOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -129,6 +137,8 @@ function OnboardingFlow() {
         bank_name: r.bank_name ?? "",
         gst_number: r.gst_number ?? "",
         fssai_number: r.fssai_number ?? "",
+        pan_number: (r as { pan_number?: string | null }).pan_number ?? "",
+        branch_name: (r as { branch_name?: string | null }).branch_name ?? "",
         delivery_radius: String(r.delivery_radius ?? 5),
         commission: String(r.commission ?? 20),
       });
@@ -164,6 +174,7 @@ function OnboardingFlow() {
       bank_name: form.bank_name.trim() || null,
       gst_number: form.gst_number.trim().toUpperCase() || null,
       fssai_number: form.fssai_number.trim() || null,
+      pan_number: form.pan_number.trim().toUpperCase() || null,
       delivery_radius: Number(form.delivery_radius) || 5,
       commission: Number(form.commission) || 20,
       manager_id: manager?.id ?? null,
@@ -402,6 +413,7 @@ function OnboardingFlow() {
           {step === 0 && (
             <>
               <Field label="Restaurant name" value={form.name} onChange={(v) => set({ name: v })} placeholder="Trattoria Verde" />
+              <Field label="Branch / outlet name (optional)" value={form.branch_name} onChange={(v) => set({ branch_name: v })} placeholder="Indiranagar outlet" />
               <Field label="Cuisine" value={form.cuisine} onChange={(v) => set({ cuisine: v })} placeholder="Italian · Pizza · Pasta" />
             </>
           )}
@@ -500,6 +512,7 @@ function OnboardingFlow() {
               </div>
               <Field label="GSTIN" value={form.gst_number} onChange={(v) => set({ gst_number: v })} placeholder="27ABCDE1234F1Z5" />
               <Field label="FSSAI licence number" value={form.fssai_number} onChange={(v) => set({ fssai_number: v })} placeholder="11223344556677" />
+              <Field label="PAN (optional)" value={form.pan_number} onChange={(v) => set({ pan_number: v })} placeholder="ABCDE1234F" />
             </>
           )}
 
@@ -538,6 +551,14 @@ function OnboardingFlow() {
           </Button>
         </div>
       </div>
+
+      <DuplicateDialog
+        open={dupOpen}
+        onOpenChange={setDupOpen}
+        result={dup.result}
+        onView={(m) => window.open(`/restaurant/${m.id}`, "_blank")}
+        onResolve={resolveDuplicate}
+      />
     </div>
   );
 }
