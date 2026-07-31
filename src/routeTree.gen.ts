@@ -50,6 +50,7 @@ import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
 import { Route as PartnerCouponsRouteImport } from './routes/partner.coupons'
 import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
+import { Route as PartnerCampaignsRouteImport } from './routes/partner.campaigns'
 import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerBranchesRouteImport } from './routes/partner.branches'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
@@ -106,6 +107,7 @@ import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
+import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAdsRouteImport } from './routes/admin.ads'
@@ -315,6 +317,11 @@ const PartnerCouponsRoute = PartnerCouponsRouteImport.update({
 const PartnerCollectionsRoute = PartnerCollectionsRouteImport.update({
   id: '/collections',
   path: '/collections',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerCampaignsRoute = PartnerCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
   getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerBulkRoute = PartnerBulkRouteImport.update({
@@ -597,6 +604,11 @@ const AdminCmsRoute = AdminCmsRouteImport.update({
   path: '/cms',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCampaignsRoute = AdminCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBulkRoute = AdminBulkRouteImport.update({
   id: '/bulk',
   path: '/bulk',
@@ -636,6 +648,7 @@ export interface FileRoutesByFullPath {
   '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
@@ -692,6 +705,7 @@ export interface FileRoutesByFullPath {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/campaigns': typeof PartnerCampaignsRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -735,6 +749,7 @@ export interface FileRoutesByTo {
   '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
@@ -791,6 +806,7 @@ export interface FileRoutesByTo {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/campaigns': typeof PartnerCampaignsRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -840,6 +856,7 @@ export interface FileRoutesById {
   '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
+  '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
   '/admin/discover': typeof AdminDiscoverRoute
@@ -896,6 +913,7 @@ export interface FileRoutesById {
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
+  '/partner/campaigns': typeof PartnerCampaignsRoute
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
@@ -946,6 +964,7 @@ export interface FileRouteTypes {
     | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
+    | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
     | '/admin/discover'
@@ -1002,6 +1021,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
+    | '/partner/campaigns'
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
@@ -1045,6 +1065,7 @@ export interface FileRouteTypes {
     | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
+    | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
     | '/admin/discover'
@@ -1101,6 +1122,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
+    | '/partner/campaigns'
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
@@ -1149,6 +1171,7 @@ export interface FileRouteTypes {
     | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
+    | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
     | '/admin/discover'
@@ -1205,6 +1228,7 @@ export interface FileRouteTypes {
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
+    | '/partner/campaigns'
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
@@ -1542,6 +1566,13 @@ declare module '@tanstack/react-router' {
       path: '/collections'
       fullPath: '/partner/collections'
       preLoaderRoute: typeof PartnerCollectionsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/campaigns': {
+      id: '/partner/campaigns'
+      path: '/campaigns'
+      fullPath: '/partner/campaigns'
+      preLoaderRoute: typeof PartnerCampaignsRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/bulk': {
@@ -1936,6 +1967,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCmsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/campaigns': {
+      id: '/admin/campaigns'
+      path: '/campaigns'
+      fullPath: '/admin/campaigns'
+      preLoaderRoute: typeof AdminCampaignsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/bulk': {
       id: '/admin/bulk'
       path: '/bulk'
@@ -1978,6 +2016,7 @@ interface AdminRouteChildren {
   AdminAdsRoute: typeof AdminAdsRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminBulkRoute: typeof AdminBulkRoute
+  AdminCampaignsRoute: typeof AdminCampaignsRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminCommissionRoute: typeof AdminCommissionRoute
   AdminDiscoverRoute: typeof AdminDiscoverRoute
@@ -2003,6 +2042,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdsRoute: AdminAdsRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminBulkRoute: AdminBulkRoute,
+  AdminCampaignsRoute: AdminCampaignsRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminCommissionRoute: AdminCommissionRoute,
   AdminDiscoverRoute: AdminDiscoverRoute,
@@ -2131,6 +2171,7 @@ interface PartnerRouteChildren {
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
   PartnerBranchesRoute: typeof PartnerBranchesRoute
   PartnerBulkRoute: typeof PartnerBulkRoute
+  PartnerCampaignsRoute: typeof PartnerCampaignsRoute
   PartnerCollectionsRoute: typeof PartnerCollectionsRoute
   PartnerCouponsRoute: typeof PartnerCouponsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
@@ -2154,6 +2195,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
   PartnerBranchesRoute: PartnerBranchesRoute,
   PartnerBulkRoute: PartnerBulkRoute,
+  PartnerCampaignsRoute: PartnerCampaignsRoute,
   PartnerCollectionsRoute: PartnerCollectionsRoute,
   PartnerCouponsRoute: PartnerCouponsRoute,
   PartnerHoursRoute: PartnerHoursRoute,

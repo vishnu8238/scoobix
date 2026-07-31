@@ -3,6 +3,13 @@ import { findRestaurant, type Dish, type Restaurant } from "./mock-data";
 import { useAuth } from "./auth-store";
 import { currentPlatformSettings } from "./cms-store";
 import { reverseGeocode } from "./geocode";
+import { listTable } from "./insforge-crud";
+import {
+  listCampaigns, listRedemptions, eligibleCampaigns, evaluateCampaign, bestAutoCampaign,
+  matchPromoCode, trackCampaignEvent, CAMPAIGN_TYPE_LABEL,
+  type Campaign, type CampaignOutcome, type CampaignContext, type PaymentMethodKey,
+} from "./campaigns-api";
+
 
 
 
@@ -22,14 +29,14 @@ export type CartItem = {
   customizations: string[]; // e.g. ["Extra cheese", "Spicy: Hot"]
 };
 
-export type Coupon = { code: string; label: string; kind: "pct" | "freeship"; value: number };
+export type Coupon = {
+  code: string;
+  label: string;
+  kind: "pct" | "flat" | "freeship" | "cashback" | "wallet";
+  value: number;
+  campaignId?: string;
+};
 
-const COUPONS: Coupon[] = [
-  { code: "SCOOBIX10", label: "10% off your order", kind: "pct", value: 0.1 },
-  { code: "SCOOBIX50", label: "50% off (max ₹800)", kind: "pct", value: 0.5 },
-  { code: "FREESHIP", label: "Free delivery", kind: "freeship", value: 0 },
-  { code: "NIGHT20", label: "20% off late-night", kind: "pct", value: 0.2 },
-];
 
 export type PendingAdd = { item: Omit<CartItem, "lineId" | "qty">; qty: number };
 
@@ -53,6 +60,17 @@ type CartCtx = {
     freeDeliveryEligible: boolean;
   };
 
+  /** Live campaign engine state (server-authoritative rows from InsForge). */
+  campaigns: Campaign[];
+  /** The campaign currently reducing this bill (manual code or auto-applied). */
+  appliedCampaign: CampaignOutcome | null;
+  /** Every campaign the customer qualifies for right now, best saving first. */
+  eligibleOffers: CampaignOutcome[];
+  /** Cashback / wallet credit earned after this order completes. */
+  pendingRewards: { cashback: number; walletCredit: number };
+  /** Re-evaluates offers against a chosen payment method. */
+  setPaymentMethod: (m: PaymentMethodKey) => void;
+
   restaurant: Restaurant | null;
   /** Multi-restaurant conflict popup state. */
   pendingConflict: PendingAdd | null;
@@ -64,34 +82,66 @@ const CartContext = createContext<CartCtx | null>(null);
 
 const CART_KEY = "cravio_cart_v1";
 
-function loadCart(): { items: CartItem[]; coupon: Coupon | null; restaurantId: string | null } {
-  if (typeof window === "undefined") return { items: [], coupon: null, restaurantId: null };
+function loadCart(): { items: CartItem[]; restaurantId: string | null; campaignId?: string | null } {
+  if (typeof window === "undefined") return { items: [], restaurantId: null };
   try {
     const raw = localStorage.getItem(CART_KEY);
-    if (!raw) return { items: [], coupon: null, restaurantId: null };
+    if (!raw) return { items: [], restaurantId: null };
     return JSON.parse(raw);
   } catch {
-    return { items: [], coupon: null, restaurantId: null };
+    return { items: [], restaurantId: null };
   }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
-  const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [pendingConflict, setPendingConflict] = useState<PendingAdd | null>(null);
 
+  // ---- campaign engine state (all server-sourced) ----
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [manualCampaignId, setManualCampaignId] = useState<string | null>(null);
+  const [userRedemptions, setUserRedemptions] = useState<Record<string, number>>({});
+  const [orderCount, setOrderCount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodKey>("card");
+
   useEffect(() => {
     const saved = loadCart();
-    setItems(saved.items);
-    setCoupon(saved.coupon);
-    setRestaurantId(saved.restaurantId);
+    setItems(saved.items ?? []);
+    setRestaurantId(saved.restaurantId ?? null);
+    setManualCampaignId(saved.campaignId ?? null);
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    localStorage.setItem(CART_KEY, JSON.stringify({ items, coupon, restaurantId }));
-  }, [items, coupon, restaurantId]);
+    localStorage.setItem(CART_KEY, JSON.stringify({ items, restaurantId, campaignId: manualCampaignId }));
+  }, [items, restaurantId, manualCampaignId]);
+
+  // Live campaigns — refreshed on mount so admin edits land without a deploy.
+  useEffect(() => {
+    let cancelled = false;
+    void listCampaigns().then((rows) => { if (!cancelled) setCampaigns(rows); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Per-customer eligibility inputs.
+  useEffect(() => {
+    if (!user?.id) { setUserRedemptions({}); setOrderCount(0); return; }
+    let cancelled = false;
+    void (async () => {
+      const [reds, orders] = await Promise.all([
+        listRedemptions({ user_id: user.id }),
+        listTable<{ id: string }>("orders", { customer_id: `eq.${user.id}`, limit: 200 }),
+      ]);
+      if (cancelled) return;
+      const map: Record<string, number> = {};
+      reds.forEach((r) => { map[r.campaign_id] = (map[r.campaign_id] ?? 0) + 1; });
+      setUserRedemptions(map);
+      setOrderCount(orders.length);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const insertItem = (item: Omit<CartItem, "lineId" | "qty">, qty: number) => {
     setRestaurantId(item.restaurantId);
@@ -115,7 +165,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const confirmReplaceCart = () => {
     if (!pendingConflict) return;
     const p = pendingConflict;
-    setItems([]); setCoupon(null); setRestaurantId(p.item.restaurantId);
+    setItems([]); setManualCampaignId(null); setRestaurantId(p.item.restaurantId);
     // queue insert after state settles
     setTimeout(() => insertItem(p.item, p.qty), 0);
     setPendingConflict(null);
@@ -135,43 +185,95 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.map((p) => (p.lineId === lineId ? { ...p, qty } : p)));
   };
 
-  const clear = () => { setItems([]); setCoupon(null); setRestaurantId(null); };
+  const clear = () => { setItems([]); setManualCampaignId(null); setRestaurantId(null); };
+
+  const subtotal = useMemo(() => items.reduce((s, i) => s + i.price * i.qty, 0), [items]);
+  const baseDelivery = subtotal === 0 ? 0 : 2.99;
+
+  const ctx = useMemo<CampaignContext>(() => ({
+    subtotal,
+    deliveryFee: baseDelivery,
+    userId: user?.id,
+    restaurantId,
+    paymentMethod,
+    orderCount,
+    userRedemptions,
+    cheapestItemPrice: items.length ? Math.min(...items.map((i) => i.price)) : 0,
+  }), [subtotal, baseDelivery, user?.id, restaurantId, paymentMethod, orderCount, userRedemptions, items]);
+
+  const eligibleOffers = useMemo(() => eligibleCampaigns(campaigns, ctx), [campaigns, ctx]);
+
+  const appliedCampaign = useMemo<CampaignOutcome | null>(() => {
+    if (manualCampaignId) {
+      const c = campaigns.find((x) => x.id === manualCampaignId);
+      if (c) {
+        const out = evaluateCampaign(c, ctx);
+        if (out.eligible) return out;
+      }
+    }
+    return bestAutoCampaign(campaigns, ctx);
+  }, [manualCampaignId, campaigns, ctx]);
 
   const applyCoupon: CartCtx["applyCoupon"] = (code) => {
-    const found = COUPONS.find((c) => c.code.toUpperCase() === code.toUpperCase().trim());
-    if (!found) return { ok: false, message: "That coupon doesn't exist" };
-    setCoupon(found);
-    return { ok: true, message: `${found.label} applied` };
+    const res = matchPromoCode(campaigns, code, ctx);
+    if ("error" in res) return { ok: false, message: res.error };
+    setManualCampaignId(res.campaign.id);
+    trackCampaignEvent(res.campaign.id, "apply", user?.id);
+    return { ok: true, message: `${res.campaign.name} applied` };
   };
 
-  const removeCoupon = () => setCoupon(null);
+  const removeCoupon = () => setManualCampaignId(null);
+
+  const coupon = useMemo<Coupon | null>(() => {
+    if (!appliedCampaign) return null;
+    const c = appliedCampaign.campaign;
+    const kind: Coupon["kind"] =
+      appliedCampaign.freeDelivery ? "freeship"
+        : appliedCampaign.walletCredit > 0 ? "wallet"
+          : appliedCampaign.cashback > 0 ? "cashback"
+            : c.discount_type === "percent" ? "pct" : "flat";
+    return {
+      code: c.promo_code || c.name.toUpperCase().replace(/\s+/g, "").slice(0, 12),
+      label: c.description || CAMPAIGN_TYPE_LABEL[c.type] || c.name,
+      kind,
+      value: c.discount_value ?? 0,
+      campaignId: c.id,
+    };
+  }, [appliedCampaign]);
 
   const totals = useMemo(() => {
-    const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
     const itemCount = items.reduce((s, i) => s + i.qty, 0);
-    const baseDelivery = subtotal === 0 ? 0 : 2.99;
     const freeMin = currentPlatformSettings.freeDeliveryMin ?? 25;
-
-    const freeShip = coupon?.kind === "freeship" || subtotal >= freeMin;
+    const freeShip = !!appliedCampaign?.freeDelivery || subtotal >= freeMin;
     const delivery = freeShip ? 0 : baseDelivery;
     const taxes = +(subtotal * 0.08).toFixed(2);
-    let discount = 0;
-    if (coupon?.kind === "pct") {
-      discount = Math.min(subtotal * coupon.value, coupon.code === "SCOOBIX50" ? 10 : Infinity);
-    }
+    const discount = appliedCampaign?.discount ?? 0;
     const total = Math.max(0, subtotal + delivery + taxes - discount);
-    return { subtotal: +subtotal.toFixed(2), delivery: +delivery.toFixed(2), taxes, discount: +discount.toFixed(2), total: +total.toFixed(2), itemCount, freeDeliveryEligible: freeShip };
-  }, [items, coupon]);
+    return {
+      subtotal: +subtotal.toFixed(2),
+      delivery: +delivery.toFixed(2),
+      taxes,
+      discount: +discount.toFixed(2),
+      total: +total.toFixed(2),
+      itemCount,
+      freeDeliveryEligible: freeShip,
+    };
+  }, [items, subtotal, baseDelivery, appliedCampaign]);
 
+  const pendingRewards = useMemo(
+    () => ({ cashback: appliedCampaign?.cashback ?? 0, walletCredit: appliedCampaign?.walletCredit ?? 0 }),
+    [appliedCampaign],
+  );
 
   const restaurant = restaurantId ? findRestaurant(restaurantId) ?? null : null;
 
   return (
-    <CartContext.Provider value={{ items, coupon, restaurantId, addItem, removeItem, setQty, clear, applyCoupon, removeCoupon, totals, restaurant, pendingConflict, confirmReplaceCart, dismissConflict }}>
+    <CartContext.Provider value={{ items, coupon, restaurantId, addItem, removeItem, setQty, clear, applyCoupon, removeCoupon, totals, campaigns, appliedCampaign, eligibleOffers, pendingRewards, setPaymentMethod, restaurant, pendingConflict, confirmReplaceCart, dismissConflict }}>
       {children}
     </CartContext.Provider>
   );
 }
+
 
 export const useCart = () => {
   const ctx = useContext(CartContext);

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ChevronRight, CreditCard, Wallet, Banknote, Smartphone, MapPin, Zap, Check, ShieldCheck, Tag, X, MessageSquareText, Clock3 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart, useOrders } from "@/lib/stores";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { toast } from "sonner";
 import { scheduleOrder } from "@/lib/insforge";
 import { useMyWallet } from "@/lib/scoobix-loyalty";
+import { redeemCampaign, type PaymentMethodKey } from "@/lib/campaigns-api";
 
 
 export const Route = createFileRoute("/app/checkout")({
@@ -41,7 +42,7 @@ const INSTRUCTION_OPTIONS = [
 
 function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, totals, restaurant, clear, coupon, applyCoupon, removeCoupon } = useCart();
+  const { items, totals, restaurant, clear, coupon, applyCoupon, removeCoupon, appliedCampaign, eligibleOffers, pendingRewards, setPaymentMethod } = useCart();
   const { placeOrder } = useOrders();
 
   const [addressId, setAddressId] = useState(savedAddresses.find((a) => a.default)!.id);
@@ -57,6 +58,10 @@ function CheckoutPage() {
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const { balance: walletBalance, debit: walletDebit, credit: walletCredit } = useMyWallet();
 
+
+  // Keep the campaign engine in sync with the selected payment method so
+  // payment-restricted campaigns re-evaluate live.
+  useEffect(() => { setPaymentMethod(pay as PaymentMethodKey); }, [pay, setPaymentMethod]);
 
   const address = savedAddresses.find((a) => a.id === addressId)!;
   const deliveryObj = DELIVERY_OPTIONS.find((d) => d.id === delivery)!;
@@ -116,6 +121,18 @@ function CheckoutPage() {
     }
     const orderId = res.orderId;
     if (scheduledFor) void scheduleOrder(orderId, scheduledFor);
+    if (appliedCampaign) {
+      void redeemCampaign({
+        campaign: appliedCampaign.campaign,
+        orderId,
+        restaurantId: restaurant.id,
+        orderValue: totals.subtotal,
+        discountAmount: appliedCampaign.discount,
+        autoApplied: !coupon?.campaignId,
+      });
+      if (pendingRewards.cashback > 0) walletCredit(pendingRewards.cashback, "cashback", `${appliedCampaign.campaign.name} cashback`);
+      if (pendingRewards.walletCredit > 0) walletCredit(pendingRewards.walletCredit, "credit", `${appliedCampaign.campaign.name} wallet credit`);
+    }
     if (walletApplied > 0) walletDebit(walletApplied, "debit", `Order ${orderId}`);
     // Small cashback reward for orders paid entirely or partly online (skip cash).
     if (pay !== "cash" && finalTotal > 0) {
@@ -294,22 +311,54 @@ function CheckoutPage() {
           </div>
         </section>
 
-        {/* Coupon */}
+        {/* Coupon & campaigns */}
         <section>
-          <h3 className="flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground"><Tag className="h-3.5 w-3.5" /> Coupon</h3>
-          {coupon ? (
+          <h3 className="flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground"><Tag className="h-3.5 w-3.5" /> Offers</h3>
+          {appliedCampaign ? (
             <div className="mt-2 flex items-center justify-between rounded-2xl bg-primary-soft p-3 ring-1 ring-primary/30">
-              <div>
-                <div className="text-sm font-bold text-primary">{coupon.code}</div>
-                <div className="text-xs text-primary/80">{coupon.label}</div>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-bold text-primary">{appliedCampaign.campaign.name}</div>
+                <div className="truncate text-xs text-primary/80">
+                  You save {currency(appliedCampaign.totalSaving)}
+                  {appliedCampaign.freeDelivery ? " · free delivery" : ""}
+                  {coupon?.campaignId ? "" : " · auto-applied"}
+                </div>
               </div>
-              <button onClick={removeCoupon} className="grid h-7 w-7 place-items-center rounded-full bg-white text-primary"><X className="h-3.5 w-3.5" /></button>
+              <button onClick={removeCoupon} className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-primary"><X className="h-3.5 w-3.5" /></button>
             </div>
           ) : (
             <div className="mt-2 flex gap-2">
-              <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter coupon code" className="rounded-full" />
+              <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter promo code" className="rounded-full" />
               <Button onClick={handleApplyCoupon} className="rounded-full">Apply</Button>
             </div>
+          )}
+
+          {eligibleOffers.length > 0 && (
+            <ul className="mt-2 space-y-2">
+              {eligibleOffers
+                .filter((o) => o.campaign.id !== appliedCampaign?.campaign.id)
+                .slice(0, 4)
+                .map((o) => (
+                  <li key={o.campaign.id} className="flex items-center justify-between gap-3 rounded-2xl bg-card p-3 shadow-soft ring-1 ring-border/60">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{o.campaign.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">Save {currency(o.totalSaving)}{o.campaign.promo_code ? ` · ${o.campaign.promo_code}` : ""}</p>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      className="h-8 shrink-0 rounded-full px-3 text-xs"
+                      onClick={() => {
+                        const code = o.campaign.promo_code;
+                        if (!code) { toast.error("This offer applies automatically"); return; }
+                        const res = applyCoupon(code);
+                        res.ok ? toast.success(res.message) : toast.error(res.message);
+                      }}
+                    >
+                      Use
+                    </Button>
+                  </li>
+                ))}
+            </ul>
           )}
         </section>
 
@@ -332,6 +381,15 @@ function CheckoutPage() {
             <Row label="Taxes" value={currency(totals.taxes)} />
             {totals.discount > 0 && <Row label="Discount" value={`- ${currency(totals.discount)}`} accent />}
             {walletApplied > 0 && <Row label="Wallet applied" value={`- ${currency(walletApplied)}`} accent />}
+            {pendingRewards.cashback > 0 && <Row label="Cashback after delivery" value={`+ ${currency(pendingRewards.cashback)}`} accent />}
+            {pendingRewards.walletCredit > 0 && <Row label="Wallet credit" value={`+ ${currency(pendingRewards.walletCredit)}`} accent />}
+          </div>
+          {appliedCampaign && appliedCampaign.totalSaving > 0 && (
+            <div className="mt-3 rounded-xl bg-primary-soft px-3 py-2 text-center text-xs font-bold text-primary">
+              You saved {currency(appliedCampaign.totalSaving)} with {appliedCampaign.campaign.name}
+            </div>
+          )}
+          <div className="hidden">
           </div>
         </section>
       </div>

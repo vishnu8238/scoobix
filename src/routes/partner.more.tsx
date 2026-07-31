@@ -31,6 +31,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
   {
     title: "Growth",
     items: [
+      { to: "/partner/campaigns",    icon: Megaphone, label: "Campaigns",         desc: "Scoobix promotions on your store" },
       { to: "/partner/coupons",      icon: Tag,       label: "Coupons",           desc: "Offers for your customers" },
       { to: "/partner/ads",          icon: Megaphone, label: "Advertisements",    desc: "Sponsored placements" },
       { to: "/partner/subscription", icon: CreditCard,label: "Subscription",      desc: "Your Scoobix plan" },
