@@ -25,7 +25,7 @@ export const Route = createFileRoute("/partner/branches")({
       { name: "description", content: "Add outlets, review duplicate checks and track ownership transfers." },
     ],
   }),
-  component: PartnerBranches;
+  component: PartnerBranches,
 });
 
 type BranchRow = {
