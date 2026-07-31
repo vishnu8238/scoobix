@@ -4,7 +4,7 @@
  * Every generation goes through the central AI gateway.
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Copy, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/cravio/PageHeader";
@@ -13,6 +13,7 @@ import { AiJson } from "@/components/ai/AiJson";
 import { useAuth } from "@/lib/auth-store";
 import { usePartnerRestaurant } from "@/lib/partner-store";
 import { runAI, useAiTask } from "@/lib/ai/client";
+import { listTable } from "@/lib/insforge-crud";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/partner/ai")({
@@ -31,7 +32,13 @@ const TABS = ["Menu copy", "Translate", "Pricing", "Insights"] as const;
 
 function PartnerAi() {
   const { user } = useAuth();
-  const { restaurant, menu } = usePartnerRestaurant() as any;
+  const { restaurant } = usePartnerRestaurant();
+  const [menu, setMenu] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!restaurant?.id) return;
+    void listTable<any>("menu_items", { restaurant_id: `eq.${restaurant.id}`, limit: 60 }).then(setMenu);
+  }, [restaurant?.id]);
   const [tab, setTab] = useState<(typeof TABS)[number]>("Menu copy");
 
   const dishes = useMemo(
@@ -45,7 +52,7 @@ function PartnerAi() {
     [menu],
   );
 
-  const ctx = { restaurant: restaurant?.name ?? "", cuisine: restaurant?.cuisine ?? "", city: "Vadodara", dishes };
+  const ctx = { restaurant: (restaurant as any)?.name ?? "", cuisine: (restaurant as any)?.cuisine ?? "", city: "Vadodara", dishes };
 
   return (
     <div className="min-h-svh pb-24">
