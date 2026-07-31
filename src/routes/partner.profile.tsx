@@ -4,6 +4,7 @@ import { usePartnerRestaurant } from "@/lib/partner-store";
 import { useAuth } from "@/lib/auth-store";
 import { RestaurantIdBadge } from "@/components/cravio/RestaurantIdBadge";
 import { RelationshipManagerCard } from "@/components/cravio/RelationshipManagerCard";
+import { KycUploadCard } from "@/components/cravio/KycPanel";
 import { MapPin, Phone, Clock, Star, Tag, Image as ImageIcon } from "lucide-react";
 
 export const Route = createFileRoute("/partner/profile")({
@@ -40,6 +41,8 @@ function PartnerProfile() {
         </div>
 
         <RelationshipManagerCard restaurant={restaurant} />
+
+        <KycUploadCard restaurantId={restaurant?.id} actor={{ id: user?.id, name: user?.name, role: "partner" }} />
 
         <div className="grid grid-cols-3 gap-3 rounded-3xl bg-card p-4 shadow-card ring-1 ring-border/60">
           <Stat icon={Star} label="Rating" value={partnerRestaurant.rating.toFixed(1)} />
