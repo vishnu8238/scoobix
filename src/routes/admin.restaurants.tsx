@@ -11,6 +11,7 @@ import { setRestaurantApprovalStatus, setRestaurantCommission, updateRestaurantS
 import { ensureRestaurantCode } from "@/lib/restaurant-id";
 import type { RestaurantRow } from "@/lib/partner-store";
 import { ChecklistList, ChecklistProgress, useGoLiveChecklist } from "@/components/cravio/GoLiveChecklist";
+import { AdminKycPanel } from "@/components/cravio/KycPanel";
 import { setGoLiveOverride, setRestaurantLive, setVerificationFlag, type ChecklistItem, type GoLiveRow } from "@/lib/go-live";
 
 export const Route = createFileRoute("/admin/restaurants")({
@@ -173,6 +174,8 @@ function RestaurantDetail({
         </div>
         <button onClick={onClose} className="rounded-xl bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">Close</button>
       </div>
+
+      <AdminKycPanel restaurantId={restaurant.id} actor={{ role: "admin", name: "Scoobix admin" }} />
 
       <AdminGoLivePanel restaurant={restaurant as GoLiveRow} />
 
