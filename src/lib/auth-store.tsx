@@ -201,13 +201,17 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   // On signup the user explicitly picks their app, so that choice overrides the
   // default profile row the backend may have already created as CUSTOMER.
   const existingRole = toUiRole(ownRow?.role);
-  const role =
-    (input.forceRole ? input.role : undefined) ?? existingRole ?? input.role ?? "customer";
-
   const phone = existing?.phone || input.phone || "";
   // Apple can withhold the address entirely — never write an empty string into
   // a unique column, and never crash on the missing value.
   const email = sess.email || existing?.email || "";
+  // The admin role can never be claimed from a form — only the backend
+  // allow list grants it (checked after the profile write below).
+  const requested =
+    input.role === "admin" && !(await userIsPlatformAdmin(sess.id, email)) ? undefined : input.role;
+  const role =
+    (input.forceRole ? requested : undefined) ?? existingRole ?? requested ?? "customer";
+
 
   const row: UserProfileRow = {
     id: sess.id,
