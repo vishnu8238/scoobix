@@ -3,6 +3,13 @@ import { findRestaurant, type Dish, type Restaurant } from "./mock-data";
 import { useAuth } from "./auth-store";
 import { currentPlatformSettings } from "./cms-store";
 import { reverseGeocode } from "./geocode";
+import { listTable } from "./insforge-crud";
+import {
+  listCampaigns, listRedemptions, eligibleCampaigns, evaluateCampaign, bestAutoCampaign,
+  matchPromoCode, trackCampaignEvent, CAMPAIGN_TYPE_LABEL,
+  type Campaign, type CampaignOutcome, type CampaignContext, type PaymentMethodKey,
+} from "./campaigns-api";
+
 
 
 
