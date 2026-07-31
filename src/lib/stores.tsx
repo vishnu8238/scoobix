@@ -22,14 +22,14 @@ export type CartItem = {
   customizations: string[]; // e.g. ["Extra cheese", "Spicy: Hot"]
 };
 
-export type Coupon = { code: string; label: string; kind: "pct" | "freeship"; value: number };
+export type Coupon = {
+  code: string;
+  label: string;
+  kind: "pct" | "flat" | "freeship" | "cashback" | "wallet";
+  value: number;
+  campaignId?: string;
+};
 
-const COUPONS: Coupon[] = [
-  { code: "SCOOBIX10", label: "10% off your order", kind: "pct", value: 0.1 },
-  { code: "SCOOBIX50", label: "50% off (max ₹800)", kind: "pct", value: 0.5 },
-  { code: "FREESHIP", label: "Free delivery", kind: "freeship", value: 0 },
-  { code: "NIGHT20", label: "20% off late-night", kind: "pct", value: 0.2 },
-];
 
 export type PendingAdd = { item: Omit<CartItem, "lineId" | "qty">; qty: number };
 
