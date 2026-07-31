@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { listTable, createRecord, patchRecord } from "./insforge-crud";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { useAuth } from "./auth-store";
+import { queueNotification } from "./notifications-queue";
 
 export type OnboardingStatus =
   | "draft"
@@ -370,11 +371,13 @@ export async function notifyManagerDecision(input: {
     actorRole: "admin",
   });
   if (!userId) return;
-  await createRecord("notifications", {
+  // Queued + de-duplicated: bursts of decisions collapse into one insert.
+  queueNotification({
     user_id: userId,
     title: `Restaurant ${input.decision}`,
     message: `${input.restaurant.name ?? "Restaurant"} (${input.restaurant.rst_code ?? ""}) was ${input.decision} by admin.${input.note ? ` ${input.note}` : ""}`,
-    created_at: new Date().toISOString(),
+    kind: "system",
+    dedupeKey: `decision:${input.restaurant.id}:${input.decision}`,
   });
 }
 

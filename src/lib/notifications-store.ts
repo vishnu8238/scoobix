@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { listTable, deleteRecord } from "./insforge-crud";
 import { useAuth } from "./auth-store";
+import { dedupeNotificationRows } from "./notifications-queue";
 
 export type AppNotification = {
   id: string;
@@ -69,8 +70,9 @@ export function useNotifications(audience: "customer" | "partner" | "rider") {
         limit: 100,
       });
       if (cancelled) return;
-      setList(rows.map(rowToNotif));
-      setStatus(rows.length ? "ready" : "empty");
+      const unique = dedupeNotificationRows(rows);
+      setList(unique.map(rowToNotif));
+      setStatus(unique.length ? "ready" : "empty");
     })();
     return () => { cancelled = true; };
   }, [audience, userId]);

@@ -18,6 +18,7 @@ import { NetworkBanner } from "@/components/cravio/NetworkBanner";
 import { InsForgeBootstrap } from "@/components/cravio/InsForgeBootstrap";
 import { subscribeCatalog, getCatalogVersion } from "@/lib/insforge";
 import { writeLastRoute } from "@/lib/last-route";
+import { registerServiceWorker, prefetchResources } from "@/lib/sw-register";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -82,6 +83,12 @@ function RootComponent() {
 
   // Remember the last app screen so refreshes resume exactly where you were.
   useEffect(() => { writeLastRoute(href); }, [href]);
+
+  // Offline-capable static asset cache + warm the manifest/icon the shell needs.
+  useEffect(() => {
+    registerServiceWorker();
+    prefetchResources(["/manifest.webmanifest", "/favicon.ico"]);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -17,6 +17,7 @@ import { taskDef, type AiTask } from "./tasks";
 import { aiTaskAllowed, effectiveTtl } from "./policy";
 import { cacheGet, cacheSet, dedupe } from "../request-cache";
 import { createRecord, listTable, patchRecord } from "../insforge-crud";
+import { recordMetric } from "../perf-metrics";
 
 export type AiResponse<T = unknown> = {
   ok: boolean;
@@ -81,16 +82,23 @@ export async function runAI<T = unknown>(
   const key = `ai:${task}:${hashInput(input)}`;
 
   if (opts?.fresh || ttl <= 0) {
+    const t0 = Date.now();
     const res = await dedupe(key + ":live", () => post<T>(task, input, opts));
+    recordMetric({ kind: "ai", name: task, ms: Date.now() - t0, ok: !!res.ok, provider: res.provider ?? undefined });
     if (res.ok && ttl > 0) cacheSet(key, res, ttl, { persist: true });
     return res;
   }
 
   const hit = cacheGet<AiResponse<T>>(key, { persist: true });
-  if (hit) return { ...hit, cached: true };
+  if (hit) {
+    recordMetric({ kind: "ai", name: task, ms: 0, ok: true, cached: true, provider: hit.provider ?? undefined });
+    return { ...hit, cached: true };
+  }
 
   // Only successful answers are cached — a failure must be retryable.
+  const t0 = Date.now();
   const res = await dedupe(key, () => post<T>(task, input, opts));
+  recordMetric({ kind: "ai", name: task, ms: Date.now() - t0, ok: !!res.ok, provider: res.provider ?? undefined });
   if (res.ok) cacheSet(key, res, ttl, { persist: true });
   return res;
 }
