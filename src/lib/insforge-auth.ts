@@ -512,12 +512,19 @@ function cleanRow(row: UserProfileRow): Record<string, unknown> {
  * (self-healing: an auth account that lost/never had a profile gets one here).
  * Returns null only when the backend rejects both write attempts.
  */
-export async function upsertUserProfile(row: UserProfileRow): Promise<UserProfileRow | null> {
+export async function upsertUserProfile(
+  row: UserProfileRow,
+  opts: { writeRole?: boolean } = {},
+): Promise<UserProfileRow | null> {
   const payload = cleanRow(row);
   // PATCH silently succeeds with 0 rows affected, so check existence first.
   const existing = await fetchUserProfile(row.id);
   if (existing) {
     const { id: _omit, registration_timestamp: _ts, ...patch } = payload as Record<string, unknown>;
+    // NEVER rewrite the role of an existing account on a plain sign-in — a
+    // transient profile read failure would otherwise demote a merchant
+    // manager / partner / rider back to CUSTOMER.
+    if (!opts.writeRole) delete patch.role;
     const res = await raw(`/api/database/records/users?id=eq.${row.id}`, {
       method: "PATCH",
       body: JSON.stringify(patch),
