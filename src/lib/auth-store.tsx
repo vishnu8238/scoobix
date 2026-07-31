@@ -23,6 +23,7 @@ import {
   type OAuthProvider,
   type UserProfileRow,
 } from "./insforge-auth";
+import { listTable } from "./insforge-crud";
 import { isPhoneOtpEnabled, sendPhoneOtp, verifyPhoneOtp, normalisePhone } from "./phone-otp";
 import { setTokens } from "./insforge-auth";
 import { clearLastRoute } from "./last-route";
