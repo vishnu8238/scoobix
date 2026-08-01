@@ -57,6 +57,7 @@ import { Route as PartnerBranchesRouteImport } from './routes/partner.branches'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
+import { Route as ManagerVerificationRouteImport } from './routes/manager.verification'
 import { Route as ManagerTransfersRouteImport } from './routes/manager.transfers'
 import { Route as ManagerSupportRouteImport } from './routes/manager.support'
 import { Route as ManagerRestaurantsRouteImport } from './routes/manager.restaurants'
@@ -355,6 +356,11 @@ const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
   id: '/addons',
   path: '/addons',
   getParentRoute: () => PartnerRoute,
+} as any)
+const ManagerVerificationRoute = ManagerVerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => ManagerRoute,
 } as any)
 const ManagerTransfersRoute = ManagerTransfersRouteImport.update({
   id: '/transfers',
@@ -713,6 +719,7 @@ export interface FileRoutesByFullPath {
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
   '/manager/transfers': typeof ManagerTransfersRoute
+  '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -816,6 +823,7 @@ export interface FileRoutesByTo {
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
   '/manager/transfers': typeof ManagerTransfersRoute
+  '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -925,6 +933,7 @@ export interface FileRoutesById {
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
   '/manager/transfers': typeof ManagerTransfersRoute
+  '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -1035,6 +1044,7 @@ export interface FileRouteTypes {
     | '/manager/restaurants'
     | '/manager/support'
     | '/manager/transfers'
+    | '/manager/verification'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1138,6 +1148,7 @@ export interface FileRouteTypes {
     | '/manager/restaurants'
     | '/manager/support'
     | '/manager/transfers'
+    | '/manager/verification'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1246,6 +1257,7 @@ export interface FileRouteTypes {
     | '/manager/restaurants'
     | '/manager/support'
     | '/manager/transfers'
+    | '/manager/verification'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1640,6 +1652,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/addons'
       preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/manager/verification': {
+      id: '/manager/verification'
+      path: '/verification'
+      fullPath: '/manager/verification'
+      preLoaderRoute: typeof ManagerVerificationRouteImport
+      parentRoute: typeof ManagerRoute
     }
     '/manager/transfers': {
       id: '/manager/transfers'
@@ -2183,6 +2202,7 @@ interface ManagerRouteChildren {
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
   ManagerSupportRoute: typeof ManagerSupportRoute
   ManagerTransfersRoute: typeof ManagerTransfersRoute
+  ManagerVerificationRoute: typeof ManagerVerificationRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
   ManagerLeadIdRoute: typeof ManagerLeadIdRoute
 }
@@ -2198,6 +2218,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
   ManagerSupportRoute: ManagerSupportRoute,
   ManagerTransfersRoute: ManagerTransfersRoute,
+  ManagerVerificationRoute: ManagerVerificationRoute,
   ManagerIndexRoute: ManagerIndexRoute,
   ManagerLeadIdRoute: ManagerLeadIdRoute,
 }
