@@ -24,7 +24,7 @@ export function DiscoverMore() {
               style={{ borderColor: "transparent", boxShadow: c.color ? `inset 0 0 0 2px ${c.color}` : undefined }}
             >
               {c.image ? (
-                <img src={c.image} alt={c.title} className="h-full w-full object-cover" loading="lazy" />
+                <img src={c.image} alt={c.title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
               ) : (
                 <span className="text-2xl">{c.icon}</span>
               )}
@@ -57,7 +57,7 @@ export function TrendingNow() {
           >
             <span className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-secondary">
               {c.image ? (
-                <img src={c.image} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <img src={c.image} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
               ) : null}
               <span className="absolute -right-0.5 -top-0.5 grid h-3.5 w-3.5 place-items-center rounded-full bg-primary text-[8px] text-primary-foreground">↑</span>
             </span>

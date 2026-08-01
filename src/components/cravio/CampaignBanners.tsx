@@ -58,7 +58,7 @@ export function CampaignBanners() {
           >
             {c.banner_url && (
               <>
-                <img src={c.banner_url} alt={c.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                <img src={c.banner_url} alt={c.name} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-black/45" />
               </>
             )}

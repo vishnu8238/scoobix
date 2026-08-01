@@ -29,7 +29,7 @@ export function CategoryRail() {
                   ? "bg-surface ring-2 ring-primary shadow-[0_8px_20px_-4px_color-mix(in_oklab,var(--primary)_30%,transparent)]"
                   : "bg-surface ring-1 ring-border shadow-soft group-hover:ring-primary/40",
               )}>
-                <img src={c.image} alt={c.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                <img src={c.image} alt={c.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" decoding="async" />
                 <span className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
                 <span className="absolute bottom-1 right-1 text-[14px]">{c.emoji}</span>
               </div>

@@ -24,7 +24,7 @@ export function RestaurantCard({ r, variant = "full", closed = false, sponsored:
     return (
       <Link to="/restaurant/$id" params={{ id: r.id }} className={cn("group block w-[260px] shrink-0", closed && "pointer-events-none opacity-70")}>
         <div className="relative h-40 overflow-hidden rounded-[28px] shadow-card">
-          <img src={r.cover} alt={r.name} className={cn("h-full w-full object-cover transition-transform duration-700 group-hover:scale-110", closed && "grayscale")} loading="lazy" />
+          <img src={r.cover} alt={r.name} className={cn("h-full w-full object-cover transition-transform duration-700 group-hover:scale-110", closed && "grayscale")} loading="lazy" decoding="async" />
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
           {closed && (
             <span className="absolute left-3 top-3 rounded-full bg-foreground/85 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white">Closed</span>
@@ -63,7 +63,7 @@ export function RestaurantCard({ r, variant = "full", closed = false, sponsored:
     <Link to="/restaurant/$id" params={{ id: r.id }} className={cn("group block", closed && "pointer-events-none opacity-70")}>
       <div className="relative">
         <div className="relative aspect-[4/3] overflow-hidden rounded-[32px] shadow-card">
-          <img src={r.cover} alt={r.name} className={cn("h-full w-full object-cover transition-transform duration-700 group-hover:scale-105", closed && "grayscale")} loading="lazy" />
+          <img src={r.cover} alt={r.name} className={cn("h-full w-full object-cover transition-transform duration-700 group-hover:scale-105", closed && "grayscale")} loading="lazy" decoding="async" />
 
           {closed && (
             <div className="absolute inset-0 grid place-items-center bg-foreground/30">

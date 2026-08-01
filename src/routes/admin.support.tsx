@@ -459,7 +459,7 @@ function TicketDetail({
         <div className="flex flex-wrap gap-2">
           {files.map((f) => (
             <a key={f} href={f} target="_blank" rel="noreferrer">
-              <img src={f} alt="Ticket attachment" loading="lazy" className="h-20 w-20 rounded-xl object-cover" />
+              <img src={f} alt="Ticket attachment" loading="lazy" decoding="async" className="h-20 w-20 rounded-xl object-cover" />
             </a>
           ))}
         </div>
@@ -478,7 +478,7 @@ function TicketDetail({
                 <p className="mt-0.5">{m.message}</p>
                 {ticketAttachments(m).map((f) => (
                   <a key={f} href={f} target="_blank" rel="noreferrer" className="mt-2 inline-block">
-                    <img src={f} alt="Reply attachment" loading="lazy" className="h-16 w-16 rounded-lg object-cover" />
+                    <img src={f} alt="Reply attachment" loading="lazy" decoding="async" className="h-16 w-16 rounded-lg object-cover" />
                   </a>
                 ))}
               </div>

@@ -475,7 +475,7 @@ function SponsoredRestaurantsRow() {
                 src={restaurant.cover}
                 alt={restaurant.name}
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                loading="lazy"
+                loading="lazy" decoding="async"
               />
               <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
               <SponsoredBadge className="absolute left-3 top-3" />
