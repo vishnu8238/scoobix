@@ -20,7 +20,7 @@ export const Route = createFileRoute("/app/coupons")({
       { name: "description", content: "Your eligible, saved, used and expired Scoobix coupons in one wallet." },
     ],
   }),
-  component: CouponsPage;
+  component: CouponsPage,
 });
 
 type TabKey = "eligible" | "saved" | "recommended" | "used" | "expired";
