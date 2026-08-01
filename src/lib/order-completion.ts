@@ -22,6 +22,12 @@
 
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { getAppSettings } from "./app-settings";
+import {
+  completeReferralForOrder,
+  creditWallet,
+  earnPoints,
+  issueScratchCard,
+} from "./loyalty-engine";
 
 const HEADERS = {
   apikey: INSFORGE_ANON_KEY,
@@ -180,65 +186,50 @@ export async function finalizeOrder(orderId: string): Promise<{ ok: boolean; rea
     const settings = getAppSettings();
     const customerId = String(order.customer_id ?? "");
 
-    // 8. Wallet cashback.
+    // 8. Wallet cashback — server-authoritative ledger write via the engine.
     if (settings.wallet_enabled && customerId && settings.wallet_cashback_pct > 0) {
       const amt = Math.round(breakdown.total * (settings.wallet_cashback_pct / 100));
       if (amt > 0) {
-        await safePost(base("wallet_transactions"), {
-          customer_id: customerId,
+        await creditWallet({
+          userId: customerId,
           amount: amt,
-          kind: "cashback",
-          note: `Cashback on order ${orderId}`,
-          order_id: orderId,
+          kind: "coupon_cashback",
+          bucket: "cashback",
+          remark: `Cashback on order ${orderId}`,
+          orderId,
         });
       }
     }
 
-    // 9. Scratch card.
+    // 8b. Loyalty points for the order (tier multiplier applied inside).
+    if (settings.loyalty_enabled && customerId) {
+      const pts = Math.round(breakdown.total * settings.loyalty_points_per_rupee);
+      if (pts > 0) {
+        await earnPoints({
+          userId: customerId,
+          points: pts,
+          reason: `Order ${orderId}`,
+          source: "order",
+          orderId,
+          expiresInDays: settings.loyalty_expiry_days,
+        });
+      }
+    }
+
+    // 9. Scratch card entitlement (reward drawn from active campaigns).
     if (settings.scratch_enabled && customerId) {
-      // Only issue if the rewards pool has anything active. We defer the
-      // actual reward selection to the client-side RewardsProvider so the
-      // player still gets the scratch animation on next open; here we just
-      // stamp the entitlement.
-      await safePost(base("scratch_cards"), {
-        order_id: orderId,
-        customer_id: customerId,
-        applied: false,
-        issued_at: now,
+      await issueScratchCard({ userId: customerId, orderId, restaurantId });
+    }
+
+    // 10. Referral completion — pays both sides once the first order lands.
+    if (settings.referral_enabled && customerId) {
+      await completeReferralForOrder({
+        refereeId: customerId,
+        orderId,
+        orderTotal: breakdown.total,
       });
     }
 
-    // 10. Referral completion — if this customer has a pending referral.
-    if (settings.referral_enabled && customerId) {
-      const referrals = await safeJson<Row[]>(
-        `${base("referrals")}?referee_id=${encodeURIComponent(customerId)}&status=pending&limit=1`,
-      );
-      const pending = Array.isArray(referrals) ? referrals[0] : undefined;
-      if (pending) {
-        // Load referral config from app_settings-compatible keys (reuse local defaults if absent).
-        const refereeReward = 50;
-        const referrerReward = 100;
-        await safePatch(`${base("referrals")}/${String(pending.id)}`, {
-          status: "rewarded",
-          rewarded_at: now,
-        });
-        await safePost(base("wallet_transactions"), {
-          customer_id: customerId,
-          amount: refereeReward,
-          kind: "credit",
-          note: `Referral bonus (code ${String(pending.code ?? "")})`,
-        });
-        const referrerId = String(pending.referrer_id ?? "");
-        if (referrerId && referrerId !== customerId) {
-          await safePost(base("wallet_transactions"), {
-            customer_id: referrerId,
-            amount: referrerReward,
-            kind: "credit",
-            note: `Referral bonus`,
-          });
-        }
-      }
-    }
 
     return { ok: true };
   } finally {

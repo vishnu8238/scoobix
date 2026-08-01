@@ -80,8 +80,8 @@ function ReferralPage() {
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <Stat icon={Users}       label="Invites"   value={String(stats.total)} />
-          <Stat icon={Gift}        label="Rewarded"  value={String(stats.rewarded)} />
+          <Stat icon={Users}       label="Invites"   value={String(stats.invited)} />
+          <Stat icon={Gift}        label="Rewarded"  value={String(stats.ordered)} />
           <Stat icon={IndianRupee} label="Earned"    value={`₹${stats.earned}`} />
         </div>
       </section>

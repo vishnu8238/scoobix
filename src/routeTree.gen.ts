@@ -77,6 +77,7 @@ import { Route as AppSwipeRouteImport } from './routes/app.swipe'
 import { Route as AppSupportRouteImport } from './routes/app.support'
 import { Route as AppSuccessRouteImport } from './routes/app.success'
 import { Route as AppSearchRouteImport } from './routes/app.search'
+import { Route as AppRewardsRouteImport } from './routes/app.rewards'
 import { Route as AppReferralRouteImport } from './routes/app.referral'
 import { Route as AppRecentRouteImport } from './routes/app.recent'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
@@ -458,6 +459,11 @@ const AppSearchRoute = AppSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRewardsRoute = AppRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReferralRoute = AppReferralRouteImport.update({
   id: '/referral',
   path: '/referral',
@@ -707,6 +713,7 @@ export interface FileRoutesByFullPath {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/referral': typeof AppReferralRoute
+  '/app/rewards': typeof AppRewardsRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
   '/app/support': typeof AppSupportRoute
@@ -812,6 +819,7 @@ export interface FileRoutesByTo {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/referral': typeof AppReferralRoute
+  '/app/rewards': typeof AppRewardsRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
   '/app/support': typeof AppSupportRoute
@@ -923,6 +931,7 @@ export interface FileRoutesById {
   '/app/profile': typeof AppProfileRoute
   '/app/recent': typeof AppRecentRoute
   '/app/referral': typeof AppReferralRoute
+  '/app/rewards': typeof AppRewardsRoute
   '/app/search': typeof AppSearchRoute
   '/app/success': typeof AppSuccessRoute
   '/app/support': typeof AppSupportRoute
@@ -1035,6 +1044,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/referral'
+    | '/app/rewards'
     | '/app/search'
     | '/app/success'
     | '/app/support'
@@ -1140,6 +1150,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/referral'
+    | '/app/rewards'
     | '/app/search'
     | '/app/success'
     | '/app/support'
@@ -1250,6 +1261,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/recent'
     | '/app/referral'
+    | '/app/rewards'
     | '/app/search'
     | '/app/success'
     | '/app/support'
@@ -1805,6 +1817,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSearchRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/rewards': {
+      id: '/app/rewards'
+      path: '/rewards'
+      fullPath: '/app/rewards'
+      preLoaderRoute: typeof AppRewardsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/referral': {
       id: '/app/referral'
       path: '/referral'
@@ -2161,6 +2180,7 @@ interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppRecentRoute: typeof AppRecentRoute
   AppReferralRoute: typeof AppReferralRoute
+  AppRewardsRoute: typeof AppRewardsRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSuccessRoute: typeof AppSuccessRoute
   AppSupportRoute: typeof AppSupportRoute
@@ -2186,6 +2206,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppRecentRoute: AppRecentRoute,
   AppReferralRoute: AppReferralRoute,
+  AppRewardsRoute: AppRewardsRoute,
   AppSearchRoute: AppSearchRoute,
   AppSuccessRoute: AppSuccessRoute,
   AppSupportRoute: AppSupportRoute,

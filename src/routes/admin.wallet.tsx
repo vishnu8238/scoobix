@@ -28,12 +28,15 @@ function AdminWalletPage() {
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [allTxns]);
 
-  const submit = (kind: "credit" | "debit") => {
+  const submit = async (kind: "credit" | "debit") => {
     const amt = Number(amount);
     if (!customerId.trim() || !Number.isFinite(amt) || amt <= 0) { toast.error("Enter customer id and amount"); return; }
-    if (kind === "credit") { credit(customerId.trim(), amt, "admin", note || "Admin credit"); toast.success("Wallet credited"); }
-    else {
-      const res = debit(customerId.trim(), amt, "admin", note || "Admin debit");
+    if (kind === "credit") {
+      const res = await credit(customerId.trim(), amt, "admin_credit", note || "Admin credit");
+      if (!res.ok) { toast.error(res.reason ?? "Credit failed"); return; }
+      toast.success("Wallet credited");
+    } else {
+      const res = await debit(customerId.trim(), amt, "admin_debit", note || "Admin debit");
       if (!res.ok) { toast.error(res.reason ?? "Debit failed"); return; }
       toast.success("Wallet debited");
     }
@@ -55,8 +58,8 @@ function AdminWalletPage() {
           <Input placeholder="Customer id" value={customerId} onChange={(e) => setCustomerId(e.target.value)} />
           <Input placeholder="Amount ₹" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
           <Input placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} />
-          <Button onClick={() => submit("credit")} className="rounded-full"><Plus className="mr-1 h-4 w-4" /> Credit</Button>
-          <Button onClick={() => submit("debit")} variant="outline" className="rounded-full"><Minus className="mr-1 h-4 w-4" /> Debit</Button>
+          <Button onClick={() => void submit("credit")} className="rounded-full"><Plus className="mr-1 h-4 w-4" /> Credit</Button>
+          <Button onClick={() => void submit("debit")} variant="outline" className="rounded-full"><Minus className="mr-1 h-4 w-4" /> Debit</Button>
         </div>
       </section>
 
