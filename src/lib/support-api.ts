@@ -437,7 +437,7 @@ export async function listTicketAttachments(ticketId: string): Promise<TicketAtt
 }
 
 export async function getTicketRating(ticketId: string): Promise<TicketRating | null> {
-  if (!ticketId) return [] && null;
+  if (!ticketId) return null;
   const rows = await listTable<TicketRating>("ticket_ratings", {
     ticket_id: `eq.${ticketId}`,
     limit: 1,
