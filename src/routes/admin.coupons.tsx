@@ -8,7 +8,7 @@ import { formatPrice } from "@/lib/format";
 import {
   listCoupons, listCouponUsage, listCouponAudit, createCoupon, updateCoupon,
   setCouponStatus, removeCoupon as deleteCoupon, duplicateCoupon, couponStatus,
-  couponStats, fraudSignals, couponsToCsv, csvToCoupons, COUPON_KIND_LABEL,
+  couponStats, fraudSignals, couponsToCsv, parseCouponsCsv, COUPON_KIND_LABEL,
   type Coupon, type CouponUsage, type CouponAudit,
 } from "@/lib/coupons-api";
 
@@ -46,7 +46,7 @@ function AdminCoupons() {
     const [coupons, use, logs] = await Promise.all([
       listCoupons({ includeArchived: true, limit: 500 }),
       listCouponUsage({ limit: 500 }),
-      listCouponAudit({ limit: 40 }),
+      listCouponAudit(),
     ]);
     setRows(coupons); setUsage(use); setAudit(logs); setLoading(false);
   }, []);
@@ -75,7 +75,7 @@ function AdminCoupons() {
     };
   }, [usage, rows]);
 
-  const fraud = useMemo(() => fraudSignals(usage), [usage]);
+  const fraud = useMemo(() => fraudSignals(usage, rows), [usage, rows]);
 
   const create = async () => {
     if (!form.code.trim()) { toast.error("Coupon code is required"); return; }
@@ -137,7 +137,7 @@ function AdminCoupons() {
   };
 
   const importCsv = async () => {
-    const parsed = csvToCoupons(csv);
+    const parsed = parseCouponsCsv(csv);
     if (!parsed.length) { toast.error("Nothing to import"); return; }
     setBusy(true);
     let ok = 0;
@@ -216,8 +216,8 @@ function AdminCoupons() {
         ) : (
           <ul className="mt-2 space-y-2">
             {fraud.map((f, i) => (
-              <li key={i} className="flex items-start gap-2 rounded-2xl bg-amber-50 p-2.5 text-[12px] text-amber-800">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span>{f.reason}</span>
+              <li key={f.key} className="flex items-start gap-2 rounded-2xl bg-amber-50 p-2.5 text-[12px] text-amber-800">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span><b>{f.label}</b> — {f.detail}</span>
               </li>
             ))}
           </ul>
