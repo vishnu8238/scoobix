@@ -4,9 +4,10 @@ import { Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/format";
 import {
-import { OptimizedImage } from "@/components/cravio/OptimizedImage";
   listCampaigns, effectiveStatus, trackCampaignEvent, CAMPAIGN_TYPE_LABEL, type Campaign,
 } from "@/lib/campaigns-api";
+import { OptimizedImage } from "@/components/cravio/OptimizedImage";
+
 
 /**
  * Home-screen campaign banners. Reads live campaigns from InsForge, shows only
