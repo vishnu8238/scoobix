@@ -85,16 +85,18 @@ function dedupe(messageId?: string): boolean {
 }
 
 function dispatch(payload: Record<string, unknown>) {
-  const meta0 = (payload as { meta?: { messageId?: string } }).meta;
-  if (!seen.has(meta0?.messageId ?? "")) {
+  const meta = (payload as { meta?: { messageId?: string; channel?: string } }).meta;
+  if (!seen.has(meta?.messageId ?? "")) {
     for (const h of anyListeners) { try { h(payload as ChangePayload); } catch { /* ignore */ } }
   }
-  const meta = (payload as { meta?: { messageId?: string; channel?: string } }).meta;
   if (dedupe(meta?.messageId)) return;
-  const channel = meta?.channel;
-  const targets = channel ? handlers.get(channel) : null;
-  if (targets) {
-    for (const h of targets) { try { h(payload as ChangePayload); } catch { /* ignore */ } }
+  // The server echoes the channel as `realtime:<channel>`.
+  const channel = meta?.channel?.replace(/^realtime:/, "");
+  if (channel) {
+    const targets = handlers.get(channel);
+    if (targets) for (const h of targets) { try { h(payload as ChangePayload); } catch { /* ignore */ } }
+    // A scoped/firehose channel must not also fire table handlers, or one
+    // write would be delivered several times to the same screen.
     return;
   }
   // No channel in metadata: broadcast to handlers matching the payload table.
