@@ -20,12 +20,18 @@ const ICONS = {
 
 function NotificationsPage() {
   const [tab, setTab] = useState<"all" | "orders" | "offers">("all");
-  const { list } = useNotifications("customer");
+  const { list, markRead, markAllRead, unreadCount } = useNotifications("customer");
   const filtered = tab === "all" ? list : list.filter((n) => (tab === "orders" ? n.kind === "order" : n.kind === "promo"));
 
   return (
     <div className="min-h-svh pb-16">
-      <PageHeader title="Notifications" subtitle={`${list.filter((n) => n.unread).length} unread`} />
+      <PageHeader title="Notifications" subtitle={`${unreadCount} unread`} />
+
+      {unreadCount > 0 && (
+        <div className="mt-3 flex justify-end px-4">
+          <button onClick={markAllRead} className="text-[12px] font-bold text-primary">Mark all as read</button>
+        </div>
+      )}
 
       <div className="mx-4 mt-3 grid grid-cols-3 rounded-full bg-secondary p-1">
         {(["all", "orders", "offers"] as const).map((t) => (
@@ -34,6 +40,7 @@ function NotificationsPage() {
           </button>
         ))}
       </div>
+
 
       {filtered.length === 0 ? (
         <EmptyState icon={<Bell className="h-9 w-9" />} title="All caught up" description="You'll see updates about your orders and offers here." />
