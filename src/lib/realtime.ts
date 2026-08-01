@@ -17,6 +17,11 @@
  */
 
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { onTableChange, realtimeConnected, onRealtimeState } from "./realtime-bus";
+
+/** Poll interval used purely as a safety net while realtime is connected. */
+const SAFETY_NET_MS = 120_000;
+
 
 type Row = Record<string, unknown>;
 
