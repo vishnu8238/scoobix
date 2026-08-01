@@ -28,10 +28,9 @@ function RewardsPage() {
   const { summary, history, store, cards, redemptions, loading, redeem, scratch } = useLoyalty();
   const [busy, setBusy] = useState<string | null>(null);
 
-  const level = summary?.level ?? "bronze";
-  const spec = LEVELS.find((l) => l.id === level) ?? LEVELS[0];
-  const next = nextLevel(level);
-  const lifetime = summary?.lifetimePoints ?? 0;
+  const spec = summary?.level ?? LEVELS[0];
+  const next = summary?.next ?? nextLevel(spec.id);
+  const lifetime = summary?.lifetime ?? 0;
   const progress = next
     ? Math.min(100, Math.round(((lifetime - spec.minLifetimePoints) / Math.max(1, next.minLifetimePoints - spec.minLifetimePoints)) * 100))
     : 100;
@@ -119,13 +118,13 @@ function RewardsPage() {
         ) : (
           <ul className="grid gap-2">
             {store.map((item) => {
-              const affordable = (summary?.points ?? 0) >= Number(item.points_cost ?? 0);
+              const affordable = (summary?.points ?? 0) >= Number(item.cost_points ?? 0);
               return (
                 <li key={item.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-card ring-1 ring-border/60">
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-secondary"><Ticket className="h-4 w-4 text-primary" /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-bold">{item.title ?? "Reward"}</span>
-                    <span className="block text-[11px] text-muted-foreground">{item.description ?? `${item.points_cost} points`}</span>
+                    <span className="block text-[11px] text-muted-foreground">{item.subtitle ?? `${item.cost_points ?? 0} points`}</span>
                   </span>
                   <Button
                     size="sm"
@@ -133,7 +132,7 @@ function RewardsPage() {
                     onClick={() => void onRedeem(item)}
                     className="rounded-full"
                   >
-                    {item.points_cost} pts
+                    {item.cost_points ?? 0} pts
                   </Button>
                 </li>
               );
