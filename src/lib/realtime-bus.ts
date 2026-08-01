@@ -17,7 +17,7 @@
  * realtime disabled) nothing throws — the adaptive-polling engine in
  * `realtime.ts` keeps its fast intervals and the UI behaves exactly as before.
  */
-import { createClient } from "@insforge/sdk";
+import { io, type Socket } from "socket.io-client";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 
 export type ChangePayload = {
@@ -32,10 +32,11 @@ type Handler = (payload: ChangePayload) => void;
 
 const EVENT = "changed";
 
-let client: ReturnType<typeof createClient> | null = null;
+let socket: Socket | null = null;
 let connecting: Promise<void> | null = null;
 let connected = false;
 let everConnected = false;
+const subscribed = new Set<string>();
 
 const refs = new Map<string, number>();                 // channel → subscriber count
 const handlers = new Map<string, Set<Handler>>();       // channel → handlers
@@ -51,28 +52,16 @@ function sessionToken(): string | null {
   try { return localStorage.getItem(ACCESS_KEY); } catch { return null; }
 }
 
-let clientToken: string | null = null;
-
-function getClient() {
-  const token = sessionToken();
-  // The realtime handshake requires a signed-in user token; rebuild the client
-  // when the session changes so the socket re-authenticates as the new user.
-  if (client && clientToken !== token) {
-    try { client.realtime.disconnect(); } catch { /* ignore */ }
-    client = null;
-    connected = false;
-    connecting = null;
-  }
-  if (!client) {
-    clientToken = token;
-    client = createClient({
-      baseUrl: INSFORGE_URL,
-      anonKey: INSFORGE_ANON_KEY,
-      ...(token ? { accessToken: token, isServerMode: false } : {}),
-    });
-  }
-  return client;
+/**
+ * Handshake token: the signed-in user's JWT when present, otherwise the
+ * publishable anon key (the realtime server accepts it as an anonymous
+ * participant), so guests get live updates too.
+ */
+function handshakeToken(): string {
+  return sessionToken() ?? INSFORGE_ANON_KEY;
 }
+
+let socketToken: string | null = null;
 
 function setConnected(on: boolean) {
   if (connected === on) return;
@@ -116,31 +105,66 @@ function dispatch(payload: Record<string, unknown>) {
 }
 
 /** Re-join every active channel after a reconnect or session change. */
-async function resubscribeAll() {
-  const rt = getClient().realtime;
-  for (const channel of refs.keys()) {
-    try { await rt.subscribe(channel); } catch { /* ignore */ }
-  }
+function resubscribeAll() {
+  subscribed.clear();
+  for (const channel of refs.keys()) joinChannel(channel);
+}
+
+function joinChannel(channel: string) {
+  if (!socket?.connected || subscribed.has(channel)) return;
+  subscribed.add(channel);
+  socket.emit("realtime:subscribe", { channel }, (res: { ok?: boolean } | undefined) => {
+    if (res && res.ok === false) subscribed.delete(channel);
+  });
+}
+
+function leaveChannel(channel: string) {
+  subscribed.delete(channel);
+  if (socket?.connected) socket.emit("realtime:unsubscribe", { channel });
 }
 
 async function ensureConnected(): Promise<boolean> {
   if (!isBrowser) return false;
-  // Realtime is a signed-in feature. Anonymous browsing keeps the polling
-  // fallback in `realtime.ts`, which behaves exactly as before.
-  if (!sessionToken()) return false;
+  const token = handshakeToken();
+  // Session changed (sign-in / sign-out): rebuild the socket so it
+  // re-authenticates as the new identity.
+  if (socket && socketToken !== token) {
+    try { socket.removeAllListeners(); socket.disconnect(); } catch { /* ignore */ }
+    socket = null;
+    subscribed.clear();
+    connecting = null;
+    setConnected(false);
+  }
   if (connected) return true;
   if (!connecting) {
-    const rt = getClient().realtime;
-    rt.on("connect", () => { setConnected(true); void resubscribeAll(); });
-    rt.on("disconnect", () => setConnected(false));
-    rt.on("connect_error", () => setConnected(false));
-    rt.on("error", () => { /* subscribe/publish errors are non-fatal */ });
-    rt.on(EVENT, (msg: Record<string, unknown>) => dispatch(msg));
-    connecting = rt
-      .connect()
-      .then(() => { setConnected(true); })
-      .catch(() => { setConnected(false); })
-      .finally(() => { connecting = null; });
+    socketToken = token;
+    const s = io(INSFORGE_URL, {
+      transports: ["websocket"],
+      auth: { token },
+      forceNew: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 15000,
+    });
+    socket = s;
+    s.on("connect", () => { setConnected(true); resubscribeAll(); });
+    s.on("disconnect", () => { subscribed.clear(); setConnected(false); });
+    s.on("connect_error", () => setConnected(false));
+    s.onAny((event: string, msg: Record<string, unknown>) => {
+      if (event !== EVENT) return;   // realtime:error and presence events are non-fatal
+      dispatch(msg);
+    });
+    connecting = new Promise<void>((resolve) => {
+      const done = () => { cleanup(); resolve(); };
+      const timer = window.setTimeout(done, 10_000);
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        s.off("connect", done);
+        s.off("connect_error", done);
+      };
+      s.once("connect", done);
+      s.once("connect_error", done);
+    }).finally(() => { connecting = null; });
   }
   await connecting;
   return connected;
@@ -171,10 +195,7 @@ export function subscribeChannel(channel: string, handler: Handler): () => void 
   refs.set(channel, (refs.get(channel) ?? 0) + 1);
 
   if (refs.get(channel) === 1) {
-    void ensureConnected().then((ok) => {
-      if (!ok) return;
-      void getClient().realtime.subscribe(channel).catch(() => {});
-    });
+    void ensureConnected().then((ok) => { if (ok) joinChannel(channel); });
   }
 
   return () => {
@@ -184,7 +205,7 @@ export function subscribeChannel(channel: string, handler: Handler): () => void 
     if (n <= 0) {
       refs.delete(channel);
       handlers.delete(channel);
-      try { getClient().realtime.unsubscribe(channel); } catch { /* ignore */ }
+      leaveChannel(channel);
     } else {
       refs.set(channel, n);
     }
@@ -216,13 +237,10 @@ export async function publishChange(channel: string, payload: ChangePayload) {
   if (!isBrowser) return;
   const ok = await ensureConnected();
   if (!ok) return;
-  const rt = getClient().realtime;
   try {
-    if (!rt.getSubscribedChannels().includes(channel)) {
-      const res = await rt.subscribe(channel);
-      if (res && (res as { ok?: boolean }).ok === false) return;
-    }
-    await rt.publish(channel, EVENT, payload as Record<string, unknown>);
+    // A publish requires membership of the channel, so join it first.
+    joinChannel(channel);
+    socket?.emit("realtime:publish", { channel, event: EVENT, payload });
   } catch { /* realtime is best-effort */ }
 }
 
@@ -270,7 +288,10 @@ export function disconnectRealtime() {
   anyListeners.clear();
   seen.clear();
   setConnected(false);
-  try { client?.realtime.disconnect(); } catch { /* ignore */ }
+  subscribed.clear();
+  try { socket?.removeAllListeners(); socket?.disconnect(); } catch { /* ignore */ }
+  socket = null;
+  socketToken = null;
 }
 
 if (isBrowser) {
