@@ -3,6 +3,7 @@
  * Same design language as the rest of the app: rounded cards + soft rings.
  */
 import { useCallback, useEffect, useState } from "react";
+import { useTableVersion, useChannelVersion } from "@/lib/realtime-hooks";
 import { Loader2, MessageSquarePlus, Send, LifeBuoy, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-store";
@@ -32,6 +33,8 @@ export function SupportTickets({ role, intro }: { role: TicketRole; intro?: stri
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [composing, setComposing] = useState(false);
+  // Realtime: tickets and replies land without a refresh.
+  const version = useTableVersion(["support_tickets", "support_ticket_messages"]);
 
   const refresh = useCallback(async () => {
     if (!user?.id) { setTickets([]); setLoading(false); return; }
@@ -40,7 +43,7 @@ export function SupportTickets({ role, intro }: { role: TicketRole; intro?: stri
     setLoading(false);
   }, [user?.id]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => { void refresh(); }, [refresh, version]);
 
   if (!user) {
     return (
@@ -169,11 +172,14 @@ function TicketCard({ ticket, role, userId, onChange }: { ticket: SupportTicket;
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
   const status = ticketStatus(ticket);
+  // One scoped channel per open conversation — instant for every role.
+  const msgVersion = useChannelVersion(open ? `ticket:${ticket.id}` : null);
+  const tableVersion = useTableVersion(open ? ["support_ticket_messages"] : []);
 
   useEffect(() => {
     if (!open) return;
     void listTicketMessages(ticket.id).then(setMessages);
-  }, [open, ticket.id]);
+  }, [open, ticket.id, msgVersion, tableVersion]);
 
   const send = async () => {
     if (!reply.trim()) return;
