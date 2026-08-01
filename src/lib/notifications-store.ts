@@ -80,14 +80,24 @@ export function useNotifications(audience: "customer" | "partner" | "rider") {
     return () => { cancelled = true; };
   }, [audience, userId, version]);
 
+  // Reads are persisted so the badge stays correct on every device.
   const markRead = (id: string) => {
     setList((p) => p.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+    void patchRecord("notifications", id, { unread: false });
+  };
+  const markAllRead = () => {
+    const ids = list.filter((n) => n.unread).map((n) => n.id);
+    if (!ids.length) return;
+    setList((p) => p.map((n) => ({ ...n, unread: false })));
+    void patchWhereIn("notifications", ids, { unread: false });
   };
   const dismiss = (id: string) => {
     setList((p) => p.filter((n) => n.id !== id));
     void deleteRecord("notifications", id);
   };
 
+  const unreadCount = list.reduce((n, x) => n + (x.unread ? 1 : 0), 0);
 
-  return { list, status, markRead, dismiss };
+  return { list, status, markRead, markAllRead, dismiss, unreadCount };
 }
+
