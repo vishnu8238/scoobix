@@ -36,6 +36,7 @@ import { Route as RiderMoreRouteImport } from './routes/rider.more'
 import { Route as RiderIncentivesRouteImport } from './routes/rider.incentives'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
+import { Route as RiderAnalyticsRouteImport } from './routes/rider.analytics'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
 import { Route as PartnerSupportRouteImport } from './routes/partner.support'
@@ -258,6 +259,11 @@ const RiderHistoryRoute = RiderHistoryRouteImport.update({
 const RiderEarningsRoute = RiderEarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderAnalyticsRoute = RiderAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => RiderRoute,
 } as any)
 const RiderActiveRoute = RiderActiveRouteImport.update({
@@ -797,6 +803,7 @@ export interface FileRoutesByFullPath {
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
+  '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
@@ -909,6 +916,7 @@ export interface FileRoutesByTo {
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
+  '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
@@ -1027,6 +1035,7 @@ export interface FileRoutesById {
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
+  '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
@@ -1146,6 +1155,7 @@ export interface FileRouteTypes {
     | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
+    | '/rider/analytics'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
@@ -1258,6 +1268,7 @@ export interface FileRouteTypes {
     | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
+    | '/rider/analytics'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
@@ -1375,6 +1386,7 @@ export interface FileRouteTypes {
     | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
+    | '/rider/analytics'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
@@ -1600,6 +1612,13 @@ declare module '@tanstack/react-router' {
       path: '/earnings'
       fullPath: '/rider/earnings'
       preLoaderRoute: typeof RiderEarningsRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/analytics': {
+      id: '/rider/analytics'
+      path: '/analytics'
+      fullPath: '/rider/analytics'
+      preLoaderRoute: typeof RiderAnalyticsRouteImport
       parentRoute: typeof RiderRoute
     }
     '/rider/active': {
@@ -2445,6 +2464,7 @@ const PartnerRouteWithChildren =
 
 interface RiderRouteChildren {
   RiderActiveRoute: typeof RiderActiveRoute
+  RiderAnalyticsRoute: typeof RiderAnalyticsRoute
   RiderEarningsRoute: typeof RiderEarningsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
   RiderIncentivesRoute: typeof RiderIncentivesRoute
@@ -2462,6 +2482,7 @@ interface RiderRouteChildren {
 
 const RiderRouteChildren: RiderRouteChildren = {
   RiderActiveRoute: RiderActiveRoute,
+  RiderAnalyticsRoute: RiderAnalyticsRoute,
   RiderEarningsRoute: RiderEarningsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
   RiderIncentivesRoute: RiderIncentivesRoute,
