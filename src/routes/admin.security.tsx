@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Activity, AlertTriangle, Ban, CheckCircle2, Fingerprint, Loader2, Lock,
@@ -468,8 +468,8 @@ function SecurityPage() {
               </thead>
               <tbody>
                 {PERMISSION_GROUPS.map((group) => (
-                  <>
-                    <tr key={group.label} className="bg-muted/40">
+                  <Fragment key={group.label}>
+                    <tr className="bg-muted/40">
                       <td className="p-2 font-semibold text-foreground" colSpan={8}>{group.label}</td>
                     </tr>
                     {group.permissions.map((p) => (
@@ -484,7 +484,7 @@ function SecurityPage() {
                         ))}
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
