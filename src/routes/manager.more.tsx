@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LifeBuoy, Bell, User, LogOut, ChevronRight, History, CalendarDays, ArrowLeftRight, Sparkles } from "lucide-react";
+import { LifeBuoy, Bell, User, LogOut, ChevronRight, History, CalendarDays, ArrowLeftRight, Sparkles, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { useAuth } from "@/lib/auth-store";
 import { useManager } from "@/lib/manager-api";
@@ -20,6 +20,7 @@ const LINKS = [
   { to: "/manager/transfers", label: "Ownership transfers", icon: ArrowLeftRight },
   { to: "/manager/support", label: "Restaurant support tickets", icon: LifeBuoy },
   { to: "/manager/notifications", label: "Notifications", icon: Bell },
+  { to: "/manager/verification", label: "My verification & KYC", icon: ShieldCheck },
   { to: "/manager/profile", label: "My profile", icon: User },
 ];
 

@@ -24,6 +24,7 @@ import { Route as ManagerIndexRouteImport } from './routes/manager.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
+import { Route as RiderVerificationRouteImport } from './routes/rider.verification'
 import { Route as RiderVehicleRouteImport } from './routes/rider.vehicle'
 import { Route as RiderSupportRouteImport } from './routes/rider.support'
 import { Route as RiderRequestsRouteImport } from './routes/rider.requests'
@@ -56,6 +57,7 @@ import { Route as PartnerBranchesRouteImport } from './routes/partner.branches'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
+import { Route as ManagerVerificationRouteImport } from './routes/manager.verification'
 import { Route as ManagerTransfersRouteImport } from './routes/manager.transfers'
 import { Route as ManagerSupportRouteImport } from './routes/manager.support'
 import { Route as ManagerRestaurantsRouteImport } from './routes/manager.restaurants'
@@ -90,6 +92,7 @@ import { Route as AppCheckoutRouteImport } from './routes/app.checkout'
 import { Route as AppCartRouteImport } from './routes/app.cart'
 import { Route as AppBulkRouteImport } from './routes/app.bulk'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
+import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTrendingRouteImport } from './routes/admin.trending'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
@@ -189,6 +192,11 @@ const TrackOrderIdRoute = TrackOrderIdRouteImport.update({
   id: '/track/$orderId',
   path: '/track/$orderId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const RiderVerificationRoute = RiderVerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => RiderRoute,
 } as any)
 const RiderVehicleRoute = RiderVehicleRouteImport.update({
   id: '/vehicle',
@@ -349,6 +357,11 @@ const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
   id: '/addons',
   path: '/addons',
   getParentRoute: () => PartnerRoute,
+} as any)
+const ManagerVerificationRoute = ManagerVerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => ManagerRoute,
 } as any)
 const ManagerTransfersRoute = ManagerTransfersRouteImport.update({
   id: '/transfers',
@@ -520,6 +533,11 @@ const AdminWalletRoute = AdminWalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminVerificationRoute = AdminVerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -673,6 +691,7 @@ export interface FileRoutesByFullPath {
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
@@ -707,6 +726,7 @@ export interface FileRoutesByFullPath {
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
   '/manager/transfers': typeof ManagerTransfersRoute
+  '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -739,6 +759,7 @@ export interface FileRoutesByFullPath {
   '/rider/requests': typeof RiderRequestsRoute
   '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
+  '/rider/verification': typeof RiderVerificationRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -775,6 +796,7 @@ export interface FileRoutesByTo {
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
@@ -809,6 +831,7 @@ export interface FileRoutesByTo {
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
   '/manager/transfers': typeof ManagerTransfersRoute
+  '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -841,6 +864,7 @@ export interface FileRoutesByTo {
   '/rider/requests': typeof RiderRequestsRoute
   '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
+  '/rider/verification': typeof RiderVerificationRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
@@ -883,6 +907,7 @@ export interface FileRoutesById {
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
@@ -917,6 +942,7 @@ export interface FileRoutesById {
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
   '/manager/transfers': typeof ManagerTransfersRoute
+  '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
@@ -949,6 +975,7 @@ export interface FileRoutesById {
   '/rider/requests': typeof RiderRequestsRoute
   '/rider/support': typeof RiderSupportRoute
   '/rider/vehicle': typeof RiderVehicleRoute
+  '/rider/verification': typeof RiderVerificationRoute
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -992,6 +1019,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
+    | '/admin/verification'
     | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
@@ -1026,6 +1054,7 @@ export interface FileRouteTypes {
     | '/manager/restaurants'
     | '/manager/support'
     | '/manager/transfers'
+    | '/manager/verification'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1058,6 +1087,7 @@ export interface FileRouteTypes {
     | '/rider/requests'
     | '/rider/support'
     | '/rider/vehicle'
+    | '/rider/verification'
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
@@ -1094,6 +1124,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
+    | '/admin/verification'
     | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
@@ -1128,6 +1159,7 @@ export interface FileRouteTypes {
     | '/manager/restaurants'
     | '/manager/support'
     | '/manager/transfers'
+    | '/manager/verification'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1160,6 +1192,7 @@ export interface FileRouteTypes {
     | '/rider/requests'
     | '/rider/support'
     | '/rider/vehicle'
+    | '/rider/verification'
     | '/track/$orderId'
     | '/admin'
     | '/app'
@@ -1201,6 +1234,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
+    | '/admin/verification'
     | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
@@ -1235,6 +1269,7 @@ export interface FileRouteTypes {
     | '/manager/restaurants'
     | '/manager/support'
     | '/manager/transfers'
+    | '/manager/verification'
     | '/partner/addons'
     | '/partner/ads'
     | '/partner/analytics'
@@ -1267,6 +1302,7 @@ export interface FileRouteTypes {
     | '/rider/requests'
     | '/rider/support'
     | '/rider/vehicle'
+    | '/rider/verification'
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
@@ -1397,6 +1433,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/track/$orderId'
       preLoaderRoute: typeof TrackOrderIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/rider/verification': {
+      id: '/rider/verification'
+      path: '/verification'
+      fullPath: '/rider/verification'
+      preLoaderRoute: typeof RiderVerificationRouteImport
+      parentRoute: typeof RiderRoute
     }
     '/rider/vehicle': {
       id: '/rider/vehicle'
@@ -1621,6 +1664,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/partner/addons'
       preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
+    }
+    '/manager/verification': {
+      id: '/manager/verification'
+      path: '/verification'
+      fullPath: '/manager/verification'
+      preLoaderRoute: typeof ManagerVerificationRouteImport
+      parentRoute: typeof ManagerRoute
     }
     '/manager/transfers': {
       id: '/manager/transfers'
@@ -1860,6 +1910,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalletRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/verification': {
+      id: '/admin/verification'
+      path: '/verification'
+      fullPath: '/admin/verification'
+      preLoaderRoute: typeof AdminVerificationRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -2054,6 +2111,7 @@ interface AdminRouteChildren {
   AdminSupportRoute: typeof AdminSupportRoute
   AdminTrendingRoute: typeof AdminTrendingRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  AdminVerificationRoute: typeof AdminVerificationRoute
   AdminWalletRoute: typeof AdminWalletRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -2081,6 +2139,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSupportRoute: AdminSupportRoute,
   AdminTrendingRoute: AdminTrendingRoute,
   AdminUsersRoute: AdminUsersRoute,
+  AdminVerificationRoute: AdminVerificationRoute,
   AdminWalletRoute: AdminWalletRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -2164,6 +2223,7 @@ interface ManagerRouteChildren {
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
   ManagerSupportRoute: typeof ManagerSupportRoute
   ManagerTransfersRoute: typeof ManagerTransfersRoute
+  ManagerVerificationRoute: typeof ManagerVerificationRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
   ManagerLeadIdRoute: typeof ManagerLeadIdRoute
 }
@@ -2179,6 +2239,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
   ManagerSupportRoute: ManagerSupportRoute,
   ManagerTransfersRoute: ManagerTransfersRoute,
+  ManagerVerificationRoute: ManagerVerificationRoute,
   ManagerIndexRoute: ManagerIndexRoute,
   ManagerLeadIdRoute: ManagerLeadIdRoute,
 }
@@ -2249,6 +2310,7 @@ interface RiderRouteChildren {
   RiderRequestsRoute: typeof RiderRequestsRoute
   RiderSupportRoute: typeof RiderSupportRoute
   RiderVehicleRoute: typeof RiderVehicleRoute
+  RiderVerificationRoute: typeof RiderVerificationRoute
   RiderIndexRoute: typeof RiderIndexRoute
 }
 
@@ -2264,6 +2326,7 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderRequestsRoute: RiderRequestsRoute,
   RiderSupportRoute: RiderSupportRoute,
   RiderVehicleRoute: RiderVehicleRoute,
+  RiderVerificationRoute: RiderVerificationRoute,
   RiderIndexRoute: RiderIndexRoute,
 }
 
