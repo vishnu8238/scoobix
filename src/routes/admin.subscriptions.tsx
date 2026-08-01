@@ -181,7 +181,7 @@ function AdminSubscriptions() {
               const target = audiencePlans.find((p) => p.id === bulkTo);
               if (!target) return;
               void run("bulk", async () => {
-                const n = await bulkMovePlan(audienceSubs.filter((s) => s.plan_id === bulkFrom), target, { role: "admin" });
+                const n = await bulkMovePlan(bulkFrom, target, audienceSubs, { role: "admin" });
                 toast.message(`${n} subscriber${n === 1 ? "" : "s"} moved`);
               }, "Bulk move complete");
             }}
