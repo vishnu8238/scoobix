@@ -62,7 +62,7 @@ export function NotificationItem({ n }: { n: AppNotification }) {
   const Icon = ICONS[n.kind];
   const tone = n.kind === "order" ? "bg-primary-soft text-primary" : n.kind === "promo" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700";
   return (
-    <li className={cn("flex gap-3 rounded-2xl bg-card p-3 shadow-soft ring-1 ring-border/60 transition", n.unread && "ring-primary/30")}>
+    <div className={cn("flex gap-3 rounded-2xl bg-card p-3 shadow-soft ring-1 ring-border/60 transition", n.unread && "ring-primary/30")}>
       <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-2xl", tone)}><Icon className="h-5 w-5" strokeWidth={2.4} /></span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
@@ -72,6 +72,6 @@ export function NotificationItem({ n }: { n: AppNotification }) {
         <p className="mt-0.5 text-[12.5px] text-muted-foreground">{n.body}</p>
       </div>
       {n.unread && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />}
-    </li>
+    </div>
   );
 }
