@@ -45,9 +45,31 @@ const anyListeners = new Set<Handler>();
 
 const isBrowser = typeof window !== "undefined";
 
+/** Session token, read straight from storage to avoid an import cycle. */
+const ACCESS_KEY = "scoobix_if_access_v1";
+function sessionToken(): string | null {
+  try { return localStorage.getItem(ACCESS_KEY); } catch { return null; }
+}
+
+let clientToken: string | null = null;
+
 function getClient() {
+  const token = sessionToken();
+  // The realtime handshake requires a signed-in user token; rebuild the client
+  // when the session changes so the socket re-authenticates as the new user.
+  if (client && clientToken !== token) {
+    try { client.realtime.disconnect(); } catch { /* ignore */ }
+    client = null;
+    connected = false;
+    connecting = null;
+  }
   if (!client) {
-    client = createClient({ baseUrl: INSFORGE_URL, anonKey: INSFORGE_ANON_KEY });
+    clientToken = token;
+    client = createClient({
+      baseUrl: INSFORGE_URL,
+      anonKey: INSFORGE_ANON_KEY,
+      ...(token ? { accessToken: token, isServerMode: false } : {}),
+    });
   }
   return client;
 }
@@ -95,6 +117,9 @@ function dispatch(payload: Record<string, unknown>) {
 
 async function ensureConnected(): Promise<boolean> {
   if (!isBrowser) return false;
+  // Realtime is a signed-in feature. Anonymous browsing keeps the polling
+  // fallback in `realtime.ts`, which behaves exactly as before.
+  if (!sessionToken()) return false;
   if (connected) return true;
   if (!connecting) {
     const rt = getClient().realtime;
