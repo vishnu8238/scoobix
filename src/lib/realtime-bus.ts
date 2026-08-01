@@ -17,7 +17,7 @@
  * realtime disabled) nothing throws — the adaptive-polling engine in
  * `realtime.ts` keeps its fast intervals and the UI behaves exactly as before.
  */
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 
 export type ChangePayload = {
@@ -125,6 +125,16 @@ function leaveChannel(channel: string) {
   if (socket?.connected) socket.emit("realtime:unsubscribe", { channel });
 }
 
+/**
+ * Socket.IO is loaded on demand so its ~45 kB never lands in the initial
+ * page bundle — the first screen paints, then realtime attaches.
+ */
+let ioPromise: Promise<typeof import("socket.io-client")["io"]> | undefined;
+function loadIo() {
+  if (!ioPromise) ioPromise = import("socket.io-client").then((m) => m.io);
+  return ioPromise;
+}
+
 async function ensureConnected(): Promise<boolean> {
   if (!isBrowser) return false;
   const token = handshakeToken();
@@ -140,6 +150,7 @@ async function ensureConnected(): Promise<boolean> {
   if (connected) return true;
   if (!connecting) {
     socketToken = token;
+    const io = await loadIo();
     const s = io(INSFORGE_URL, {
       transports: ["websocket"],
       auth: { token },
