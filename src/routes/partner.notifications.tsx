@@ -22,7 +22,7 @@ const REJECT_REASONS = [
 
 function PartnerNotifs() {
   const navigate = useNavigate();
-  const { list } = useNotifications("partner");
+  const { list, markRead } = useNotifications("partner");
   const [incoming, setIncoming] = useState<{ id: string; customer: string; total: number; items: number } | null>({
     id: "CRV-8830", customer: "Maya Iyer", total: 4040, items: 4,
   });
