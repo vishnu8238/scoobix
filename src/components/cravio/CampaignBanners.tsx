@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth-store";
 import { cn } from "@/lib/format";
 import {
+import { OptimizedImage } from "@/components/cravio/OptimizedImage";
   listCampaigns, effectiveStatus, trackCampaignEvent, CAMPAIGN_TYPE_LABEL, type Campaign,
 } from "@/lib/campaigns-api";
 
@@ -58,7 +59,7 @@ export function CampaignBanners() {
           >
             {c.banner_url && (
               <>
-                <img src={c.banner_url} alt={c.name} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+                <OptimizedImage src={c.banner_url} alt={c.name} type="banner" className="absolute inset-0 h-full w-full" />
                 <div className="absolute inset-0 bg-black/45" />
               </>
             )}

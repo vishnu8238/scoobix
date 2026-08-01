@@ -7,6 +7,7 @@ import { currency, cn } from "@/lib/format";
 import { toast } from "sonner";
 import { useState } from "react";
 import { CustomizationSheet } from "./CustomizationSheet";
+import { OptimizedImage } from "@/components/cravio/OptimizedImage";
 
 export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail" | "row" | "grid" }) {
   const ref = findDish(dish.id);
@@ -59,7 +60,7 @@ export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail
             </div>
           </div>
           <div className="relative w-28 shrink-0">
-            <img src={dish.image} alt={dish.name} className="h-28 w-28 rounded-3xl object-cover shadow-card" loading="lazy" decoding="async" />
+            <OptimizedImage src={dish.image} alt={dish.name} type="dish" className="h-28 w-28 rounded-3xl shadow-card" />
             <button
               onClick={() => setSheetOpen(true)}
               className="absolute -bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-2xl bg-white px-4 py-2 text-[11px] font-extrabold uppercase tracking-widest text-primary shadow-card ring-1 ring-border transition active:scale-95"
