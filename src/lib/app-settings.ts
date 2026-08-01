@@ -55,6 +55,10 @@ export type AppSettings = {
 
   // --- loyalty
   wallet_cashback_pct: number;         // % of order total credited on delivery
+  loyalty_points_per_rupee: number;    // base points earned per ₹1 spent
+  loyalty_expiry_days: number;         // points validity window
+  loyalty_review_points: number;       // points for writing a review
+  loyalty_enabled: boolean;
 
   // --- duplicate detection
   duplicate_radius_m: number;          // GPS radius (metres) for duplicate matches
@@ -90,6 +94,10 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   flavour52_enabled: true,
 
   wallet_cashback_pct: 2,
+  loyalty_points_per_rupee: 0.1,
+  loyalty_expiry_days: 365,
+  loyalty_review_points: 25,
+  loyalty_enabled: true,
 
   duplicate_radius_m: 300,
 };

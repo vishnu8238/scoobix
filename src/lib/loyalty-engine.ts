@@ -381,7 +381,7 @@ const walletIdCache = new Map<string, string>();
 export async function ensureWallet(userId: string): Promise<WalletRow | null> {
   if (!userId) return null;
   const rows = await listTable<WalletRow>("wallet", { user_id: `eq.${userId}`, limit: 1 });
-  let row = rows[0] ?? null;
+  let row: WalletRow | null = rows[0] ?? null;
   if (!row) {
     row = await createRecord<WalletRow>("wallet", {
       user_id: userId,
