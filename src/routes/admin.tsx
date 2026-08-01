@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Tag, createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, LifeBuoy, Copy, Gauge, ShieldCheck } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
@@ -25,6 +25,7 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/drivers", label: "Drivers", icon: Bike },
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
   { to: "/admin/campaigns", label: "Marketing Campaigns", icon: Megaphone },
+  { to: "/admin/coupons", label: "Coupons & Promotions", icon: Tag },
   { to: "/admin/ads", label: "Ads", icon: Megaphone },
   { to: "/admin/spotlight", label: "Spotlight", icon: Sparkles },
   { to: "/admin/discover", label: "Discover More", icon: Compass },
