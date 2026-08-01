@@ -5,7 +5,6 @@ import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 import { useManager } from "@/lib/manager-api";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
-import { AiAssistant } from "@/components/ai/AiAssistant";
 
 export const Route = createFileRoute("/manager")({
   head: () => appHead(APPS.manager),
@@ -52,7 +51,6 @@ function ManagerShell({ pathname }: { pathname: string }) {
   return (
     <div className="relative pb-24">
       <Outlet />
-        <AiAssistant app="manager" title="Scoobix AI" greeting="Ask about leads, onboarding steps or restaurant issues." supportHref="/manager/support" />
       <nav className="glass fixed bottom-3 left-1/2 z-40 flex w-[min(440px,calc(100%-1.5rem))] -translate-x-1/2 items-center justify-between rounded-full px-2 py-2 shadow-float">
         {NAV.map((n) => {
           const active =
