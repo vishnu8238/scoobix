@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { toast } from "sonner";
 import { scheduleOrder } from "@/lib/insforge";
 import { useMyWallet } from "@/lib/scoobix-loyalty";
+import { useAuth } from "@/lib/auth-store";
 import { redeemCampaign, type PaymentMethodKey } from "@/lib/campaigns-api";
 import { campaignCouponId, recordCouponUsage } from "@/lib/coupons-api";
 
@@ -45,6 +46,7 @@ function CheckoutPage() {
   const navigate = useNavigate();
   const { items, totals, restaurant, clear, coupon, coupons, applyCoupon, removeCoupon, appliedCampaign, eligibleOffers, pendingRewards, setPaymentMethod } = useCart();
   const { placeOrder } = useOrders();
+  const { user } = useAuth();
 
   const [addressId, setAddressId] = useState(savedAddresses.find((a) => a.default)!.id);
   const [delivery, setDelivery] = useState("standard");
@@ -131,6 +133,7 @@ function CheckoutPage() {
       if (couponRow) {
         void recordCouponUsage({
           coupon: couponRow,
+          userId: user?.id,
           orderId,
           restaurantId: restaurant.id,
           orderValue: totals.subtotal,
