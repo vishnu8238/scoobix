@@ -92,6 +92,7 @@ import { Route as AppCheckoutRouteImport } from './routes/app.checkout'
 import { Route as AppCartRouteImport } from './routes/app.cart'
 import { Route as AppBulkRouteImport } from './routes/app.bulk'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
+import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTrendingRouteImport } from './routes/admin.trending'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
@@ -532,6 +533,11 @@ const AdminWalletRoute = AdminWalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminVerificationRoute = AdminVerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -685,6 +691,7 @@ export interface FileRoutesByFullPath {
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
@@ -789,6 +796,7 @@ export interface FileRoutesByTo {
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
@@ -899,6 +907,7 @@ export interface FileRoutesById {
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
@@ -1010,6 +1019,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
+    | '/admin/verification'
     | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
@@ -1114,6 +1124,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
+    | '/admin/verification'
     | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
@@ -1223,6 +1234,7 @@ export interface FileRouteTypes {
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
+    | '/admin/verification'
     | '/admin/wallet'
     | '/app/bulk'
     | '/app/cart'
@@ -1898,6 +1910,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalletRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/verification': {
+      id: '/admin/verification'
+      path: '/verification'
+      fullPath: '/admin/verification'
+      preLoaderRoute: typeof AdminVerificationRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -2092,6 +2111,7 @@ interface AdminRouteChildren {
   AdminSupportRoute: typeof AdminSupportRoute
   AdminTrendingRoute: typeof AdminTrendingRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  AdminVerificationRoute: typeof AdminVerificationRoute
   AdminWalletRoute: typeof AdminWalletRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -2119,6 +2139,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSupportRoute: AdminSupportRoute,
   AdminTrendingRoute: AdminTrendingRoute,
   AdminUsersRoute: AdminUsersRoute,
+  AdminVerificationRoute: AdminVerificationRoute,
   AdminWalletRoute: AdminWalletRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
