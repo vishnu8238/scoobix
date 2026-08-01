@@ -9,6 +9,10 @@ import {
   matchPromoCode, trackCampaignEvent, CAMPAIGN_TYPE_LABEL,
   type Campaign, type CampaignOutcome, type CampaignContext, type PaymentMethodKey,
 } from "./campaigns-api";
+import {
+  listRedeemableCoupons, listCouponUsage, couponToCampaign, isHiddenCampaign,
+  type Coupon as CouponRow,
+} from "./coupons-api";
 
 
 
@@ -62,6 +66,8 @@ type CartCtx = {
 
   /** Live campaign engine state (server-authoritative rows from InsForge). */
   campaigns: Campaign[];
+  /** Live coupon rows backing the coupon-derived offers in the pool. */
+  coupons: CouponRow[];
   /** The campaign currently reducing this bill (manual code or auto-applied). */
   appliedCampaign: CampaignOutcome | null;
   /** Every campaign the customer qualifies for right now, best saving first. */
@@ -105,6 +111,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [userRedemptions, setUserRedemptions] = useState<Record<string, number>>({});
   const [orderCount, setOrderCount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodKey>("card");
+  const [coupons, setCoupons] = useState<CouponRow[]>([]);
 
   useEffect(() => {
     const saved = loadCart();
@@ -118,10 +125,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CART_KEY, JSON.stringify({ items, restaurantId, campaignId: manualCampaignId }));
   }, [items, restaurantId, manualCampaignId]);
 
-  // Live campaigns — refreshed on mount so admin edits land without a deploy.
+  // Live campaigns + coupons — refreshed on mount so admin/partner edits land
+  // without a deploy. Coupons are projected onto the campaign shape so the
+  // evaluator ranks both kinds of offer in one pool.
   useEffect(() => {
     let cancelled = false;
-    void listCampaigns().then((rows) => { if (!cancelled) setCampaigns(rows); });
+    void (async () => {
+      const [camps, couponRows] = await Promise.all([listCampaigns(), listRedeemableCoupons()]);
+      if (cancelled) return;
+      setCoupons(couponRows);
+      setCampaigns([...camps, ...couponRows.map(couponToCampaign)]);
+    })();
     return () => { cancelled = true; };
   }, []);
 
@@ -130,13 +144,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!user?.id) { setUserRedemptions({}); setOrderCount(0); return; }
     let cancelled = false;
     void (async () => {
-      const [reds, orders] = await Promise.all([
+      const [reds, couponUsage, orders] = await Promise.all([
         listRedemptions({ user_id: user.id }),
+        listCouponUsage({ user_id: user.id }),
         listTable<{ id: string }>("orders", { customer_id: `eq.${user.id}`, limit: 200 }),
       ]);
       if (cancelled) return;
       const map: Record<string, number> = {};
       reds.forEach((r) => { map[r.campaign_id] = (map[r.campaign_id] ?? 0) + 1; });
+      // Coupon-derived offers share the coupon id as their campaign id.
+      couponUsage.forEach((u) => {
+        if (!u.coupon_id) return;
+        map[u.coupon_id] = (map[u.coupon_id] ?? 0) + 1;
+      });
       setUserRedemptions(map);
       setOrderCount(orders.length);
     })();
@@ -201,7 +221,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     cheapestItemPrice: items.length ? Math.min(...items.map((i) => i.price)) : 0,
   }), [subtotal, baseDelivery, user?.id, restaurantId, paymentMethod, orderCount, userRedemptions, items]);
 
-  const eligibleOffers = useMemo(() => eligibleCampaigns(campaigns, ctx), [campaigns, ctx]);
+  const eligibleOffers = useMemo(
+    () => eligibleCampaigns(campaigns, ctx).filter((o) => !isHiddenCampaign(o.campaign)),
+    [campaigns, ctx],
+  );
 
   const appliedCampaign = useMemo<CampaignOutcome | null>(() => {
     if (manualCampaignId) {
@@ -268,7 +291,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const restaurant = restaurantId ? findRestaurant(restaurantId) ?? null : null;
 
   return (
-    <CartContext.Provider value={{ items, coupon, restaurantId, addItem, removeItem, setQty, clear, applyCoupon, removeCoupon, totals, campaigns, appliedCampaign, eligibleOffers, pendingRewards, setPaymentMethod, restaurant, pendingConflict, confirmReplaceCart, dismissConflict }}>
+    <CartContext.Provider value={{ items, coupon, coupons, restaurantId, addItem, removeItem, setQty, clear, applyCoupon, removeCoupon, totals, campaigns, appliedCampaign, eligibleOffers, pendingRewards, setPaymentMethod, restaurant, pendingConflict, confirmReplaceCart, dismissConflict }}>
       {children}
     </CartContext.Provider>
   );
