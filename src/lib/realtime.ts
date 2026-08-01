@@ -226,8 +226,8 @@ export function subscribeTable(
 
 
 /** After a local mutation, force every subscriber on `table` to re-fetch. */
-/** After a local mutation, force every subscriber on `table` to re-fetch. */
 export function nudgeTable(table: string) {
+
 
   for (const [key, state] of streams) {
     if (state.table === table) {
