@@ -7,7 +7,13 @@
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { cached, cacheDrop, cacheGet } from "./request-cache";
 import { recordMetric } from "./perf-metrics";
-import { publishTableChange } from "./realtime-bus";
+import { publishTableChange, onAnyChange } from "./realtime-bus";
+
+// Any realtime change — from this client or another one — drops the cached
+// reads for that table so the next fetch is authoritative.
+if (typeof window !== "undefined") {
+  onAnyChange((p) => { if (p?.table) cacheDrop(`db:${p.table}?`); });
+}
 
 /** Announce a write so every other open client updates without polling. */
 function announce(

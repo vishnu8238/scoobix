@@ -41,6 +41,7 @@ const refs = new Map<string, number>();                 // channel → subscribe
 const handlers = new Map<string, Set<Handler>>();       // channel → handlers
 const seen = new Map<string, number>();                 // messageId → ts (dedupe)
 const stateListeners = new Set<(on: boolean) => void>();
+const anyListeners = new Set<Handler>();
 
 const isBrowser = typeof window !== "undefined";
 
@@ -73,6 +74,10 @@ function dedupe(messageId?: string): boolean {
 }
 
 function dispatch(payload: Record<string, unknown>) {
+  const meta0 = (payload as { meta?: { messageId?: string } }).meta;
+  if (!seen.has(meta0?.messageId ?? "")) {
+    for (const h of anyListeners) { try { h(payload as ChangePayload); } catch { /* ignore */ } }
+  }
   const meta = (payload as { meta?: { messageId?: string; channel?: string } }).meta;
   if (dedupe(meta?.messageId)) return;
   const channel = meta?.channel;
@@ -153,6 +158,12 @@ export function subscribeChannel(channel: string, handler: Handler): () => void 
   };
 }
 
+/** Observe every incoming change (used to invalidate read caches). */
+export function onAnyChange(handler: Handler): () => void {
+  anyListeners.add(handler);
+  return () => anyListeners.delete(handler);
+}
+
 /** Listen for changes on a table (`db:<table>` channel). */
 export function onTableChange(table: string, handler: Handler): () => void {
   return subscribeChannel(`db:${table}`, handler);
@@ -223,6 +234,7 @@ export function publishTableChange(
 export function disconnectRealtime() {
   handlers.clear();
   refs.clear();
+  anyListeners.clear();
   seen.clear();
   setConnected(false);
   try { client?.realtime.disconnect(); } catch { /* ignore */ }
