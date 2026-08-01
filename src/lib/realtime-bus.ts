@@ -150,35 +150,39 @@ async function ensureConnected(): Promise<boolean> {
   if (connected) return true;
   if (!connecting) {
     socketToken = token;
-    const io = await loadIo();
-    const s = io(INSFORGE_URL, {
-      transports: ["websocket"],
-      auth: { token },
-      forceNew: true,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 15000,
-    });
-    socket = s;
-    s.on("connect", () => { setConnected(true); resubscribeAll(); });
-    s.on("disconnect", () => { subscribed.clear(); setConnected(false); });
-    s.on("connect_error", () => setConnected(false));
-    s.onAny((event: string, msg: Record<string, unknown>) => {
-      if (event !== EVENT) return;   // realtime:error and presence events are non-fatal
-      dispatch(msg);
-    });
-    connecting = new Promise<void>((resolve) => {
-      const done = () => { cleanup(); resolve(); };
-      const timer = window.setTimeout(done, 10_000);
-      const cleanup = () => {
-        window.clearTimeout(timer);
-        s.off("connect", done);
-        s.off("connect_error", done);
-      };
-      s.once("connect", done);
-      s.once("connect_error", done);
-    }).finally(() => { connecting = null; });
+    // Assigned synchronously so two concurrent callers can never open two sockets.
+    connecting = (async () => {
+      const io = await loadIo();
+      const s = io(INSFORGE_URL, {
+        transports: ["websocket"],
+        auth: { token },
+        forceNew: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 15000,
+      });
+      socket = s;
+      s.on("connect", () => { setConnected(true); resubscribeAll(); });
+      s.on("disconnect", () => { subscribed.clear(); setConnected(false); });
+      s.on("connect_error", () => setConnected(false));
+      s.onAny((event: string, msg: Record<string, unknown>) => {
+        if (event !== EVENT) return;   // realtime:error and presence events are non-fatal
+        dispatch(msg);
+      });
+      await new Promise<void>((resolve) => {
+        const done = () => { cleanup(); resolve(); };
+        const timer = window.setTimeout(done, 10_000);
+        const cleanup = () => {
+          window.clearTimeout(timer);
+          s.off("connect", done);
+          s.off("connect_error", done);
+        };
+        s.once("connect", done);
+        s.once("connect_error", done);
+      });
+    })().finally(() => { connecting = null; });
   }
+
   await connecting;
   return connected;
 }
