@@ -22,6 +22,12 @@
 
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { getAppSettings } from "./app-settings";
+import {
+  completeReferralForOrder,
+  creditWallet,
+  earnPoints,
+  issueScratchCard,
+} from "./loyalty-engine";
 
 const HEADERS = {
   apikey: INSFORGE_ANON_KEY,
