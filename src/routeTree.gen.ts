@@ -33,6 +33,7 @@ import { Route as RiderOtpRouteImport } from './routes/rider.otp'
 import { Route as RiderOnboardingRouteImport } from './routes/rider.onboarding'
 import { Route as RiderNotificationsRouteImport } from './routes/rider.notifications'
 import { Route as RiderMoreRouteImport } from './routes/rider.more'
+import { Route as RiderIncentivesRouteImport } from './routes/rider.incentives'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
@@ -59,6 +60,7 @@ import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
 import { Route as ManagerVerificationRouteImport } from './routes/manager.verification'
 import { Route as ManagerTransfersRouteImport } from './routes/manager.transfers'
+import { Route as ManagerTargetsRouteImport } from './routes/manager.targets'
 import { Route as ManagerSupportRouteImport } from './routes/manager.support'
 import { Route as ManagerRestaurantsRouteImport } from './routes/manager.restaurants'
 import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
@@ -84,6 +86,7 @@ import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
 import { Route as AppMoreRouteImport } from './routes/app.more'
+import { Route as AppMembershipRouteImport } from './routes/app.membership'
 import { Route as AppMealRouteImport } from './routes/app.meal'
 import { Route as AppLocationRouteImport } from './routes/app.location'
 import { Route as AppFavoritesRouteImport } from './routes/app.favorites'
@@ -97,6 +100,7 @@ import { Route as AdminVerificationRouteImport } from './routes/admin.verificati
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTrendingRouteImport } from './routes/admin.trending'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSpotlightRouteImport } from './routes/admin.spotlight'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants'
@@ -240,6 +244,11 @@ const RiderMoreRoute = RiderMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => RiderRoute,
 } as any)
+const RiderIncentivesRoute = RiderIncentivesRouteImport.update({
+  id: '/incentives',
+  path: '/incentives',
+  getParentRoute: () => RiderRoute,
+} as any)
 const RiderHistoryRoute = RiderHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -370,6 +379,11 @@ const ManagerTransfersRoute = ManagerTransfersRouteImport.update({
   path: '/transfers',
   getParentRoute: () => ManagerRoute,
 } as any)
+const ManagerTargetsRoute = ManagerTargetsRouteImport.update({
+  id: '/targets',
+  path: '/targets',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const ManagerSupportRoute = ManagerSupportRouteImport.update({
   id: '/support',
   path: '/support',
@@ -495,6 +509,11 @@ const AppMoreRoute = AppMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMembershipRoute = AppMembershipRouteImport.update({
+  id: '/membership',
+  path: '/membership',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMealRoute = AppMealRouteImport.update({
   id: '/meal',
   path: '/meal',
@@ -558,6 +577,11 @@ const AdminTrendingRoute = AdminTrendingRouteImport.update({
 const AdminSupportRoute = AdminSupportRouteImport.update({
   id: '/support',
   path: '/support',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminSpotlightRoute = AdminSpotlightRouteImport.update({
@@ -701,6 +725,7 @@ export interface FileRoutesByFullPath {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
@@ -714,6 +739,7 @@ export interface FileRoutesByFullPath {
   '/app/favorites': typeof AppFavoritesRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
+  '/app/membership': typeof AppMembershipRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
@@ -739,6 +765,7 @@ export interface FileRoutesByFullPath {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/targets': typeof ManagerTargetsRoute
   '/manager/transfers': typeof ManagerTransfersRoute
   '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
@@ -765,6 +792,7 @@ export interface FileRoutesByFullPath {
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
+  '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -808,6 +836,7 @@ export interface FileRoutesByTo {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
@@ -821,6 +850,7 @@ export interface FileRoutesByTo {
   '/app/favorites': typeof AppFavoritesRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
+  '/app/membership': typeof AppMembershipRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
@@ -846,6 +876,7 @@ export interface FileRoutesByTo {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/targets': typeof ManagerTargetsRoute
   '/manager/transfers': typeof ManagerTransfersRoute
   '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
@@ -872,6 +903,7 @@ export interface FileRoutesByTo {
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
+  '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -921,6 +953,7 @@ export interface FileRoutesById {
   '/admin/restaurants': typeof AdminRestaurantsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
+  '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
@@ -934,6 +967,7 @@ export interface FileRoutesById {
   '/app/favorites': typeof AppFavoritesRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
+  '/app/membership': typeof AppMembershipRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
@@ -959,6 +993,7 @@ export interface FileRoutesById {
   '/manager/profile': typeof ManagerProfileRoute
   '/manager/restaurants': typeof ManagerRestaurantsRoute
   '/manager/support': typeof ManagerSupportRoute
+  '/manager/targets': typeof ManagerTargetsRoute
   '/manager/transfers': typeof ManagerTransfersRoute
   '/manager/verification': typeof ManagerVerificationRoute
   '/partner/addons': typeof PartnerAddonsRoute
@@ -985,6 +1020,7 @@ export interface FileRoutesById {
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
+  '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -1035,6 +1071,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
@@ -1048,6 +1085,7 @@ export interface FileRouteTypes {
     | '/app/favorites'
     | '/app/location'
     | '/app/meal'
+    | '/app/membership'
     | '/app/more'
     | '/app/notifications'
     | '/app/orders'
@@ -1073,6 +1111,7 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/targets'
     | '/manager/transfers'
     | '/manager/verification'
     | '/partner/addons'
@@ -1099,6 +1138,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/earnings'
     | '/rider/history'
+    | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1142,6 +1182,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
@@ -1155,6 +1196,7 @@ export interface FileRouteTypes {
     | '/app/favorites'
     | '/app/location'
     | '/app/meal'
+    | '/app/membership'
     | '/app/more'
     | '/app/notifications'
     | '/app/orders'
@@ -1180,6 +1222,7 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/targets'
     | '/manager/transfers'
     | '/manager/verification'
     | '/partner/addons'
@@ -1206,6 +1249,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/earnings'
     | '/rider/history'
+    | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1254,6 +1298,7 @@ export interface FileRouteTypes {
     | '/admin/restaurants'
     | '/admin/settings'
     | '/admin/spotlight'
+    | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
@@ -1267,6 +1312,7 @@ export interface FileRouteTypes {
     | '/app/favorites'
     | '/app/location'
     | '/app/meal'
+    | '/app/membership'
     | '/app/more'
     | '/app/notifications'
     | '/app/orders'
@@ -1292,6 +1338,7 @@ export interface FileRouteTypes {
     | '/manager/profile'
     | '/manager/restaurants'
     | '/manager/support'
+    | '/manager/targets'
     | '/manager/transfers'
     | '/manager/verification'
     | '/partner/addons'
@@ -1318,6 +1365,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/earnings'
     | '/rider/history'
+    | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1521,6 +1569,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiderMoreRouteImport
       parentRoute: typeof RiderRoute
     }
+    '/rider/incentives': {
+      id: '/rider/incentives'
+      path: '/incentives'
+      fullPath: '/rider/incentives'
+      preLoaderRoute: typeof RiderIncentivesRouteImport
+      parentRoute: typeof RiderRoute
+    }
     '/rider/history': {
       id: '/rider/history'
       path: '/history'
@@ -1703,6 +1758,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerTransfersRouteImport
       parentRoute: typeof ManagerRoute
     }
+    '/manager/targets': {
+      id: '/manager/targets'
+      path: '/targets'
+      fullPath: '/manager/targets'
+      preLoaderRoute: typeof ManagerTargetsRouteImport
+      parentRoute: typeof ManagerRoute
+    }
     '/manager/support': {
       id: '/manager/support'
       path: '/support'
@@ -1878,6 +1940,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMoreRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/membership': {
+      id: '/app/membership'
+      path: '/membership'
+      fullPath: '/app/membership'
+      preLoaderRoute: typeof AppMembershipRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/meal': {
       id: '/app/meal'
       path: '/meal'
@@ -1967,6 +2036,13 @@ declare module '@tanstack/react-router' {
       path: '/support'
       fullPath: '/admin/support'
       preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/spotlight': {
@@ -2147,6 +2223,7 @@ interface AdminRouteChildren {
   AdminRestaurantsRoute: typeof AdminRestaurantsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSpotlightRoute: typeof AdminSpotlightRoute
+  AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminSupportRoute: typeof AdminSupportRoute
   AdminTrendingRoute: typeof AdminTrendingRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -2176,6 +2253,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminRestaurantsRoute: AdminRestaurantsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSpotlightRoute: AdminSpotlightRoute,
+  AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminSupportRoute: AdminSupportRoute,
   AdminTrendingRoute: AdminTrendingRoute,
   AdminUsersRoute: AdminUsersRoute,
@@ -2195,6 +2273,7 @@ interface AppRouteChildren {
   AppFavoritesRoute: typeof AppFavoritesRoute
   AppLocationRoute: typeof AppLocationRoute
   AppMealRoute: typeof AppMealRoute
+  AppMembershipRoute: typeof AppMembershipRoute
   AppMoreRoute: typeof AppMoreRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppOrdersRoute: typeof AppOrdersRoute
@@ -2221,6 +2300,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFavoritesRoute: AppFavoritesRoute,
   AppLocationRoute: AppLocationRoute,
   AppMealRoute: AppMealRoute,
+  AppMembershipRoute: AppMembershipRoute,
   AppMoreRoute: AppMoreRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppOrdersRoute: AppOrdersRoute,
@@ -2264,6 +2344,7 @@ interface ManagerRouteChildren {
   ManagerProfileRoute: typeof ManagerProfileRoute
   ManagerRestaurantsRoute: typeof ManagerRestaurantsRoute
   ManagerSupportRoute: typeof ManagerSupportRoute
+  ManagerTargetsRoute: typeof ManagerTargetsRoute
   ManagerTransfersRoute: typeof ManagerTransfersRoute
   ManagerVerificationRoute: typeof ManagerVerificationRoute
   ManagerIndexRoute: typeof ManagerIndexRoute
@@ -2280,6 +2361,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerProfileRoute: ManagerProfileRoute,
   ManagerRestaurantsRoute: ManagerRestaurantsRoute,
   ManagerSupportRoute: ManagerSupportRoute,
+  ManagerTargetsRoute: ManagerTargetsRoute,
   ManagerTransfersRoute: ManagerTransfersRoute,
   ManagerVerificationRoute: ManagerVerificationRoute,
   ManagerIndexRoute: ManagerIndexRoute,
@@ -2344,6 +2426,7 @@ interface RiderRouteChildren {
   RiderActiveRoute: typeof RiderActiveRoute
   RiderEarningsRoute: typeof RiderEarningsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
+  RiderIncentivesRoute: typeof RiderIncentivesRoute
   RiderMoreRoute: typeof RiderMoreRoute
   RiderNotificationsRoute: typeof RiderNotificationsRoute
   RiderOnboardingRoute: typeof RiderOnboardingRoute
@@ -2360,6 +2443,7 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderActiveRoute: RiderActiveRoute,
   RiderEarningsRoute: RiderEarningsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
+  RiderIncentivesRoute: RiderIncentivesRoute,
   RiderMoreRoute: RiderMoreRoute,
   RiderNotificationsRoute: RiderNotificationsRoute,
   RiderOnboardingRoute: RiderOnboardingRoute,

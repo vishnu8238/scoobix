@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, User, Bike, KeyRound, FileText, Wallet, Shield, Bell, LifeBuoy, Sparkles, ShieldCheck } from "lucide-react";
+import { ChevronRight, User, Bike, KeyRound, FileText, Wallet, Shield, Bell, LifeBuoy, Sparkles, ShieldCheck , Trophy }
+from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 
 export const Route = createFileRoute("/rider/more")({
@@ -13,6 +14,7 @@ const ITEMS = [
   { to: "/rider/vehicle", icon: Bike,     label: "Vehicle & documents", desc: "RC, licence, insurance" },
   { to: "/rider/otp",     icon: KeyRound, label: "Complete delivery (OTP)", desc: "Hand-off verification" },
   { to: "/rider/history", icon: FileText, label: "Delivery history",    desc: "Past trips & status" },
+  { to: "/rider/incentives", icon: Trophy, label: "Incentives & bonuses", desc: "Targets, peak bonus, payouts" },
   { to: "/rider/earnings",icon: Wallet,   label: "Earnings breakdown",  desc: "Base · tips · bonus" },
   { to: "/rider/notifications", icon: Bell,label: "Notifications",      desc: "Trip alerts & payouts" },
   { to: "/rider/support", icon: LifeBuoy, label: "Help & support",      desc: "Raise a ticket, track replies" },
