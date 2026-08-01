@@ -46,12 +46,17 @@ function NotificationsPage() {
         <EmptyState icon={<Bell className="h-9 w-9" />} title="All caught up" description="You'll see updates about your orders and offers here." />
       ) : (
         <ul className="mt-4 space-y-2 px-4">
-          {filtered.map((n) => <NotificationItem key={n.id} n={n} />)}
+          {filtered.map((n) => (
+            <li key={n.id} onClick={() => n.unread && markRead(n.id)}>
+              <NotificationItem n={n} />
+            </li>
+          ))}
         </ul>
       )}
     </div>
   );
 }
+
 
 export function NotificationItem({ n }: { n: AppNotification }) {
   const Icon = ICONS[n.kind];
