@@ -193,6 +193,14 @@ export function subscribeTable(
       disposed: false,
     };
     streams.set(key, state);
+    // Realtime push: any write to this table re-fetches instantly, so the
+    // interval above never has to be fast.
+    state.offRealtime = onTableChange(table, () => {
+      state!.currentMs = state!.minMs;
+      void tick(state!);
+    });
+    // Re-sync the moment the socket comes back after a drop.
+    state.offState = onRealtimeState((on) => { if (on) void tick(state!); });
     // Kick off immediately.
     void tick(state);
   } else {
@@ -206,10 +214,13 @@ export function subscribeTable(
     if (state!.listeners.size === 0) {
       state!.disposed = true;
       if (state!.timer) window.clearTimeout(state!.timer);
+      state!.offRealtime?.();
+      state!.offState?.();
       streams.delete(key);
     }
   };
 }
+
 
 /** After a local mutation, force every subscriber on `table` to re-fetch. */
 export function nudgeTable(table: string) {
