@@ -73,10 +73,13 @@ function ManagerProfile() {
             Save changes
           </Button>
         </div>
+
+        <SecurityPanel />
       </div>
     </div>
   );
 }
+
 
 function Metric({ label, value }: { label: string; value: number | string }) {
   return (
