@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
+import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/orders")({
@@ -28,6 +29,7 @@ function AdminOrders() {
   const [users, setUsers] = useState<NamedRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("ALL");
+  const version = useTableVersion(["orders"]);
 
   const load = useCallback(async () => {
     const [o, r, u] = await Promise.all([

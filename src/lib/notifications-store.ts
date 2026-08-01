@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { listTable, deleteRecord } from "./insforge-crud";
 import { useAuth } from "./auth-store";
 import { dedupeNotificationRows } from "./notifications-queue";
+import { useTableVersion } from "./realtime-hooks";
 
 export type AppNotification = {
   id: string;
@@ -53,6 +54,8 @@ export function useNotifications(audience: "customer" | "partner" | "rider") {
   const userId = user?.id;
   const [list, setList] = useState<AppNotification[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty">("loading");
+  // Realtime: a new notification row pushes straight into the list.
+  const version = useTableVersion(["notifications"]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +78,7 @@ export function useNotifications(audience: "customer" | "partner" | "rider") {
       setStatus(unique.length ? "ready" : "empty");
     })();
     return () => { cancelled = true; };
-  }, [audience, userId]);
+  }, [audience, userId, version]);
 
   const markRead = (id: string) => {
     setList((p) => p.map((n) => (n.id === id ? { ...n, unread: false } : n)));
