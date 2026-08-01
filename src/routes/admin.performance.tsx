@@ -8,7 +8,6 @@ import {
   HardDrive,
   RefreshCw,
   Server,
-  Sparkles,
   Timer,
   Trash2,
 } from "lucide-react";
