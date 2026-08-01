@@ -251,6 +251,9 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     }).catch(() => null),
   ]);
 
+  // Realtime: partner dashboard + admin see the new order instantly.
+  publishTableChange("orders", "insert", body as Record<string, unknown>);
+
   return rowToOrder({ ...body, created_at: new Date().toISOString() });
 }
 
@@ -263,6 +266,7 @@ export async function patchOrder(orderId: string, patch: Record<string, unknown>
       headers: H,
       body: JSON.stringify(patch),
     });
+    if (res.ok) publishTableChange("orders", "update", { id: orderId, ...patch });
     return res.ok;
   } catch {
     return false;
@@ -278,5 +282,6 @@ export async function patchPaymentByOrder(orderId: string, patch: Record<string,
       headers: H,
       body: JSON.stringify(patch),
     });
+    publishTableChange("payments", "update", { order_id: orderId, ...patch });
   } catch { /* ignore */ }
 }
