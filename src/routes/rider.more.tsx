@@ -8,7 +8,6 @@ export const Route = createFileRoute("/rider/more")({
 });
 
 const ITEMS = [
-  { to: "/rider/ai",      icon: Sparkles, label: "AI Coach",            desc: "Routes, earnings & peak hours" },
   { to: "/rider/profile", icon: User,     label: "Rider profile",       desc: "Your account & rating" },
   { to: "/rider/vehicle", icon: Bike,     label: "Vehicle & documents", desc: "RC, licence, insurance" },
   { to: "/rider/otp",     icon: KeyRound, label: "Complete delivery (OTP)", desc: "Hand-off verification" },

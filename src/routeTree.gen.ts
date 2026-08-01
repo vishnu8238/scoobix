@@ -34,7 +34,6 @@ import { Route as RiderNotificationsRouteImport } from './routes/rider.notificat
 import { Route as RiderMoreRouteImport } from './routes/rider.more'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
-import { Route as RiderAiRouteImport } from './routes/rider.ai'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
 import { Route as PartnerSupportRouteImport } from './routes/partner.support'
@@ -55,7 +54,6 @@ import { Route as PartnerCampaignsRouteImport } from './routes/partner.campaigns
 import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerBranchesRouteImport } from './routes/partner.branches'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
-import { Route as PartnerAiRouteImport } from './routes/partner.ai'
 import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
 import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
 import { Route as ManagerTransfersRouteImport } from './routes/manager.transfers'
@@ -68,7 +66,6 @@ import { Route as ManagerMoreRouteImport } from './routes/manager.more'
 import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
-import { Route as ManagerAiRouteImport } from './routes/manager.ai'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
@@ -114,13 +111,9 @@ import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
-import { Route as AdminAiConsoleRouteImport } from './routes/admin.ai-console'
-import { Route as AdminAiRouteImport } from './routes/admin.ai'
 import { Route as AdminAdsRouteImport } from './routes/admin.ads'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
-import { Route as ApiPublicAiRouteImport } from './routes/api.public.ai'
-import { Route as ApiPublicAiHealthRouteImport } from './routes/api.public.ai.health'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -247,11 +240,6 @@ const RiderEarningsRoute = RiderEarningsRouteImport.update({
   path: '/earnings',
   getParentRoute: () => RiderRoute,
 } as any)
-const RiderAiRoute = RiderAiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
-  getParentRoute: () => RiderRoute,
-} as any)
 const RiderActiveRoute = RiderActiveRouteImport.update({
   id: '/active',
   path: '/active',
@@ -352,11 +340,6 @@ const PartnerAnalyticsRoute = PartnerAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => PartnerRoute,
 } as any)
-const PartnerAiRoute = PartnerAiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
-  getParentRoute: () => PartnerRoute,
-} as any)
 const PartnerAdsRoute = PartnerAdsRouteImport.update({
   id: '/ads',
   path: '/ads',
@@ -415,11 +398,6 @@ const ManagerHistoryRoute = ManagerHistoryRouteImport.update({
 const ManagerCalendarRoute = ManagerCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
-  getParentRoute: () => ManagerRoute,
-} as any)
-const ManagerAiRoute = ManagerAiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
   getParentRoute: () => ManagerRoute,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -647,16 +625,6 @@ const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAiConsoleRoute = AdminAiConsoleRouteImport.update({
-  id: '/ai-console',
-  path: '/ai-console',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAiRoute = AdminAiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminAdsRoute = AdminAdsRouteImport.update({
   id: '/ads',
   path: '/ads',
@@ -672,16 +640,6 @@ const AppGroupSessionIdRoute = AppGroupSessionIdRouteImport.update({
   path: '/group/$sessionId',
   getParentRoute: () => AppRoute,
 } as any)
-const ApiPublicAiRoute = ApiPublicAiRouteImport.update({
-  id: '/api/public/ai',
-  path: '/api/public/ai',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicAiHealthRoute = ApiPublicAiHealthRouteImport.update({
-  id: '/health',
-  path: '/health',
-  getParentRoute: () => ApiPublicAiRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -694,8 +652,6 @@ export interface FileRoutesByFullPath {
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/ads': typeof AdminAdsRoute
-  '/admin/ai': typeof AdminAiRoute
-  '/admin/ai-console': typeof AdminAiConsoleRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -741,7 +697,6 @@ export interface FileRoutesByFullPath {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/manager/ai': typeof ManagerAiRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
@@ -754,7 +709,6 @@ export interface FileRoutesByFullPath {
   '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
-  '/partner/ai': typeof PartnerAiRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
@@ -775,7 +729,6 @@ export interface FileRoutesByFullPath {
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
-  '/rider/ai': typeof RiderAiRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/more': typeof RiderMoreRoute
@@ -792,10 +745,8 @@ export interface FileRoutesByFullPath {
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
-  '/api/public/ai': typeof ApiPublicAiRouteWithChildren
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
-  '/api/public/ai/health': typeof ApiPublicAiHealthRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -803,8 +754,6 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/ads': typeof AdminAdsRoute
-  '/admin/ai': typeof AdminAiRoute
-  '/admin/ai-console': typeof AdminAiConsoleRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -850,7 +799,6 @@ export interface FileRoutesByTo {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/manager/ai': typeof ManagerAiRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
@@ -863,7 +811,6 @@ export interface FileRoutesByTo {
   '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
-  '/partner/ai': typeof PartnerAiRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
@@ -884,7 +831,6 @@ export interface FileRoutesByTo {
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
-  '/rider/ai': typeof RiderAiRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/more': typeof RiderMoreRoute
@@ -901,10 +847,8 @@ export interface FileRoutesByTo {
   '/manager': typeof ManagerIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
-  '/api/public/ai': typeof ApiPublicAiRouteWithChildren
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
-  '/api/public/ai/health': typeof ApiPublicAiHealthRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -918,8 +862,6 @@ export interface FileRoutesById {
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
   '/admin/ads': typeof AdminAdsRoute
-  '/admin/ai': typeof AdminAiRoute
-  '/admin/ai-console': typeof AdminAiConsoleRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -965,7 +907,6 @@ export interface FileRoutesById {
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/manager/ai': typeof ManagerAiRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
@@ -978,7 +919,6 @@ export interface FileRoutesById {
   '/manager/transfers': typeof ManagerTransfersRoute
   '/partner/addons': typeof PartnerAddonsRoute
   '/partner/ads': typeof PartnerAdsRoute
-  '/partner/ai': typeof PartnerAiRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
@@ -999,7 +939,6 @@ export interface FileRoutesById {
   '/partner/support': typeof PartnerSupportRoute
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
-  '/rider/ai': typeof RiderAiRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/more': typeof RiderMoreRoute
@@ -1016,10 +955,8 @@ export interface FileRoutesById {
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
-  '/api/public/ai': typeof ApiPublicAiRouteWithChildren
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
-  '/api/public/ai/health': typeof ApiPublicAiHealthRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1034,8 +971,6 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/admin/ads'
-    | '/admin/ai'
-    | '/admin/ai-console'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -1081,7 +1016,6 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
-    | '/manager/ai'
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
@@ -1094,7 +1028,6 @@ export interface FileRouteTypes {
     | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
-    | '/partner/ai'
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
@@ -1115,7 +1048,6 @@ export interface FileRouteTypes {
     | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
-    | '/rider/ai'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/more'
@@ -1132,10 +1064,8 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/partner/'
     | '/rider/'
-    | '/api/public/ai'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
-    | '/api/public/ai/health'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1143,8 +1073,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/ads'
-    | '/admin/ai'
-    | '/admin/ai-console'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -1190,7 +1118,6 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
-    | '/manager/ai'
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
@@ -1203,7 +1130,6 @@ export interface FileRouteTypes {
     | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
-    | '/partner/ai'
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
@@ -1224,7 +1150,6 @@ export interface FileRouteTypes {
     | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
-    | '/rider/ai'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/more'
@@ -1241,10 +1166,8 @@ export interface FileRouteTypes {
     | '/manager'
     | '/partner'
     | '/rider'
-    | '/api/public/ai'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
-    | '/api/public/ai/health'
   id:
     | '__root__'
     | '/'
@@ -1257,8 +1180,6 @@ export interface FileRouteTypes {
     | '/rider'
     | '/terms'
     | '/admin/ads'
-    | '/admin/ai'
-    | '/admin/ai-console'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -1304,7 +1225,6 @@ export interface FileRouteTypes {
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
-    | '/manager/ai'
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
@@ -1317,7 +1237,6 @@ export interface FileRouteTypes {
     | '/manager/transfers'
     | '/partner/addons'
     | '/partner/ads'
-    | '/partner/ai'
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
@@ -1338,7 +1257,6 @@ export interface FileRouteTypes {
     | '/partner/support'
     | '/restaurant/$id'
     | '/rider/active'
-    | '/rider/ai'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/more'
@@ -1355,10 +1273,8 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/partner/'
     | '/rider/'
-    | '/api/public/ai'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
-    | '/api/public/ai/health'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1373,7 +1289,6 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   RestaurantIdRoute: typeof RestaurantIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
-  ApiPublicAiRoute: typeof ApiPublicAiRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -1553,13 +1468,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiderEarningsRouteImport
       parentRoute: typeof RiderRoute
     }
-    '/rider/ai': {
-      id: '/rider/ai'
-      path: '/ai'
-      fullPath: '/rider/ai'
-      preLoaderRoute: typeof RiderAiRouteImport
-      parentRoute: typeof RiderRoute
-    }
     '/rider/active': {
       id: '/rider/active'
       path: '/active'
@@ -1700,13 +1608,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerAnalyticsRouteImport
       parentRoute: typeof PartnerRoute
     }
-    '/partner/ai': {
-      id: '/partner/ai'
-      path: '/ai'
-      fullPath: '/partner/ai'
-      preLoaderRoute: typeof PartnerAiRouteImport
-      parentRoute: typeof PartnerRoute
-    }
     '/partner/ads': {
       id: '/partner/ads'
       path: '/ads'
@@ -1789,13 +1690,6 @@ declare module '@tanstack/react-router' {
       path: '/calendar'
       fullPath: '/manager/calendar'
       preLoaderRoute: typeof ManagerCalendarRouteImport
-      parentRoute: typeof ManagerRoute
-    }
-    '/manager/ai': {
-      id: '/manager/ai'
-      path: '/ai'
-      fullPath: '/manager/ai'
-      preLoaderRoute: typeof ManagerAiRouteImport
       parentRoute: typeof ManagerRoute
     }
     '/auth/signup': {
@@ -2113,20 +2007,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminApprovalsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/ai-console': {
-      id: '/admin/ai-console'
-      path: '/ai-console'
-      fullPath: '/admin/ai-console'
-      preLoaderRoute: typeof AdminAiConsoleRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/ai': {
-      id: '/admin/ai'
-      path: '/ai'
-      fullPath: '/admin/ai'
-      preLoaderRoute: typeof AdminAiRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/ads': {
       id: '/admin/ads'
       path: '/ads'
@@ -2148,27 +2028,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGroupSessionIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/api/public/ai': {
-      id: '/api/public/ai'
-      path: '/api/public/ai'
-      fullPath: '/api/public/ai'
-      preLoaderRoute: typeof ApiPublicAiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/ai/health': {
-      id: '/api/public/ai/health'
-      path: '/health'
-      fullPath: '/api/public/ai/health'
-      preLoaderRoute: typeof ApiPublicAiHealthRouteImport
-      parentRoute: typeof ApiPublicAiRoute
-    }
   }
 }
 
 interface AdminRouteChildren {
   AdminAdsRoute: typeof AdminAdsRoute
-  AdminAiRoute: typeof AdminAiRoute
-  AdminAiConsoleRoute: typeof AdminAiConsoleRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminBulkRoute: typeof AdminBulkRoute
   AdminCampaignsRoute: typeof AdminCampaignsRoute
@@ -2196,8 +2060,6 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdsRoute: AdminAdsRoute,
-  AdminAiRoute: AdminAiRoute,
-  AdminAiConsoleRoute: AdminAiConsoleRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminBulkRoute: AdminBulkRoute,
   AdminCampaignsRoute: AdminCampaignsRoute,
@@ -2292,7 +2154,6 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ManagerRouteChildren {
-  ManagerAiRoute: typeof ManagerAiRoute
   ManagerCalendarRoute: typeof ManagerCalendarRoute
   ManagerHistoryRoute: typeof ManagerHistoryRoute
   ManagerLeadsRoute: typeof ManagerLeadsRoute
@@ -2308,7 +2169,6 @@ interface ManagerRouteChildren {
 }
 
 const ManagerRouteChildren: ManagerRouteChildren = {
-  ManagerAiRoute: ManagerAiRoute,
   ManagerCalendarRoute: ManagerCalendarRoute,
   ManagerHistoryRoute: ManagerHistoryRoute,
   ManagerLeadsRoute: ManagerLeadsRoute,
@@ -2329,7 +2189,6 @@ const ManagerRouteWithChildren =
 interface PartnerRouteChildren {
   PartnerAddonsRoute: typeof PartnerAddonsRoute
   PartnerAdsRoute: typeof PartnerAdsRoute
-  PartnerAiRoute: typeof PartnerAiRoute
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
   PartnerBranchesRoute: typeof PartnerBranchesRoute
   PartnerBulkRoute: typeof PartnerBulkRoute
@@ -2354,7 +2213,6 @@ interface PartnerRouteChildren {
 const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerAddonsRoute: PartnerAddonsRoute,
   PartnerAdsRoute: PartnerAdsRoute,
-  PartnerAiRoute: PartnerAiRoute,
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
   PartnerBranchesRoute: PartnerBranchesRoute,
   PartnerBulkRoute: PartnerBulkRoute,
@@ -2381,7 +2239,6 @@ const PartnerRouteWithChildren =
 
 interface RiderRouteChildren {
   RiderActiveRoute: typeof RiderActiveRoute
-  RiderAiRoute: typeof RiderAiRoute
   RiderEarningsRoute: typeof RiderEarningsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
   RiderMoreRoute: typeof RiderMoreRoute
@@ -2397,7 +2254,6 @@ interface RiderRouteChildren {
 
 const RiderRouteChildren: RiderRouteChildren = {
   RiderActiveRoute: RiderActiveRoute,
-  RiderAiRoute: RiderAiRoute,
   RiderEarningsRoute: RiderEarningsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
   RiderMoreRoute: RiderMoreRoute,
@@ -2413,18 +2269,6 @@ const RiderRouteChildren: RiderRouteChildren = {
 
 const RiderRouteWithChildren = RiderRoute._addFileChildren(RiderRouteChildren)
 
-interface ApiPublicAiRouteChildren {
-  ApiPublicAiHealthRoute: typeof ApiPublicAiHealthRoute
-}
-
-const ApiPublicAiRouteChildren: ApiPublicAiRouteChildren = {
-  ApiPublicAiHealthRoute: ApiPublicAiHealthRoute,
-}
-
-const ApiPublicAiRouteWithChildren = ApiPublicAiRoute._addFileChildren(
-  ApiPublicAiRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -2437,7 +2281,6 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   RestaurantIdRoute: RestaurantIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
-  ApiPublicAiRoute: ApiPublicAiRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
