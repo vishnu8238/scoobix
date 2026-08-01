@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { scheduleOrder } from "@/lib/insforge";
 import { useMyWallet } from "@/lib/scoobix-loyalty";
 import { redeemCampaign, type PaymentMethodKey } from "@/lib/campaigns-api";
+import { campaignCouponId, recordCouponUsage } from "@/lib/coupons-api";
 
 
 export const Route = createFileRoute("/app/checkout")({
@@ -42,7 +43,7 @@ const INSTRUCTION_OPTIONS = [
 
 function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, totals, restaurant, clear, coupon, applyCoupon, removeCoupon, appliedCampaign, eligibleOffers, pendingRewards, setPaymentMethod } = useCart();
+  const { items, totals, restaurant, clear, coupon, coupons, applyCoupon, removeCoupon, appliedCampaign, eligibleOffers, pendingRewards, setPaymentMethod } = useCart();
   const { placeOrder } = useOrders();
 
   const [addressId, setAddressId] = useState(savedAddresses.find((a) => a.default)!.id);
@@ -122,7 +123,22 @@ function CheckoutPage() {
     const orderId = res.orderId;
     if (scheduledFor) void scheduleOrder(orderId, scheduledFor);
     if (appliedCampaign) {
-      void redeemCampaign({
+      // Coupon-derived offers are settled against `coupon_usage` (which also
+      // rolls the per-day promotion analytics); native campaigns keep using
+      // the campaign redemption ledger.
+      const couponId = campaignCouponId(appliedCampaign.campaign);
+      const couponRow = couponId ? coupons.find((c) => c.id === couponId) : undefined;
+      if (couponRow) {
+        void recordCouponUsage({
+          coupon: couponRow,
+          orderId,
+          restaurantId: restaurant.id,
+          orderValue: totals.subtotal,
+          discountAmount: appliedCampaign.discount,
+          autoApplied: !coupon?.campaignId,
+          paymentMethod: pay,
+        });
+      } else void redeemCampaign({
         campaign: appliedCampaign.campaign,
         orderId,
         restaurantId: restaurant.id,
