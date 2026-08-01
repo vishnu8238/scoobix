@@ -1,27 +1,108 @@
 /**
- * Scoobix loyalty — Wallet + Referral program.
+ * Scoobix loyalty providers — Wallet, Loyalty points/levels, Referrals and
+ * the Rewards store.
  *
- * Fully backend backed:
- *  - wallet / wallet_transactions tables via `wallet-api`
- *  - referrals table
- *  - program configuration in `app_settings` (kv row `referral_config`)
- *
- * No localStorage anywhere in this module.
+ * Every value comes from InsForge via `loyalty-engine`. There is no
+ * localStorage business state and no mock data anywhere in this module.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useAuth } from "./auth-store";
 import { getAppSettings } from "./app-settings";
 import { kvGet, kvSet } from "./kv-store";
-import { listTable, createRecord, patchRecord } from "./insforge-crud";
+import { listTable } from "./insforge-crud";
+import { useTableFeed } from "./realtime-hooks";
 import {
+  DEFAULT_REFERRAL_CONFIG,
+  LEVELS,
+  applyReferralCode,
+  computeRewardAnalytics,
   creditWallet,
   debitWallet,
-  getWallet,
-  listAllTransactions,
+  ensureWallet,
+  ensureLoyaltyAccount,
+  earnPoints,
+  getLoyaltySummary,
+  issueScratchCard,
+  levelForPoints,
+  listAllWalletTransactions,
+  listMyRedemptions,
+  listMyReferralRewards,
+  listMyScratchCards,
+  listPointsHistory,
+  listReferralRewards,
+  listReferrals,
+  listRewardStore,
+  listWallets,
+  nextLevel,
+  redeemStoreItem,
+  referralCodeFor,
+  referralStatsFor,
+  scratchCard,
+  setWalletBlocked,
+  sweepExpiredPoints,
+  type LoyaltyLedgerRow,
+  type LoyaltySummary,
+  type ReferralConfig,
+  type ReferralRewardRow,
+  type ReferralRow,
+  type ReferralStats,
+  type RewardAnalytics,
+  type RewardRedemptionRow,
+  type RewardStoreItem,
+  type ScratchCardRow,
   type TxnKind,
-} from "./wallet-api";
+  type WalletSummary,
+  type WalletTxnRow,
+} from "./loyalty-engine";
 
-const uid = () => Math.random().toString(36).slice(2, 10);
+export {
+  LEVELS,
+  TXN_LABEL,
+  TXN_KINDS,
+  levelForPoints,
+  levelSpec,
+  nextLevel,
+  referralCodeFor,
+  computeRewardAnalytics,
+  listRewardCampaigns,
+  createRewardCampaign,
+  updateRewardCampaign,
+  deleteRewardCampaign,
+  createRewardItem,
+  updateRewardItem,
+  deleteRewardItem,
+  listAuditLogs,
+  listAllScratchCards,
+  listAllRedemptions,
+  listLoyaltyAccounts,
+  setReferralBlocked,
+  issueScratchCard,
+  earnPoints,
+  redeemPoints,
+  setWalletBlocked,
+} from "./loyalty-engine";
+export type {
+  LevelSpec,
+  LoyaltyLevel,
+  LoyaltySummary,
+  RewardAnalytics,
+  RewardCampaignRow,
+  RewardRedemptionRow,
+  RewardStoreItem,
+  ReferralRow,
+  ReferralRewardRow,
+  ScratchCardRow,
+  TxnKind,
+  WalletTxnRow,
+} from "./loyalty-engine";
 
 /* ============================================================
    WALLET
@@ -30,84 +111,104 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 export type WalletTxn = {
   id: string;
   customerId: string;
-  amount: number; // positive = credit, negative = debit
+  amount: number;
   kind: TxnKind;
   note: string;
+  code: string;
+  bucket: string;
+  status: string;
+  balanceAfter: number;
+  orderId?: string;
   createdAt: number;
 };
 
+const toTxn = (r: WalletTxnRow): WalletTxn => ({
+  id: r.id,
+  customerId: r.user_id ?? "",
+  amount: Number(r.amount ?? 0),
+  kind: ((r.kind ?? r.transaction_type) as TxnKind) ?? "credit",
+  note: r.remark ?? r.description ?? "",
+  code: r.txn_code ?? r.id.slice(0, 8).toUpperCase(),
+  bucket: r.bucket ?? "main",
+  status: r.status ?? "success",
+  balanceAfter: Number(r.balance_after ?? 0),
+  orderId: r.order_id ?? undefined,
+  createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+});
+
 type WalletCtx = {
   balance: (customerId: string) => number;
+  blocked: (customerId: string) => boolean;
   txns: (customerId: string) => WalletTxn[];
   allTxns: WalletTxn[];
+  wallets: Array<{ userId: string; balance: number; blocked: boolean; buckets: Record<string, number> }>;
   refresh: () => void;
-  credit: (customerId: string, amount: number, kind: TxnKind, note: string, orderId?: string) => WalletTxn;
-  debit: (
-    customerId: string,
-    amount: number,
-    kind: TxnKind,
-    note: string,
-    orderId?: string,
-  ) => { ok: boolean; txn?: WalletTxn; reason?: string };
+  credit: (customerId: string, amount: number, kind: TxnKind, note: string, orderId?: string) => Promise<{ ok: boolean; reason?: string }>;
+  debit: (customerId: string, amount: number, kind: TxnKind, note: string, orderId?: string) => Promise<{ ok: boolean; reason?: string }>;
+  block: (customerId: string, blocked: boolean, reason: string) => Promise<void>;
 };
 
 const WalletContext = createContext<WalletCtx | null>(null);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [txns, setTxns] = useState<WalletTxn[]>([]);
-  const [balances, setBalances] = useState<Record<string, number>>({});
+  const [wallets, setWallets] = useState<WalletCtx["wallets"]>([]);
 
   const load = useCallback(async () => {
-    const rows = await listAllTransactions();
-    setTxns(
-      rows.map((r) => ({
-        id: r.id ?? uid(),
-        customerId: r.user_id ?? "",
-        amount: Number(r.amount ?? 0),
-        kind: (r.transaction_type as TxnKind) ?? "credit",
-        note: r.description ?? "",
-        createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+    const [rows, walletRows] = await Promise.all([listAllWalletTransactions(), listWallets()]);
+    setTxns(rows.map(toTxn));
+    setWallets(
+      walletRows.map((w) => ({
+        userId: w.user_id ?? "",
+        balance: Number(w.balance ?? 0),
+        blocked: Boolean(w.blocked),
+        buckets: {
+          cashback: Number(w.cashback_credits ?? 0),
+          promo: Number(w.promo_credits ?? 0),
+          refund: Number(w.refund_credits ?? 0),
+          referral: Number(w.referral_credits ?? 0),
+        },
       })),
     );
-    const wallets = await listTable<{ user_id?: string; balance?: number }>("wallet", { limit: 500 });
-    const map: Record<string, number> = {};
-    for (const w of wallets) if (w.user_id) map[w.user_id] = Number(w.balance ?? 0);
-    setBalances(map);
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
+  // Live: any wallet write from any client refreshes the ledger.
+  useTableFeed("wallet_transactions", () => { void load(); });
+  useTableFeed("wallet", () => { void load(); });
 
-  const balanceOf = (cid: string) => balances[cid] ?? 0;
+  useEffect(() => { if (user?.id) void ensureWallet(user.id); }, [user?.id]);
 
-  const credit: WalletCtx["credit"] = (customerId, amount, kind, note, orderId) => {
-    const stub: WalletTxn = { id: uid(), customerId, amount: Math.abs(amount), kind, note, createdAt: Date.now() };
-    if (!getAppSettings().wallet_enabled) return { ...stub, amount: 0 };
-    setTxns((p) => [stub, ...p]);
-    setBalances((b) => ({ ...b, [customerId]: (b[customerId] ?? 0) + Math.abs(amount) }));
-    void creditWallet(customerId, amount, kind, note, orderId).then(() => void load());
-    return stub;
+  const balanceOf = (cid: string) => wallets.find((w) => w.userId === cid)?.balance ?? 0;
+
+  const credit: WalletCtx["credit"] = async (customerId, amount, kind, note, orderId) => {
+    if (!getAppSettings().wallet_enabled) return { ok: false, reason: "Wallet disabled" };
+    const res = await creditWallet({ userId: customerId, amount, kind, remark: note, orderId, actorId: user?.id });
+    await load();
+    return { ok: res.ok, reason: res.reason };
   };
 
-  const debit: WalletCtx["debit"] = (customerId, amount, kind, note, orderId) => {
+  const debit: WalletCtx["debit"] = async (customerId, amount, kind, note, orderId) => {
     if (!getAppSettings().wallet_enabled) return { ok: false, reason: "Wallet disabled" };
-    const amt = Math.abs(amount);
-    if (balanceOf(customerId) < amt) return { ok: false, reason: "Insufficient wallet balance" };
-    const txn: WalletTxn = { id: uid(), customerId, amount: -amt, kind, note, createdAt: Date.now() };
-    setTxns((p) => [txn, ...p]);
-    setBalances((b) => ({ ...b, [customerId]: (b[customerId] ?? 0) - amt }));
-    void debitWallet(customerId, amount, kind, note, orderId).then(() => void load());
-    return { ok: true, txn };
+    const res = await debitWallet({ userId: customerId, amount, kind, remark: note, orderId, actorId: user?.id });
+    await load();
+    return { ok: res.ok, reason: res.reason };
   };
 
   const value: WalletCtx = {
     balance: balanceOf,
+    blocked: (cid) => wallets.find((w) => w.userId === cid)?.blocked ?? false,
     txns: (cid) => txns.filter((t) => t.customerId === cid),
     allTxns: txns,
+    wallets,
     refresh: () => void load(),
     credit,
     debit,
+    block: async (cid, blocked, reason) => {
+      await setWalletBlocked(cid, blocked, reason, user?.id);
+      await load();
+    },
   };
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
@@ -118,123 +219,159 @@ export const useWallet = () => {
   return c;
 };
 
-/** Convenience: current-user wallet balance (ensures the wallet row exists). */
+/** Current-user wallet: balance, bucket split and history. */
 export const useMyWallet = () => {
   const { user } = useAuth();
   const wallet = useWallet();
   const cid = user?.id ?? "";
+  const [summary, setSummary] = useState<WalletSummary | null>(null);
 
-  useEffect(() => {
-    if (cid) void getWallet(cid);
+  const reload = useCallback(() => {
+    if (!cid) { setSummary(null); return; }
+    void getWalletSummaryCached(cid).then(setSummary);
   }, [cid]);
 
+  useEffect(() => { reload(); }, [reload, wallet.allTxns.length]);
+
   return {
-    balance: cid ? wallet.balance(cid) : 0,
+    balance: summary?.balance ?? (cid ? wallet.balance(cid) : 0),
+    buckets: summary?.buckets ?? { cashback: 0, promo: 0, refund: 0, referral: 0 },
+    lifetimeCredited: summary?.lifetimeCredited ?? 0,
+    lifetimeDebited: summary?.lifetimeDebited ?? 0,
+    blocked: summary?.blocked ?? false,
+    blockReason: summary?.blockReason ?? "",
     txns: cid ? wallet.txns(cid) : [],
+    refresh: reload,
     credit: (amt: number, kind: TxnKind, note: string, orderId?: string) =>
       wallet.credit(cid, amt, kind, note, orderId),
     debit: (amt: number, kind: TxnKind, note: string, orderId?: string) =>
-      cid ? wallet.debit(cid, amt, kind, note, orderId) : { ok: false, reason: "Sign in required" },
+      cid ? wallet.debit(cid, amt, kind, note, orderId) : Promise.resolve({ ok: false, reason: "Sign in required" }),
   };
+};
+
+async function getWalletSummaryCached(userId: string) {
+  const { getWalletSummary } = await import("./loyalty-engine");
+  return getWalletSummary(userId);
+}
+
+/* ============================================================
+   LOYALTY POINTS + LEVELS
+   ============================================================ */
+
+type LoyaltyCtx = {
+  summary: LoyaltySummary | null;
+  history: LoyaltyLedgerRow[];
+  store: RewardStoreItem[];
+  redemptions: RewardRedemptionRow[];
+  cards: ScratchCardRow[];
+  loading: boolean;
+  refresh: () => Promise<void>;
+  redeem: (item: RewardStoreItem) => Promise<{ ok: boolean; reason?: string; code?: string }>;
+  scratch: (cardId: string) => Promise<{ ok: boolean; reason?: string }>;
+};
+
+const LoyaltyContext = createContext<LoyaltyCtx | null>(null);
+
+export function LoyaltyProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const uid = user?.id ?? "";
+  const [summary, setSummary] = useState<LoyaltySummary | null>(null);
+  const [history, setHistory] = useState<LoyaltyLedgerRow[]>([]);
+  const [store, setStore] = useState<RewardStoreItem[]>([]);
+  const [redemptions, setRedemptions] = useState<RewardRedemptionRow[]>([]);
+  const [cards, setCards] = useState<ScratchCardRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    const catalogue = await listRewardStore();
+    setStore(catalogue.filter((i) => i.active !== false));
+    if (!uid) { setSummary(null); setHistory([]); setRedemptions([]); setCards([]); setLoading(false); return; }
+    await ensureLoyaltyAccount(uid);
+    await sweepExpiredPoints(uid);
+    const [s, h, r, c] = await Promise.all([
+      getLoyaltySummary(uid),
+      listPointsHistory(uid),
+      listMyRedemptions(uid),
+      listMyScratchCards(uid),
+    ]);
+    setSummary(s);
+    setHistory(h);
+    setRedemptions(r);
+    setCards(c);
+    setLoading(false);
+  }, [uid]);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+  useTableFeed("loyalty_accounts", () => { void refresh(); });
+  useTableFeed("scratch_cards", () => { void refresh(); });
+  useTableFeed("reward_store", () => { void refresh(); });
+
+  const value: LoyaltyCtx = {
+    summary, history, store, redemptions, cards, loading,
+    refresh,
+    redeem: async (item) => {
+      const res = await redeemStoreItem({ userId: uid, item });
+      await refresh();
+      return res;
+    },
+    scratch: async (cardId) => {
+      const res = await scratchCard(cardId, uid);
+      await refresh();
+      return { ok: res.ok, reason: res.reason };
+    },
+  };
+  return <LoyaltyContext.Provider value={value}>{children}</LoyaltyContext.Provider>;
+}
+
+export const useLoyalty = () => {
+  const c = useContext(LoyaltyContext);
+  if (!c) throw new Error("useLoyalty must be used within LoyaltyProvider");
+  return c;
 };
 
 /* ============================================================
    REFERRAL PROGRAM
    ============================================================ */
 
-export type ReferralConfig = {
-  enabled: boolean;
-  referrerReward: number;
-  refereeReward: number;
-  minOrder: number;
-  expiryDays: number;
-};
-
-export type ReferralRecord = {
-  id: string;
-  code: string;
-  referrerId: string;
-  refereeId: string;
-  refereeName: string;
-  status: "pending" | "rewarded" | "expired";
-  createdAt: number;
-  rewardedAt?: number;
-};
-
 type ReferralCtx = {
   config: ReferralConfig;
   updateConfig: (patch: Partial<ReferralConfig>) => void;
   codeFor: (customerId: string) => string;
-  records: ReferralRecord[];
-  registerReferral: (code: string, referee: { id: string; name: string }) => { ok: boolean; reason?: string };
-  completeReferral: (
-    refereeId: string,
-    orderTotal: number,
-    credit: (customerId: string, amt: number, kind: TxnKind, note: string) => WalletTxn,
-  ) => ReferralRecord | null;
-  statsFor: (customerId: string) => { total: number; rewarded: number; pending: number; earned: number };
+  records: ReferralRow[];
+  rewards: ReferralRewardRow[];
+  names: Record<string, string>;
+  refresh: () => Promise<void>;
+  applyCode: (code: string) => Promise<{ ok: boolean; reason?: string }>;
+  statsFor: (customerId: string) => ReferralStats;
 };
 
 const ReferralContext = createContext<ReferralCtx | null>(null);
 
-const DEFAULT_CONFIG: ReferralConfig = {
-  enabled: true,
-  referrerReward: 100,
-  refereeReward: 50,
-  minOrder: 199,
-  expiryDays: 30,
-};
-
-const codeFromId = (id: string) => {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return `SCX${h.toString(36).toUpperCase().slice(0, 5).padStart(5, "0")}`;
-};
-
-type ReferralRow = {
-  id?: string;
-  referrer_id?: string;
-  referred_id?: string;
-  referral_code?: string;
-  reward_amount?: number;
-  status?: ReferralRecord["status"];
-  created_at?: string;
-};
-
 export function ReferralProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<ReferralConfig>(DEFAULT_CONFIG);
-  const [records, setRecords] = useState<ReferralRecord[]>([]);
+  const { user } = useAuth();
+  const [config, setConfig] = useState<ReferralConfig>(DEFAULT_REFERRAL_CONFIG);
+  const [records, setRecords] = useState<ReferralRow[]>([]);
+  const [rewards, setRewards] = useState<ReferralRewardRow[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const [cfg, rows, users] = await Promise.all([
-        kvGet<ReferralConfig>("referral_config"),
-        listTable<ReferralRow>("referrals", { order: "-created_at", limit: 500 }),
-        listTable<{ id: string; name?: string; email?: string }>("users", { limit: 500 }),
-      ]);
-      if (cancelled) return;
-      if (cfg) setConfig({ ...DEFAULT_CONFIG, ...cfg });
-      const nameMap: Record<string, string> = {};
-      for (const u of users) nameMap[u.id] = u.name || u.email || u.id.slice(0, 8);
-      setNames(nameMap);
-      setRecords(
-        rows.map((r) => ({
-          id: r.id ?? uid(),
-          code: r.referral_code ?? "",
-          referrerId: r.referrer_id ?? "",
-          refereeId: r.referred_id ?? "",
-          refereeName: nameMap[r.referred_id ?? ""] ?? "Customer",
-          status: r.status ?? "pending",
-          createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
-        })),
-      );
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const refresh = useCallback(async () => {
+    const [cfg, rows, rw, users] = await Promise.all([
+      kvGet<ReferralConfig>("referral_config"),
+      listReferrals(),
+      listReferralRewards(),
+      listTable<{ id: string; name?: string; email?: string }>("users", { limit: 500 }),
+    ]);
+    if (cfg) setConfig({ ...DEFAULT_REFERRAL_CONFIG, ...cfg });
+    const map: Record<string, string> = {};
+    for (const u of users) map[u.id] = u.name || u.email || u.id.slice(0, 8);
+    setNames(map);
+    setRecords(rows);
+    setRewards(rw);
   }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+  useTableFeed("referrals", () => { void refresh(); });
+  useTableFeed("referral_rewards", () => { void refresh(); });
 
   const updateConfig: ReferralCtx["updateConfig"] = (patch) =>
     setConfig((c) => {
@@ -243,78 +380,31 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
       return next;
     });
 
-  const codeFor: ReferralCtx["codeFor"] = (cid) => codeFromId(cid || "guest");
-
-  const registerReferral: ReferralCtx["registerReferral"] = (code, referee) => {
-    if (!getAppSettings().referral_enabled) return { ok: false, reason: "Referral program is disabled" };
-    if (!config.enabled) return { ok: false, reason: "Referral program is disabled" };
-    const normalised = code.trim().toUpperCase();
-    if (!normalised) return { ok: false, reason: "Enter a referral code" };
-    if (codeFor(referee.id) === normalised) return { ok: false, reason: "You can't refer yourself" };
-    if (records.some((r) => r.refereeId === referee.id))
-      return { ok: false, reason: "Referral already applied for this account" };
-    const rec: ReferralRecord = {
-      id: uid(),
-      code: normalised,
-      referrerId: "",
-      refereeId: referee.id,
-      refereeName: referee.name,
-      status: "pending",
-      createdAt: Date.now(),
-    };
-    setRecords((p) => [rec, ...p]);
-    void createRecord<ReferralRow>("referrals", {
-      referral_code: normalised,
-      referred_id: referee.id,
-      reward_amount: config.referrerReward,
-      status: "pending",
-    }).then((row) => {
-      if (row?.id) setRecords((p) => p.map((r) => (r.id === rec.id ? { ...r, id: row.id! } : r)));
-    });
-    return { ok: true };
-  };
-
-  const completeReferral: ReferralCtx["completeReferral"] = (refereeId, orderTotal, credit) => {
-    if (!getAppSettings().referral_enabled) return null;
-    if (!config.enabled) return null;
-    const rec = records.find((r) => r.refereeId === refereeId && r.status === "pending");
-    if (!rec) return null;
-    if (Date.now() - rec.createdAt > config.expiryDays * 86400000) {
-      setRecords((p) => p.map((r) => (r.id === rec.id ? { ...r, status: "expired" } : r)));
-      void patchRecord("referrals", rec.id, { status: "expired" });
-      return null;
-    }
-    if (orderTotal < config.minOrder) return null;
-    credit(refereeId, config.refereeReward, "credit", `Referral bonus (code ${rec.code})`);
-    // Resolve the referrer from the live users table by deterministic code.
-    const referrerId = Object.keys(names).find((id) => codeFromId(id) === rec.code);
-    if (referrerId) {
-      credit(referrerId, config.referrerReward, "credit", `Referral bonus — ${rec.refereeName}`);
-      void patchRecord("referrals", rec.id, { referrer_id: referrerId });
-    }
-    const updated: ReferralRecord = { ...rec, status: "rewarded", rewardedAt: Date.now(), referrerId: referrerId ?? rec.referrerId };
-    setRecords((p) => p.map((r) => (r.id === rec.id ? updated : r)));
-    void patchRecord("referrals", rec.id, { status: "rewarded" });
-    return updated;
-  };
-
-  const statsFor: ReferralCtx["statsFor"] = (customerId) => {
-    const code = codeFor(customerId);
-    const mine = records.filter((r) => r.code === code);
-    const rewarded = mine.filter((r) => r.status === "rewarded").length;
-    return {
-      total: mine.length,
-      rewarded,
-      pending: mine.filter((r) => r.status === "pending").length,
-      earned: rewarded * config.referrerReward,
-    };
-  };
-
-  const value = useMemo(
-    () => ({ config, updateConfig, codeFor, records, registerReferral, completeReferral, statsFor }),
+  const value = useMemo<ReferralCtx>(
+    () => ({
+      config,
+      updateConfig,
+      codeFor: (cid) => referralCodeFor(cid || "guest"),
+      records,
+      rewards,
+      names,
+      refresh,
+      applyCode: async (code) => {
+        const res = await applyReferralCode({
+          code,
+          userId: user?.id ?? "",
+          name: user?.name ?? undefined,
+          config,
+        });
+        await refresh();
+        return { ok: res.ok, reason: res.reason };
+      },
+      statsFor: (cid) => referralStatsFor(cid, records, rewards),
+    }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [config, records, names],
+    [config, records, rewards, names, user?.id, refresh],
   );
+
   return <ReferralContext.Provider value={value}>{children}</ReferralContext.Provider>;
 }
 
@@ -324,6 +414,24 @@ export const useReferral = () => {
   return c;
 };
 
+/** My referral rewards (pending / paid / rejected). */
+export const useMyReferralRewards = () => {
+  const { user } = useAuth();
+  const [rows, setRows] = useState<ReferralRewardRow[]>([]);
+  useEffect(() => {
+    if (!user?.id) { setRows([]); return; }
+    void listMyReferralRewards(user.id).then(setRows);
+  }, [user?.id]);
+  return rows;
+};
+
+/** Platform-wide reward analytics (admin / manager surfaces). */
+export const useRewardAnalytics = () => {
+  const [data, setData] = useState<RewardAnalytics | null>(null);
+  useEffect(() => { void computeRewardAnalytics().then(setData); }, []);
+  return data;
+};
+
 /* ============================================================
    Combined
    ============================================================ */
@@ -331,7 +439,9 @@ export const useReferral = () => {
 export function ScoobixLoyaltyProviders({ children }: { children: ReactNode }) {
   return (
     <WalletProvider>
-      <ReferralProvider>{children}</ReferralProvider>
+      <LoyaltyProvider>
+        <ReferralProvider>{children}</ReferralProvider>
+      </LoyaltyProvider>
     </WalletProvider>
   );
 }
@@ -339,3 +449,7 @@ export function ScoobixLoyaltyProviders({ children }: { children: ReactNode }) {
 /** Public helper — build a QR image URL from any string (no dependency). */
 export const qrUrl = (data: string, size = 220) =>
   `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+
+/** Level ladder helper for UI badges. */
+export const levelNames = LEVELS.map((l) => l.name);
+export { nextLevel as nextLoyaltyLevel };
