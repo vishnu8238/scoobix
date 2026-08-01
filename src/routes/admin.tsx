@@ -39,7 +39,9 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/reports", label: "Reports", icon: BarChart3 },
   { to: "/admin/support", label: "Support", icon: LifeBuoy },
   { to: "/admin/performance", label: "Performance & Cost", icon: Gauge },
+  { to: "/admin/security", label: "Security & Audit", icon: ShieldCheck },
   { to: "/admin/settings", label: "Settings", icon: Settings },
+
 ];
 
 function AdminLayout() {
