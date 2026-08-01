@@ -33,6 +33,7 @@ import { Route as RiderOtpRouteImport } from './routes/rider.otp'
 import { Route as RiderOnboardingRouteImport } from './routes/rider.onboarding'
 import { Route as RiderNotificationsRouteImport } from './routes/rider.notifications'
 import { Route as RiderMoreRouteImport } from './routes/rider.more'
+import { Route as RiderIncentivesRouteImport } from './routes/rider.incentives'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
@@ -239,6 +240,11 @@ const RiderNotificationsRoute = RiderNotificationsRouteImport.update({
 const RiderMoreRoute = RiderMoreRouteImport.update({
   id: '/more',
   path: '/more',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderIncentivesRoute = RiderIncentivesRouteImport.update({
+  id: '/incentives',
+  path: '/incentives',
   getParentRoute: () => RiderRoute,
 } as any)
 const RiderHistoryRoute = RiderHistoryRouteImport.update({
@@ -772,6 +778,7 @@ export interface FileRoutesByFullPath {
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
+  '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -880,6 +887,7 @@ export interface FileRoutesByTo {
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
+  '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -994,6 +1002,7 @@ export interface FileRoutesById {
   '/rider/active': typeof RiderActiveRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
+  '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -1109,6 +1118,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/earnings'
     | '/rider/history'
+    | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1217,6 +1227,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/earnings'
     | '/rider/history'
+    | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1330,6 +1341,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/earnings'
     | '/rider/history'
+    | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1531,6 +1543,13 @@ declare module '@tanstack/react-router' {
       path: '/more'
       fullPath: '/rider/more'
       preLoaderRoute: typeof RiderMoreRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/incentives': {
+      id: '/rider/incentives'
+      path: '/incentives'
+      fullPath: '/rider/incentives'
+      preLoaderRoute: typeof RiderIncentivesRouteImport
       parentRoute: typeof RiderRoute
     }
     '/rider/history': {
@@ -2365,6 +2384,7 @@ interface RiderRouteChildren {
   RiderActiveRoute: typeof RiderActiveRoute
   RiderEarningsRoute: typeof RiderEarningsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
+  RiderIncentivesRoute: typeof RiderIncentivesRoute
   RiderMoreRoute: typeof RiderMoreRoute
   RiderNotificationsRoute: typeof RiderNotificationsRoute
   RiderOnboardingRoute: typeof RiderOnboardingRoute
@@ -2381,6 +2401,7 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderActiveRoute: RiderActiveRoute,
   RiderEarningsRoute: RiderEarningsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
+  RiderIncentivesRoute: RiderIncentivesRoute,
   RiderMoreRoute: RiderMoreRoute,
   RiderNotificationsRoute: RiderNotificationsRoute,
   RiderOnboardingRoute: RiderOnboardingRoute,
