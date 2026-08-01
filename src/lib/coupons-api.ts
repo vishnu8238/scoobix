@@ -769,8 +769,7 @@ async function rollupDaily(input: {
     coupon_id: `eq.${input.couponId}`,
     day: `eq.${day}`,
     limit: 1,
-    ttl: undefined as unknown as string,
-  });
+  }, { fresh: true });
   const row = existing[0] as (Record<string, unknown> & { id?: string }) | undefined;
   const merged = {
     coupon_id: input.couponId,

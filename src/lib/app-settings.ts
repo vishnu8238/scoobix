@@ -60,6 +60,12 @@ export type AppSettings = {
   loyalty_review_points: number;       // points for writing a review
   loyalty_enabled: boolean;
 
+  // --- coupon governance (admin-only ceilings for partner/manager coupons)
+  coupon_max_percent: number;          // max % a restaurant coupon may give
+  coupon_max_flat: number;             // max ₹ flat discount
+  coupon_max_discount_cap: number;     // max ₹ cap on any single redemption
+  coupon_require_approval: boolean;    // restaurant coupons need admin approval
+
   // --- duplicate detection
   duplicate_radius_m: number;          // GPS radius (metres) for duplicate matches
 };
@@ -98,6 +104,11 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   loyalty_expiry_days: 365,
   loyalty_review_points: 25,
   loyalty_enabled: true,
+
+  coupon_max_percent: 50,
+  coupon_max_flat: 300,
+  coupon_max_discount_cap: 500,
+  coupon_require_approval: true,
 
   duplicate_radius_m: 300,
 };
