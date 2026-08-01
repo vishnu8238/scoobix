@@ -70,12 +70,20 @@ function RiderHome() {
 
   const firstName = (user?.name ?? "Rider").split(" ")[0];
 
+  // Documents must be approved before a rider can accept deliveries.
+  const verified = Boolean((driver as { docs_verified?: boolean } | null)?.docs_verified);
+
   const toggleOnline = async () => {
     const next = !online;
+    if (next && !verified) {
+      toast.error("Complete your KYC verification before going online.");
+      return;
+    }
     setOnline(next);
     await update({ online_status: next });
     if (driverId) void setDriverOnline(driverId, next);
   };
+
 
   return (
     <div className="animate-fade-up space-y-6 px-5 pt-7">
