@@ -52,9 +52,7 @@ function RiderHome() {
 
   useEffect(() => {
     void load();
-    const t = window.setInterval(() => void load(), 20000);
-    return () => window.clearInterval(t);
-  }, [load]);
+  }, [load, version]);
 
   const today = useMemo(() => {
     const done = orders.filter((o) => String(o.status ?? "").toUpperCase() === "DELIVERED" && isToday(o.created_at));

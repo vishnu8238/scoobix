@@ -42,9 +42,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     void load();
-    const t = window.setInterval(() => void load(), 30000);
-    return () => window.clearInterval(t);
-  }, [load]);
+  }, [load, version]);
 
   const nameById = useMemo(() => {
     const m: Record<string, NamedRow> = {};

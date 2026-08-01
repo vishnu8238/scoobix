@@ -40,9 +40,7 @@ function AdminOrders() {
 
   useEffect(() => {
     void load();
-    const t = window.setInterval(() => void load(), 20000);
-    return () => window.clearInterval(t);
-  }, [load]);
+  }, [load, version]);
 
   const nameById = useMemo(() => Object.fromEntries(restaurants.map((r) => [String(r.id), r.name ?? "—"])), [restaurants]);
   const userById = useMemo(() => Object.fromEntries(users.map((u) => [String(u.id), u.name ?? "—"])), [users]);
