@@ -19,7 +19,7 @@ const KIND_ICON = {
 
 function WalletPage() {
   const navigate = useNavigate();
-  const { balance, txns } = useMyWallet();
+  const { balance, buckets, blocked, blockReason, lifetimeCredited, lifetimeDebited, txns } = useMyWallet();
 
   return (
     <div className="min-h-svh pb-24">
@@ -36,8 +36,27 @@ function WalletPage() {
           <div className="flex items-center gap-2 text-xs opacity-90"><Wallet className="h-3.5 w-3.5" /> Wallet balance</div>
           <p className="mt-1 font-display text-3xl font-extrabold">{currency(balance)}</p>
           <p className="mt-1 text-xs opacity-80">Use at checkout · full or partial payment</p>
+          <div className="mt-3 grid grid-cols-4 gap-2 text-[10px]">
+            {([["Cashback", buckets.cashback], ["Promo", buckets.promo], ["Refunds", buckets.refund], ["Referral", buckets.referral]] as const).map(([label, amt]) => (
+              <div key={label} className="rounded-xl bg-white/15 px-2 py-1.5 text-center">
+                <span className="block opacity-80">{label}</span>
+                <span className="block font-bold">{currency(amt)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {blocked && (
+          <p className="mt-2 rounded-2xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+            Wallet temporarily on hold{blockReason ? ` · ${blockReason}` : ""}. Contact support for help.
+          </p>
+        )}
+        <div className="mt-2 flex gap-2 text-[11px] text-muted-foreground">
+          <span>Total credited {currency(lifetimeCredited)}</span>
+          <span>·</span>
+          <span>Total spent {currency(lifetimeDebited)}</span>
         </div>
       </section>
+
 
       <section className="px-4">
         <h2 className="eyebrow mb-2">Transactions</h2>
