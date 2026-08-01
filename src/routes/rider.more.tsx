@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, User, Bike, KeyRound, FileText, Wallet, Shield, Bell, LifeBuoy, Sparkles, ShieldCheck } from "lucide-react";
+import { ChevronRight, User, Bike, KeyRound, FileText, Wallet, Shield, Bell, LifeBuoy, Sparkles, ShieldCheck , Trophy }
+from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 
 export const Route = createFileRoute("/rider/more")({

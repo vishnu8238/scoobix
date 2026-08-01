@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { LifeBuoy, Bell, User, LogOut, ChevronRight, History, CalendarDays, ArrowLeftRight, Sparkles, ShieldCheck } from "lucide-react";
+import { LifeBuoy, Bell, User, LogOut, ChevronRight, History, CalendarDays, ArrowLeftRight, Sparkles, ShieldCheck , Target }
+from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { useAuth } from "@/lib/auth-store";
 import { useManager } from "@/lib/manager-api";
