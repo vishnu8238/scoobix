@@ -115,6 +115,14 @@ function dispatch(payload: Record<string, unknown>) {
   if (byTable) for (const h of byTable) { try { h(payload as ChangePayload); } catch { /* ignore */ } }
 }
 
+/** Re-join every active channel after a reconnect or session change. */
+async function resubscribeAll() {
+  const rt = getClient().realtime;
+  for (const channel of refs.keys()) {
+    try { await rt.subscribe(channel); } catch { /* ignore */ }
+  }
+}
+
 async function ensureConnected(): Promise<boolean> {
   if (!isBrowser) return false;
   // Realtime is a signed-in feature. Anonymous browsing keeps the polling
@@ -123,7 +131,7 @@ async function ensureConnected(): Promise<boolean> {
   if (connected) return true;
   if (!connecting) {
     const rt = getClient().realtime;
-    rt.on("connect", () => setConnected(true));
+    rt.on("connect", () => { setConnected(true); void resubscribeAll(); });
     rt.on("disconnect", () => setConnected(false));
     rt.on("connect_error", () => setConnected(false));
     rt.on("error", () => { /* subscribe/publish errors are non-fatal */ });
