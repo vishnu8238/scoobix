@@ -10,6 +10,7 @@ import { usePaymentMethods } from "@/lib/payment-methods-store";
 import { useAuth } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { SecurityPanel } from "@/components/security/SecurityPanel";
 
 export const Route = createFileRoute("/app/profile")({
   head: () => ({ meta: [{ title: "Scoobix · Profile" }] }),

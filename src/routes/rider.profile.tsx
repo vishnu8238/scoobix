@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Star, Phone, Mail, Bike, FileText, ChevronRight, Award, Shield } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
+import { SecurityPanel } from "@/components/security/SecurityPanel";
 
 export const Route = createFileRoute("/rider/profile")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Profile" }] }),

@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-store";
 import { useCms } from "@/lib/cms-store";
 import { usePartnerRestaurant } from "@/lib/partner-store";
 import { updateRestaurantStatus } from "@/lib/insforge";
+import { SecurityPanel } from "@/components/security/SecurityPanel";
 
 export const Route = createFileRoute("/partner/settings")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Settings" }] }),
