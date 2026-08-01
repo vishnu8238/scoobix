@@ -110,6 +110,7 @@ import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
+import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
@@ -624,6 +625,11 @@ const AdminDiscoverRoute = AdminDiscoverRouteImport.update({
   path: '/discover',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCouponsRoute = AdminCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCommissionRoute = AdminCommissionRouteImport.update({
   id: '/commission',
   path: '/commission',
@@ -681,6 +687,7 @@ export interface FileRoutesByFullPath {
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
+  '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
@@ -787,6 +794,7 @@ export interface FileRoutesByTo {
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
+  '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
@@ -899,6 +907,7 @@ export interface FileRoutesById {
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/commission': typeof AdminCommissionRoute
+  '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
@@ -1012,6 +1021,7 @@ export interface FileRouteTypes {
     | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
+    | '/admin/coupons'
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/duplicates'
@@ -1118,6 +1128,7 @@ export interface FileRouteTypes {
     | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
+    | '/admin/coupons'
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/duplicates'
@@ -1229,6 +1240,7 @@ export interface FileRouteTypes {
     | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/commission'
+    | '/admin/coupons'
     | '/admin/discover'
     | '/admin/drivers'
     | '/admin/duplicates'
@@ -2048,6 +2060,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDiscoverRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/coupons': {
+      id: '/admin/coupons'
+      path: '/coupons'
+      fullPath: '/admin/coupons'
+      preLoaderRoute: typeof AdminCouponsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/commission': {
       id: '/admin/commission'
       path: '/commission'
@@ -2114,6 +2133,7 @@ interface AdminRouteChildren {
   AdminCampaignsRoute: typeof AdminCampaignsRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminCommissionRoute: typeof AdminCommissionRoute
+  AdminCouponsRoute: typeof AdminCouponsRoute
   AdminDiscoverRoute: typeof AdminDiscoverRoute
   AdminDriversRoute: typeof AdminDriversRoute
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
@@ -2142,6 +2162,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCampaignsRoute: AdminCampaignsRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminCommissionRoute: AdminCommissionRoute,
+  AdminCouponsRoute: AdminCouponsRoute,
   AdminDiscoverRoute: AdminDiscoverRoute,
   AdminDriversRoute: AdminDriversRoute,
   AdminDuplicatesRoute: AdminDuplicatesRoute,
