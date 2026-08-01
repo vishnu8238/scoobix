@@ -20,7 +20,7 @@ export const Route = createFileRoute("/admin/subscriptions")({
       { name: "description", content: "Manage membership and subscription plans, monitor MRR, churn, LTV and move subscribers in bulk." },
     ],
   }),
-  component: AdminSubscriptions;
+  component: AdminSubscriptions,
 });
 
 const AUDIENCES: Audience[] = ["customer", "restaurant", "manager", "rider"];
