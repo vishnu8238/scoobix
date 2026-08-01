@@ -78,7 +78,9 @@ function ProfilePage() {
           <Item icon={HelpCircle} label="Help & support" onClick={() => setOpen("help")} />
           <Item icon={Settings} label="Settings" onClick={() => setOpen("settings")} />
         </Group>
+        <div className="mt-4"><SecurityPanel /></div>
         <button
+
           onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/auth/login" }); }}
           className="mt-4 mb-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-bold text-destructive"
         >
