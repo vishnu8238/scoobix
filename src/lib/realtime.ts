@@ -122,6 +122,12 @@ async function fetchOnce(table: string, params?: Record<string, string | number 
   return Array.isArray(data) ? data : [];
 }
 
+function pollMs(state: StreamState) {
+  // With realtime connected, polling is only a safety net: stretch it hard.
+  if (realtimeConnected()) return Math.max(state.currentMs, SAFETY_NET_MS);
+  return state.currentMs;
+}
+
 function schedule(state: StreamState) {
   if (state.disposed) return;
   if (state.timer) window.clearTimeout(state.timer);
@@ -129,8 +135,9 @@ function schedule(state: StreamState) {
     state.timer = window.setTimeout(() => schedule(state), 4000);
     return;
   }
-  state.timer = window.setTimeout(() => void tick(state), state.currentMs);
+  state.timer = window.setTimeout(() => void tick(state), pollMs(state));
 }
+
 
 async function tick(state: StreamState) {
   if (state.disposed || state.inFlight) return;
