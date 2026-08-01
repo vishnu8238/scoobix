@@ -46,7 +46,7 @@ function WalletPage() {
         ) : (
           <ul className="divide-y divide-border/60 rounded-3xl bg-card shadow-card ring-1 ring-border/60">
             {txns.map((t) => {
-              const Icon = KIND_ICON[t.kind] ?? Wallet;
+              const Icon = (KIND_ICON as Record<string, typeof Wallet>)[t.kind] ?? Wallet;
               const positive = t.amount >= 0;
               return (
                 <li key={t.id} className="flex items-center gap-3 px-4 py-3">

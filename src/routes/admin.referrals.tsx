@@ -64,15 +64,15 @@ function AdminReferrals() {
             {records.slice(0, 40).map((r) => (
               <li key={r.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 py-2 text-xs">
                 <span className="truncate">
-                  <span className="font-bold">{r.refereeName}</span>
-                  <span className="block text-[10px] text-muted-foreground">code {r.code} · {new Date(r.createdAt).toLocaleDateString()}</span>
+                  <span className="font-bold">{r.referee_name ?? "Invited user"}</span>
+                  <span className="block text-[10px] text-muted-foreground">code {r.referral_code ?? "—"} · {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</span>
                 </span>
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   r.status === "rewarded" ? "bg-emerald-100 text-emerald-700"
                   : r.status === "pending" ? "bg-amber-100 text-amber-700"
                   : "bg-rose-100 text-rose-700"
                 }`}>{r.status}</span>
-                <span className="font-mono text-[10px] text-muted-foreground">{r.refereeId.slice(0, 8)}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">{(r.referred_id ?? "").slice(0, 8)}</span>
               </li>
             ))}
           </ul>
