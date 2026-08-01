@@ -15,6 +15,7 @@ export const Route = createFileRoute("/manager/more")({
 });
 
 const LINKS = [
+  { to: "/manager/targets", label: "My targets & incentives", icon: Target },
   { to: "/manager/calendar", label: "Meetings & follow-ups", icon: CalendarDays },
   { to: "/manager/history", label: "Onboarding history", icon: History },
   { to: "/manager/transfers", label: "Ownership transfers", icon: ArrowLeftRight },

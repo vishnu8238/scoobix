@@ -10,6 +10,7 @@ export const Route = createFileRoute("/app/more")({
 });
 
 const ITEMS = [
+  { to: "/app/membership", icon: Crown,      label: "Scoobix Plus",          desc: "Membership, benefits & savings" },
   { to: "/app/wallet",     icon: Wallet,     label: "Scoobix Wallet",        desc: "Balance, cashback & refunds" },
   { to: "/app/referral",   icon: Gift,       label: "Invite & earn",         desc: "Share your code, earn credit" },
   { to: "/app/meal",       icon: Utensils,   label: "Scoobix Daily Meal",    desc: "Weekly & monthly meal plans" },
