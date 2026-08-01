@@ -8,6 +8,8 @@ import { useDriver } from "@/lib/driver-store";
 import { useAuth } from "@/lib/auth-store";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
+import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/rider/")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Home" }] }),
