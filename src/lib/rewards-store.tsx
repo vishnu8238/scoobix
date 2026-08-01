@@ -1,12 +1,25 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+/**
+ * Rewards store — scratch cards and the reward catalogue.
+ *
+ * All state is server-authoritative: cards live in `scratch_cards`, the
+ * catalogue in `reward_campaigns` (via `loyalty-engine`). No localStorage,
+ * no seed/demo rewards.
+ */
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { getAppSettings } from "./app-settings";
-import { kvGet, kvSet } from "./kv-store";
-
-/* ============================================================
-   REWARDS STORE — Scratch card rewards.
-   Pure frontend, persisted to localStorage. Backend-ready shape:
-   Reward { id, title, type, discount, expiry, status, limit, distributed }
-   ============================================================ */
+import { useAuth } from "./auth-store";
+import { onTablesChange } from "./realtime-bus";
+import {
+  createRewardCampaign,
+  deleteRewardCampaign,
+  issueScratchCard,
+  listAllScratchCards,
+  listRewardCampaigns,
+  scratchCard,
+  updateRewardCampaign,
+  type RewardCampaignRow,
+  type ScratchCardRow,
+} from "./loyalty-engine";
 
 export type RewardType = "coupon" | "voucher" | "cravio";
 
@@ -14,17 +27,13 @@ export type Reward = {
   id: string;
   title: string;
   type: RewardType;
-  /** Discount amount or % depending on type. */
   discount: number;
   /** YYYY-MM-DD */
   expiry: string;
   status: "active" | "disabled";
-  /** Distribution cap; 0 = unlimited. */
   limit: number;
   distributed: number;
-  /** Sponsor brand name for voucher type, optional. */
   sponsor?: string;
-  /** Sub-label (e.g. "₹100 off your next order"). */
   subtitle?: string;
 };
 
@@ -33,125 +42,129 @@ export type EarnedReward = {
   orderId: string;
   earnedAt: number;
   applied: boolean;
+  title: string;
+  value: number;
+  scratched: boolean;
+  cardId: string;
 };
 
-const DEFAULT_REWARDS: Reward[] = [
-  { id: "r-cravio-100", title: "₹100 Scoobix Cash", type: "cravio", discount: 100, expiry: "2027-01-01", status: "active", limit: 0, distributed: 0, subtitle: "Auto-applied on next order" },
-  { id: "r-coupon-50",  title: "50% off next order", type: "coupon", discount: 50, expiry: "2026-12-31", status: "active", limit: 0, distributed: 0, subtitle: "Max ₹150 · code SCRATCH50" },
-  { id: "r-voucher-zo", title: "Zomo Café · Free coffee", type: "voucher", discount: 0, expiry: "2026-10-31", status: "active", limit: 250, distributed: 0, sponsor: "Zomo Café", subtitle: "Show at counter" },
-  { id: "r-coupon-30",  title: "Flat ₹30 off", type: "coupon", discount: 30, expiry: "2026-09-30", status: "active", limit: 0, distributed: 0, subtitle: "Min order ₹199" },
-];
+const toReward = (c: RewardCampaignRow): Reward => ({
+  id: c.id,
+  title: c.title ?? "Reward",
+  type: ((c.reward_type === "wallet_credit" ? "cravio" : c.reward_type === "voucher" ? "voucher" : "coupon") as RewardType),
+  discount: Number(c.reward_value ?? 0),
+  expiry: (c.ends_at ?? "").slice(0, 10),
+  status: c.active === false ? "disabled" : "active",
+  limit: Number(c.max_issuance ?? 0),
+  distributed: Number(c.issued_count ?? 0),
+  sponsor: c.sponsor ?? undefined,
+  subtitle: c.subtitle ?? undefined,
+});
+
+const toEarned = (c: ScratchCardRow): EarnedReward => ({
+  rewardId: c.campaign_id ?? c.id,
+  orderId: c.order_id ?? "",
+  earnedAt: c.created_at ? new Date(c.created_at).getTime() : Date.now(),
+  applied: c.status === "redeemed",
+  title: c.title ?? "Scratch card",
+  value: Number(c.reward_value ?? 0),
+  scratched: c.status === "scratched" || c.status === "redeemed",
+  cardId: c.id,
+});
 
 type Ctx = {
   rewards: Reward[];
-  addReward: (r: Omit<Reward, "id" | "distributed">) => void;
-  updateReward: (id: string, patch: Partial<Reward>) => void;
-  deleteReward: (id: string) => void;
-  toggleReward: (id: string) => void;
+  loading: boolean;
+  refresh: () => Promise<void>;
+  addReward: (r: Omit<Reward, "id" | "distributed">) => Promise<void>;
+  updateReward: (id: string, patch: Partial<Reward>) => Promise<void>;
+  deleteReward: (id: string) => Promise<void>;
+  toggleReward: (id: string) => Promise<void>;
 
-  earned: Record<string, EarnedReward>; // by orderId
-  /** Pull a random eligible reward for an order. Returns null when none. */
-  drawReward: (orderId: string) => Reward | null;
-  markApplied: (orderId: string) => void;
+  /** Earned cards keyed by orderId (current user for customers, all for admin). */
+  earned: Record<string, EarnedReward>;
+  /** Issue (or fetch existing) the scratch card entitlement for an order. */
+  drawReward: (orderId: string) => Promise<EarnedReward | null>;
+  /** Reveal the card and credit its reward. */
+  markApplied: (orderId: string) => Promise<void>;
 };
 
 const RewardsContext = createContext<Ctx | null>(null);
 
-type Snap = { rewards: Reward[]; earned: Record<string, EarnedReward> };
-
-
-
-const uid = () => "r-" + Math.random().toString(36).slice(2, 9);
-
 export function RewardsProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<Snap>({ rewards: DEFAULT_REWARDS, earned: {} });
+  const { user } = useAuth();
+  const uid = user?.id ?? "";
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [earned, setEarned] = useState<Record<string, EarnedReward>>({});
+  const [loading, setLoading] = useState(true);
 
-  // Reward catalogue has no dedicated table — persisted as a JSON row in
-  // app_settings; earned cards live in `scratch_cards`.
-  useEffect(() => {
-    let cancelled = false;
-    void kvGet<Reward[]>("reward_catalog").then((rows) => {
-      if (!cancelled && Array.isArray(rows) && rows.length) setState((s) => ({ ...s, rewards: rows }));
-    });
-    return () => { cancelled = true; };
-  }, []);
+  const refresh = useCallback(async () => {
+    const [campaigns, cards] = await Promise.all([listRewardCampaigns(), listAllScratchCards()]);
+    setRewards(campaigns.map(toReward));
+    const mine = uid ? cards.filter((c) => c.user_id === uid) : cards;
+    const map: Record<string, EarnedReward> = {};
+    for (const c of mine) if (c.order_id) map[c.order_id] = toEarned(c);
+    setEarned(map);
+    setLoading(false);
+  }, [uid]);
 
-  const persistCatalog = (rewards: Reward[]) => { void kvSet("reward_catalog", rewards); };
-
-  // Hydrate earned scratch cards from InsForge on mount.
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const { listTable } = await import("./insforge-crud");
-      const rows = await listTable<{ order_id?: string; reward_id?: string; earned_at?: string; applied?: boolean }>("scratch_cards");
-      if (cancelled || !rows.length) return;
-      setState((s) => {
-        const earned = { ...s.earned };
-        for (const r of rows) {
-          if (!r.order_id || !r.reward_id) continue;
-          earned[r.order_id] = {
-            rewardId: r.reward_id,
-            orderId: r.order_id,
-            earnedAt: r.earned_at ? new Date(r.earned_at).getTime() : Date.now(),
-            applied: !!r.applied,
-          };
-        }
-        return { ...s, earned };
-      });
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const drawReward: Ctx["drawReward"] = (orderId) => {
-    if (state.earned[orderId]) {
-      return state.rewards.find((r) => r.id === state.earned[orderId].rewardId) ?? null;
-    }
-    // Gate on the global app_settings toggle — admin can disable the entire
-    // scratch-card program platform-wide without touching UI.
-    if (!getAppSettings().scratch_enabled) return null;
-    const pool = state.rewards.filter((r) => r.status === "active" && (r.limit === 0 || r.distributed < r.limit));
-    if (pool.length === 0) return null;
-    const picked = pool[Math.floor(Math.random() * pool.length)];
-    setState((s) => ({
-      rewards: s.rewards.map((r) => r.id === picked.id ? { ...r, distributed: r.distributed + 1 } : r),
-      earned: { ...s.earned, [orderId]: { rewardId: picked.id, orderId, earnedAt: Date.now(), applied: false } },
-    }));
-    void import("./insforge-crud").then(({ createRecord }) => createRecord("scratch_cards", {
-      order_id: orderId, reward_id: picked.id, applied: false,
-    }));
-    return picked;
-  };
+  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => onTablesChange(["scratch_cards", "reward_campaigns"], () => { void refresh(); }), [refresh]);
 
   const ctx: Ctx = {
-    rewards: state.rewards,
-    addReward: (r) => setState((s) => {
-      const rewards = [...s.rewards, { ...r, id: uid(), distributed: 0 }];
-      persistCatalog(rewards);
-      return { ...s, rewards };
-    }),
-    updateReward: (id, patch) => setState((s) => {
-      const rewards = s.rewards.map((r) => r.id === id ? { ...r, ...patch } : r);
-      persistCatalog(rewards);
-      return { ...s, rewards };
-    }),
-    deleteReward: (id) => setState((s) => {
-      const rewards = s.rewards.filter((r) => r.id !== id);
-      persistCatalog(rewards);
-      return { ...s, rewards };
-    }),
-    toggleReward: (id) => setState((s) => {
-      const rewards = s.rewards.map((r) => r.id === id ? { ...r, status: (r.status === "active" ? "disabled" : "active") as Reward["status"] } : r);
-      persistCatalog(rewards);
-      return { ...s, rewards };
-    }),
-    earned: state.earned,
-    drawReward,
-    markApplied: (orderId) => {
-      setState((s) => s.earned[orderId] ? { ...s, earned: { ...s.earned, [orderId]: { ...s.earned[orderId], applied: true } } } : s);
-      void import("./insforge-crud").then(({ listTable, patchRecord }) => listTable<{ id?: string; order_id?: string }>("scratch_cards", { order_id: `eq.${orderId}`, limit: 1 }).then((rs) => {
-        const row = rs[0];
-        if (row?.id) void patchRecord("scratch_cards", row.id, { applied: true });
-      }));
+    rewards,
+    loading,
+    refresh,
+    addReward: async (r) => {
+      await createRewardCampaign({
+        title: r.title,
+        subtitle: r.subtitle ?? null,
+        reward_type: r.type === "cravio" ? "wallet_credit" : r.type === "voucher" ? "voucher" : "coupon",
+        reward_value: r.discount,
+        ends_at: r.expiry || null,
+        active: r.status === "active",
+        max_issuance: r.limit,
+        sponsor: r.sponsor ?? null,
+      });
+      await refresh();
+    },
+    updateReward: async (id, patch) => {
+      await updateRewardCampaign(id, {
+        ...(patch.title !== undefined ? { title: patch.title } : {}),
+        ...(patch.subtitle !== undefined ? { subtitle: patch.subtitle } : {}),
+        ...(patch.discount !== undefined ? { reward_value: patch.discount } : {}),
+        ...(patch.expiry !== undefined ? { ends_at: patch.expiry || null } : {}),
+        ...(patch.limit !== undefined ? { max_issuance: patch.limit } : {}),
+        ...(patch.sponsor !== undefined ? { sponsor: patch.sponsor } : {}),
+        ...(patch.status !== undefined ? { active: patch.status === "active" } : {}),
+        ...(patch.type !== undefined
+          ? { reward_type: patch.type === "cravio" ? "wallet_credit" : patch.type === "voucher" ? "voucher" : "coupon" }
+          : {}),
+      });
+      await refresh();
+    },
+    deleteReward: async (id) => { await deleteRewardCampaign(id); await refresh(); },
+    toggleReward: async (id) => {
+      const current = rewards.find((r) => r.id === id);
+      if (!current) return;
+      await updateRewardCampaign(id, { active: current.status !== "active" });
+      await refresh();
+    },
+    earned,
+    drawReward: async (orderId) => {
+      if (earned[orderId]) return earned[orderId];
+      if (!getAppSettings().scratch_enabled || !uid) return null;
+      const card = await issueScratchCard({ userId: uid, orderId });
+      if (!card) return null;
+      const row = toEarned(card);
+      setEarned((e) => ({ ...e, [orderId]: row }));
+      return row;
+    },
+    markApplied: async (orderId) => {
+      const card = earned[orderId];
+      if (!card || !uid) return;
+      await scratchCard(card.cardId, uid);
+      await refresh();
     },
   };
 
