@@ -18,7 +18,7 @@ import { useAuth } from "./auth-store";
 import { getAppSettings } from "./app-settings";
 import { kvGet, kvSet } from "./kv-store";
 import { listTable } from "./insforge-crud";
-import { useTableFeed } from "./realtime-hooks";
+import { onTablesChange } from "./realtime-bus";
 import {
   DEFAULT_REFERRAL_CONFIG,
   LEVELS,
@@ -103,6 +103,11 @@ export type {
   TxnKind,
   WalletTxnRow,
 } from "./loyalty-engine";
+
+/** Re-run `fn` whenever a table changes anywhere on the platform. */
+function useTableFeed(table: string, fn: () => void) {
+  useEffect(() => onTablesChange([table], fn), [table, fn]);
+}
 
 /* ============================================================
    WALLET
