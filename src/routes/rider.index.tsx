@@ -7,6 +7,7 @@ import { setDriverOnline } from "@/lib/insforge";
 import { useDriver } from "@/lib/driver-store";
 import { useAuth } from "@/lib/auth-store";
 import { listTable } from "@/lib/insforge-crud";
+import { useTableVersion } from "@/lib/realtime-hooks";
 
 export const Route = createFileRoute("/rider/")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Home" }] }),
@@ -37,6 +38,8 @@ function RiderHome() {
   const [online, setOnline] = useState(false);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [offers, setOffers] = useState<OrderRow[]>([]);
+  // Realtime: re-load the moment an order/driver row changes anywhere.
+  const version = useTableVersion(["orders", "drivers"]);
 
   useEffect(() => { setOnline(Boolean(driver?.online_status)); }, [driver?.online_status]);
 
@@ -52,9 +55,7 @@ function RiderHome() {
 
   useEffect(() => {
     void load();
-    const t = window.setInterval(() => void load(), 20000);
-    return () => window.clearInterval(t);
-  }, [load]);
+  }, [load, version]);
 
   const today = useMemo(() => {
     const done = orders.filter((o) => String(o.status ?? "").toUpperCase() === "DELIVERED" && isToday(o.created_at));

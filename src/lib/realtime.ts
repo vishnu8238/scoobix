@@ -17,6 +17,11 @@
  */
 
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { onTableChange, realtimeConnected, onRealtimeState } from "./realtime-bus";
+
+/** Poll interval used purely as a safety net while realtime is connected. */
+const SAFETY_NET_MS = 120_000;
+
 
 type Row = Record<string, unknown>;
 
@@ -47,6 +52,9 @@ type StreamState = {
   maxMs: number;
   inFlight: boolean;
   disposed: boolean;
+  offRealtime?: () => void;
+  offState?: () => void;
+
 };
 
 const streams = new Map<string, StreamState>();
@@ -122,6 +130,12 @@ async function fetchOnce(table: string, params?: Record<string, string | number 
   return Array.isArray(data) ? data : [];
 }
 
+function pollMs(state: StreamState) {
+  // With realtime connected, polling is only a safety net: stretch it hard.
+  if (realtimeConnected()) return Math.max(state.currentMs, SAFETY_NET_MS);
+  return state.currentMs;
+}
+
 function schedule(state: StreamState) {
   if (state.disposed) return;
   if (state.timer) window.clearTimeout(state.timer);
@@ -129,8 +143,9 @@ function schedule(state: StreamState) {
     state.timer = window.setTimeout(() => schedule(state), 4000);
     return;
   }
-  state.timer = window.setTimeout(() => void tick(state), state.currentMs);
+  state.timer = window.setTimeout(() => void tick(state), pollMs(state));
 }
+
 
 async function tick(state: StreamState) {
   if (state.disposed || state.inFlight) return;
@@ -181,6 +196,14 @@ export function subscribeTable(
       disposed: false,
     };
     streams.set(key, state);
+    // Realtime push: any write to this table re-fetches instantly, so the
+    // interval above never has to be fast.
+    state.offRealtime = onTableChange(table, () => {
+      state!.currentMs = state!.minMs;
+      void tick(state!);
+    });
+    // Re-sync the moment the socket comes back after a drop.
+    state.offState = onRealtimeState((on) => { if (on) void tick(state!); });
     // Kick off immediately.
     void tick(state);
   } else {
@@ -194,13 +217,18 @@ export function subscribeTable(
     if (state!.listeners.size === 0) {
       state!.disposed = true;
       if (state!.timer) window.clearTimeout(state!.timer);
+      state!.offRealtime?.();
+      state!.offState?.();
       streams.delete(key);
     }
   };
 }
 
+
 /** After a local mutation, force every subscriber on `table` to re-fetch. */
 export function nudgeTable(table: string) {
+
+
   for (const [key, state] of streams) {
     if (state.table === table) {
       state.currentMs = state.minMs;

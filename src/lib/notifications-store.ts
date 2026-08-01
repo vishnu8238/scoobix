@@ -3,9 +3,10 @@
  * No mock fallback: an empty table renders the screen's empty state.
  */
 import { useEffect, useState } from "react";
-import { listTable, deleteRecord } from "./insforge-crud";
+import { listTable, deleteRecord, patchRecord, patchWhereIn } from "./insforge-crud";
 import { useAuth } from "./auth-store";
 import { dedupeNotificationRows } from "./notifications-queue";
+import { useTableVersion } from "./realtime-hooks";
 
 export type AppNotification = {
   id: string;
@@ -53,6 +54,8 @@ export function useNotifications(audience: "customer" | "partner" | "rider") {
   const userId = user?.id;
   const [list, setList] = useState<AppNotification[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "empty">("loading");
+  // Realtime: a new notification row pushes straight into the list.
+  const version = useTableVersion(["notifications"]);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,16 +78,26 @@ export function useNotifications(audience: "customer" | "partner" | "rider") {
       setStatus(unique.length ? "ready" : "empty");
     })();
     return () => { cancelled = true; };
-  }, [audience, userId]);
+  }, [audience, userId, version]);
 
+  // Reads are persisted so the badge stays correct on every device.
   const markRead = (id: string) => {
     setList((p) => p.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+    void patchRecord("notifications", id, { unread: false });
+  };
+  const markAllRead = () => {
+    const ids = list.filter((n) => n.unread).map((n) => n.id);
+    if (!ids.length) return;
+    setList((p) => p.map((n) => ({ ...n, unread: false })));
+    void patchWhereIn("notifications", ids, { unread: false });
   };
   const dismiss = (id: string) => {
     setList((p) => p.filter((n) => n.id !== id));
     void deleteRecord("notifications", id);
   };
 
+  const unreadCount = list.reduce((n, x) => n + (x.unread ? 1 : 0), 0);
 
-  return { list, status, markRead, dismiss };
+  return { list, status, markRead, markAllRead, dismiss, unreadCount };
 }
+

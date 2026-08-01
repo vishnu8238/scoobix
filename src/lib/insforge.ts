@@ -103,11 +103,26 @@ async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?:
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
+    if (res.ok) {
+      // Push the change to every other open client (rider, partner, admin…).
+      const table = path.split("/records/")[1]?.split("?")[0];
+      if (table) {
+        const idMatch = path.match(/id=eq\.([^&]+)/);
+        const row = {
+          ...(typeof body === "object" && body && !Array.isArray(body) ? (body as Record<string, unknown>) : {}),
+          ...(idMatch ? { id: decodeURIComponent(idMatch[1]) } : {}),
+        };
+        const op = method === "POST" ? "insert" : method === "PATCH" ? "update" : "delete";
+        const { publishTableChange } = await import("./realtime-bus");
+        publishTableChange(table, op, row);
+      }
+    }
     return { ok: res.ok };
   } catch {
     return { ok: false };
   }
 }
+
 
 /** Update restaurant open / accepting / status flags. */
 export function updateRestaurantStatus(

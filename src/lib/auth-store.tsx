@@ -507,6 +507,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(PENDING_ROLE_KEY);
     } catch { /* */ }
     setUser(null);
+    // Drop every realtime subscription so no stale channel survives logout.
+    void import("./realtime-bus").then((m) => m.disconnectRealtime()).catch(() => {});
     void ifLogout();
   }, []);
 

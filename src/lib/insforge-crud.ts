@@ -7,6 +7,23 @@
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { cached, cacheDrop, cacheGet } from "./request-cache";
 import { recordMetric } from "./perf-metrics";
+import { publishTableChange, onAnyChange } from "./realtime-bus";
+
+// Any realtime change — from this client or another one — drops the cached
+// reads for that table so the next fetch is authoritative.
+if (typeof window !== "undefined") {
+  onAnyChange((p) => { if (p?.table) cacheDrop(`db:${p.table}?`); });
+}
+
+/** Announce a write so every other open client updates without polling. */
+function announce(
+  table: string,
+  op: "insert" | "update" | "delete",
+  row?: Record<string, unknown> | null,
+) {
+  try { publishTableChange(table, op, row ?? undefined); } catch { /* best-effort */ }
+}
+
 
 
 /** Default read TTL (seconds). Short enough to feel live, long enough to
@@ -154,12 +171,20 @@ export function invalidateTable(table: string) {
   cacheDrop(`db:${table}?`);
 }
 
+function firstRow(v: unknown): Record<string, unknown> | undefined {
+  if (Array.isArray(v)) return v[0] as Record<string, unknown> | undefined;
+  return (v ?? undefined) as Record<string, unknown> | undefined;
+}
+
 export function createRecord<T = Record<string, unknown>>(
   table: string,
   record: Record<string, unknown>,
 ): Promise<T | null> {
   invalidateTable(table);
-  return withRetry(() => once(base(table), "POST", record)) as Promise<T | null>;
+  return (withRetry(() => once(base(table), "POST", record)) as Promise<T | null>).then((res) => {
+    announce(table, "insert", firstRow(res) ?? record);
+    return res;
+  });
 }
 
 /** Batch insert — one round trip instead of N. */
@@ -169,7 +194,10 @@ export function createRecords<T = Record<string, unknown>>(
 ): Promise<T[] | null> {
   if (!records.length) return Promise.resolve([]);
   invalidateTable(table);
-  return withRetry(() => once(base(table), "POST", records)) as Promise<T[] | null>;
+  return (withRetry(() => once(base(table), "POST", records)) as Promise<T[] | null>).then((res) => {
+    announce(table, "insert", firstRow(res) ?? records[0]);
+    return res;
+  });
 }
 
 export function patchRecord<T = Record<string, unknown>>(
@@ -178,7 +206,12 @@ export function patchRecord<T = Record<string, unknown>>(
   patch: Record<string, unknown>,
 ): Promise<T | null> {
   invalidateTable(table);
-  return withRetry(() => once(`${base(table)}?id=eq.${id}`, "PATCH", patch)) as Promise<T | null>;
+  return (
+    withRetry(() => once(`${base(table)}?id=eq.${id}`, "PATCH", patch)) as Promise<T | null>
+  ).then((res) => {
+    announce(table, "update", { id, ...patch, ...(firstRow(res) ?? {}) });
+    return res;
+  });
 }
 
 /** Batch update — apply the same patch to many ids in one request. */
@@ -190,11 +223,20 @@ export function patchWhereIn<T = Record<string, unknown>>(
   if (!ids.length) return Promise.resolve(null);
   invalidateTable(table);
   const filter = `id=in.(${ids.join(",")})`;
-  return withRetry(() => once(`${base(table)}?${filter}`, "PATCH", patch)) as Promise<T | null>;
+  return (
+    withRetry(() => once(`${base(table)}?${filter}`, "PATCH", patch)) as Promise<T | null>
+  ).then((res) => {
+    for (const id of ids.slice(0, 20)) announce(table, "update", { id, ...patch });
+    return res;
+  });
 }
 
 export function deleteRecord(table: string, id: string): Promise<null> {
   invalidateTable(table);
-  return withRetry(() => once(`${base(table)}?id=eq.${id}`, "DELETE")).then(() => null);
+  return withRetry(() => once(`${base(table)}?id=eq.${id}`, "DELETE")).then(() => {
+    announce(table, "delete", { id });
+    return null;
+  });
 }
+
 

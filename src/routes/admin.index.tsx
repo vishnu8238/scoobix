@@ -4,6 +4,7 @@ import { formatPrice } from "@/lib/format";
 import { Users, Store, Bike, ClipboardList, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
+import { useTableVersion } from "@/lib/realtime-hooks";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Dashboard" }] }),
@@ -28,6 +29,8 @@ function AdminDashboard() {
   const [users, setUsers] = useState<NamedRow[]>([]);
   const [restaurants, setRestaurants] = useState<NamedRow[]>([]);
   const [drivers, setDrivers] = useState<{ id: string }[]>([]);
+  // Live platform metrics — pushed, not polled.
+  const version = useTableVersion(["orders", "users", "restaurants", "drivers"]);
 
   const load = useCallback(async () => {
     const [o, u, r, d] = await Promise.all([
@@ -42,9 +45,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     void load();
-    const t = window.setInterval(() => void load(), 30000);
-    return () => window.clearInterval(t);
-  }, [load]);
+  }, [load, version]);
 
   const nameById = useMemo(() => {
     const m: Record<string, NamedRow> = {};
