@@ -6,6 +6,8 @@ import { cn } from "@/lib/format";
 import {
   listCampaigns, effectiveStatus, trackCampaignEvent, CAMPAIGN_TYPE_LABEL, type Campaign,
 } from "@/lib/campaigns-api";
+import { OptimizedImage } from "@/components/cravio/OptimizedImage";
+
 
 /**
  * Home-screen campaign banners. Reads live campaigns from InsForge, shows only
@@ -58,7 +60,7 @@ export function CampaignBanners() {
           >
             {c.banner_url && (
               <>
-                <img src={c.banner_url} alt={c.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                <OptimizedImage src={c.banner_url} alt={c.name} type="banner" className="absolute inset-0 h-full w-full" />
                 <div className="absolute inset-0 bg-black/45" />
               </>
             )}

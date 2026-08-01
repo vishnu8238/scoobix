@@ -65,7 +65,7 @@ function ReferralPage() {
           <p className="mt-1 text-xs text-muted-foreground">Friend orders ₹{config.minOrder}+ · both get credited. Valid for {config.expiryDays} days.</p>
 
           <div className="mx-auto mt-4 grid w-fit place-items-center rounded-2xl bg-white p-3 ring-1 ring-border/60">
-            <img src={qr} alt="Referral QR code" width={180} height={180} loading="lazy" className="rounded-xl" />
+            <img src={qr} alt="Referral QR code" width={180} height={180} loading="lazy" decoding="async" className="rounded-xl" />
           </div>
 
           <button onClick={copyCode} className="mt-4 inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-bold">

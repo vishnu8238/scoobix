@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useVisibleDiscoverCards, useVisibleTrendingChips } from "@/lib/discover-store";
 import { TrendingUp } from "lucide-react";
+import { OptimizedImage } from "@/components/cravio/OptimizedImage";
 
 /** Horizontal shortcut rail — admin-managed. */
 export function DiscoverMore() {
@@ -24,7 +25,7 @@ export function DiscoverMore() {
               style={{ borderColor: "transparent", boxShadow: c.color ? `inset 0 0 0 2px ${c.color}` : undefined }}
             >
               {c.image ? (
-                <img src={c.image} alt={c.title} className="h-full w-full object-cover" loading="lazy" />
+                <OptimizedImage src={c.image} alt={c.title} type="discover" className="h-full w-full" />
               ) : (
                 <span className="text-2xl">{c.icon}</span>
               )}
@@ -57,7 +58,7 @@ export function TrendingNow() {
           >
             <span className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-secondary">
               {c.image ? (
-                <img src={c.image} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <OptimizedImage src={c.image} alt="" type="trending" className="h-full w-full" />
               ) : null}
               <span className="absolute -right-0.5 -top-0.5 grid h-3.5 w-3.5 place-items-center rounded-full bg-primary text-[8px] text-primary-foreground">↑</span>
             </span>

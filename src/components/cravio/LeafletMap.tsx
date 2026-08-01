@@ -40,6 +40,13 @@ const ICONS: Record<MarkerKind, { emoji: string; color: string }> = {
   pin: { emoji: "📍", color: "var(--color-primary)" },
 };
 
+/** Single cached module load — every effect reuses the same promise. */
+let leafletPromise: Promise<any> | undefined;
+function loadLeaflet() {
+  if (!leafletPromise) leafletPromise = import("leaflet").then((m) => m.default);
+  return leafletPromise;
+}
+
 function buildDivIcon(L: any, kind: MarkerKind, pulse = false) {
   const { emoji, color } = ICONS[kind];
   const ring = pulse
@@ -82,7 +89,7 @@ export function LeafletMap({
     let disposed = false;
     let map: any;
     (async () => {
-      const L = (await import("leaflet")).default;
+      const L = await loadLeaflet();
       if (disposed || !elRef.current) return;
       const c = center ?? (route ? interpolate(route.from, route.to, 0.5) : { lat: 12.9716, lng: 77.5946 });
       map = L.map(elRef.current, {
@@ -120,7 +127,7 @@ export function LeafletMap({
   useEffect(() => {
     if (!ready) return;
     (async () => {
-      const L = (await import("leaflet")).default;
+      const L = await loadLeaflet();
       const map = mapRef.current;
       const layer = markerLayerRef.current;
       if (!map || !layer) return;
@@ -158,7 +165,7 @@ export function LeafletMap({
   useEffect(() => {
     if (!ready || !route) return;
     (async () => {
-      const L = (await import("leaflet")).default;
+      const L = await loadLeaflet();
       const map = mapRef.current;
       if (!map) return;
       if (!riderMarkerRef.current) {
@@ -193,7 +200,7 @@ export function LeafletMap({
     const map = mapRef.current;
     if (!map) return;
     const handler = async (e: any) => {
-      const L = (await import("leaflet")).default;
+      const L = await loadLeaflet();
       const { lat, lng } = e.latlng;
       if (!pickMarkerRef.current) {
         pickMarkerRef.current = L.marker([lat, lng], { icon: buildDivIcon(L, "pin", true), draggable: true }).addTo(map);
@@ -214,7 +221,7 @@ export function LeafletMap({
   useEffect(() => {
     if (!ready || !pickedAt) return;
     (async () => {
-      const L = (await import("leaflet")).default;
+      const L = await loadLeaflet();
       const map = mapRef.current;
       if (!map) return;
       if (!pickMarkerRef.current) {

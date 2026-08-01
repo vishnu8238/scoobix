@@ -17,7 +17,7 @@
  * realtime disabled) nothing throws — the adaptive-polling engine in
  * `realtime.ts` keeps its fast intervals and the UI behaves exactly as before.
  */
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 
 export type ChangePayload = {
@@ -125,6 +125,16 @@ function leaveChannel(channel: string) {
   if (socket?.connected) socket.emit("realtime:unsubscribe", { channel });
 }
 
+/**
+ * Socket.IO is loaded on demand so its ~45 kB never lands in the initial
+ * page bundle — the first screen paints, then realtime attaches.
+ */
+let ioPromise: Promise<typeof import("socket.io-client")["io"]> | undefined;
+function loadIo() {
+  if (!ioPromise) ioPromise = import("socket.io-client").then((m) => m.io);
+  return ioPromise;
+}
+
 async function ensureConnected(): Promise<boolean> {
   if (!isBrowser) return false;
   const token = handshakeToken();
@@ -140,34 +150,39 @@ async function ensureConnected(): Promise<boolean> {
   if (connected) return true;
   if (!connecting) {
     socketToken = token;
-    const s = io(INSFORGE_URL, {
-      transports: ["websocket"],
-      auth: { token },
-      forceNew: true,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 15000,
-    });
-    socket = s;
-    s.on("connect", () => { setConnected(true); resubscribeAll(); });
-    s.on("disconnect", () => { subscribed.clear(); setConnected(false); });
-    s.on("connect_error", () => setConnected(false));
-    s.onAny((event: string, msg: Record<string, unknown>) => {
-      if (event !== EVENT) return;   // realtime:error and presence events are non-fatal
-      dispatch(msg);
-    });
-    connecting = new Promise<void>((resolve) => {
-      const done = () => { cleanup(); resolve(); };
-      const timer = window.setTimeout(done, 10_000);
-      const cleanup = () => {
-        window.clearTimeout(timer);
-        s.off("connect", done);
-        s.off("connect_error", done);
-      };
-      s.once("connect", done);
-      s.once("connect_error", done);
-    }).finally(() => { connecting = null; });
+    // Assigned synchronously so two concurrent callers can never open two sockets.
+    connecting = (async () => {
+      const io = await loadIo();
+      const s = io(INSFORGE_URL, {
+        transports: ["websocket"],
+        auth: { token },
+        forceNew: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 15000,
+      });
+      socket = s;
+      s.on("connect", () => { setConnected(true); resubscribeAll(); });
+      s.on("disconnect", () => { subscribed.clear(); setConnected(false); });
+      s.on("connect_error", () => setConnected(false));
+      s.onAny((event: string, msg: Record<string, unknown>) => {
+        if (event !== EVENT) return;   // realtime:error and presence events are non-fatal
+        dispatch(msg);
+      });
+      await new Promise<void>((resolve) => {
+        const done = () => { cleanup(); resolve(); };
+        const timer = window.setTimeout(done, 10_000);
+        const cleanup = () => {
+          window.clearTimeout(timer);
+          s.off("connect", done);
+          s.off("connect_error", done);
+        };
+        s.once("connect", done);
+        s.once("connect_error", done);
+      });
+    })().finally(() => { connecting = null; });
   }
+
   await connecting;
   return connected;
 }

@@ -74,7 +74,7 @@ function GroupCartPage() {
 
           <div className="mt-4 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
             <div className="mx-auto grid w-fit place-items-center rounded-2xl bg-white p-3 ring-1 ring-border/60">
-              <img src={qr} alt="Scan to join group cart" width={160} height={160} loading="lazy" className="rounded-xl" />
+              <img src={qr} alt="Scan to join group cart" width={160} height={160} loading="lazy" decoding="async" className="rounded-xl" />
             </div>
             <div>
               <p className="text-xs font-bold text-muted-foreground">Participants ({session?.members.length ?? 0})</p>
