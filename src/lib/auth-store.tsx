@@ -27,6 +27,19 @@ import { listTable } from "./insforge-crud";
 import { isPhoneOtpEnabled, sendPhoneOtp, verifyPhoneOtp, normalisePhone } from "./phone-otp";
 import { setTokens } from "./insforge-auth";
 import { clearLastRoute } from "./last-route";
+import {
+  accountUsable,
+  endCurrentSession,
+  fetchUserSecurity,
+  heartbeatSession,
+  noteFailedLogin,
+  onLoginSuccess,
+  recordLogin,
+} from "./security-api";
+import { clearElevationCache } from "./permissions";
+import { rateLimit, guardMessage } from "./api-guard";
+import { deviceId } from "./device-context";
+
 
 /**
  * Auth store backed by InsForge Auth.
@@ -347,13 +360,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               forceRole: pending.claim,
             });
             if (!cancelled && next) {
-              setUser(next);
-              handledOAuth = true;
-              try {
-                window.opener?.postMessage({ type: "scoobix_oauth_complete" }, window.location.origin);
-                if (window.opener && !window.opener.closed) window.setTimeout(() => window.close(), 250);
-              } catch { /* */ }
+              const blocked = await admitSession(next, String(callback.provider));
+              if (blocked) {
+                setOauthError(blocked);
+              } else {
+                setUser(next);
+                handledOAuth = true;
+                try {
+                  window.opener?.postMessage({ type: "scoobix_oauth_complete" }, window.location.origin);
+                  if (window.opener && !window.opener.closed) window.setTimeout(() => window.close(), 250);
+                } catch { /* */ }
+              }
             }
+
           } catch (err) {
             console.error("[auth] OAuth callback failed", err);
             if (!cancelled) {
@@ -401,19 +420,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Keep the active-session row warm so admin "active sessions" is truthful and
+  // abandoned sessions age out on their own.
+  useEffect(() => {
+    if (!user?.id) return;
+    void heartbeatSession();
+    const timer = window.setInterval(() => void heartbeatSession(), 5 * 60_000);
+    return () => window.clearInterval(timer);
+  }, [user?.id]);
+
+
+
+  /**
+   * Post-authentication security gate. Blocks locked / suspended / deleted
+   * accounts, then opens the session row, device record and audit entries.
+   * Returns an error message when the account may not be used.
+   */
+  const admitSession = useCallback(async (next: User, provider: string): Promise<string | null> => {
+    const security = await fetchUserSecurity(next.id).catch(() => null);
+    const verdict = accountUsable(security);
+    if (!verdict.ok) {
+      await recordLogin({
+        userId: next.id, email: next.email, role: next.role,
+        event: "locked", provider, success: false, reason: verdict.state,
+      }).catch(() => null);
+      setTokens(null, null);
+      void ifLogout();
+      return verdict.reason ?? "This account cannot be used right now.";
+    }
+    void onLoginSuccess({ userId: next.id, email: next.email, role: next.role, provider });
+    return null;
+  }, []);
+
   const signIn: AuthCtx["signIn"] = async (email, password, role) => {
+    const address = email.trim().toLowerCase();
     try {
-      const { user: sess } = await ifLogin(email.trim(), password);
+      // Throttle credential attempts per device before touching the backend.
+      rateLimit("auth.login", `${deviceId()}:${address}`);
+    } catch (err) {
+      return { ok: false, message: guardMessage(err) };
+    }
+    try {
+      const { user: sess } = await ifLogin(address, password);
       const next = await syncProfile(sess, { provider: "email", role });
       if (!next) return { ok: false, message: "Could not load your account. Please try again." };
+      const blocked = await admitSession(next, "password");
+      if (blocked) return { ok: false, message: blocked };
       setUser(next);
       return { ok: true, user: next };
     } catch (err) {
       console.error("[auth] Email sign-in failed", err);
       const message = err instanceof Error ? err.message : "Sign in failed";
+      // Track the failure against the real account when one exists, so repeated
+      // attempts can auto-lock it.
+      void (async () => {
+        const existing = await findUserProfileByEmail(address).catch(() => null);
+        await noteFailedLogin(address, existing?.id ?? null).catch(() => null);
+      })();
       return { ok: false, message, needsVerification: /verif/i.test(message) };
     }
   };
+
 
   const signUp: AuthCtx["signUp"] = async ({ name, email, phone, password, role }) => {
     try {
@@ -460,6 +527,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const verifyPhoneLogin: AuthCtx["verifyPhoneLogin"] = async (phone, otp, role) => {
+    try {
+      rateLimit("auth.otp", `${deviceId()}:${normalisePhone(phone)}`);
+    } catch (err) {
+      return { ok: false, message: guardMessage(err) };
+    }
     const res = await verifyPhoneOtp(phone, otp);
     if (!res.ok || !res.accessToken) return { ok: false, message: res.message ?? "Invalid code" };
     setTokens(res.accessToken, res.refreshToken ?? null);
@@ -467,9 +539,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!sess) return { ok: false, message: "Could not start a session" };
     const next = await syncProfile(sess, { provider: "phone", role, phone: normalisePhone(phone) });
     if (!next) return { ok: false, message: "Could not load your account. Please try again." };
+    const blocked = await admitSession(next, "phone");
+    if (blocked) return { ok: false, message: blocked };
     setUser(next);
     return { ok: true, user: next };
   };
+
 
   const verifyEmailCode: AuthCtx["verifyEmailCode"] = async (email, code) => {
     try {
@@ -498,6 +573,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = useCallback(() => {
+    // Close the session row and audit the sign-out BEFORE the token is dropped,
+    // so the write still carries a valid session.
+    const signingOut = user?.id ?? null;
+    void endCurrentSession(signingOut).catch(() => {});
+    if (signingOut) clearElevationCache(signingOut);
     // Clear the local session FIRST so no in-flight request can revive it,
     // then revoke server-side in the background.
     setTokens(null, null);
@@ -510,7 +590,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Drop every realtime subscription so no stale channel survives logout.
     void import("./realtime-bus").then((m) => m.disconnectRealtime()).catch(() => {});
     void ifLogout();
-  }, []);
+  }, [user?.id]);
+
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {
     try {

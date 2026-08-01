@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-store";
 import { useManager, updateManager, useManagerRestaurants, managerStats } from "@/lib/manager-api";
+import { SecurityPanel } from "@/components/security/SecurityPanel";
 
 export const Route = createFileRoute("/manager/profile")({
   head: () => ({
@@ -72,10 +73,13 @@ function ManagerProfile() {
             Save changes
           </Button>
         </div>
+
+        <SecurityPanel />
       </div>
     </div>
   );
 }
+
 
 function Metric({ label, value }: { label: string; value: number | string }) {
   return (

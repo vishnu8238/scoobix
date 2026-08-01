@@ -249,6 +249,32 @@ export async function ifSendPasswordReset(email: string, redirectTo?: string): P
   await jsonOrThrow(res);
 }
 
+/**
+ * Change the signed-in user's password. Requires the current password so a
+ * stolen session alone cannot take over the account.
+ */
+export async function ifChangePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const session = await ifGetSession();
+  if (!session?.email) throw new Error("You are not signed in");
+  // Re-authenticate first; this both proves ownership and refreshes the token.
+  await ifLogin(session.email, currentPassword);
+  const res = await raw(`/api/auth/users/current`, {
+    method: "PATCH",
+    body: JSON.stringify({ password: newPassword }),
+  });
+  await jsonOrThrow(res);
+}
+
+/** Update the signed-in user's email or phone on the auth record. */
+export async function ifUpdateAuthContact(patch: { email?: string; phone?: string }): Promise<void> {
+  const res = await raw(`/api/auth/users/current`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+  await jsonOrThrow(res);
+}
+
+
 // ---------- OAuth (PKCE) ----------
 
 function randomVerifier(): string {

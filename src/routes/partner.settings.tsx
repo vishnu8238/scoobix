@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-store";
 import { useCms } from "@/lib/cms-store";
 import { usePartnerRestaurant } from "@/lib/partner-store";
 import { updateRestaurantStatus } from "@/lib/insforge";
+import { SecurityPanel } from "@/components/security/SecurityPanel";
 
 export const Route = createFileRoute("/partner/settings")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Settings" }] }),
@@ -50,7 +51,10 @@ function PartnerSettings() {
         </Row>
       </section>
 
+      <div className="px-4 pt-4"><SecurityPanel /></div>
+
       <button
+
         onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/auth/login" }); }}
         className="mx-4 mt-4 flex w-[calc(100%-2rem)] items-center gap-3 rounded-3xl bg-card px-4 py-3.5 text-left shadow-soft ring-1 ring-border/60 transition active:bg-muted/40"
       >

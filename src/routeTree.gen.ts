@@ -106,6 +106,7 @@ import { Route as AdminSupportRouteImport } from './routes/admin.support'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSpotlightRouteImport } from './routes/admin.spotlight'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
@@ -612,6 +613,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSecurityRoute = AdminSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRestaurantsRoute = AdminRestaurantsRouteImport.update({
   id: '/restaurants',
   path: '/restaurants',
@@ -741,6 +747,7 @@ export interface FileRoutesByFullPath {
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
+  '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
@@ -855,6 +862,7 @@ export interface FileRoutesByTo {
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
+  '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
@@ -975,6 +983,7 @@ export interface FileRoutesById {
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
+  '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
@@ -1096,6 +1105,7 @@ export interface FileRouteTypes {
     | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
+    | '/admin/security'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/subscriptions'
@@ -1210,6 +1220,7 @@ export interface FileRouteTypes {
     | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
+    | '/admin/security'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/subscriptions'
@@ -1329,6 +1340,7 @@ export interface FileRouteTypes {
     | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
+    | '/admin/security'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/subscriptions'
@@ -2116,6 +2128,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/security': {
+      id: '/admin/security'
+      path: '/security'
+      fullPath: '/admin/security'
+      preLoaderRoute: typeof AdminSecurityRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/restaurants': {
       id: '/admin/restaurants'
       path: '/restaurants'
@@ -2278,6 +2297,7 @@ interface AdminRouteChildren {
   AdminReferralsRoute: typeof AdminReferralsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRestaurantsRoute: typeof AdminRestaurantsRoute
+  AdminSecurityRoute: typeof AdminSecurityRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSpotlightRoute: typeof AdminSpotlightRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
@@ -2308,6 +2328,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReferralsRoute: AdminReferralsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRestaurantsRoute: AdminRestaurantsRoute,
+  AdminSecurityRoute: AdminSecurityRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSpotlightRoute: AdminSpotlightRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
