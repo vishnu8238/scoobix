@@ -7,6 +7,17 @@
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { cached, cacheDrop, cacheGet } from "./request-cache";
 import { recordMetric } from "./perf-metrics";
+import { publishTableChange } from "./realtime-bus";
+
+/** Announce a write so every other open client updates without polling. */
+function announce(
+  table: string,
+  op: "insert" | "update" | "delete",
+  row?: Record<string, unknown> | null,
+) {
+  try { publishTableChange(table, op, row ?? undefined); } catch { /* best-effort */ }
+}
+
 
 
 /** Default read TTL (seconds). Short enough to feel live, long enough to
