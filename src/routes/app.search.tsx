@@ -11,24 +11,11 @@ import { useAppUI } from "@/lib/stores";
 import { useCms } from "@/lib/cms-store";
 import { filterVeg, filterVegDishes } from "@/lib/restaurant-extras";
 import { cn } from "@/lib/format";
-import { Sparkles } from "lucide-react";
-import { runAI, logAiSearch, markSearchConverted } from "@/lib/ai/client";
-import { isNaturalLanguageQuery } from "@/lib/ai/policy";
 import { getPopularSearches } from "@/lib/search-suggestions";
 import { useAuth } from "@/lib/auth-store";
 import { z } from "zod";
 
 const searchSchema = z.object({ q: z.string().optional() });
-
-type SearchIntent = {
-  keywords?: string[];
-  cuisines?: string[];
-  dietary?: string[];
-  maxPrice?: number | null;
-  minRating?: number | null;
-  maxDeliveryMins?: number | null;
-  summary?: string;
-};
 
 export const Route = createFileRoute("/app/search")({
   validateSearch: searchSchema,
@@ -59,8 +46,6 @@ function SearchPage() {
   const [sort, setSort] = useState<(typeof SORTS)[number]["id"]>("rating");
   const [filterOpen, setFilterOpen] = useState(false);
   const [listening, setListening] = useState(false);
-  const [intent, setIntent] = useState<SearchIntent | null>(null);
-  const [aiBusy, setAiBusy] = useState(false);
   const [popular, setPopular] = useState<string[]>(popularSearches);
 
   // Cached + background-refreshed: no query on every visit to the search tab.
@@ -108,38 +93,6 @@ function SearchPage() {
     return () => clearTimeout(t);
   }, [q, pushRecent]);
 
-  // Semantic intent parsing — AI runs ONLY for natural-language queries
-  // ("healthy dinner under 200"). Plain keyword searches stay rule-based and
-  // free. Debounced, cancellable, and cached for a day per query.
-  useEffect(() => {
-    const term = q.trim();
-    if (!isNaturalLanguageQuery(term)) {
-      setIntent(null);
-      setAiBusy(false);
-      return;
-    }
-    let cancelled = false;
-    const controller = new AbortController();
-    setAiBusy(true);
-    const t = setTimeout(() => {
-      void runAI<SearchIntent>(
-        "search_intent",
-        { query: term.toLowerCase(), vegMode },
-        { app: "customer", userId: user?.id, signal: controller.signal },
-      ).then((res) => {
-        if (cancelled) return;
-        setIntent(res.ok && res.data ? res.data : null);
-        setAiBusy(false);
-      });
-    }, 700);
-    return () => {
-      cancelled = true;
-      controller.abort();
-      clearTimeout(t);
-      setAiBusy(false);
-    };
-  }, [q, vegMode, user?.id]);
-
 
   const dishes = useMemo(() => allDishes(), []);
 
@@ -150,13 +103,6 @@ function SearchPage() {
       if (r.deliveryMins > maxMins) return false;
       if (r.priceLevel.length > maxPrice.length) return false;
       const hay = `${r.name} ${r.cuisine} ${r.tags.join(" ")}`.toLowerCase();
-      if (intent) {
-        if (intent.minRating && r.rating < intent.minRating) return false;
-        if (intent.maxDeliveryMins && r.deliveryMins > intent.maxDeliveryMins) return false;
-        const terms = [...(intent.keywords ?? []), ...(intent.cuisines ?? [])].map((t) => String(t).toLowerCase()).filter(Boolean);
-        if (terms.length && !terms.some((t) => hay.includes(t))) return false;
-        return true;
-      }
       if (q && !hay.includes(q.toLowerCase())) return false;
       return true;
     });
@@ -168,36 +114,18 @@ function SearchPage() {
       return 0;
     });
     return list;
-  }, [q, cuisine, minRating, maxMins, maxPrice, sort, vegMode, pureVegOverrides, intent]);
+  }, [q, cuisine, minRating, maxMins, maxPrice, sort, vegMode, pureVegOverrides]);
 
   const filteredDishes = useMemo(() => {
     if (!q) return [];
-    const terms = intent ? [...(intent.keywords ?? []), ...(intent.cuisines ?? [])].map((t) => String(t).toLowerCase()).filter(Boolean) : [];
     const matched = dishes
       .filter((d) => {
         const hay = `${d.name} ${d.description} ${d.cuisineTag}`.toLowerCase();
-        const textOk = terms.length ? terms.some((t) => hay.includes(t)) : hay.includes(q.toLowerCase());
-        const priceOk = !intent?.maxPrice || d.price <= intent.maxPrice;
-        return textOk && priceOk;
+        return hay.includes(q.toLowerCase());
       })
       .slice(0, 12);
     return filterVegDishes(matched, vegMode).slice(0, 6);
-  }, [dishes, q, vegMode, intent]);
-
-  useEffect(() => {
-    const term = q.trim();
-    if (term.length < 3 || aiBusy) return;
-    const t = setTimeout(() => {
-      void logAiSearch({
-        userId: user?.id,
-        app: "customer",
-        query: term,
-        intent,
-        resultsCount: filteredRestaurants.length + filteredDishes.length,
-      });
-    }, 1200);
-    return () => clearTimeout(t);
-  }, [q, aiBusy, intent, filteredRestaurants.length, filteredDishes.length, user?.id]);
+  }, [dishes, q, vegMode]);
 
   const activeFiltersCount = (cuisine !== "All" ? 1 : 0) + (minRating > 0 ? 1 : 0) + (maxMins < 60 ? 1 : 0) + (maxPrice !== "₹₹₹" ? 1 : 0);
 
@@ -318,13 +246,6 @@ function SearchPage() {
           </>
         )}
 
-        {q.trim().length >= 3 && (aiBusy || intent?.summary) && (
-          <div className="flex items-start gap-2 rounded-2xl bg-primary-soft/60 px-3 py-2.5 text-xs text-primary ring-1 ring-primary/15">
-            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span className="font-semibold">{aiBusy ? "Understanding what you're craving…" : intent?.summary}</span>
-          </div>
-        )}
-
         {q && filteredDishes.length > 0 && (
           <section>
             <h3 className="px-1 text-sm font-bold">Dishes</h3>
@@ -348,9 +269,7 @@ function SearchPage() {
               </div>
             ) : (
               filteredRestaurants.map((r) => (
-                <div key={r.id} onClick={() => { if (q.trim()) void markSearchConverted(q); }}>
-                  <RestaurantCard r={r} />
-                </div>
+                <RestaurantCard key={r.id} r={r} />
               ))
             )}
           </div>

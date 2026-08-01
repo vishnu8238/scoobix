@@ -23,9 +23,9 @@ export const Route = createFileRoute("/admin/performance")({
   head: () => ({
     meta: [
       { title: "Scoobix Admin · Performance & Cost" },
-      { name: "description", content: "API usage, AI cache hit rate, slow endpoints, memory and storage for the Scoobix platform." },
+      { name: "description", content: "API usage, cache hit rate, slow endpoints, memory and storage for the Scoobix platform." },
       { property: "og:title", content: "Scoobix Admin · Performance & Cost" },
-      { property: "og:description", content: "Live platform performance, AI spend control and infrastructure cost monitoring." },
+      { property: "og:description", content: "Live platform performance and infrastructure cost monitoring." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -143,8 +143,6 @@ function PerformancePage() {
         <Stat icon={Database} label="Cache hit rate" value={pctText(summary.apiCacheRate)} tone={summary.apiCacheRate > 0.4 ? "good" : "warn"} hint="Reads avoided on the backend" />
         <Stat icon={Timer} label="DB query time" value={`${summary.apiAvgMs} ms`} tone={dbTone} hint={`p95 ${summary.apiP95Ms} ms`} />
         <Stat icon={AlertTriangle} label="Failed requests" value={String(summary.failed)} tone={failTone} hint={pctText(summary.failureRate) + " of all traffic"} />
-        <Stat icon={Sparkles} label="AI requests" value={String(summary.aiCalls)} hint={`${summary.aiCached} answered from cache`} />
-        <Stat icon={Sparkles} label="AI cache hit rate" value={pctText(summary.aiCacheRate)} tone={summary.aiCacheRate > 0.5 ? "good" : "warn"} hint={`avg ${summary.aiAvgMs} ms`} />
         <Stat icon={Activity} label="Memory" value={summary.memoryMb != null ? `${summary.memoryMb} MB` : "n/a"} hint={summary.memoryLimitMb ? `limit ${summary.memoryLimitMb} MB` : "not exposed by this browser"} />
         <Stat
           icon={HardDrive}
@@ -185,24 +183,6 @@ function PerformancePage() {
                 <li key={s.name} className="flex items-center justify-between gap-3 text-sm">
                   <span className="truncate font-medium">{s.name}</span>
                   <span className="shrink-0 text-[12px] text-muted-foreground">{s.calls} calls · {s.avgMs} ms avg</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-border/60">
-          <h2 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5" /> AI provider usage
-          </h2>
-          {summary.providers.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">No provider calls in this window — rule-based paths only.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {summary.providers.map((p) => (
-                <li key={p.name} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="font-medium capitalize">{p.name}</span>
-                  <span className="text-[12px] text-muted-foreground">{p.count} calls</span>
                 </li>
               ))}
             </ul>
