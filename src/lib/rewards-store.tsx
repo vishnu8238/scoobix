@@ -48,27 +48,33 @@ export type EarnedReward = {
   cardId: string;
 };
 
+const kindToType = (kind: RewardCampaignRow["reward_kind"]): RewardType =>
+  kind === "wallet" ? "cravio" : kind === "free_delivery" ? "voucher" : "coupon";
+
+const typeToKind = (type: RewardType): NonNullable<RewardCampaignRow["reward_kind"]> =>
+  type === "cravio" ? "wallet" : type === "voucher" ? "free_delivery" : "coupon";
+
 const toReward = (c: RewardCampaignRow): Reward => ({
   id: c.id,
-  title: c.title ?? "Reward",
-  type: ((c.reward_type === "wallet_credit" ? "cravio" : c.reward_type === "voucher" ? "voucher" : "coupon") as RewardType),
-  discount: Number(c.reward_value ?? 0),
+  title: c.name ?? "Reward",
+  type: kindToType(c.reward_kind),
+  discount: Number(c.reward_max ?? c.reward_min ?? c.points ?? 0),
   expiry: (c.ends_at ?? "").slice(0, 10),
   status: c.active === false ? "disabled" : "active",
-  limit: Number(c.max_issuance ?? 0),
+  limit: Number(c.usage_limit ?? 0),
   distributed: Number(c.issued_count ?? 0),
-  sponsor: c.sponsor ?? undefined,
-  subtitle: c.subtitle ?? undefined,
+  sponsor: c.sponsor_name ?? undefined,
+  subtitle: c.notes ?? undefined,
 });
 
 const toEarned = (c: ScratchCardRow): EarnedReward => ({
   rewardId: c.campaign_id ?? c.id,
   orderId: c.order_id ?? "",
   earnedAt: c.created_at ? new Date(c.created_at).getTime() : Date.now(),
-  applied: c.status === "redeemed",
+  applied: c.used === true,
   title: c.title ?? "Scratch card",
   value: Number(c.reward_value ?? 0),
-  scratched: c.status === "scratched" || c.status === "redeemed",
+  scratched: c.status === "scratched",
   cardId: c.id,
 });
 
@@ -117,29 +123,29 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     refresh,
     addReward: async (r) => {
       await createRewardCampaign({
-        title: r.title,
-        subtitle: r.subtitle ?? null,
-        reward_type: r.type === "cravio" ? "wallet_credit" : r.type === "voucher" ? "voucher" : "coupon",
-        reward_value: r.discount,
+        name: r.title,
+        type: "scratch",
+        notes: r.subtitle ?? null,
+        reward_kind: typeToKind(r.type),
+        reward_min: r.discount,
+        reward_max: r.discount,
         ends_at: r.expiry || null,
         active: r.status === "active",
-        max_issuance: r.limit,
-        sponsor: r.sponsor ?? null,
+        usage_limit: r.limit,
+        sponsor_name: r.sponsor ?? null,
       });
       await refresh();
     },
     updateReward: async (id, patch) => {
       await updateRewardCampaign(id, {
-        ...(patch.title !== undefined ? { title: patch.title } : {}),
-        ...(patch.subtitle !== undefined ? { subtitle: patch.subtitle } : {}),
-        ...(patch.discount !== undefined ? { reward_value: patch.discount } : {}),
+        ...(patch.title !== undefined ? { name: patch.title } : {}),
+        ...(patch.subtitle !== undefined ? { notes: patch.subtitle } : {}),
+        ...(patch.discount !== undefined ? { reward_min: patch.discount, reward_max: patch.discount } : {}),
         ...(patch.expiry !== undefined ? { ends_at: patch.expiry || null } : {}),
-        ...(patch.limit !== undefined ? { max_issuance: patch.limit } : {}),
-        ...(patch.sponsor !== undefined ? { sponsor: patch.sponsor } : {}),
+        ...(patch.limit !== undefined ? { usage_limit: patch.limit } : {}),
+        ...(patch.sponsor !== undefined ? { sponsor_name: patch.sponsor } : {}),
         ...(patch.status !== undefined ? { active: patch.status === "active" } : {}),
-        ...(patch.type !== undefined
-          ? { reward_type: patch.type === "cravio" ? "wallet_credit" : patch.type === "voucher" ? "voucher" : "coupon" }
-          : {}),
+        ...(patch.type !== undefined ? { reward_kind: typeToKind(patch.type) } : {}),
       });
       await refresh();
     },
