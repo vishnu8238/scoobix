@@ -3,7 +3,7 @@
  * No mock fallback: an empty table renders the screen's empty state.
  */
 import { useEffect, useState } from "react";
-import { listTable, deleteRecord } from "./insforge-crud";
+import { listTable, deleteRecord, patchRecord, patchWhereIn } from "./insforge-crud";
 import { useAuth } from "./auth-store";
 import { dedupeNotificationRows } from "./notifications-queue";
 import { useTableVersion } from "./realtime-hooks";
