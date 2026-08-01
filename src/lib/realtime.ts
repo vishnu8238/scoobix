@@ -52,6 +52,9 @@ type StreamState = {
   maxMs: number;
   inFlight: boolean;
   disposed: boolean;
+  offRealtime?: () => void;
+  offState?: () => void;
+
 };
 
 const streams = new Map<string, StreamState>();
