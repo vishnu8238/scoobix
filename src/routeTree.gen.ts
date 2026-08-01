@@ -89,6 +89,7 @@ import { Route as AppMoreRouteImport } from './routes/app.more'
 import { Route as AppMembershipRouteImport } from './routes/app.membership'
 import { Route as AppMealRouteImport } from './routes/app.meal'
 import { Route as AppLocationRouteImport } from './routes/app.location'
+import { Route as AppInsightsRouteImport } from './routes/app.insights'
 import { Route as AppFavoritesRouteImport } from './routes/app.favorites'
 import { Route as AppFailedRouteImport } from './routes/app.failed'
 import { Route as AppCouponsRouteImport } from './routes/app.coupons'
@@ -524,6 +525,11 @@ const AppLocationRoute = AppLocationRouteImport.update({
   path: '/location',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInsightsRoute = AppInsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFavoritesRoute = AppFavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
@@ -737,6 +743,7 @@ export interface FileRoutesByFullPath {
   '/app/coupons': typeof AppCouponsRoute
   '/app/failed': typeof AppFailedRoute
   '/app/favorites': typeof AppFavoritesRoute
+  '/app/insights': typeof AppInsightsRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
   '/app/membership': typeof AppMembershipRoute
@@ -848,6 +855,7 @@ export interface FileRoutesByTo {
   '/app/coupons': typeof AppCouponsRoute
   '/app/failed': typeof AppFailedRoute
   '/app/favorites': typeof AppFavoritesRoute
+  '/app/insights': typeof AppInsightsRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
   '/app/membership': typeof AppMembershipRoute
@@ -965,6 +973,7 @@ export interface FileRoutesById {
   '/app/coupons': typeof AppCouponsRoute
   '/app/failed': typeof AppFailedRoute
   '/app/favorites': typeof AppFavoritesRoute
+  '/app/insights': typeof AppInsightsRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
   '/app/membership': typeof AppMembershipRoute
@@ -1083,6 +1092,7 @@ export interface FileRouteTypes {
     | '/app/coupons'
     | '/app/failed'
     | '/app/favorites'
+    | '/app/insights'
     | '/app/location'
     | '/app/meal'
     | '/app/membership'
@@ -1194,6 +1204,7 @@ export interface FileRouteTypes {
     | '/app/coupons'
     | '/app/failed'
     | '/app/favorites'
+    | '/app/insights'
     | '/app/location'
     | '/app/meal'
     | '/app/membership'
@@ -1310,6 +1321,7 @@ export interface FileRouteTypes {
     | '/app/coupons'
     | '/app/failed'
     | '/app/favorites'
+    | '/app/insights'
     | '/app/location'
     | '/app/meal'
     | '/app/membership'
@@ -1961,6 +1973,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLocationRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/insights': {
+      id: '/app/insights'
+      path: '/insights'
+      fullPath: '/app/insights'
+      preLoaderRoute: typeof AppInsightsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/favorites': {
       id: '/app/favorites'
       path: '/favorites'
@@ -2271,6 +2290,7 @@ interface AppRouteChildren {
   AppCouponsRoute: typeof AppCouponsRoute
   AppFailedRoute: typeof AppFailedRoute
   AppFavoritesRoute: typeof AppFavoritesRoute
+  AppInsightsRoute: typeof AppInsightsRoute
   AppLocationRoute: typeof AppLocationRoute
   AppMealRoute: typeof AppMealRoute
   AppMembershipRoute: typeof AppMembershipRoute
@@ -2298,6 +2318,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCouponsRoute: AppCouponsRoute,
   AppFailedRoute: AppFailedRoute,
   AppFavoritesRoute: AppFavoritesRoute,
+  AppInsightsRoute: AppInsightsRoute,
   AppLocationRoute: AppLocationRoute,
   AppMealRoute: AppMealRoute,
   AppMembershipRoute: AppMembershipRoute,
