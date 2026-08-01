@@ -131,6 +131,19 @@ function RiderHome() {
         </div>
       </div>
 
+      {!verified && (
+        <Link
+          to="/rider/verification"
+          className="flex items-center justify-between gap-3 rounded-3xl bg-amber-50 p-4 ring-1 ring-amber-200"
+        >
+          <div>
+            <p className="text-sm font-bold text-amber-800">Verification pending</p>
+            <p className="text-[12px] text-amber-700">Upload your documents to start accepting deliveries.</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-amber-700" />
+        </Link>
+      )}
+
       <div className="grid grid-cols-3 gap-3">
         <Stat icon={TrendingUp} label="Earned" value={formatPrice(today.total)} tone="text-primary bg-primary/10" />
         <Stat icon={Package} label="Trips" value={String(today.deliveries)} tone="text-sky-700 bg-sky-100" />
