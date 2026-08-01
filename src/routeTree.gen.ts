@@ -84,6 +84,7 @@ import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
 import { Route as AppMoreRouteImport } from './routes/app.more'
+import { Route as AppMembershipRouteImport } from './routes/app.membership'
 import { Route as AppMealRouteImport } from './routes/app.meal'
 import { Route as AppLocationRouteImport } from './routes/app.location'
 import { Route as AppFavoritesRouteImport } from './routes/app.favorites'
@@ -495,6 +496,11 @@ const AppMoreRoute = AppMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMembershipRoute = AppMembershipRouteImport.update({
+  id: '/membership',
+  path: '/membership',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMealRoute = AppMealRouteImport.update({
   id: '/meal',
   path: '/meal',
@@ -714,6 +720,7 @@ export interface FileRoutesByFullPath {
   '/app/favorites': typeof AppFavoritesRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
+  '/app/membership': typeof AppMembershipRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
@@ -821,6 +828,7 @@ export interface FileRoutesByTo {
   '/app/favorites': typeof AppFavoritesRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
+  '/app/membership': typeof AppMembershipRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
@@ -934,6 +942,7 @@ export interface FileRoutesById {
   '/app/favorites': typeof AppFavoritesRoute
   '/app/location': typeof AppLocationRoute
   '/app/meal': typeof AppMealRoute
+  '/app/membership': typeof AppMembershipRoute
   '/app/more': typeof AppMoreRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
@@ -1048,6 +1057,7 @@ export interface FileRouteTypes {
     | '/app/favorites'
     | '/app/location'
     | '/app/meal'
+    | '/app/membership'
     | '/app/more'
     | '/app/notifications'
     | '/app/orders'
@@ -1155,6 +1165,7 @@ export interface FileRouteTypes {
     | '/app/favorites'
     | '/app/location'
     | '/app/meal'
+    | '/app/membership'
     | '/app/more'
     | '/app/notifications'
     | '/app/orders'
@@ -1267,6 +1278,7 @@ export interface FileRouteTypes {
     | '/app/favorites'
     | '/app/location'
     | '/app/meal'
+    | '/app/membership'
     | '/app/more'
     | '/app/notifications'
     | '/app/orders'
@@ -1878,6 +1890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMoreRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/membership': {
+      id: '/app/membership'
+      path: '/membership'
+      fullPath: '/app/membership'
+      preLoaderRoute: typeof AppMembershipRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/meal': {
       id: '/app/meal'
       path: '/meal'
@@ -2195,6 +2214,7 @@ interface AppRouteChildren {
   AppFavoritesRoute: typeof AppFavoritesRoute
   AppLocationRoute: typeof AppLocationRoute
   AppMealRoute: typeof AppMealRoute
+  AppMembershipRoute: typeof AppMembershipRoute
   AppMoreRoute: typeof AppMoreRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppOrdersRoute: typeof AppOrdersRoute
@@ -2221,6 +2241,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFavoritesRoute: AppFavoritesRoute,
   AppLocationRoute: AppLocationRoute,
   AppMealRoute: AppMealRoute,
+  AppMembershipRoute: AppMembershipRoute,
   AppMoreRoute: AppMoreRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppOrdersRoute: AppOrdersRoute,
