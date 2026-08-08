@@ -34,6 +34,7 @@ function AdminOperationsDashboard() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   
   const version = useTableVersion(["delivery_zones", "orders", "drivers", "delivery_subzones"]);
 
