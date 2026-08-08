@@ -13,7 +13,11 @@ async function run() {
     },
     body: JSON.stringify({ query: sql })
   });
-  const data = await res.json();
-  console.log("Migration Result:", JSON.stringify(data, null, 2));
+  const text = await res.text();
+  console.log("Migration Result (Text):", text);
+  try {
+    const data = JSON.parse(text);
+    console.log("Migration Result (JSON):", JSON.stringify(data, null, 2));
+  } catch(e) {}
 }
 run();
