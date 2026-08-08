@@ -31,25 +31,22 @@ function AdminZonesDashboard() {
   const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders"]);
 
   const refresh = useCallback(async () => {
-    if (loading) return;
+    if (loading && zones.length === 0) return;
     setLoading(true);
     try {
-      const data = await getZonesWithSubzones();
-      const z = data?.zones || [];
-      const sz = data?.subzones || [];
-      const st = await getZoneStats();
+      const [data, st] = await Promise.all([
         getZonesWithSubzones(),
         getZoneStats()
       ]);
-      setZones(z);
-      setSubzones(sz);
+      setZones(data?.zones || []);
+      setSubzones(data?.subzones || []);
       setStats(st);
     } catch (err) {
       toast.error("Failed to load zones data");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loading, zones.length]);
 
   const handleSeed = async () => {
     setSeeding(true);
