@@ -563,7 +563,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(res.accessToken, res.refreshToken ?? null);
     const sess = await ifGetSession();
     if (!sess) return { ok: false, message: "Could not start a session" };
-    const next = await syncProfile(sess, { provider: "phone", role, phone: normalisePhone(phone) });
+    const next = await syncProfile(sess, { provider: "phone", role: role ?? activePortal ?? undefined, forceRole: !!(role || activePortal), phone: normalisePhone(phone) });
     if (!next) return { ok: false, message: "Could not load your account. Please try again." };
     const blocked = await admitSession(next, "phone");
     if (blocked) return { ok: false, message: blocked };
