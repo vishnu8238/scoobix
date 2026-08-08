@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { 
   Search, Map as MapIcon, Users, Bike, ClipboardList, ShieldAlert, Check, 
   X, Loader2, BarChart3, Clock, TrendingUp, Filter, Calendar, MapPin, 
-  AlertTriangle, ArrowRight, Package, Home, Store
+  AlertTriangle, ArrowRight, Package, Home, Store, User
 } from "lucide-react";
 import { format } from "date-fns";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
@@ -317,7 +317,12 @@ function OrderDetailsModal({ order, onClose }: { order: any; onClose: () => void
                 <div className="space-y-3">
                   <InfoRow label="Restaurant" value={order.restaurant_name || "—"} icon={Store} />
                   <InfoRow label="Delivery Area" value={order.delivery_address || "—"} icon={MapPin} />
-                  <InfoRow label="Rider" value={order.driver_id ? "Active Rider" : "Unassigned"} icon={Bike} />
+                  <InfoRow 
+                    label="Rider" 
+                    value={order.driver_id ? (order.driver_name || "Assigned Rider") : "Unassigned"} 
+                    icon={Bike} 
+                  />
+                  <InfoRow label="Customer" value={order.customer_name || "Guest User"} icon={User} />
                 </div>
              </section>
 

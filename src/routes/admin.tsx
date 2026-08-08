@@ -16,6 +16,8 @@ export const Route = createFileRoute("/admin")({
 
 const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/operations", label: "Live Operations", icon: Gauge },
+  { to: "/admin/live", label: "Logistics Map", icon: MapIcon },
   { to: "/admin/cms", label: "CMS Studio", icon: Sparkles },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/restaurants", label: "Restaurants", icon: Store },
@@ -24,8 +26,6 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/duplicates", label: "Duplicates & Transfers", icon: Copy },
   { to: "/admin/drivers", label: "Drivers", icon: Bike },
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
-  { to: "/admin/operations", label: "Operations Dashboard", icon: BarChart3 },
-  { to: "/admin/live", label: "Zones & Live Dispatch", icon: MapIcon },
 
   { to: "/admin/campaigns", label: "Marketing Campaigns", icon: Megaphone },
   { to: "/admin/coupons", label: "Coupons & Promotions", icon: Tag },
@@ -41,10 +41,9 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
   { to: "/admin/reports", label: "Reports", icon: BarChart3 },
   { to: "/admin/support", label: "Support", icon: LifeBuoy },
-  { to: "/admin/performance", label: "Performance & Cost", icon: Gauge },
+  { to: "/admin/performance", label: "Infrastructure", icon: Gauge },
   { to: "/admin/security", label: "Security & Audit", icon: ShieldCheck },
   { to: "/admin/settings", label: "Settings", icon: Settings },
-
 ];
 
 function AdminLayout() {
