@@ -197,14 +197,11 @@ function LoginPage() {
               variant="outline"
               onClick={async () => {
                 setBusy(true);
-                // 1. Perform a real InsForge logout to clear server session
+                console.log("[auth] Explicit sign-out requested from login screen");
                 await signOut();
-                // 2. Ensure portal context is reset/refreshed in the component state if needed
-                // 3. Clear transient local caches
                 setBusy(false);
-                // After logout, the 'user' state becomes null, triggering a re-render
-                // that shows the normal login form on this SAME portal page.
               }}
+
               className="h-12 w-full rounded-full border-2 border-primary/20 bg-background text-sm font-bold text-primary transition-all hover:bg-primary/5 active:scale-[0.98]"
             >
               {busy ? "Signing out..." : "Use another account"}

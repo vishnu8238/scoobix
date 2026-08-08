@@ -25,13 +25,16 @@ function Splash() {
     
     // Determine the intended destination. 
     // On the root path, we default to the current session's role home or /auth/login.
-    const role = user?.role ?? cachedRole;
+    const role = user?.role;
     if (role) {
+      console.log("[auth] Root redirect to role home:", role);
       navigate({ to: ROLE_HOME[role] as never, replace: true });
     } else {
+      console.log("[auth] Root redirect to login (no session).");
       navigate({ to: "/auth/login", replace: true });
     }
-  }, [navigate, user, loading, cachedRole, location.pathname]);
+  }, [navigate, user, loading]);
+
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-black">

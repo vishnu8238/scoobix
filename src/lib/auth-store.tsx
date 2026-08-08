@@ -155,6 +155,7 @@ function writeCachedRole(role: Role | null) {
 
 
 function rememberPendingRole(role?: Role, claim = false) {
+  console.log(`[auth] Remembering pending role: ${role} (claim: ${claim})`);
   try {
     if (role) sessionStorage.setItem(PENDING_ROLE_KEY, role);
     if (role && claim) sessionStorage.setItem(PENDING_ROLE_CLAIM_KEY, "1");
@@ -164,11 +165,13 @@ function rememberPendingRole(role?: Role, claim = false) {
     if (role && claim) localStorage.setItem(PENDING_ROLE_CLAIM_KEY, "1");
   } catch { /* */ }
 }
+
 function takePendingRole(): { role?: Role; claim: boolean } {
   try {
     const value = (sessionStorage.getItem(PENDING_ROLE_KEY) ?? localStorage.getItem(PENDING_ROLE_KEY)) as Role | null;
     const claim =
       (sessionStorage.getItem(PENDING_ROLE_CLAIM_KEY) ?? localStorage.getItem(PENDING_ROLE_CLAIM_KEY)) === "1";
+    console.log(`[auth] Taking pending role: ${value} (claim: ${claim})`);
     sessionStorage.removeItem(PENDING_ROLE_KEY);
     localStorage.removeItem(PENDING_ROLE_KEY);
     sessionStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
@@ -176,6 +179,7 @@ function takePendingRole(): { role?: Role; claim: boolean } {
     return { role: value ?? undefined, claim };
   } catch { return { claim: false }; }
 }
+
 
 
 function mergeProviders(existing: string | null | undefined, provider: string): string {
@@ -204,7 +208,9 @@ type SyncInput = {
  * - never reads a property off a profile that may not exist.
  */
 async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}): Promise<User | null> {
+  console.log("[auth] Syncing profile for session user:", sess?.id, "with input:", JSON.stringify(input));
   if (!sess || typeof sess.id !== "string" || !sess.id) return null;
+
 
   const provider = input.provider ?? "email";
   let existing: UserProfileRow | null = null;
@@ -360,15 +366,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
   const [activePortal, setActivePortalState] = useState<Role | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+
   const setPortal = useCallback((portal: Role | null) => {
     setActivePortalState(portal);
     if (portal) {
       try {
         localStorage.setItem("scoobix_active_portal_v1", portal);
+        console.log(`[auth] Portal set to: ${portal}`);
       } catch { /* */ }
     } else {
       try {
         localStorage.removeItem("scoobix_active_portal_v1");
+        console.log(`[auth] Portal cleared`);
       } catch { /* */ }
     }
   }, []);
@@ -378,11 +390,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem("scoobix_active_portal_v1") as Role | null;
       if (stored && ALL_ROLES.includes(stored)) {
         setActivePortalState(stored);
+        console.log(`[auth] Restored portal from storage: ${stored}`);
       }
     } catch { /* */ }
   }, []);
-  const [loading, setLoading] = useState(true);
-  const [oauthError, setOauthError] = useState<string | null>(null);
+
 
   /**
    * Every session update also mirrors the resolved role to local storage, so a
@@ -390,17 +402,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * profile round-trip finishes.
    */
   const setUser = useCallback((next: User | null) => {
+    console.log("[auth] setUser state update:", next?.id, next?.role);
     setUserState(next);
     
-    // We only update the global cached role if the session is not null.
-    // This allows cold-start routing on the / root path to land the user 
-    // in their home app. Portal-specific routes and guards handle their own
-    // authorization.
+    // Mirror role to cache only on positive session to help initial routing
+    // but clearing it on null is crucial to stop the stale Customer App loop.
     if (next) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
+    } else {
+      writeCachedRole(null);
+      setCachedRole(null);
     }
   }, []);
+
+
 
   // Auto-login + OAuth return handling.
   useEffect(() => {
@@ -408,6 +424,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       let handledOAuth = false;
       try {
+        console.log("[auth] BOOT: Starting authentication flow...");
         const providerError = readOAuthError();
         if (providerError) {
           console.error("[auth] OAuth provider returned an error", providerError);
@@ -416,8 +433,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const callback = readOAuthCallback();
         if (callback) {
+          console.log("[auth] OAuth callback detected", callback.provider);
           try {
             const { user: sess } = await ifCompleteOAuth(callback.code);
+            console.log("[auth] OAuth code exchanged for session:", sess?.id);
             const pending = takePendingRole();
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
@@ -425,10 +444,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               forceRole: pending.claim || !!activePortal,
             });
             if (!cancelled && next) {
+              console.log("[auth] Profile synced for OAuth user:", next.id, next.role);
               const blocked = await admitSession(next, String(callback.provider));
               if (blocked) {
+                console.warn("[auth] Session admission blocked:", blocked);
                 setOauthError(blocked);
               } else {
+                console.log("[auth] Session admitted, setting user state.");
                 setUser(next);
                 handledOAuth = true;
                 try {
@@ -448,17 +470,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (handledOAuth) return;
         const sess = await ifGetSession();
+        console.log("[auth] INITIAL_SESSION check:", sess ? "FOUND" : "NONE", sess?.id);
         if (cancelled) return;
         if (sess) {
           const next = await syncProfile(sess, { role: activePortal ?? undefined, forceRole: !!activePortal });
+          console.log("[auth] Profile restored for session user:", next?.id, next?.role);
           if (!cancelled && next) setUser(next);
-        } else if (!callback) setUser(null);
+        } else if (!callback) {
+          console.log("[auth] No active session, user is UNAUTHENTICATED.");
+          setUser(null);
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          console.log("[auth] Auth boot complete, loading = false.");
+          setLoading(false);
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [activePortal]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -663,6 +694,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     const signingOut = user?.id ?? null;
+    console.log("[auth] SIGN_OUT started for user:", signingOut);
     try {
       if (signingOut) {
         await heartbeatSession().catch(() => null);
@@ -670,21 +702,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearElevationCache(signingOut);
       }
       await ifLogout();
-    } catch {
-      // ignore
+      console.log("[auth] InsForge logout complete.");
+    } catch (err) {
+      console.error("[auth] InsForge logout error:", err);
     } finally {
+      console.log("[auth] Clearing local session tokens and state.");
       setTokens(null, null);
       clearLastRoute();
-      writeCachedRole(null);
+      
+      // Atomic storage removal
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem(CACHED_ROLE_KEY);
+          localStorage.removeItem("scoobix_active_portal_v1");
+          localStorage.removeItem(PENDING_ROLE_KEY);
+          localStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
+          sessionStorage.removeItem(PENDING_ROLE_KEY);
+          sessionStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
+          
+          // Also clear security-api local session if any
+          localStorage.removeItem("scoobix.security.session_row");
+        } catch { /* */ }
+      }
+      
       setCachedRole(null);
-      try {
-        sessionStorage.removeItem(PENDING_ROLE_KEY);
-        localStorage.removeItem(PENDING_ROLE_KEY);
-      } catch { /* */ }
       setUser(null);
       void import("./realtime-bus").then((m) => m.disconnectRealtime()).catch(() => {});
+      console.log("[auth] SIGN_OUT finished.");
     }
   }, [user?.id, setUser]);
+
+
 
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {

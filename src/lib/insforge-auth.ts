@@ -83,11 +83,13 @@ export function getRefreshToken(): string | null {
   try { return localStorage.getItem(REFRESH_KEY); } catch { return null; }
 }
 export function setTokens(access: string | null, refresh: string | null) {
+  console.log("[auth] Updating tokens in storage:", access ? "ACCESS_PRESENT" : "ACCESS_MISSING", refresh ? "REFRESH_PRESENT" : "REFRESH_MISSING");
   try {
     if (access) localStorage.setItem(ACCESS_KEY, access); else localStorage.removeItem(ACCESS_KEY);
     if (refresh) localStorage.setItem(REFRESH_KEY, refresh); else localStorage.removeItem(REFRESH_KEY);
   } catch { /* ignore */ }
 }
+
 
 function authHeaders(): Record<string, string> {
   const token = getAccessToken();
@@ -158,15 +160,19 @@ export async function ifSignup(email: string, password: string, name: string, re
 export async function ifLogin(email: string, password: string): Promise<{
   user: InsForgeUser; accessToken: string; refreshToken: string | null;
 }> {
+  console.log("[auth] ifLogin request for:", email);
   const res = await raw(`/api/auth/sessions?client_type=mobile`, {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
   const data = await jsonOrThrow(res);
+  console.log("[auth] ifLogin success, tokens received.");
   setTokens(data?.accessToken ?? null, data?.refreshToken ?? null);
   const user = await ensureSessionUser(data, "Sign in");
+  console.log("[auth] ifLogin session user resolved:", user.id);
   return { ...data, user };
 }
+
 
 
 export async function ifLogout(): Promise<void> {
@@ -182,19 +188,37 @@ export async function ifLogout(): Promise<void> {
 
 export async function ifGetSession(): Promise<InsForgeUser | null> {
   const token = getAccessToken();
+  console.log("[auth] ifGetSession check, local access token exists:", !!token);
   if (!token) return null;
+
   const res = await raw(`/api/auth/sessions/current`, { method: "GET" });
   if (res.status === 401 || res.status === 403) {
+    console.log("[auth] Access token expired, attempting refresh...");
     // Expired or revoked access token — try the refresh token once.
     const refreshed = await ifRefresh();
-    if (!refreshed) return null;
+    if (!refreshed) {
+      console.log("[auth] Refresh failed, session is null.");
+      return null;
+    }
     const res2 = await raw(`/api/auth/sessions/current`, { method: "GET" });
-    if (!res2.ok) { setTokens(null, null); return null; }
-    return normalizeSession(await res2.json());
+    if (!res2.ok) {
+      console.log("[auth] Session check failed after refresh:", res2.status);
+      setTokens(null, null);
+      return null;
+    }
+    const data = normalizeSession(await res2.json());
+    console.log("[auth] Session restored after refresh:", data?.id);
+    return data;
   }
-  if (!res.ok) return null;
-  return normalizeSession(await res.json());
+  if (!res.ok) {
+    console.log("[auth] Session check failed with status:", res.status);
+    return null;
+  }
+  const data = normalizeSession(await res.json());
+  console.log("[auth] Session found:", data?.id);
+  return data;
 }
+
 
 function normalizeSession(body: any): InsForgeUser | null {
   if (!body || typeof body !== "object") return null;
@@ -208,18 +232,30 @@ function normalizeSession(body: any): InsForgeUser | null {
 
 export async function ifRefresh(): Promise<boolean> {
   const refreshToken = getRefreshToken();
+  console.log("[auth] ifRefresh check, local refresh token exists:", !!refreshToken);
   if (!refreshToken) return false;
+
   const res = await fetch(`${INSFORGE_URL}/api/auth/refresh`, {
     method: "POST",
     headers: { apikey: INSFORGE_ANON_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),
   });
-  if (!res.ok) { setTokens(null, null); return false; }
+  if (!res.ok) {
+    console.log("[auth] Refresh request failed:", res.status);
+    setTokens(null, null);
+    return false;
+  }
   const body = await res.json().catch(() => null);
-  if (!body?.accessToken) { setTokens(null, null); return false; }
+  if (!body?.accessToken) {
+    console.log("[auth] Refresh response missing access token.");
+    setTokens(null, null);
+    return false;
+  }
+  console.log("[auth] Refresh successful, updating tokens.");
   setTokens(body.accessToken, body.refreshToken ?? refreshToken);
   return true;
 }
+
 
 // ---------- email verification ----------
 
