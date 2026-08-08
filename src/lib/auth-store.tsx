@@ -388,14 +388,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const setUser = useCallback((next: User | null) => {
     setUserState(next);
-    // Only write to CACHED_ROLE if we are NOT on a different portal's login page.
-    // Actually, CACHED_ROLE is used for cold start routing. 
-    // If the user logs in as a Customer, and then opens Rider Login, 
-    // the Rider Login RoleGuard will check user.role vs 'rider'.
-    // We only write the cached role if the session was successfully admitted for the CURRENT portal.
-    // This prevents a Rider session from overwriting the Customer cached role on a Customer login page.
-    writeCachedRole(next?.role ?? null);
-    setCachedRole(next?.role ?? null);
+    
+    // We only update the global cached role if the session is not null.
+    // This allows cold-start routing on the / root path to land the user 
+    // in their home app. Portal-specific routes and guards handle their own
+    // authorization.
+    if (next) {
+      writeCachedRole(next.role);
+      setCachedRole(next.role);
+    }
   }, []);
 
   // Auto-login + OAuth return handling.
