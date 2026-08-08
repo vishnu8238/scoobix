@@ -177,7 +177,7 @@ export async function deleteRestaurantComplete(id: string) {
     ifFetch<MenuItemRow[]>(`/api/database/records/menu_items?restaurant_id=eq.${id}`),
     ifFetch<CategoryRow[]>(`/api/database/records/categories?restaurant_id=eq.${id}`),
     ifFetch<any[]>(`/api/database/records/coupons?restaurant_id=eq.${id}`),
-    ifFetch<any[]>(`/api/database/records/restaurant_kyc?restaurant_id=eq.${id}`),
+    ifFetch<any[]>(`/api/database/records/restaurant_kyc?restaurant_id=eq.${id}&limit=100`),
   ]).catch(() => [[], [], [], []]);
 
   // 2. Cleanup Storage (Images)
