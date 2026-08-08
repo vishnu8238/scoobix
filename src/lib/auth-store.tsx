@@ -90,13 +90,16 @@ export const ROLE_HOME: Record<Role, string> = {
 
 /**
  * Resolves the portal type from a URL path.
+ * This is the authoritative way to determine WHICH app the user is trying to use.
  */
 export function resolvePortalFromPath(path: string): Role | null {
-  if (path.startsWith("/partner")) return "partner";
-  if (path.startsWith("/rider")) return "rider";
-  if (path.startsWith("/manager")) return "manager";
-  if (path.startsWith("/admin")) return "admin";
-  if (path.startsWith("/app") || path.startsWith("/auth")) return "customer";
+  const p = path.toLowerCase();
+  if (p.startsWith("/partner")) return "partner";
+  if (p.startsWith("/rider")) return "rider";
+  if (p.startsWith("/manager")) return "manager";
+  if (p.startsWith("/admin")) return "admin";
+  // /auth and /app are customer portal
+  if (p.startsWith("/app") || p.startsWith("/auth")) return "customer";
   return null;
 }
 
@@ -510,6 +513,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void ifLogout();
       return verdict.reason ?? "This account cannot be used right now.";
     }
+
+    // Role-based Authorization check against requested portal
+    // If the user is logging in at a specific portal, their role MUST match.
+    // We retrieve the active portal from the URL or state.
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+    const requestedPortal = resolvePortalFromPath(currentPath);
+    
+    if (requestedPortal && next.role !== requestedPortal) {
+       // We DO NOT block the session admission here, because the Login page 
+       // needs the 'user' object to show the "Wrong Account" UI.
+       // However, we record it for security.
+       console.warn(`[auth] Portal mismatch: user is ${next.role}, requested ${requestedPortal}`);
+    }
+
     void onLoginSuccess({ userId: next.id, email: next.email, role: next.role, provider });
     return null;
   }, []);

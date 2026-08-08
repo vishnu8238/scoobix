@@ -89,9 +89,23 @@ function LoginPage() {
 
   const land = (user: User) => {
     toast.success(`Welcome back, ${user.name}`);
-    // The account's own role decides the destination — never the form.
+    
+    // Auth-session destination logic:
+    // 1. If we are on a specific portal's login page (?app= or /rider/login etc), 
+    //    and the user has that role, go there.
+    // 2. If the roles don't match, STAY HERE so the "Wrong Account" UI renders.
+    // 3. If no specific portal requested, go to user's role home.
+
+    const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
+    
+    if (requestedPortal && user.role !== requestedPortal) {
+      // Role mismatch. Do nothing. The 'user' state update will trigger the 
+      // Wrong Account view in this component.
+      return;
+    }
+
     const home = ROLE_HOME[user.role];
-    const canResume = !!redirect && (!app || app.role === user.role) && redirect.startsWith(home);
+    const canResume = !!redirect && redirect.startsWith(home);
     navigate({ to: (canResume ? redirect : home) as never, replace: true });
   };
 
