@@ -413,6 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       let handledOAuth = false;
       try {
+        console.log("[auth] BOOT: Starting authentication flow...");
         const providerError = readOAuthError();
         if (providerError) {
           console.error("[auth] OAuth provider returned an error", providerError);
@@ -421,8 +422,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const callback = readOAuthCallback();
         if (callback) {
+          console.log("[auth] OAuth callback detected", callback.provider);
           try {
             const { user: sess } = await ifCompleteOAuth(callback.code);
+            console.log("[auth] OAuth code exchanged for session:", sess?.id);
             const pending = takePendingRole();
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
@@ -430,10 +433,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               forceRole: pending.claim || !!activePortal,
             });
             if (!cancelled && next) {
+              console.log("[auth] Profile synced for OAuth user:", next.id, next.role);
               const blocked = await admitSession(next, String(callback.provider));
               if (blocked) {
+                console.warn("[auth] Session admission blocked:", blocked);
                 setOauthError(blocked);
               } else {
+                console.log("[auth] Session admitted, setting user state.");
                 setUser(next);
                 handledOAuth = true;
                 try {
@@ -453,17 +459,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (handledOAuth) return;
         const sess = await ifGetSession();
+        console.log("[auth] INITIAL_SESSION check:", sess ? "FOUND" : "NONE", sess?.id);
         if (cancelled) return;
         if (sess) {
           const next = await syncProfile(sess, { role: activePortal ?? undefined, forceRole: !!activePortal });
+          console.log("[auth] Profile restored for session user:", next?.id, next?.role);
           if (!cancelled && next) setUser(next);
-        } else if (!callback) setUser(null);
+        } else if (!callback) {
+          console.log("[auth] No active session, user is UNAUTHENTICATED.");
+          setUser(null);
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          console.log("[auth] Auth boot complete, loading = false.");
+          setLoading(false);
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [activePortal]);
+
 
   useEffect(() => {
     let cancelled = false;
