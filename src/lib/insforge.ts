@@ -24,9 +24,19 @@ import { Map as MapIcon } from "lucide-react";
 
 
 
+import { getAccessToken } from "./insforge-auth";
+
 export const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";
-export const INSFORGE_ANON_KEY =
-  "anon_f8c2fce9afe385f45eb6d00d434eb365833a70386175df3707743df3b751b102";
+export const INSFORGE_ANON_KEY = "anon_f8c2fce9afe385f45eb6d00d434eb365833a70386175df3707743df3b751b102";
+
+const insforgeHeaders = () => {
+  const token = getAccessToken();
+  return {
+    apikey: INSFORGE_ANON_KEY,
+    Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
+  };
+};
+
 
 // ---------- raw row shapes (loose — backend may add/omit fields) ----------
 
@@ -79,11 +89,11 @@ async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit
   const res = await fetch(`${INSFORGE_URL}${path}`, {
     ...init,
     headers: {
-      apikey: INSFORGE_ANON_KEY,
-      Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+      ...insforgeHeaders(),
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
+
     signal,
   });
   if (!res.ok) throw new Error(`InsForge ${path} → ${res.status}`);
@@ -99,10 +109,10 @@ async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?:
     const res = await fetch(`${INSFORGE_URL}${path}`, {
       method,
       headers: {
-        apikey: INSFORGE_ANON_KEY,
-        Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+        ...insforgeHeaders(),
         "Content-Type": "application/json",
       },
+
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     if (res.ok) {

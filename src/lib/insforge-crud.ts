@@ -34,11 +34,17 @@ const MAX_ROWS = 200;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
-const HEADERS = {
-  apikey: INSFORGE_ANON_KEY,
-  Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
-  "Content-Type": "application/json",
+import { getAccessToken } from "./insforge-auth";
+
+const HEADERS = () => {
+  const token = getAccessToken();
+  return {
+    apikey: INSFORGE_ANON_KEY,
+    Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
+    "Content-Type": "application/json",
+  };
 };
+
 
 class HttpError extends Error {
   constructor(public status: number, message: string) {
@@ -55,7 +61,7 @@ async function once(url: string, method: Method, body?: unknown) {
   const t0 = Date.now();
   const res = await fetch(url, {
     method,
-    headers: HEADERS,
+    headers: HEADERS(),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   recordMetric({
