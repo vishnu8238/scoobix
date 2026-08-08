@@ -20,6 +20,8 @@ import {
   type Dish,
   type Category,
 } from "./mock-data";
+import { Map as MapIcon } from "lucide-react";
+
 
 
 export const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";

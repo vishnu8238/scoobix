@@ -1,0 +1,106 @@
+import { listTable, createRecord, patchRecord, deleteRecord, createRecords } from "./insforge-crud";
+
+export type DeliveryZone = {
+  id: string;
+  name: string;
+  city: string;
+  description: string;
+  status: "ACTIVE" | "DISABLED" | "ARCHIVED";
+  boundary: any; // GeoJSON
+  center_lat?: number;
+  center_lng?: number;
+  pickup_radius_km: number;
+  max_delivery_distance_km: number;
+  max_orders_per_rider: number;
+  assignment_timeout_sec: number;
+  created_at: string;
+};
+
+export type Subzone = {
+  id: string;
+  zone_id: string;
+  name: string;
+  status: "ACTIVE" | "DISABLED";
+  boundary: any;
+};
+
+export type ZoneRider = {
+  zone_id: string;
+  rider_id: string;
+};
+
+export type SubzoneRider = {
+  subzone_id: string;
+  rider_id: string;
+};
+
+// --- API Methods ---
+
+export async function fetchZones(params?: Record<string, any>) {
+  return listTable<DeliveryZone>("delivery_zones", { order: "name.asc", ...params });
+}
+
+export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {
+  return createRecord<DeliveryZone>("delivery_zones", zone as any);
+}
+
+export async function updateZone(id: string, patch: Partial<DeliveryZone>) {
+  return patchRecord<DeliveryZone>("delivery_zones", id, patch as any);
+}
+
+export async function deleteZone(id: string) {
+  return deleteRecord("delivery_zones", id);
+}
+
+export async function fetchSubzones(zoneId?: string) {
+  const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
+  return listTable<Subzone>("delivery_subzones", { order: "name.asc", ...params });
+}
+
+export async function createSubzone(subzone: Omit<Subzone, "id">) {
+  return createRecord<Subzone>("delivery_subzones", subzone as any);
+}
+
+export async function updateSubzone(id: string, patch: Partial<Subzone>) {
+  return patchRecord<Subzone>("delivery_subzones", id, patch as any);
+}
+
+export async function deleteSubzone(id: string) {
+  return deleteRecord("delivery_subzones", id);
+}
+
+export async function assignRiderToZone(zoneId: string, riderId: string) {
+  return createRecord("zone_riders", { zone_id: zoneId, rider_id: riderId });
+}
+
+export async function removeRiderFromZone(zoneId: string, riderId: string) {
+  // PostgREST delete with composite filter is tricky via basic helper, but we'll try
+  // In a real app we might need a dedicated RPC or specific filter string
+  return deleteRecord("zone_riders", `zone_id=eq.${zoneId}&rider_id=eq.${riderId}` as any);
+}
+
+export async function fetchZoneRiders(zoneId: string) {
+  return listTable<ZoneRider>("zone_riders", { zone_id: `eq.${zoneId}` });
+}
+
+export async function fetchSubzoneRiders(subzoneId: string) {
+  return listTable<SubzoneRider>("subzone_riders", { subzone_id: `eq.${subzoneId}` });
+}
+
+// Stats & Metrics
+export async function getZoneStats(zoneId?: string) {
+  // In production this would be a complex join or view. 
+  // For MVP we can aggregate from relevant tables.
+  const riders = await listTable<any>("drivers", zoneId ? { zone_id: `eq.${zoneId}` } : {});
+  const orders = await listTable<any>("orders", { status: "in.(ACCEPTED,PREPARING,READY,PICKED_UP)" });
+  
+  return {
+    totalRiders: riders.length,
+    activeRiders: riders.filter(r => r.online_status).length,
+    busyRiders: riders.filter(r => r.online_status && r.current_order_id).length,
+    availableRiders: riders.filter(r => r.online_status && !r.current_order_id).length,
+    offlineRiders: riders.filter(r => !r.online_status).length,
+    activeOrders: orders.length,
+    unassignedOrders: orders.filter(o => !o.driver_id).length
+  };
+}

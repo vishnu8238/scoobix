@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Tag, LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, LifeBuoy, Copy, Gauge, ShieldCheck , Crown } from "lucide-react";
+import { Tag, LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, LifeBuoy, Copy, Gauge, ShieldCheck , Crown, Map as MapIcon } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
@@ -24,6 +24,8 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/duplicates", label: "Duplicates & Transfers", icon: Copy },
   { to: "/admin/drivers", label: "Drivers", icon: Bike },
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
+  { to: "/admin/live", label: "Zones & Live Dispatch", icon: MapIcon },
+
   { to: "/admin/campaigns", label: "Marketing Campaigns", icon: Megaphone },
   { to: "/admin/coupons", label: "Coupons & Promotions", icon: Tag },
   { to: "/admin/subscriptions", label: "Subscriptions & Plans", icon: Crown },
