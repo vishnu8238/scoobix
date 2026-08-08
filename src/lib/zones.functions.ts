@@ -42,7 +42,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
     for (const zDef of zones) {
       // Check if zone exists
       const zCheck = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones?name=ilike.${encodeURIComponent(zDef.name)}&city=eq.Vadodara`, { headers: HEADERS });
-      let zoneData = await zCheck.json();
+      let zoneData = zCheck.ok ? await zCheck.json() : [];
       let zoneId;
 
       if (zoneData && zoneData.length > 0) {
