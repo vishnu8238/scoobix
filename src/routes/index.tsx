@@ -31,7 +31,7 @@ function Splash() {
     } else {
       navigate({ to: "/auth/login", replace: true });
     }
-  }, [navigate, user, loading, cachedRole, routerState.location.pathname]);
+  }, [navigate, user, loading, cachedRole, location.pathname]);
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-black">
