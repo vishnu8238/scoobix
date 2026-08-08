@@ -474,27 +474,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
-  const signIn: AuthCtx["signIn"] = async (email, password, role) => {
-    const address = email.trim().toLowerCase();
+
+  const signIn: AuthCtx["signIn"] = async (address, password, role) => {
     try {
-      // Throttle credential attempts per device before touching the backend.
-      rateLimit("auth.login", `${deviceId()}:${address}`);
+      rateLimit("auth.login", `${deviceId()}:${address.toLowerCase()}`);
     } catch (err) {
       return { ok: false, message: guardMessage(err) };
     }
+
     try {
       const { user: sess } = await ifLogin(address, password);
       const next = await syncProfile(sess, { provider: "email", role });
-      if (!next) return { ok: false, message: "Could not load your account. Please try again." };
-      const blocked = await admitSession(next, "password");
+      if (!next) return { ok: false, message: "Could not load your account" };
+
+      const blocked = await admitSession(next, "email");
       if (blocked) return { ok: false, message: blocked };
+
       setUser(next);
       return { ok: true, user: next };
     } catch (err) {
-      console.error("[auth] Email sign-in failed", err);
       const message = err instanceof Error ? err.message : "Sign in failed";
-      // Track the failure against the real account when one exists, so repeated
-      // attempts can auto-lock it.
+      console.error("[auth] Email sign-in failed", message);
       void (async () => {
         const existing = await findUserProfileByEmail(address).catch(() => null);
         await noteFailedLogin(address, existing?.id ?? null).catch(() => null);
@@ -594,25 +594,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signOut = useCallback(() => {
-    // Close the session row and audit the sign-out BEFORE the token is dropped,
-    // so the write still carries a valid session.
+  const signOut = useCallback(async () => {
     const signingOut = user?.id ?? null;
-    void endCurrentSession(signingOut).catch(() => {});
-    if (signingOut) clearElevationCache(signingOut);
-    // Clear the local session FIRST so no in-flight request can revive it,
-    // then revoke server-side in the background.
-    setTokens(null, null);
-    clearLastRoute();
     try {
-      sessionStorage.removeItem(PENDING_ROLE_KEY);
-      localStorage.removeItem(PENDING_ROLE_KEY);
-    } catch { /* */ }
-    setUser(null);
-    // Drop every realtime subscription so no stale channel survives logout.
-    void import("./realtime-bus").then((m) => m.disconnectRealtime()).catch(() => {});
-    void ifLogout();
-  }, [user?.id]);
+      if (signingOut) {
+        await heartbeatSession().catch(() => null);
+        await endCurrentSession(signingOut).catch(() => {});
+        clearElevationCache(signingOut);
+      }
+      await ifLogout();
+    } catch {
+      // ignore
+    } finally {
+      setTokens(null, null);
+      clearLastRoute();
+      try {
+        sessionStorage.removeItem(PENDING_ROLE_KEY);
+        localStorage.removeItem(PENDING_ROLE_KEY);
+      } catch { /* */ }
+      setUser(null);
+      void import("./realtime-bus").then((m) => m.disconnectRealtime()).catch(() => {});
+    }
+  }, [user?.id, setUser]);
 
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {
@@ -632,6 +635,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         cachedRole,
+        activePortal,
         signIn,
         signUp,
         signInWithProvider,
@@ -644,6 +648,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resendVerification,
         signOut,
         resetPassword,
+        setPortal,
       }}
     >
       {children}
@@ -653,6 +658,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 }
