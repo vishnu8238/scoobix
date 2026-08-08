@@ -405,12 +405,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("[auth] setUser state update:", next?.id, next?.role);
     setUserState(next);
     
-    // We only update the global cached role if the session is not null.
+    // Mirror role to cache only on positive session to help initial routing
+    // but clearing it on null is crucial to stop the stale Customer App loop.
     if (next) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
+    } else {
+      writeCachedRole(null);
+      setCachedRole(null);
     }
   }, []);
+
 
 
   // Auto-login + OAuth return handling.
