@@ -127,21 +127,36 @@ export function LeafletMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync static markers + route
+  // Sync static markers + route + polygons
   useEffect(() => {
     if (!ready) return;
     (async () => {
       const L = await loadLeaflet();
       const map = mapRef.current;
-      const layer = markerLayerRef.current;
-      if (!map || !layer) return;
-      layer.clearLayers();
+      const markerLayer = markerLayerRef.current;
+      const polyLayer = polygonLayerRef.current;
+      if (!map || !markerLayer || !polyLayer) return;
+      
+      markerLayer.clearLayers();
+      polyLayer.clearLayers();
 
       markers.forEach((m) => {
         const mk = L.marker([m.lat, m.lng], { icon: buildDivIcon(L, m.kind) });
         if (m.label) mk.bindTooltip(m.label, { direction: "top", offset: [0, -16], className: "cravio-map-tip" });
-        mk.addTo(layer);
+        mk.addTo(markerLayer);
       });
+
+      if (polygons) {
+        polygons.forEach(p => {
+          const poly = L.polygon(p.points.map(pt => [pt.lat, pt.lng]), {
+            color: p.color || "var(--color-primary)",
+            fillColor: p.color || "var(--color-primary)",
+            fillOpacity: 0.1,
+            weight: 2
+          }).addTo(polyLayer);
+          if (p.label) poly.bindTooltip(p.label, { sticky: true, className: "cravio-map-tip" });
+        });
+      }
 
       // route line
       if (routeLineRef.current) { map.removeLayer(routeLineRef.current); routeLineRef.current = null; }
@@ -156,6 +171,7 @@ export function LeafletMap({
       const pts = [
         ...markers.map((m) => [m.lat, m.lng] as [number, number]),
         ...(route ? [[route.from.lat, route.from.lng], [route.to.lat, route.to.lng]] as [number, number][] : []),
+        ...(polygons ? polygons.flatMap(p => p.points.map(pt => [pt.lat, pt.lng] as [number, number])) : [])
       ];
       if (pts.length >= 2) {
         map.fitBounds(pts as any, { padding: [40, 40], maxZoom: 15, animate: true });
