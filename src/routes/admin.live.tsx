@@ -28,7 +28,7 @@ function AdminZonesDashboard() {
   const refresh = useCallback(async () => {
     setLoading(true);
     const [z, sz, st] = await Promise.all([
-      fetchZones(),
+      fetchZones({ city: "eq.Vadodara" }),
       fetchSubzones(),
       getZoneStats()
     ]);
@@ -143,7 +143,13 @@ function AdminZonesDashboard() {
         <section className="h-[600px] rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
            <LeafletMap 
              className="h-full w-full" 
-             markers={[]} // Will add restaurant and rider markers here
+             polygons={zones.map(z => ({
+               id: z.id,
+               points: z.boundary?.coordinates?.[0]?.map((c: any) => ({ lat: c[1], lng: c[0] })) || [],
+               label: z.name,
+               color: z.status === "ACTIVE" ? "var(--color-primary)" : "#ef4444"
+             }))}
+             markers={[]} 
            />
         </section>
       )}
@@ -234,7 +240,23 @@ function ZoneDetailView({ zone, subzones, onBack }: { zone: DeliveryZone; subzon
             {activeTab === "overview" && (
               <div className="space-y-6">
                 <section className="h-[400px] rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
-                  <LeafletMap className="h-full w-full" />
+                  <LeafletMap 
+                    className="h-full w-full" 
+                    polygons={[
+                      {
+                        id: zone.id,
+                        points: zone.boundary?.coordinates?.[0]?.map((c: any) => ({ lat: c[1], lng: c[0] })) || [],
+                        label: zone.name,
+                        color: "var(--color-primary)"
+                      },
+                      ...subzones.map(s => ({
+                        id: s.id,
+                        points: s.boundary?.coordinates?.[0]?.map((c: any) => ({ lat: c[1], lng: c[0] })) || [],
+                        label: s.name,
+                        color: "rgba(0,0,0,0.2)"
+                      }))
+                    ]}
+                  />
                 </section>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <ConfigCard label="Pickup Radius" value={`${zone.pickup_radius_km} km`} />
