@@ -71,16 +71,16 @@ function LoginPage() {
     
     // Authorization logic:
     // If the authenticated user matches the app's role, go home.
-    // If they have a different role, they need to sign out before signing in 
-    // to this portal with a different account.
     if (user.role === app?.role) {
       const home = ROLE_HOME[user.role];
       const canResume = !!redirect && redirect.startsWith(home);
       navigate({ to: (canResume ? redirect : home) as never, replace: true });
+    } else if (!app) {
+      // Default to their home if no specific app was requested
+      navigate({ to: ROLE_HOME[user.role] as never, replace: true });
     } else {
       // User is authenticated but role doesn't match this app's role.
       // We keep them on the login page to show "Wrong Account" / "Sign out" flow.
-      // No automatic redirect to their own app home.
     }
   }, [app, loading, navigate, redirect, user]);
 
@@ -179,6 +179,8 @@ function LoginPage() {
                 setBusy(true);
                 // 1. Perform a real InsForge logout to clear server session
                 await signOut();
+                // 2. Ensure portal context is reset/refreshed in the component state if needed
+                // 3. Clear transient local caches
                 setBusy(false);
                 // After logout, the 'user' state becomes null, triggering a re-render
                 // that shows the normal login form on this SAME portal page.
