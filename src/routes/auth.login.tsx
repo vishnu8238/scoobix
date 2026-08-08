@@ -61,9 +61,20 @@ function LoginPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-    const home = ROLE_HOME[user.role];
-    const canResume = !!redirect && (!app || app.role === user.role) && redirect.startsWith(home);
-    navigate({ to: (canResume ? redirect : home) as never, replace: true });
+    
+    // Authorization logic:
+    // If the authenticated user matches the app's role, go home.
+    // If they have a different role, they need to sign out before signing in 
+    // to this portal with a different account.
+    if (user.role === app?.role) {
+      const home = ROLE_HOME[user.role];
+      const canResume = !!redirect && redirect.startsWith(home);
+      navigate({ to: (canResume ? redirect : home) as never, replace: true });
+    } else {
+      // User is authenticated but role doesn't match this app's role.
+      // We keep them on the login page to show "Wrong Account" / "Sign out" flow.
+      // No automatic redirect to their own app home.
+    }
   }, [app, loading, navigate, redirect, user]);
 
   const land = (user: User) => {
