@@ -88,6 +88,18 @@ export const ROLE_HOME: Record<Role, string> = {
   manager: "/manager",
 };
 
+/**
+ * Resolves the portal type from a URL path.
+ */
+export function resolvePortalFromPath(path: string): Role | null {
+  if (path.startsWith("/partner")) return "partner";
+  if (path.startsWith("/rider")) return "rider";
+  if (path.startsWith("/manager")) return "manager";
+  if (path.startsWith("/admin")) return "admin";
+  if (path.startsWith("/app") || path.startsWith("/auth")) return "customer";
+  return null;
+}
+
 // ---------- role mapping between DB and existing UI enum ----------
 
 const DB_TO_UI: Record<DbRole, Role> = {
