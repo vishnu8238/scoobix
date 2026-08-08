@@ -40,7 +40,13 @@ function LoginPage() {
     signOut,
     oauthError,
     clearOAuthError,
+    setPortal,
   } = useAuth();
+
+  // Ensure portal context is set if we arrive via direct URL with ?app=
+  useEffect(() => {
+    if (appId) setPortal(appId);
+  }, [appId, setPortal]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
