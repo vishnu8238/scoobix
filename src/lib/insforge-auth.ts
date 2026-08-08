@@ -182,7 +182,9 @@ export async function ifLogout(): Promise<void> {
 
 export async function ifGetSession(): Promise<InsForgeUser | null> {
   const token = getAccessToken();
+  console.log("[auth] ifGetSession check, local access token exists:", !!token);
   if (!token) return null;
+
   const res = await raw(`/api/auth/sessions/current`, { method: "GET" });
   if (res.status === 401 || res.status === 403) {
     // Expired or revoked access token — try the refresh token once.
