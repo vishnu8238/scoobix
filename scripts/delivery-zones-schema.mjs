@@ -1,16 +1,23 @@
-import { supabaseAdmin } from '../src/integrations/supabase/client.server.js';
+import { INSFORGE_URL, INSFORGE_ANON_KEY } from '../src/lib/insforge.js';
 
 async function setup() {
-  console.log('--- Setting up Delivery Zones Schema ---');
+  console.log('--- Setting up Delivery Zones Schema via InsForge HTTP API ---');
 
-  // Helper to execute SQL
-  const exec = async (sql) => {
-    const { error } = await supabaseAdmin.rpc('exec_sql', { sql });
-    if (error) {
-      console.error('SQL Execution Error:', error);
-      // Fallback if exec_sql is missing: try creating a simple table to see if we have access
+  const execSql = async (sql) => {
+    const res = await fetch(`${INSFORGE_URL}/api/database/rpc/exec_sql`, {
+      method: 'POST',
+      headers: {
+        'apikey': INSFORGE_ANON_KEY,
+        'Authorization': `Bearer ${INSFORGE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sql })
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      console.error('SQL Execution Error:', result);
     }
-    return error;
+    return result;
   };
 
   const sql = `
@@ -28,7 +35,7 @@ async function setup() {
       max_delivery_distance_km double precision DEFAULT 4.0,
       max_orders_per_rider integer DEFAULT 2,
       assignment_timeout_sec integer DEFAULT 30,
-      created_by uuid REFERENCES auth.users(id),
+      created_by uuid,
       created_at timestamptz DEFAULT now(),
       updated_at timestamptz DEFAULT now()
     );
@@ -51,7 +58,7 @@ async function setup() {
     -- 3. zone_riders & subzone_riders
     CREATE TABLE IF NOT EXISTS public.zone_riders (
       zone_id uuid REFERENCES public.delivery_zones(id) ON DELETE CASCADE,
-      rider_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+      rider_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
       PRIMARY KEY (zone_id, rider_id)
     );
     GRANT SELECT, INSERT, DELETE ON public.zone_riders TO authenticated;
@@ -59,7 +66,7 @@ async function setup() {
     
     CREATE TABLE IF NOT EXISTS public.subzone_riders (
       subzone_id uuid REFERENCES public.delivery_subzones(id) ON DELETE CASCADE,
-      rider_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+      rider_id uuid REFERENCES public.users(id) ON DELETE CASCADE,
       PRIMARY KEY (subzone_id, rider_id)
     );
     GRANT SELECT, INSERT, DELETE ON public.subzone_riders TO authenticated;
@@ -69,7 +76,7 @@ async function setup() {
     CREATE TABLE IF NOT EXISTS public.delivery_assignment_logs (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       order_id uuid,
-      rider_id uuid REFERENCES auth.users(id),
+      rider_id uuid REFERENCES public.users(id),
       action text NOT NULL,
       previous_rider_id uuid,
       reason text,
@@ -96,7 +103,7 @@ async function setup() {
     CREATE INDEX IF NOT EXISTS idx_szr_rider ON public.subzone_riders(rider_id);
   `;
 
-  await exec(sql);
+  await execSql(sql);
   console.log('--- Schema setup complete ---');
 }
 
