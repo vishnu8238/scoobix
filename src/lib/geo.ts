@@ -40,6 +40,34 @@ export function interpolate(a: LatLng, b: LatLng, t: number): LatLng {
   return { lat: a.lat + (b.lat - a.lat) * u, lng: a.lng + (b.lng - a.lng) * u };
 }
 
+
+/** Haversine distance in KM between two points. */
+export function haversineDistance(a: LatLng, b: LatLng): number {
+  const R = 6371; // Earth radius in KM
+  const dLat = (b.lat - a.lat) * (Math.PI / 180);
+  const dLon = (b.lng - a.lng) * (Math.PI / 180);
+  const aa =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(a.lat * (Math.PI / 180)) *
+      Math.cos(b.lat * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
+  return R * c;
+}
+
+/** Check if a point is inside a polygon using ray-casting. */
+export function isPointInPolygon(point: LatLng, polygon: LatLng[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lat, yi = polygon[i].lng;
+    const xj = polygon[j].lat, yj = polygon[j].lng;
+    const intersect = yi > point.lng !== yj > point.lng && point.lat < ((xj - xi) * (point.lng - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 /** Map an order status to 0..1 progress for the rider marker. */
 export function statusToProgress(status: string): number {
   switch (status) {
@@ -53,3 +81,4 @@ export function statusToProgress(status: string): number {
     default: return 0;
   }
 }
+
