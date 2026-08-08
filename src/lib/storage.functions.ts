@@ -17,8 +17,6 @@ export const getUploadStrategy = createServerFn({ method: "POST" })
     size: z.number(),
   }))
   .handler(async ({ data }) => {
-    // We use the INSFORGE_API_KEY from env if available, otherwise fallback to ANON
-    // In a real prod env, this would be a secret that has 'service_role' permissions.
     const key = process.env.INSFORGE_API_KEY || INSFORGE_ANON_KEY;
     
     console.log("[storage-fn] Requesting strategy for:", data.filename, "in bucket:", data.bucket);
@@ -27,7 +25,7 @@ export const getUploadStrategy = createServerFn({ method: "POST" })
       method: "POST",
       headers: {
         "apikey": key,
-        "Authorization": \`Bearer \${key}\`,
+        "Authorization": `Bearer ${key}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -40,7 +38,7 @@ export const getUploadStrategy = createServerFn({ method: "POST" })
     if (!res.ok) {
       const errorText = await res.text();
       console.error("[storage-fn] Strategy failed:", res.status, errorText);
-      throw new Error(\`Failed to get upload strategy: \${res.status} \${errorText}\`);
+      throw new Error(`Failed to get upload strategy: ${res.status} ${errorText}`);
     }
 
     const strategy = await res.json();
@@ -61,16 +59,15 @@ export const confirmStorageUpload = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const key = process.env.INSFORGE_API_KEY || INSFORGE_ANON_KEY;
     
-    // Ensure URL is absolute
     const url = data.confirmUrl.startsWith("http") 
       ? data.confirmUrl 
-      : \`\${INSFORGE_URL}\${data.confirmUrl.startsWith("/") ? "" : "/"}\${data.confirmUrl}\`;
+      : `${INSFORGE_URL}${data.confirmUrl.startsWith("/") ? "" : "/"}${data.confirmUrl}`;
 
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "apikey": key,
-        "Authorization": \`Bearer \${key}\`,
+        "Authorization": `Bearer ${key}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -81,7 +78,7 @@ export const confirmStorageUpload = createServerFn({ method: "POST" })
 
     if (!res.ok) {
       const errorText = await res.text();
-      throw new Error(\`Failed to confirm upload: \${res.status} \${errorText}\`);
+      throw new Error(`Failed to confirm upload: ${res.status} ${errorText}`);
     }
 
     return res.json();
