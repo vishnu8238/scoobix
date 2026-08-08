@@ -102,23 +102,27 @@ function PartnerMenu() {
   };
   const save = async (d: EditableDish) => {
     const { upsertMenuItem } = await import("@/lib/insforge");
-    void upsertMenuItem({
-      id: d.id,
-      restaurant_id: rid,
-      name: d.name,
-      description: d.description,
-      price: d.price,
-      image_url: d.image,
-      category: d.category,
-      veg_type: d.veg ? "veg" : "non_veg",
-      available: d.available,
-      recommended: !!d.recommended,
-      best_seller: !!d.bestSeller,
-    }).then(res => {
-      if (res.ok) {
-        import("@/lib/insforge-crud").then(m => m.invalidateTable("menu_items"));
+    try {
+      const res = await upsertMenuItem({
+        id: d.id,
+        restaurant_id: rid,
+        name: d.name,
+        description: d.description,
+        price: d.price,
+        image_url: d.image,
+        category: d.category,
+        veg_type: d.veg ? "veg" : "non_veg",
+        available: d.available,
+        recommended: !!d.recommended,
+        best_seller: !!d.bestSeller,
+      });
+      if (res?.ok) {
+        const { invalidateTable } = await import("@/lib/insforge-crud");
+        invalidateTable("menu_items");
       }
-    });
+    } catch (e) {
+      console.error("Menu save failed:", e);
+    }
     (d.addons ?? []).forEach((a) => {
       void upsertAddon({ id: a.id, dish_id: d.id, name: a.name, price: a.price, available: a.available });
     });
