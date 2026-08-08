@@ -31,9 +31,7 @@ GRANT ALL ON public.delivery_zones TO anon, authenticated, service_role;
 GRANT ALL ON public.delivery_subzones TO anon, authenticated, service_role;
   `;
   
-  console.log("Running migration via RPC if available...");
-  // Attempting to see if there's an RPC to run SQL
-  const res = await fetch(`${INSFORGE_URL}/api/database/rpc/exec_sql`, {
+  const res = await fetch(`${INSFORGE_URL}/api/rest/v1/rpc/run_sql`, {
     method: "POST",
     headers: {
       apikey: INSFORGE_ANON_KEY,
@@ -42,8 +40,7 @@ GRANT ALL ON public.delivery_subzones TO anon, authenticated, service_role;
     },
     body: JSON.stringify({ sql })
   });
-  console.log(`RPC status: ${res.status}`);
-  const text = await res.text();
-  console.log("RPC Response:", text);
+  console.log(`Status: ${res.status}`);
+  console.log("Response:", await res.text());
 }
 run();
