@@ -28,6 +28,7 @@ function AdminOperationsDashboard() {
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [subzones, setSubzones] = useState<Subzone[]>([]);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [selectedSubzoneId, setSelectedSubzoneId] = useState<string | null>(null);
   const [shipments, setShipments] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [breakdown, setBreakdown] = useState<any>(null);
@@ -41,8 +42,8 @@ function AdminOperationsDashboard() {
   const refresh = useCallback(async () => {
     setLoading(true);
     const [z, sz, st, live] = await Promise.all([
-      fetchZones(),
-      fetchSubzones(),
+      fetchZones({ city: "eq.Vadodara" }),
+      fetchSubzones(selectedZoneId || undefined),
       getZoneStats(selectedZoneId || undefined),
       fetchLiveShipmentOrders()
     ]);
@@ -55,14 +56,14 @@ function AdminOperationsDashboard() {
     if (selectedZoneId) {
       const [br, an] = await Promise.all([
         fetchZoneOrderBreakdown(selectedZoneId),
-        fetchZoneDemandAnalytics(selectedZoneId)
+        fetchZoneDemandAnalytics(selectedZoneId, selectedSubzoneId || undefined)
       ]);
       setBreakdown(br);
       setAnalytics(an);
     }
     
     setLoading(false);
-  }, [selectedZoneId, version]);
+  }, [selectedZoneId, selectedSubzoneId, version]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
@@ -117,13 +118,31 @@ function AdminOperationsDashboard() {
                 <MapPin className="h-4 w-4 text-primary" />
                 <select 
                   value={selectedZoneId || ""} 
-                  onChange={(e) => setSelectedZoneId(e.target.value || null)}
+                  onChange={(e) => {
+                    setSelectedZoneId(e.target.value || null);
+                    setSelectedSubzoneId(null);
+                  }}
                   className="bg-transparent text-sm font-bold outline-none"
                 >
                   <option value="">All Zones</option>
                   {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                 </select>
              </div>
+
+             {selectedZoneId && subzones.length > 0 && (
+               <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-2 shadow-soft ring-1 ring-border/60 animate-in fade-in slide-in-from-left-2">
+                  <Filter className="h-4 w-4 text-primary" />
+                  <select 
+                    value={selectedSubzoneId || ""} 
+                    onChange={(e) => setSelectedSubzoneId(e.target.value || null)}
+                    className="bg-transparent text-sm font-bold outline-none"
+                  >
+                    <option value="">All Subzones</option>
+                    {subzones.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+               </div>
+             )}
+
              <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-2 shadow-soft ring-1 ring-border/60">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-sm font-bold">Today</span>
@@ -208,18 +227,20 @@ function AdminOperationsDashboard() {
                   />
                 </div>
                 <div className="flex gap-2">
-                   <FilterButton label="All" active />
-                   <FilterButton label="Unassigned" />
-                   <FilterButton label="Out for Delivery" />
+                   <FilterButton label="All" active={!q} onClick={() => setQ("")} />
+                   <FilterButton label="Unassigned" active={q === "unassigned"} onClick={() => setQ("unassigned")} />
+                   <FilterButton label="Out for Delivery" active={q === "picked_up"} onClick={() => setQ("picked_up")} />
                 </div>
               </div>
 
               <DataTable 
                 columns={["Order", "Zone/Area", "Status Tracking", "Rider", "Metrics", "Action"]}
-                rows={shipments.filter(o => 
-                  o.id.includes(q) || 
-                  (o.restaurant_name || "").toLowerCase().includes(q.toLowerCase())
-                ).map(o => [
+                rows={shipments.filter(o => {
+                  const term = q.toLowerCase();
+                  if (term === "unassigned") return !o.driver_id;
+                  if (term === "picked_up") return o.status === "PICKED_UP";
+                  return o.id.includes(term) || (o.restaurant_name || "").toLowerCase().includes(term);
+                }).map(o => [
                   <div key={o.id+"id"}>
                     <p className="font-bold text-xs">#{o.id.slice(0, 8)}</p>
                     <p className="text-[10px] text-muted-foreground">{format(new Date(o.created_at), "HH:mm")}</p>
@@ -422,12 +443,15 @@ function SupplyRow({ label, count, color, total }: { label: string; count: numbe
   );
 }
 
-function FilterButton({ label, active = false }: { label: string; active?: boolean }) {
+function FilterButton({ label, active, onClick }: { label: string; active?: boolean; onClick?: () => void }) {
   return (
-    <button className={cn(
-      "px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition",
-      active ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground hover:text-foreground"
-    )}>
+    <button 
+      onClick={onClick}
+      className={cn(
+        "rounded-xl px-4 py-2 text-xs font-bold transition",
+        active ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground"
+      )}
+    >
       {label}
     </button>
   );
