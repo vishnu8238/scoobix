@@ -311,6 +311,7 @@ export async function ifCreateOAuthUrl(
   provider: OAuthProvider,
   redirectUri: string,
   meta?: Record<string, string>,
+  queryParams?: Record<string, string>,
 ): Promise<string> {
   const verifier = randomVerifier();
   const challenge = await challengeFor(verifier);
