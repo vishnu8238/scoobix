@@ -63,8 +63,8 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
             boundary: { type: "Polygon", coordinates: [] }
           })
         });
-        const newZone = await createZ.json();
-        zoneId = newZone.id || (Array.isArray(newZone) ? newZone[0].id : null);
+        const newZone = createZ.ok ? await createZ.json() : null;
+        zoneId = newZone ? (newZone.id || (Array.isArray(newZone) ? newZone[0].id : null)) : null;
         createdZones++;
       }
 
