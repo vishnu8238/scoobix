@@ -110,12 +110,27 @@ function AdminZonesDashboard() {
             {seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
             Seed Vadodara
           </button>
-          <button 
-            onClick={() => setIsZoneModalOpen(true)}
-            className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95"
-          >
-            <Plus className="h-4 w-4" /> Create Zone
-          </button>
+          <div className="flex rounded-2xl bg-card p-1 shadow-soft ring-1 ring-border/60">
+            <button 
+              onClick={() => setIsZoneModalOpen(true)}
+              className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition hover:bg-primary-soft hover:text-primary"
+            >
+              <Plus className="h-4 w-4" /> Zone
+            </button>
+            <div className="w-px bg-border/60 mx-1 self-stretch" />
+            <button 
+              onClick={() => {
+                if (zones.length === 0) {
+                  toast.error("Please create a zone first");
+                  return;
+                }
+                setIsSubzoneModalOpen(true);
+              }}
+              className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition hover:bg-primary-soft hover:text-primary"
+            >
+              <Plus className="h-4 w-4" /> Subzone
+            </button>
+          </div>
         </div>
       </header>
 ...
@@ -130,6 +145,7 @@ function AdminZonesDashboard() {
         onClose={() => setIsSubzoneModalOpen(false)} 
         onSuccess={refresh}
         zoneId={selectedZoneId || ""}
+        zones={zones}
       />
 
       {stats && (
