@@ -221,6 +221,44 @@ async function confirmUpload(confirmUrl: string, size: number, mime: string): Pr
   return res.json().catch(() => null);
 }
 
+/** Upload a generic file (like PDF) to storage. */
+export async function uploadFile(
+  file: File,
+  folder: string,
+  opts?: { oldKey?: string | null },
+): Promise<{ url: string; key: string }> {
+  const safeBase = (file.name.replace(/\.[^.]+$/, "") || "doc")
+    .toLowerCase().replace(/[^a-z0-9-_]+/g, "-").slice(0, 40);
+  const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+  const filename = `${folder}/${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const res = await withRetry(async () => {
+    const strat = await getStrategy(BUCKET, filename, file.type, file.size);
+    if (strat.method === "presigned") {
+      await postPresigned(strat, file);
+      let finalUrl = "";
+      if (strat.confirmRequired && strat.confirmUrl) {
+        const done = await confirmUpload(strat.confirmUrl, file.size, file.type);
+        finalUrl = done?.url ? toAbsolute(done.url) : "";
+      }
+      if (!finalUrl) {
+        finalUrl = toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`);
+      }
+      return { url: finalUrl, key: strat.key };
+    }
+    await putDirect(strat.uploadUrl, file);
+    return {
+      url: toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`),
+      key: strat.key,
+    };
+  });
+
+  if (opts?.oldKey && opts.oldKey !== res.key) {
+    void deleteObject(opts.oldKey).catch(() => {});
+  }
+  return res;
+}
+
 /** Upload an image and return an ImageRef. Old ref (if any) is deleted after
  *  the new upload succeeds to keep storage clean. */
 export async function uploadImage(
@@ -260,16 +298,18 @@ export async function uploadImage(
   // Orphan cleanup — best-effort, never blocks success.
   const oldKey = opts?.oldRef?.optimized_reference;
   if (oldKey && oldKey !== ref.optimized_reference) {
-    void deleteImage(oldKey).catch(() => { /* ignore */ });
+    void deleteObject(oldKey).catch(() => { /* ignore */ });
   }
   return ref;
 }
 
 /** Delete a stored object by key (best-effort). */
-export async function deleteImage(key: string): Promise<void> {
+export async function deleteObject(key: string): Promise<void> {
   if (!key) return;
   await fetch(`${INSFORGE_URL}/api/storage/buckets/${BUCKET}/objects/${encodeURI(key)}`, {
     method: "DELETE",
     headers: { ...insforgeHeaders() },
   }).catch(() => { /* ignore */ });
 }
+
+export { deleteObject as deleteImage };
