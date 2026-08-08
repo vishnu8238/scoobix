@@ -783,6 +783,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         cachedRole,
+        roles: user?.roles || [],
         activePortal,
         signIn,
         signUp,
