@@ -60,6 +60,8 @@ type AuthCtx = {
   loading: boolean;
   /** Persisted role from the previous session; used to route before `user` resolves. */
   cachedRole: Role | null;
+  /** All roles available to the current user. */
+  roles: Role[];
   /** The portal currently being used for login/authentication. */
   activePortal: Role | null;
   signIn: (email: string, password: string, role?: Role) => Promise<AuthResult>;
