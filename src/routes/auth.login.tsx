@@ -163,7 +163,6 @@ function LoginPage() {
           <div className="mt-8 flex w-full flex-col gap-3">
             <Button 
               onClick={() => {
-                // If they have a redirect URL that belongs to their actual role, go there.
                 const home = ROLE_HOME[user.role];
                 const canResume = !!redirect && redirect.startsWith(home);
                 navigate({ to: (canResume ? redirect : home) as never, replace: true });
@@ -178,15 +177,36 @@ function LoginPage() {
               variant="outline"
               onClick={async () => {
                 setBusy(true);
+                // 1. Perform a real InsForge logout to clear server session
                 await signOut();
                 setBusy(false);
-                // After logout, they remain on this login page but without a session,
-                // allowing them to sign in with a different account.
+                // After logout, the 'user' state becomes null, triggering a re-render
+                // that shows the normal login form on this SAME portal page.
               }}
               className="h-12 w-full rounded-full border-2 border-primary/20 bg-background text-sm font-bold text-primary transition-all hover:bg-primary/5 active:scale-[0.98]"
             >
               {busy ? "Signing out..." : "Use another account"}
             </Button>
+
+            <div className="flex flex-col gap-2 mt-4 w-full">
+               <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Or switch identity provider</p>
+               <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline"
+                    onClick={() => oauth("google", true)}
+                    className="h-11 rounded-full text-xs font-bold"
+                  >
+                    Use another Google
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => oauth("apple", true)}
+                    className="h-11 rounded-full text-xs font-bold"
+                  >
+                    Use another Apple
+                  </Button>
+               </div>
+            </div>
           </div>
         </div>
       </div>
