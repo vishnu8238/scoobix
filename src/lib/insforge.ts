@@ -79,11 +79,11 @@ async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit
   const res = await fetch(`${INSFORGE_URL}${path}`, {
     ...init,
     headers: {
-      apikey: INSFORGE_ANON_KEY,
-      Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+      ...insforgeHeaders(),
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
+
     signal,
   });
   if (!res.ok) throw new Error(`InsForge ${path} → ${res.status}`);
@@ -99,10 +99,10 @@ async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?:
     const res = await fetch(`${INSFORGE_URL}${path}`, {
       method,
       headers: {
-        apikey: INSFORGE_ANON_KEY,
-        Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+        ...insforgeHeaders(),
         "Content-Type": "application/json",
       },
+
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     if (res.ok) {

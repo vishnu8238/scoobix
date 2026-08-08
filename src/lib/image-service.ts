@@ -16,11 +16,16 @@
  */
 
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { getAccessToken } from "./insforge-auth";
 
-const insforgeHeaders = () => ({
-  apikey: INSFORGE_ANON_KEY,
-  Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
-});
+const insforgeHeaders = () => {
+  const token = getAccessToken();
+  return {
+    apikey: INSFORGE_ANON_KEY,
+    Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
+  };
+};
+
 
 export type ImageType =
   | "logo"
