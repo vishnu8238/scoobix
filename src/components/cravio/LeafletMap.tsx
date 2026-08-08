@@ -81,6 +81,7 @@ export function LeafletMap({
   const riderMarkerRef = useRef<any>(null);
   const pickMarkerRef = useRef<any>(null);
   const routeLineRef = useRef<any>(null);
+  const polygonLayerRef = useRef<any>(null);
   const rafRef = useRef<number | null>(null);
   const currentProgressRef = useRef<number>(riderProgress);
   const [ready, setReady] = useState(false);
