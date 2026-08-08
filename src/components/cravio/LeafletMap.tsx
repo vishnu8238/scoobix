@@ -172,7 +172,7 @@ export function LeafletMap({
       const pts = [
         ...markers.map((m) => [m.lat, m.lng] as [number, number]),
         ...(route ? [[route.from.lat, route.from.lng], [route.to.lat, route.to.lng]] as [number, number][] : []),
-        ...(polygons ? polygons.flatMap(p => p.points.map(pt => [pt.lat, pt.lng] as [number, number])) : [])
+        ...(polygons ? (polygons as any[]).flatMap(p => p.points.map((pt: LatLng) => [pt.lat, pt.lng] as [number, number])) : [])
       ];
       if (pts.length >= 2) {
         map.fitBounds(pts as any, { padding: [40, 40], maxZoom: 15, animate: true });
