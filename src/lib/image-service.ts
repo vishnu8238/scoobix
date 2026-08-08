@@ -170,7 +170,7 @@ export async function uploadImage(
     if (strat.method === "presigned") {
       await postPresigned(strat, blob);
       if (strat.confirmRequired && strat.confirmUrl) {
-        await confirmStorageUpload({ bucket: BUCKET, confirmUrl: strat.confirmUrl, size: blob.size, contentType: mime });
+        await confirmStorageUpload({ data: { bucket: BUCKET, confirmUrl: strat.confirmUrl, size: blob.size, contentType: mime } });
       }
       const finalUrl = toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`);
       return { image_url: finalUrl, image_type: type, optimized_reference: strat.key };
