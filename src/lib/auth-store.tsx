@@ -360,15 +360,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
   const [activePortal, setActivePortalState] = useState<Role | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
   const setPortal = useCallback((portal: Role | null) => {
     setActivePortalState(portal);
     if (portal) {
       try {
         localStorage.setItem("scoobix_active_portal_v1", portal);
+        console.log(`[auth] Portal set to: ${portal}`);
       } catch { /* */ }
     } else {
       try {
         localStorage.removeItem("scoobix_active_portal_v1");
+        console.log(`[auth] Portal cleared`);
       } catch { /* */ }
     }
   }, []);
@@ -378,11 +383,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem("scoobix_active_portal_v1") as Role | null;
       if (stored && ALL_ROLES.includes(stored)) {
         setActivePortalState(stored);
+        console.log(`[auth] Restored portal from storage: ${stored}`);
       }
     } catch { /* */ }
   }, []);
-  const [loading, setLoading] = useState(true);
-  const [oauthError, setOauthError] = useState<string | null>(null);
+
 
   /**
    * Every session update also mirrors the resolved role to local storage, so a
