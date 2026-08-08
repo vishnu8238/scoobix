@@ -255,6 +255,12 @@ function AdminOperationsDashboard() {
         <section className="h-[700px] rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
            <LeafletMap 
              className="h-full w-full" 
+             polygons={zones.map(z => ({
+               id: z.id,
+               points: z.boundary?.coordinates?.[0]?.map((c: any) => ({ lat: c[1], lng: c[0] })) || [],
+               label: z.name,
+               color: "var(--color-primary)"
+             }))}
              markers={shipments.filter(o => o.lat && o.lng).map(o => ({
                id: o.id,
                lat: o.lat,
