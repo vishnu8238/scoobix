@@ -395,17 +395,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * profile round-trip finishes.
    */
   const setUser = useCallback((next: User | null) => {
+    console.log("[auth] setUser state update:", next?.id, next?.role);
     setUserState(next);
     
     // We only update the global cached role if the session is not null.
-    // This allows cold-start routing on the / root path to land the user 
-    // in their home app. Portal-specific routes and guards handle their own
-    // authorization.
     if (next) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
     }
   }, []);
+
 
   // Auto-login + OAuth return handling.
   useEffect(() => {
