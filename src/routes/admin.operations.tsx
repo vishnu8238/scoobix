@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { 
   Search, Map as MapIcon, Users, Bike, ClipboardList, ShieldAlert, Check, 
   X, Loader2, BarChart3, Clock, TrendingUp, Filter, Calendar, MapPin, 
-  AlertTriangle, ArrowRight, Package, Home
+  AlertTriangle, ArrowRight, Package, Home, Store
 } from "lucide-react";
 import { format } from "date-fns";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
