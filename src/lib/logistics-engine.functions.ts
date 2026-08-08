@@ -19,7 +19,7 @@ export const acceptOrderOffer = createServerFn({ method: "POST" })
     riderId: z.string(),
     offerId: z.string(),
   }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: { orderId: string; riderId: string; offerId: string } }) => {
     // 1. Verify offer is still valid and atomic lock
     const offerRes = await fetch(
       `${INSFORGE_URL}/api/database/records/rider_offers?id=eq.${data.offerId}&status=eq.PENDING`, 
