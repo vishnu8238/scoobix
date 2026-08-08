@@ -53,7 +53,12 @@ const ZONES_DATA = [
 ];
 
 async function init() {
-  console.log("Initializing Vadodara Zones...");
+  console.log("Checking for existing delivery_zones table...");
+  const tableCheck = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones?limit=1`, { headers: HEADERS });
+  if (!tableCheck.ok) {
+     console.error("Table delivery_zones does not exist or is not accessible. Status:", tableCheck.status);
+     return;
+  }
 
   for (const z of ZONES_DATA) {
     const { subzones, ...zonePayload } = z;
@@ -72,17 +77,17 @@ async function init() {
 
     const res = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones`, {
       method: "POST",
-      headers: HEADERS,
+      headers: { ...HEADERS, "Prefer": "return=representation" },
       body: JSON.stringify({ ...zonePayload, boundary })
     });
     
     if (!res.ok) {
-        console.error(`Failed to create zone ${z.name}: ${await res.text()}`);
+        console.error(`Failed to create zone ${z.name}: Status ${res.status}`, await res.text());
         continue;
     }
     
-    const createdZone = await res.json();
-    const zoneId = Array.isArray(createdZone) ? createdZone[0].id : createdZone.id;
+    const created = await res.json();
+    const zoneId = Array.isArray(created) ? created[0].id : created.id;
     console.log(`Created zone: ${z.name} (${zoneId})`);
 
     for (const szName of subzones) {
