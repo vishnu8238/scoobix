@@ -398,15 +398,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Every session update also mirrors the resolved role to local storage, so a
-   * refresh or cold app start can route to the right surface before the
-   * profile round-trip finishes.
+   * refresh or cold app start can route to the right surface.
    */
   const setUser = useCallback((next: User | null) => {
     console.log("[auth] setUser state update:", next?.id, next?.role);
     setUserState(next);
     
-    // Mirror role to cache only on positive session to help initial routing
-    // but clearing it on null is crucial to stop the stale Customer App loop.
+    // We update the cache to persist the role, but it must NEVER be used to
+    // authorize authentication or portal navigation.
     if (next) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
@@ -415,6 +414,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCachedRole(null);
     }
   }, []);
+
 
 
 
