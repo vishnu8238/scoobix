@@ -297,15 +297,17 @@ function RiderActive() {
     if (!activeOffer || busy) return;
     setBusy(true);
     const res = await acceptOrderOffer({ 
-      orderId: activeOffer.order_id, 
-      riderId: driverId!, 
-      offerId: activeOffer.id 
+      data: {
+        orderId: activeOffer.order_id, 
+        riderId: driverId!, 
+        offerId: activeOffer.id 
+      }
     });
     if (res.success) {
       toast.success("Order accepted!");
       setActiveOffer(null);
       setTimeLeft(null);
-      void load(); // Reload to show the active trip
+      void load(); 
     } else {
       toast.error(res.error || "Failed to accept order");
     }
@@ -316,8 +318,10 @@ function RiderActive() {
     if (!activeOffer || busy) return;
     setBusy(true);
     await rejectOrderOffer({ 
-      orderId: activeOffer.order_id, 
-      offerId: activeOffer.id 
+      data: {
+        orderId: activeOffer.order_id, 
+        offerId: activeOffer.id 
+      }
     });
     setActiveOffer(null);
     setTimeLeft(null);
@@ -329,7 +333,12 @@ function RiderActive() {
     if (!order?.id || busy) return;
     if (!confirm("Are you sure you want to cancel this delivery? This may affect your rating.")) return;
     setBusy(true);
-    await cancelAssignment({ orderId: String(order.id), riderId: driverId! });
+    await cancelAssignment({ 
+      data: {
+        orderId: String(order.id), 
+        riderId: driverId! 
+      }
+    });
     setOrder(null);
     setBusy(false);
     toast.info("Delivery cancelled");
