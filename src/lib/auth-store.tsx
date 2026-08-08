@@ -432,7 +432,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const sess = await ifGetSession();
         if (cancelled) return;
         if (sess) {
-          const next = await syncProfile(sess);
+          const next = await syncProfile(sess, { role: activePortal ?? undefined, forceRole: !!activePortal });
           if (!cancelled && next) setUser(next);
         } else if (!callback) setUser(null);
       } finally {
