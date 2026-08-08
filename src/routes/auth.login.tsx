@@ -183,6 +183,7 @@ function LoginPage() {
             <Button 
               onClick={() => {
                 const home = ROLE_HOME[user.role];
+                // If they have a redirect URL that belongs to their actual role, go there.
                 const canResume = !!redirect && redirect.startsWith(home);
                 navigate({ to: (canResume ? redirect : home) as never, replace: true });
               }}
