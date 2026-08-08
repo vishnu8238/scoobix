@@ -111,9 +111,9 @@ function LoginPage() {
     clearOAuthError();
   }, [oauthError, clearOAuthError]);
 
-  const oauth = async (provider: "google" | "apple") => {
+  const oauth = async (provider: "google" | "apple", forceSelect = false) => {
     setBusy(true);
-    const res = await signInWithProvider(provider, app?.role, !!app?.role);
+    const res = await signInWithProvider(provider, app?.role, !!app?.role, forceSelect);
     if (!res.ok) {
       setBusy(false);
       toast.error(res.message ?? "Could not start sign-in");
