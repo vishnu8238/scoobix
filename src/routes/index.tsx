@@ -17,17 +17,20 @@ export const Route = createFileRoute("/")({
 function Splash() {
   const navigate = useNavigate();
   const { user, loading, cachedRole } = useAuth();
+  const routerState = useRouterState();
 
   useEffect(() => {
     if (loading) return;
     
+    // Determine the intended destination. 
+    // On the root path, we default to the current session's role home or /auth/login.
     const role = user?.role ?? cachedRole;
     if (role) {
       navigate({ to: ROLE_HOME[role] as never, replace: true });
     } else {
       navigate({ to: "/auth/login", replace: true });
     }
-  }, [navigate, user, loading, cachedRole]);
+  }, [navigate, user, loading, cachedRole, routerState.location.pathname]);
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-black">
