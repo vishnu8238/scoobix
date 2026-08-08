@@ -322,6 +322,9 @@ export async function ifCreateOAuthUrl(
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("code_challenge", challenge);
   url.searchParams.set("code_challenge_method", "S256");
+  if (queryParams) {
+    Object.entries(queryParams).forEach(([k, v]) => url.searchParams.set(k, v));
+  }
   const res = await fetch(url.toString(), { headers: { apikey: INSFORGE_ANON_KEY } });
   const data = await jsonOrThrow(res);
   const authUrl =
