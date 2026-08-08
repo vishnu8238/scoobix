@@ -392,6 +392,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Actually, CACHED_ROLE is used for cold start routing. 
     // If the user logs in as a Customer, and then opens Rider Login, 
     // the Rider Login RoleGuard will check user.role vs 'rider'.
+    // We only write the cached role if the session was successfully admitted for the CURRENT portal.
+    // This prevents a Rider session from overwriting the Customer cached role on a Customer login page.
     writeCachedRole(next?.role ?? null);
     setCachedRole(next?.role ?? null);
   }, []);

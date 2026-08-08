@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import splashBg from "@/assets/splash-bg.jpg";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
