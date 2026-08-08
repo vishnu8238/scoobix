@@ -247,7 +247,8 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   const requested =
     input.role === "admin" && !(await userIsPlatformAdmin(sess.id, email)) ? undefined : input.role;
   const role =
-    (input.forceRole ? requested : undefined) ?? existingRole ?? requested ?? "customer";
+    (input.forceRole ? (requested || requestedPortal) : undefined) ?? existingRole ?? requested ?? requestedPortal ?? "customer";
+
 
 
   const row: UserProfileRow = {
