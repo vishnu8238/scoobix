@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_HOME, useAuth } from "@/lib/auth-store";
+import { ROLE_HOME, useAuth, resolvePortalFromPath } from "@/lib/auth-store";
 import { APPS, type AppId } from "@/lib/apps";
 import type { User } from "@/lib/types";
 import { OTP_LENGTH, OTP_RESEND_SECONDS } from "@/lib/phone-otp";
@@ -70,25 +70,42 @@ function LoginPage() {
     if (loading || !user) return;
     
     // Authorization logic:
-    // If the authenticated user matches the app's role, go home.
-    if (user.role === app?.role) {
+    // The intended portal is derived from the search param ?app= OR the current URL.
+    const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
+
+    // If the authenticated user matches the requested portal, go home.
+    if (user.role === requestedPortal) {
       const home = ROLE_HOME[user.role];
       const canResume = !!redirect && redirect.startsWith(home);
       navigate({ to: (canResume ? redirect : home) as never, replace: true });
-    } else if (!app) {
-      // Default to their home if no specific app was requested
+    } else if (!requestedPortal) {
+      // If we're at /auth/login (Customer portal) and no app specified, default to user role home
       navigate({ to: ROLE_HOME[user.role] as never, replace: true });
     } else {
-      // User is authenticated but role doesn't match this app's role.
+      // User is authenticated but role doesn't match the requested portal.
       // We keep them on the login page to show "Wrong Account" / "Sign out" flow.
     }
   }, [app, loading, navigate, redirect, user]);
 
   const land = (user: User) => {
     toast.success(`Welcome back, ${user.name}`);
-    // The account's own role decides the destination — never the form.
+    
+    // Auth-session destination logic:
+    // 1. If we are on a specific portal's login page (?app= or /rider/login etc), 
+    //    and the user has that role, go there.
+    // 2. If the roles don't match, STAY HERE so the "Wrong Account" UI renders.
+    // 3. If no specific portal requested, go to user's role home.
+
+    const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
+    
+    if (requestedPortal && user.role !== requestedPortal) {
+      // Role mismatch. Do nothing. The 'user' state update will trigger the 
+      // Wrong Account view in this component.
+      return;
+    }
+
     const home = ROLE_HOME[user.role];
-    const canResume = !!redirect && (!app || app.role === user.role) && redirect.startsWith(home);
+    const canResume = !!redirect && redirect.startsWith(home);
     navigate({ to: (canResume ? redirect : home) as never, replace: true });
   };
 
@@ -113,7 +130,9 @@ function LoginPage() {
 
   const oauth = async (provider: "google" | "apple", forceSelect = false) => {
     setBusy(true);
-    const res = await signInWithProvider(provider, app?.role, !!app?.role, forceSelect);
+    // Explicitly pass the requested role/portal to the OAuth flow so it survives the round-trip.
+    const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
+    const res = await signInWithProvider(provider, requestedPortal ?? undefined, !!requestedPortal, forceSelect);
     if (!res.ok) {
       setBusy(false);
       toast.error(res.message ?? "Could not start sign-in");
@@ -164,6 +183,7 @@ function LoginPage() {
             <Button 
               onClick={() => {
                 const home = ROLE_HOME[user.role];
+                // If they have a redirect URL that belongs to their actual role, go there.
                 const canResume = !!redirect && redirect.startsWith(home);
                 navigate({ to: (canResume ? redirect : home) as never, replace: true });
               }}

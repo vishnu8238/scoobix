@@ -30,7 +30,11 @@ function SignupPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-    // If already logged in, go to that role's home.
+    
+    // Determine if the current session matches the requested signup type.
+    // If they are already logged in as a Customer and open /auth/signup, go to /app.
+    // If they open /auth/signup but are a Rider, they should probably see the account switch
+    // but for signup we usually just redirect to their own home.
     navigate({ to: ROLE_HOME[user.role] as never, replace: true });
   }, [loading, navigate, user]);
 

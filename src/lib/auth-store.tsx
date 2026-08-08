@@ -88,6 +88,21 @@ export const ROLE_HOME: Record<Role, string> = {
   manager: "/manager",
 };
 
+/**
+ * Resolves the portal type from a URL path.
+ * This is the authoritative way to determine WHICH app the user is trying to use.
+ */
+export function resolvePortalFromPath(path: string): Role | null {
+  const p = path.toLowerCase();
+  if (p.startsWith("/partner")) return "partner";
+  if (p.startsWith("/rider")) return "rider";
+  if (p.startsWith("/manager")) return "manager";
+  if (p.startsWith("/admin")) return "admin";
+  // /auth and /app are customer portal
+  if (p.startsWith("/app") || p.startsWith("/auth")) return "customer";
+  return null;
+}
+
 // ---------- role mapping between DB and existing UI enum ----------
 
 const DB_TO_UI: Record<DbRole, Role> = {
@@ -376,12 +391,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const setUser = useCallback((next: User | null) => {
     setUserState(next);
-    // Only write to CACHED_ROLE if we are NOT on a different portal's login page.
-    // Actually, CACHED_ROLE is used for cold start routing. 
-    // If the user logs in as a Customer, and then opens Rider Login, 
-    // the Rider Login RoleGuard will check user.role vs 'rider'.
-    writeCachedRole(next?.role ?? null);
-    setCachedRole(next?.role ?? null);
+    
+    // We only update the global cached role if the session is not null.
+    // This allows cold-start routing on the / root path to land the user 
+    // in their home app. Portal-specific routes and guards handle their own
+    // authorization.
+    if (next) {
+      writeCachedRole(next.role);
+      setCachedRole(next.role);
+    }
   }, []);
 
   // Auto-login + OAuth return handling.
@@ -495,6 +513,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void ifLogout();
       return verdict.reason ?? "This account cannot be used right now.";
     }
+
+    // Role-based Authorization check against requested portal
+    // If the user is logging in at a specific portal, their role MUST match.
+    // We retrieve the active portal from the URL or state.
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+    const requestedPortal = resolvePortalFromPath(currentPath);
+    
+    if (requestedPortal && next.role !== requestedPortal) {
+       // We DO NOT block the session admission here, because the Login page 
+       // needs the 'user' object to show the "Wrong Account" UI.
+       // However, we record it for security.
+       console.warn(`[auth] Portal mismatch: user is ${next.role}, requested ${requestedPortal}`);
+    }
+
     void onLoginSuccess({ userId: next.id, email: next.email, role: next.role, provider });
     return null;
   }, []);
