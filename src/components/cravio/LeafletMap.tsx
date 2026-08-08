@@ -16,6 +16,8 @@ type Props = {
   markers?: MapMarker[];
   /** Draws a dashed route line + animates a rider marker along it. */
   route?: { from: LatLng; to: LatLng };
+  /** Polygons for zone/subzone boundaries */
+  polygons?: { id: string; points: LatLng[]; color?: string; label?: string }[];
   /** 0..1 along `route`. Smoothly animates when changed. */
   riderProgress?: number;
   riderLabel?: string;
