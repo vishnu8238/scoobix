@@ -200,32 +200,44 @@ type SyncInput = {
 };
 
 /**
+ * Resolves all application roles a user belongs to based on membership tables.
+ */
+async function resolveUserRoles(userId: string, email: string): Promise<Role[]> {
+  const roles: Role[] = ["customer"]; // Everyone is a customer by default
+
+  const [isDriver, isManager, isAdmin, ownedRestaurants] = await Promise.all([
+    listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).then(rows => !!rows[0]?.id).catch(() => false),
+    userIsMerchantManager(userId),
+    userIsPlatformAdmin(userId, email),
+    listTable<{ id: string }>("restaurants", { owner_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => [])
+  ]);
+
+  if (isDriver) roles.push("rider");
+  if (isManager) roles.push("manager");
+  if (isAdmin) roles.push("admin");
+  if (ownedRestaurants.length > 0) roles.push("partner");
+
+  return roles;
+}
+
+/**
  * THE single authentication pipeline. Every path (email login, email signup,
  * Google, Apple, phone OTP, session restore) funnels through here.
  *
- * Guarantees:
- * - returns null instead of throwing when there is no session user,
- * - always ensures exactly one `public.users` row for the auth account
- *   (self-healing for accounts created before the profile write worked),
- * - never reads a property off a profile that may not exist.
+ * It resolves all authorized roles and establishes the current session role
+ * based on the requested portal, WITHOUT overwriting the DB role column.
  */
 async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}, requestedPortal?: Role): Promise<User | null> {
   console.log("[auth] Syncing profile for session user:", sess?.id, "with input:", JSON.stringify(input));
   if (!sess || typeof sess.id !== "string" || !sess.id) return null;
 
-
   const provider = input.provider ?? "email";
   let existing: UserProfileRow | null = null;
   try {
-    existing =
-      (await fetchUserProfile(sess.id)) ?? (sess.email ? await findUserProfileByEmail(sess.email) : null);
+    existing = (await fetchUserProfile(sess.id)) ?? (sess.email ? await findUserProfileByEmail(sess.email) : null);
   } catch {
     existing = null;
   }
-  // The same email can own several independent accounts (one per app). Only the
-  // row that belongs to THIS auth account may dictate the role — otherwise an
-  // older CUSTOMER row for the same address drags every new account (admin,
-  // partner, rider…) back into the customer app.
   const ownRow = existing && existing.id === sess.id ? existing : null;
 
   const name =
@@ -235,30 +247,40 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     (sess.profile?.full_name as string | undefined) ||
     ((sess.metadata?.name ?? sess.metadata?.full_name) as string | undefined) ||
     (sess.email ? sess.email.split("@")[0] : provider === "apple" ? "Apple User" : "User");
-  const avatar =
-    (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
-  // On signup the user explicitly picks their app, so that choice overrides the
-  // default profile row the backend may have already created as CUSTOMER.
-  const existingRole = toUiRole(ownRow?.role);
+  
+  const avatar = (sess.profile?.avatar_url as string | undefined) || existing?.avatar || undefined;
   const phone = existing?.phone || input.phone || "";
-  // Apple can withhold the address entirely — never write an empty string into
-  // a unique column, and never crash on the missing value.
-  const email = sess.email || existing?.email || "";
-  // The admin role can never be claimed from a form — only the backend
-  // allow list grants it (checked after the profile write below).
-  const requested =
-    input.role === "admin" && !(await userIsPlatformAdmin(sess.id, email)) ? undefined : input.role;
-  const role =
-    (input.forceRole ? (requested || requestedPortal) : undefined) ?? existingRole ?? requested ?? requestedPortal ?? "customer";
+  const email = (sess.email || existing?.email || "").toLowerCase();
 
+  // 1. Resolve ALL roles from authoritative membership sources.
+  const allRoles = await resolveUserRoles(sess.id, email);
+  
+  // 2. Determine the session's active role. 
+  // Priority: 1. requestedPortal (if they have it), 2. highest existing role, 3. 'customer'
+  let sessionRole: Role = "customer";
+  const target = input.role || requestedPortal;
+  if (target && allRoles.includes(target)) {
+    sessionRole = target;
+  } else if (allRoles.includes("admin")) {
+    sessionRole = "admin";
+  } else if (allRoles.includes("manager")) {
+    sessionRole = "manager";
+  } else if (allRoles.includes("partner")) {
+    sessionRole = "partner";
+  } else if (allRoles.includes("rider")) {
+    sessionRole = "rider";
+  }
 
-
+  // 3. Ensure user profile exists in database.
+  // We NO LONGER overwrite the role column with requestedPortal if it exists.
+  const dbRoleValue = ownRow?.role ? ownRow.role : UI_TO_DB[sessionRole];
+  
   const row: UserProfileRow = {
     id: sess.id,
     email: email || null,
     name,
     phone: phone || null,
-    role: UI_TO_DB[role],
+    role: dbRoleValue,
     avatar: avatar ?? null,
     status: existing?.status ?? "active",
     provider,
@@ -276,51 +298,16 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     },
   };
 
-  // Email uniqueness check to prevent duplicates.
-  if (!ownRow && row.email) {
-    const conflict = await findUserProfileByEmail(row.email).catch(() => null);
-    if (conflict && conflict.id !== sess.id) {
-       // A profile for this email already exists under a different auth ID.
-       // Redirect to login or merge if appropriate, but do NOT overwrite or duplicate.
-       console.warn("[auth] Email conflict detected in profile sync", row.email);
-       return {
-         id: conflict.id,
-         name: conflict.name || name,
-         email: conflict.email || row.email,
-         phone: conflict.phone || row.phone || "",
-         role: toUiRole(conflict.role) ?? "customer",
-         avatar: conflict.avatar || avatar,
-       };
-    }
-  }
-
-  // Blocking: the profile must exist before the UI ever sees the user.
-  const saved = await upsertUserProfile(row, { writeRole: input.forceRole || !ownRow }).catch(() => null);
-  let finalRole = input.forceRole ? role : toUiRole(saved?.role) ?? role;
-
-  // Safety net: a provisioned merchant manager must always land in /manager,
-  // even if their profile row was created (or reset) as CUSTOMER.
-  if (!input.forceRole && finalRole === "customer") {
-    const isManager = await userIsMerchantManager(sess.id);
-    if (isManager) {
-      finalRole = "manager";
-      await upsertUserProfile({ id: sess.id, role: UI_TO_DB.manager }, { writeRole: true }).catch(() => null);
-    }
-  }
-
-  // Same safety net for platform operators: an allow-listed account always
-  // resolves to /admin, whatever its profile row currently says.
-  if (finalRole !== "admin" && (await userIsPlatformAdmin(sess.id, email))) {
-    finalRole = "admin";
-    await upsertUserProfile({ id: sess.id, role: UI_TO_DB.admin }, { writeRole: true }).catch(() => null);
-  }
+  // Only write role for brand new profiles or if explicitly allowed (though we move away from this).
+  const saved = await upsertUserProfile(row, { writeRole: !ownRow }).catch(() => null);
 
   return {
     id: sess.id,
     name: saved?.name || name,
     email: saved?.email || email,
     phone: saved?.phone || phone,
-    role: finalRole,
+    role: sessionRole,
+    roles: allRoles,
     avatar: saved?.avatar || avatar,
   };
 }
