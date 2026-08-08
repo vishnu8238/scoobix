@@ -11,12 +11,14 @@ const INSFORGE_ANON_KEY = "anon_f8c2fce9afe385f45eb6d00d434eb365833a70386175df37
  */
 export const getUploadStrategy = createServerFn({ method: "POST" })
   .inputValidator(z.object({
-    bucket: z.string(),
-    filename: z.string(),
-    contentType: z.string(),
-    size: z.number(),
+    data: z.object({
+      bucket: z.string(),
+      filename: z.string(),
+      contentType: z.string(),
+      size: z.number(),
+    })
   }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data: { data } }) => {
     const key = process.env.INSFORGE_API_KEY || INSFORGE_ANON_KEY;
     
     console.log("[storage-fn] Requesting strategy for:", data.filename, "in bucket:", data.bucket);
@@ -51,12 +53,14 @@ export const getUploadStrategy = createServerFn({ method: "POST" })
  */
 export const confirmStorageUpload = createServerFn({ method: "POST" })
   .inputValidator(z.object({
-    bucket: z.string(),
-    confirmUrl: z.string(),
-    size: z.number(),
-    contentType: z.string(),
+    data: z.object({
+      bucket: z.string(),
+      confirmUrl: z.string(),
+      size: z.number(),
+      contentType: z.string(),
+    })
   }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data: { data } }) => {
     const key = process.env.INSFORGE_API_KEY || INSFORGE_ANON_KEY;
     
     const url = data.confirmUrl.startsWith("http") 
