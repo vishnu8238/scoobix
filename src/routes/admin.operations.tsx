@@ -262,7 +262,7 @@ function AdminOperationsDashboard() {
                   </div>,
                   <div key={o.id+"mt"}>
                     <p className="text-[10px] font-bold">₹{o.total_price}</p>
-                    <p className="text-[9px] text-muted-foreground">Age: 12m</p>
+                    <p className="text-[9px] text-muted-foreground">Attempt {o.offer_attempt || 1}</p>
                   </div>,
                   <button 
                     key={o.id+"btn"} 
@@ -348,11 +348,11 @@ function OrderDetailsModal({ order, onClose }: { order: any; onClose: () => void
              </section>
 
              <section className="space-y-4">
-                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Performance Metrics</h4>
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Assignment Performance</h4>
                 <div className="space-y-3">
-                  <InfoRow label="Order Value" value={`₹${order.total_price}`} icon={TrendingUp} />
-                  <InfoRow label="Pickup Dist." value="1.2 km" icon={MapPin} />
-                  <InfoRow label="Est. Delivery" value="32 mins" icon={Clock} />
+                  <InfoRow label="Offer Attempt" value={`${order.offer_attempt || 1}`} icon={TrendingUp} />
+                  <InfoRow label="Offer Status" value={order.assignment_status || "SEARCHING"} icon={ShieldAlert} />
+                  <InfoRow label="Reassignments" value={`${order.reassignment_count || 0}`} icon={Clock} />
                 </div>
              </section>
            </div>

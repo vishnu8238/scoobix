@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
-import { Phone, Navigation, MapPin, Store, User, CheckCircle2, ShieldCheck, Wallet, Star, Loader2, PackageOpen } from "lucide-react";
+import { Phone, Navigation, MapPin, Store, User, CheckCircle2, ShieldCheck, Wallet, Star, Loader2, PackageOpen, Battery, Zap, Bell, Volume2, Info, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { onTableChange } from "@/lib/realtime-bus";
+import { acceptOrderOffer, rejectOrderOffer, cancelAssignment } from "@/lib/logistics-engine.functions";
 import { pingDriverLocation } from "@/lib/insforge";
 import { useCms } from "@/lib/cms-store";
 import { useDriver } from "@/lib/driver-store";
@@ -56,6 +58,7 @@ function RiderActive() {
   const { driver, driverId, loading: driverLoading, update: updateDriver } = useDriver();
 
   const [order, setOrder] = useState<OrderRow | null>(null);
+  const [activeOffer, setActiveOffer] = useState<any | null>(null);
   const [restaurant, setRestaurant] = useState<RestaurantRow | null>(null);
   const [customer, setCustomer] = useState<UserRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +66,88 @@ function RiderActive() {
   const [otp, setOtp] = useState("");
   const [rating, setRating] = useState(0);
   const [busy, setBusy] = useState(false);
+  
+  // --- Power Saving & Notifications ---
+  const [powerSaving, setPowerSaving] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("rider_power_saving") === "true";
+  });
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    localStorage.setItem("rider_power_saving", String(powerSaving));
+  }, [powerSaving]);
+
+  // --- Acceptance Timer ---
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (timeLeft === null) return;
+    if (timeLeft <= 0) {
+      setActiveOffer(null);
+      setTimeLeft(null);
+      return;
+    }
+    const t = setInterval(() => setTimeLeft(prev => prev !== null ? prev - 1 : null), 1000);
+    return () => clearInterval(t);
+  }, [timeLeft]);
+
+  // --- Realtime Offer Monitoring ---
+  useEffect(() => {
+    if (!driverId) return;
+    return onTableChange("rider_offers", (payload) => {
+      const offer = payload.row as any;
+      if (!offer) return;
+      
+      // New offer for me
+      if (offer.rider_id === driverId && offer.status === "PENDING" && payload.op === "insert") {
+        setActiveOffer(offer);
+        const expires = new Date(offer.expires_at).getTime();
+        const diff = Math.max(0, Math.floor((expires - Date.now()) / 1000));
+        setTimeLeft(diff);
+        
+        if (soundEnabled) {
+          // Play notification sound logic
+          const audio = new Audio("/assets/notification.mp3");
+          audio.play().catch(() => {});
+        }
+        
+        if (Notification.permission === "granted") {
+          new Notification("New Scoobix Order", {
+            body: `₹${offer.estimated_earnings} · ${offer.restaurant_name || "Restaurant"}`,
+            icon: "/favicon.ico",
+            tag: "new-order"
+          });
+        }
+      }
+      
+      // Offer expired or cancelled by system
+      if (offer.id === activeOffer?.id && (offer.status === "EXPIRED" || offer.status === "CANCELLED")) {
+        setActiveOffer(null);
+        setTimeLeft(null);
+      }
+    });
+  }, [driverId, activeOffer?.id, soundEnabled]);
+
+  // --- Load active offer if exists ---
+  const checkPendingOffer = useCallback(async () => {
+    if (!driverId) return;
+    const offers = await listTable<any>("rider_offers", {
+      rider_id: `eq.${driverId}`,
+      status: "eq.PENDING",
+      limit: 1
+    });
+    if (offers.length > 0) {
+      const offer = offers[0];
+      const expires = new Date(offer.expires_at).getTime();
+      const diff = Math.max(0, Math.floor((expires - Date.now()) / 1000));
+      if (diff > 0) {
+        setActiveOffer(offer);
+        setTimeLeft(diff);
+      }
+    }
+  }, [driverId]);
+
+  useEffect(() => { void checkPendingOffer(); }, [checkPendingOffer]);
 
   // ---- load the driver's active order -----------------------------------
   const load = useCallback(async () => {
@@ -89,10 +174,15 @@ function RiderActive() {
 
   useEffect(() => { void load(); }, [load]);
 
-  // ---- live location ping (every 20s while a trip is active) -------------
+  // ---- live location ping (adaptive based on power saving) -------------
   useEffect(() => {
-    if (!driverId || !order) return;
+    if (!driverId) return;
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    
+    // In power saving, idle riders ping less (60s vs 20s). 
+    // Active orders always ping at operational frequency (20s).
+    const interval = order ? 20000 : (powerSaving ? 60000 : 20000);
+    
     const send = () => navigator.geolocation.getCurrentPosition(
       (pos) => {
         void pingDriverLocation(driverId, pos.coords.latitude, pos.coords.longitude);
@@ -102,10 +192,9 @@ function RiderActive() {
       { maximumAge: 15000, timeout: 8000 },
     );
     send();
-    const t = setInterval(send, 20000);
+    const t = setInterval(send, interval);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [driverId, order?.id]);
+  }, [driverId, order?.id, powerSaving]);
 
   const meta = useMemo(() => {
     const raw = order?.items;
@@ -203,12 +292,123 @@ function RiderActive() {
     if (!startNavigation(target)) toast.error("No destination available for this trip");
   };
 
+  // ---- actions -----------------------------------------------------------
+  const handleAccept = async () => {
+    if (!activeOffer || busy) return;
+    setBusy(true);
+    const res = await acceptOrderOffer({ 
+      data: {
+        orderId: activeOffer.order_id, 
+        riderId: driverId!, 
+        offerId: activeOffer.id 
+      }
+    });
+    if (res.success) {
+      toast.success("Order accepted!");
+      setActiveOffer(null);
+      setTimeLeft(null);
+      void load(); 
+    } else {
+      toast.error(res.error || "Failed to accept order");
+    }
+    setBusy(false);
+  };
+
+  const handleReject = async () => {
+    if (!activeOffer || busy) return;
+    setBusy(true);
+    await rejectOrderOffer({ 
+      data: {
+        orderId: activeOffer.order_id, 
+        offerId: activeOffer.id 
+      }
+    });
+    setActiveOffer(null);
+    setTimeLeft(null);
+    setBusy(false);
+    toast.info("Order rejected");
+  };
+
+  const handleSelfCancel = async () => {
+    if (!order?.id || busy) return;
+    if (!confirm("Are you sure you want to cancel this delivery? This may affect your rating.")) return;
+    setBusy(true);
+    await cancelAssignment({ 
+      data: {
+        orderId: String(order.id), 
+        riderId: driverId! 
+      }
+    });
+    setOrder(null);
+    setBusy(false);
+    toast.info("Delivery cancelled");
+  };
+
   // ---- empty / loading states -------------------------------------------
   if (driverLoading || loading) {
     return (
       <div className="flex min-h-[60svh] flex-col items-center justify-center gap-3 px-6">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">Loading your trip…</p>
+      </div>
+    );
+  }
+
+  // ---- NEW ORDER OVERLAY (Modal) ----
+  if (activeOffer) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-5 animate-in fade-in zoom-in duration-300">
+        <div className="w-full max-w-sm rounded-[2.5rem] bg-card p-6 shadow-glow ring-1 ring-border/60">
+          <div className="flex flex-col items-center text-center">
+            <div className="relative mb-6">
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary shadow-glow">
+                <Bell className="h-10 w-10 text-primary-foreground animate-bounce" />
+              </div>
+              <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 font-display font-black text-white shadow-pop">
+                {timeLeft}
+              </div>
+            </div>
+            
+            <p className="eyebrow text-primary">New Delivery Order</p>
+            <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight">₹{activeOffer.estimated_earnings}</h2>
+            <p className="text-sm text-muted-foreground">Estimated earnings</p>
+            
+            <div className="mt-6 w-full space-y-3">
+              <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 text-left">
+                <Store className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-xs font-bold">{activeOffer.restaurant_name || "Restaurant"}</p>
+                  <p className="text-[10px] text-muted-foreground">{activeOffer.pickup_distance} km · {activeOffer.pickup_area || "Pickup Area"}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 text-left">
+                <MapPin className="h-5 w-5 text-emerald-500" />
+                <div>
+                  <p className="text-xs font-bold">{activeOffer.delivery_area || "Customer Area"}</p>
+                  <p className="text-[10px] text-muted-foreground">Approx. {activeOffer.delivery_distance} km trip</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-8 flex w-full gap-3">
+              <button 
+                disabled={busy}
+                onClick={handleReject}
+                className="flex-1 rounded-2xl bg-muted py-4 text-sm font-bold transition active:scale-95 disabled:opacity-50"
+              >
+                Reject
+              </button>
+              <button 
+                disabled={busy}
+                onClick={handleAccept}
+                className="flex-[2] rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-50"
+              >
+                Accept
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -221,11 +421,34 @@ function RiderActive() {
         </div>
         <h1 className="font-display text-xl font-extrabold">No active delivery</h1>
         <p className="max-w-xs text-sm text-muted-foreground">
-          Accepted orders appear here with one-tap navigation, pickup OTP and cash collection.
+          Accepted orders appear here. Toggle Power Saving to save battery while waiting.
         </p>
-        <button onClick={() => navigate({ to: "/rider/requests" })} className="mt-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-glow active:scale-95">
-          View requests
-        </button>
+        
+        <div className="mt-6 flex flex-col gap-3 w-full max-w-[240px]">
+          <button 
+            onClick={() => setPowerSaving(!powerSaving)}
+            className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition ${powerSaving ? "bg-emerald-500 text-white" : "bg-card ring-1 ring-border text-foreground"}`}
+          >
+            {powerSaving ? <Zap className="h-4 w-4" /> : <Battery className="h-4 w-4" />}
+            {powerSaving ? "Power Saving ON" : "Power Saving OFF"}
+          </button>
+          
+          <button 
+            onClick={() => {
+              if (Notification.permission === "default") {
+                Notification.requestPermission().then(p => {
+                  if (p === "granted") toast.success("Notifications enabled!");
+                });
+              }
+              setSoundEnabled(!soundEnabled);
+              toast.success(`Sound ${soundEnabled ? "Disabled" : "Enabled"}`);
+            }}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-bold ring-1 ring-border text-foreground transition"
+          >
+            {soundEnabled ? <Volume2 className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+            {soundEnabled ? "Sound: ON" : "Sound: OFF"}
+          </button>
+        </div>
       </div>
     );
   }
@@ -375,6 +598,15 @@ function RiderActive() {
             </button>
           </section>
         )}
+
+        <button
+          onClick={handleSelfCancel}
+          disabled={busy}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-xs font-bold text-rose-500 transition active:scale-[0.99] opacity-60 hover:opacity-100"
+        >
+          <XCircle className="h-3.5 w-3.5" />
+          Cancel Delivery
+        </button>
 
         <p className="flex items-center justify-center gap-1.5 pt-1 text-[11px] font-medium text-muted-foreground">
           <MapPin className="h-3 w-3" /> Live location shared with customer
