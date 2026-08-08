@@ -28,6 +28,7 @@ function AdminOperationsDashboard() {
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [subzones, setSubzones] = useState<Subzone[]>([]);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [selectedSubzoneId, setSelectedSubzoneId] = useState<string | null>(null);
   const [shipments, setShipments] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [breakdown, setBreakdown] = useState<any>(null);
@@ -41,8 +42,8 @@ function AdminOperationsDashboard() {
   const refresh = useCallback(async () => {
     setLoading(true);
     const [z, sz, st, live] = await Promise.all([
-      fetchZones(),
-      fetchSubzones(),
+      fetchZones({ city: "eq.Vadodara" }),
+      fetchSubzones(selectedZoneId || undefined),
       getZoneStats(selectedZoneId || undefined),
       fetchLiveShipmentOrders()
     ]);
@@ -55,14 +56,14 @@ function AdminOperationsDashboard() {
     if (selectedZoneId) {
       const [br, an] = await Promise.all([
         fetchZoneOrderBreakdown(selectedZoneId),
-        fetchZoneDemandAnalytics(selectedZoneId)
+        fetchZoneDemandAnalytics(selectedZoneId, selectedSubzoneId || undefined)
       ]);
       setBreakdown(br);
       setAnalytics(an);
     }
     
     setLoading(false);
-  }, [selectedZoneId, version]);
+  }, [selectedZoneId, selectedSubzoneId, version]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
@@ -117,13 +118,31 @@ function AdminOperationsDashboard() {
                 <MapPin className="h-4 w-4 text-primary" />
                 <select 
                   value={selectedZoneId || ""} 
-                  onChange={(e) => setSelectedZoneId(e.target.value || null)}
+                  onChange={(e) => {
+                    setSelectedZoneId(e.target.value || null);
+                    setSelectedSubzoneId(null);
+                  }}
                   className="bg-transparent text-sm font-bold outline-none"
                 >
                   <option value="">All Zones</option>
                   {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                 </select>
              </div>
+
+             {selectedZoneId && subzones.length > 0 && (
+               <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-2 shadow-soft ring-1 ring-border/60 animate-in fade-in slide-in-from-left-2">
+                  <Filter className="h-4 w-4 text-primary" />
+                  <select 
+                    value={selectedSubzoneId || ""} 
+                    onChange={(e) => setSelectedSubzoneId(e.target.value || null)}
+                    className="bg-transparent text-sm font-bold outline-none"
+                  >
+                    <option value="">All Subzones</option>
+                    {subzones.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+               </div>
+             )}
+
              <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-2 shadow-soft ring-1 ring-border/60">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-sm font-bold">Today</span>
