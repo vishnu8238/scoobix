@@ -194,7 +194,11 @@ export function VerificationUploadCard({
                           aspect="aspect-[4/3]"
                           label="Upload"
                           value={row?.file_url ? { image_url: row.file_url, image_type: "license" as const } : null}
-                          onChange={(ref) => void save(def, row, ref?.image_url ?? null)}
+                          onChange={(ref) => {
+                            if (ref) {
+                              void save(def, row, ref.image_url);
+                            }
+                          }}
                         />
                       </div>
                       <button
