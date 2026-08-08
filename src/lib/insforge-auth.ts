@@ -83,11 +83,13 @@ export function getRefreshToken(): string | null {
   try { return localStorage.getItem(REFRESH_KEY); } catch { return null; }
 }
 export function setTokens(access: string | null, refresh: string | null) {
+  console.log("[auth] Updating tokens in storage:", access ? "ACCESS_PRESENT" : "ACCESS_MISSING", refresh ? "REFRESH_PRESENT" : "REFRESH_MISSING");
   try {
     if (access) localStorage.setItem(ACCESS_KEY, access); else localStorage.removeItem(ACCESS_KEY);
     if (refresh) localStorage.setItem(REFRESH_KEY, refresh); else localStorage.removeItem(REFRESH_KEY);
   } catch { /* ignore */ }
 }
+
 
 function authHeaders(): Record<string, string> {
   const token = getAccessToken();

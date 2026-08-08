@@ -155,6 +155,7 @@ function writeCachedRole(role: Role | null) {
 
 
 function rememberPendingRole(role?: Role, claim = false) {
+  console.log(`[auth] Remembering pending role: ${role} (claim: ${claim})`);
   try {
     if (role) sessionStorage.setItem(PENDING_ROLE_KEY, role);
     if (role && claim) sessionStorage.setItem(PENDING_ROLE_CLAIM_KEY, "1");
@@ -164,11 +165,13 @@ function rememberPendingRole(role?: Role, claim = false) {
     if (role && claim) localStorage.setItem(PENDING_ROLE_CLAIM_KEY, "1");
   } catch { /* */ }
 }
+
 function takePendingRole(): { role?: Role; claim: boolean } {
   try {
     const value = (sessionStorage.getItem(PENDING_ROLE_KEY) ?? localStorage.getItem(PENDING_ROLE_KEY)) as Role | null;
     const claim =
       (sessionStorage.getItem(PENDING_ROLE_CLAIM_KEY) ?? localStorage.getItem(PENDING_ROLE_CLAIM_KEY)) === "1";
+    console.log(`[auth] Taking pending role: ${value} (claim: ${claim})`);
     sessionStorage.removeItem(PENDING_ROLE_KEY);
     localStorage.removeItem(PENDING_ROLE_KEY);
     sessionStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
@@ -176,6 +179,7 @@ function takePendingRole(): { role?: Role; claim: boolean } {
     return { role: value ?? undefined, claim };
   } catch { return { claim: false }; }
 }
+
 
 
 function mergeProviders(existing: string | null | undefined, provider: string): string {
