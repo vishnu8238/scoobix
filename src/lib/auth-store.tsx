@@ -587,7 +587,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const { user: sess } = await ifLogin(address, password);
-      const next = await syncProfile(sess, { provider: "email", role: role ?? activePortal ?? undefined, forceRole: !!(role || activePortal) });
+      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const targetPortal = role || currentPortal || undefined;
+      const next = await syncProfile(sess, { 
+        provider: "email", 
+        role: targetPortal, 
+        forceRole: !!targetPortal 
+      }, targetPortal);
+
       if (!next) return { ok: false, message: "Could not load your account" };
 
       const blocked = await admitSession(next, "email");
