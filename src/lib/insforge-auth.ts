@@ -298,8 +298,9 @@ export async function ifStartOAuth(
   provider: OAuthProvider,
   redirectUri: string,
   meta?: Record<string, string>,
+  queryParams?: Record<string, string>,
 ): Promise<void> {
-  const authUrl = await ifCreateOAuthUrl(provider, redirectUri, meta);
+  const authUrl = await ifCreateOAuthUrl(provider, redirectUri, meta, queryParams);
   navigateToOAuthUrl(authUrl);
 }
 
