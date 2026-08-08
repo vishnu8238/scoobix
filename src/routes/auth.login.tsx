@@ -73,8 +73,8 @@ function LoginPage() {
     // The intended portal is derived from the search param ?app= OR the current URL.
     const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
 
-    // If the authenticated user matches the requested portal, go home.
-    if (user.role === requestedPortal) {
+    // If the authenticated user has the requested role, go home.
+    if (requestedPortal && user.roles.includes(requestedPortal)) {
       const home = ROLE_HOME[user.role];
       const canResume = !!redirect && redirect.startsWith(home);
       navigate({ to: (canResume ? redirect : home) as never, replace: true });
@@ -98,7 +98,7 @@ function LoginPage() {
 
     const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
     
-    if (requestedPortal && user.role !== requestedPortal) {
+    if (requestedPortal && user.roles.includes(requestedPortal)) {
       // Role mismatch. Do nothing. The 'user' state update will trigger the 
       // Wrong Account view in this component.
       return;
@@ -168,15 +168,15 @@ function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp, otpSent, mode]);
 
-  if (user && app && user.role !== app.role) {
+  if (user && app && !user.roles.includes(app.role)) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center">
         <div className="mx-auto flex max-w-md flex-col items-center">
           <ScoobixMark size={48} className="mb-6" />
-          <h1 className="font-display text-2xl font-extrabold tracking-tight">Wrong Account</h1>
+          <h1 className="font-display text-2xl font-extrabold tracking-tight">Access Restricted</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            You are currently signed in as a <span className="font-bold text-foreground capitalize">{user.role}</span>.
-            To access the <span className="font-bold text-foreground">{app.name}</span>, please use an authorized account.
+            Your account does not have <span className="font-bold text-foreground capitalize">{app.role}</span> access.
+            Please sign in with an authorized account or complete onboarding.
           </p>
           
           <div className="mt-8 flex w-full flex-col gap-3">

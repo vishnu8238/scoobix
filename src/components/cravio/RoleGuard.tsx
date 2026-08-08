@@ -49,7 +49,7 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
 
 
 
-  if (loading || !user || user.role !== allow) {
+  if (loading || !user || !user.roles.includes(allow)) {
     return (
       <div className="flex min-h-svh w-full items-center justify-center bg-background">
         <div className="animate-pulse-soft">
