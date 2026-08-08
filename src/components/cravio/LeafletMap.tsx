@@ -149,7 +149,7 @@ export function LeafletMap({
 
       if (polygons) {
         polygons.forEach(p => {
-          const poly = L.polygon(p.points.map(pt => [pt.lat, pt.lng]), {
+          const poly = L.polygon(p.points.map((pt: LatLng) => [pt.lat, pt.lng]), {
             color: p.color || "var(--color-primary)",
             fillColor: p.color || "var(--color-primary)",
             fillOpacity: 0.1,
