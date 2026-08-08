@@ -156,20 +156,28 @@ function LoginPage() {
           
           <div className="mt-8 flex w-full flex-col gap-3">
             <Button 
-              onClick={() => navigate({ to: ROLE_HOME[user.role] as never, replace: true })}
+              onClick={() => {
+                // If they have a redirect URL that belongs to their actual role, go there.
+                const home = ROLE_HOME[user.role];
+                const canResume = !!redirect && redirect.startsWith(home);
+                navigate({ to: (canResume ? redirect : home) as never, replace: true });
+              }}
               className="h-12 w-full rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
             >
-              Continue as {user.name}
+              Continue as {user.name} ({user.role})
             </Button>
             
             <Button 
               disabled={busy}
+              variant="outline"
               onClick={async () => {
                 setBusy(true);
                 await signOut();
                 setBusy(false);
+                // After logout, they remain on this login page but without a session,
+                // allowing them to sign in with a different account.
               }}
-              className="h-12 w-full rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-glow"
+              className="h-12 w-full rounded-full border-2 border-primary/20 bg-background text-sm font-bold text-primary transition-all hover:bg-primary/5 active:scale-[0.98]"
             >
               {busy ? "Signing out..." : "Use another account"}
             </Button>
