@@ -39,7 +39,12 @@ export const acceptOrderOffer = createServerFn({ method: "POST" })
     await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${data.orderId}`, {
       method: "PATCH",
       headers: HEADERS,
-      body: JSON.stringify({ driver_id: data.riderId, status: "ACCEPTED", assignment_status: "ACCEPTED" })
+      body: JSON.stringify({ 
+        driver_id: data.riderId, 
+        status: "ACCEPTED", 
+        assignment_status: "ACCEPTED",
+        updated_at: new Date().toISOString()
+      })
     });
 
     publishTableChange("rider_offers", "update", { id: data.offerId, status: "ACCEPTED" });
@@ -59,7 +64,16 @@ export const rejectOrderOffer = createServerFn({ method: "POST" })
       headers: HEADERS,
       body: JSON.stringify({ status: "REJECTED", responded_at: new Date().toISOString(), rejection_reason: data.reason })
     });
+    
+    // Also update order to SEARCHING if it was waiting for this rider
+    await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${data.orderId}&driver_id=is.null`, {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ assignment_status: "SEARCHING", updated_at: new Date().toISOString() })
+    });
+
     publishTableChange("rider_offers", "update", { id: data.offerId, status: "REJECTED" });
+    publishTableChange("orders", "update", { id: data.orderId, assignment_status: "SEARCHING" });
     return { success: true };
   });
 
@@ -75,7 +89,45 @@ export const cleanupExpiredOffers = createServerFn({ method: "POST" })
         headers: HEADERS,
         body: JSON.stringify({ status: "EXPIRED" })
       });
+      
+      // Update order to SEARCHING if it was waiting for this rider
+      await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${offer.order_id}&driver_id=is.null`, {
+        method: "PATCH",
+        headers: HEADERS,
+        body: JSON.stringify({ assignment_status: "SEARCHING", updated_at: new Date().toISOString() })
+      });
+
       publishTableChange("rider_offers", "update", { id: offer.id, status: "EXPIRED" });
+      publishTableChange("orders", "update", { id: offer.order_id, assignment_status: "SEARCHING" });
     }
     return { cleaned: expired.length };
+  });
+
+export const cancelAssignment = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    orderId: z.string(),
+    riderId: z.string(),
+    reason: z.string().optional(),
+  }))
+  .handler(async ({ data }: { data: { orderId: string; riderId: string; reason?: string } }) => {
+    await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${data.orderId}`, {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ 
+        driver_id: null, 
+        status: "READY", // Back to ready for next rider
+        assignment_status: "SEARCHING",
+        updated_at: new Date().toISOString()
+      })
+    });
+
+    // Mark the offer as CANCELLED too
+    await fetch(`${INSFORGE_URL}/api/database/records/rider_offers?order_id=eq.${data.orderId}&rider_id=eq.${data.riderId}&status=eq.ACCEPTED`, {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ status: "CANCELLED", rejection_reason: data.reason })
+    });
+
+    publishTableChange("orders", "update", { id: data.orderId, driver_id: null, status: "READY" });
+    return { success: true };
   });
