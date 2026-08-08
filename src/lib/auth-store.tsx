@@ -651,8 +651,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false, forceSelect = false) => {
     try {
       setOauthError(null);
-      rememberPendingRole(role, claimRole);
+      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const targetPortal = role || currentPortal || undefined;
+      rememberPendingRole(targetPortal, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
+
       const queryParams: Record<string, string> = {};
       if (forceSelect) {
         if (provider === "google") {
