@@ -699,18 +699,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[auth] Clearing local session tokens and state.");
       setTokens(null, null);
       clearLastRoute();
-      writeCachedRole(null);
+      
+      // Atomic storage removal
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem(CACHED_ROLE_KEY);
+          localStorage.removeItem("scoobix_active_portal_v1");
+          localStorage.removeItem(PENDING_ROLE_KEY);
+          localStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
+          sessionStorage.removeItem(PENDING_ROLE_KEY);
+          sessionStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
+          
+          // Also clear security-api local session if any
+          localStorage.removeItem("scoobix.security.session_row");
+        } catch { /* */ }
+      }
+      
       setCachedRole(null);
-      try {
-        sessionStorage.removeItem(PENDING_ROLE_KEY);
-        localStorage.removeItem(PENDING_ROLE_KEY);
-        localStorage.removeItem("scoobix_active_portal_v1");
-      } catch { /* */ }
       setUser(null);
       void import("./realtime-bus").then((m) => m.disconnectRealtime()).catch(() => {});
       console.log("[auth] SIGN_OUT finished.");
     }
   }, [user?.id, setUser]);
+
 
 
 
