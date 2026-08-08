@@ -32,31 +32,54 @@ export function ImageUploader({
   const pick = () => inputRef.current?.click();
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setError("Please choose an image file.");
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    
+    if (!isImage && !isPdf) {
+      setError("Please choose an image or PDF file.");
       setStatus("error");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      setError("Image must be under 8 MB.");
+    
+    // Limits: 8MB for images, 15MB for PDFs
+    const limit = isPdf ? 15 * 1024 * 1024 : 8 * 1024 * 1024;
+    if (file.size > limit) {
+      setError(`File is too large. Max ${isPdf ? "15MB" : "8MB"} allowed.`);
       setStatus("error");
       return;
     }
+
     lastFile.current = file;
     setError(null);
-    const url = URL.createObjectURL(file);
+    const url = isImage ? URL.createObjectURL(file) : null;
     setPreviewUrl(url);
     setStatus("preview");
 
     try {
       setStatus("uploading");
-      const ref = await uploadImage(file, type, { oldRef: value ?? null });
+      let ref: ImageRef;
+      if (isImage) {
+        ref = await uploadImage(file, type, { oldRef: value ?? null });
+      } else {
+        // Generic file upload (PDF)
+        const { uploadFile } = await import("@/lib/image-service");
+        const res = await uploadFile(file, "documents", { 
+          oldKey: value?.optimized_reference 
+        });
+        ref = {
+          image_url: res.url,
+          image_type: type,
+          optimized_reference: res.key
+        };
+      }
       setStatus("processing");
       await new Promise((r) => setTimeout(r, 150));
       setStatus("done");
       onChange?.(ref);
-    } catch {
-      setError("Upload failed. Check your connection and try again.");
+    } catch (err) {
+      console.error("Upload error:", err);
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setError(msg.includes("401") || msg.includes("403") ? "Upload permission denied." : "Upload failed. Please retry.");
       setStatus("error");
     }
   };
