@@ -207,7 +207,7 @@ type SyncInput = {
  *   (self-healing for accounts created before the profile write worked),
  * - never reads a property off a profile that may not exist.
  */
-async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}): Promise<User | null> {
+async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}, requestedPortal?: Role): Promise<User | null> {
   console.log("[auth] Syncing profile for session user:", sess?.id, "with input:", JSON.stringify(input));
   if (!sess || typeof sess.id !== "string" || !sess.id) return null;
 
