@@ -369,6 +369,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
+
   const setPortal = useCallback((portal: Role | null) => {
     setActivePortalState(portal);
     if (portal) {
