@@ -344,6 +344,7 @@ async function userIsPlatformAdmin(userId: string, email: string): Promise<boole
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
+  const [activePortal, setPortal] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
