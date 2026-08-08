@@ -683,6 +683,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     const signingOut = user?.id ?? null;
+    console.log("[auth] SIGN_OUT started for user:", signingOut);
     try {
       if (signingOut) {
         await heartbeatSession().catch(() => null);
@@ -690,9 +691,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearElevationCache(signingOut);
       }
       await ifLogout();
-    } catch {
-      // ignore
+      console.log("[auth] InsForge logout complete.");
+    } catch (err) {
+      console.error("[auth] InsForge logout error:", err);
     } finally {
+      console.log("[auth] Clearing local session tokens and state.");
       setTokens(null, null);
       clearLastRoute();
       writeCachedRole(null);
@@ -700,11 +703,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         sessionStorage.removeItem(PENDING_ROLE_KEY);
         localStorage.removeItem(PENDING_ROLE_KEY);
+        localStorage.removeItem("scoobix_active_portal_v1");
       } catch { /* */ }
       setUser(null);
       void import("./realtime-bus").then((m) => m.disconnectRealtime()).catch(() => {});
+      console.log("[auth] SIGN_OUT finished.");
     }
   }, [user?.id, setUser]);
+
 
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {
