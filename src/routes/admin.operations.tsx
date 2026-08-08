@@ -227,18 +227,20 @@ function AdminOperationsDashboard() {
                   />
                 </div>
                 <div className="flex gap-2">
-                   <FilterButton label="All" active />
-                   <FilterButton label="Unassigned" />
-                   <FilterButton label="Out for Delivery" />
+                   <FilterButton label="All" active={!q} onClick={() => setQ("")} />
+                   <FilterButton label="Unassigned" active={q === "unassigned"} onClick={() => setQ("unassigned")} />
+                   <FilterButton label="Out for Delivery" active={q === "picked_up"} onClick={() => setQ("picked_up")} />
                 </div>
               </div>
 
               <DataTable 
                 columns={["Order", "Zone/Area", "Status Tracking", "Rider", "Metrics", "Action"]}
-                rows={shipments.filter(o => 
-                  o.id.includes(q) || 
-                  (o.restaurant_name || "").toLowerCase().includes(q.toLowerCase())
-                ).map(o => [
+                rows={shipments.filter(o => {
+                  const term = q.toLowerCase();
+                  if (term === "unassigned") return !o.driver_id;
+                  if (term === "picked_up") return o.status === "PICKED_UP";
+                  return o.id.includes(term) || (o.restaurant_name || "").toLowerCase().includes(term);
+                }).map(o => [
                   <div key={o.id+"id"}>
                     <p className="font-bold text-xs">#{o.id.slice(0, 8)}</p>
                     <p className="text-[10px] text-muted-foreground">{format(new Date(o.created_at), "HH:mm")}</p>
