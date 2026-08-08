@@ -11,15 +11,20 @@ const HEADERS = {
 
 export const getZonesWithSubzones = createServerFn({ method: "GET" })
   .handler(async () => {
-    const [zonesRes, subzonesRes] = await Promise.all([
-      fetch(`${INSFORGE_URL}/api/database/records/delivery_zones?order=name.asc`, { headers: HEADERS }),
-      fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones?order=name.asc`, { headers: HEADERS })
-    ]);
-    
-    const zones = await zonesRes.json();
-    const subzones = await subzonesRes.json();
-    
-    return { zones, subzones };
+    try {
+      const [zonesRes, subzonesRes] = await Promise.all([
+        fetch(`${INSFORGE_URL}/api/database/records/delivery_zones?order=name.asc`, { headers: HEADERS }),
+        fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones?order=name.asc`, { headers: HEADERS })
+      ]);
+      
+      const zones = zonesRes.ok ? await zonesRes.json() : [];
+      const subzones = subzonesRes.ok ? await subzonesRes.json() : [];
+      
+      return { zones: Array.isArray(zones) ? zones : [], subzones: Array.isArray(subzones) ? subzones : [] };
+    } catch (err) {
+      console.error("Failed to fetch zones:", err);
+      return { zones: [], subzones: [] };
+    }
   });
 
 export const seedVadodaraStructure = createServerFn({ method: "POST" })
