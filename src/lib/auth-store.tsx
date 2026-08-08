@@ -204,7 +204,9 @@ type SyncInput = {
  * - never reads a property off a profile that may not exist.
  */
 async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}): Promise<User | null> {
+  console.log("[auth] Syncing profile for session user:", sess?.id, "with input:", JSON.stringify(input));
   if (!sess || typeof sess.id !== "string" || !sess.id) return null;
+
 
   const provider = input.provider ?? "email";
   let existing: UserProfileRow | null = null;
