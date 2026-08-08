@@ -243,7 +243,11 @@ function AdminOperationsDashboard() {
                     <p className="text-[10px] font-bold">₹{o.total_price}</p>
                     <p className="text-[9px] text-muted-foreground">Age: 12m</p>
                   </div>,
-                  <button key={o.id+"btn"} className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground transition">
+                  <button 
+                    key={o.id+"btn"} 
+                    onClick={() => setSelectedOrderId(o.id)}
+                    className="grid h-8 w-8 place-items-center rounded-xl bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground transition"
+                  >
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 ])}
