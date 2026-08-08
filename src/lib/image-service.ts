@@ -105,11 +105,17 @@ async function compressToWebP(
   file: File,
   target: { w: number; h: number; quality: number },
 ): Promise<{ blob: Blob; ext: string; mime: string }> {
-  // Skip re-encoding for already-small SVGs / GIFs (animated) — upload as-is.
-  if (file.type === "image/svg+xml" || file.type === "image/gif") {
+  // 1. Skip non-image types (PDFs are handled by uploadFile directly)
+  if (!file.type.startsWith("image/")) {
+    return { blob: file, ext: file.name.split(".").pop() || "bin", mime: file.type };
+  }
+
+  // 2. Skip re-encoding for SVGs or small GIFs (preserving animation)
+  if (file.type === "image/svg+xml" || (file.type === "image/gif" && file.size < 2_000_000)) {
     return { blob: file, ext: file.type.split("/")[1], mime: file.type };
   }
 
+  // 3. SSR Safety
   if (typeof document === "undefined") {
     return { blob: file, ext: (file.type.split("/")[1] || "bin"), mime: file.type || "application/octet-stream" };
   }
@@ -117,8 +123,14 @@ async function compressToWebP(
   const img = await loadImage(file);
   const srcW = img.naturalWidth || img.width;
   const srcH = img.naturalHeight || img.height;
+
+  // 4. Smart Resizing: limit to reasonable max dimensions
+  // For KYC (license), we allow higher res than a logo.
+  const maxW = target.w;
+  const maxH = target.h;
+  
   // Scale down to fit inside target box; never upscale.
-  const scale = Math.min(1, target.w / srcW, target.h / srcH);
+  const scale = Math.min(1, maxW / srcW, maxH / srcH);
   const w = Math.max(1, Math.round(srcW * scale));
   const h = Math.max(1, Math.round(srcH * scale));
 
@@ -127,18 +139,24 @@ async function compressToWebP(
   canvas.height = h;
   const ctx = canvas.getContext("2d");
   if (!ctx) return { blob: file, ext: "jpg", mime: file.type };
+  
+  // Use white background for transparent images converted to JPEG/WebP
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, w, h);
+  ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(img, 0, 0, w, h);
 
   const useWebP = supportsWebP();
   const mime = useWebP ? "image/webp" : "image/jpeg";
   const ext = useWebP ? "webp" : "jpg";
+  
   const blob: Blob = await new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Encoding failed"))), mime, target.quality);
   });
 
-  // If our re-encoded blob is somehow larger than the source, keep the source.
-  if (blob.size > file.size && file.size < 1_500_000) {
+  // If our re-encoded blob is significantly larger than source, fallback (unlikely with target quality)
+  if (blob.size > file.size && file.size < 500_000) {
     return { blob: file, ext: (file.type.split("/")[1] || "jpg"), mime: file.type || "image/jpeg" };
   }
   return { blob, ext, mime };
@@ -221,6 +239,44 @@ async function confirmUpload(confirmUrl: string, size: number, mime: string): Pr
   return res.json().catch(() => null);
 }
 
+/** Upload a generic file (like PDF) to storage. */
+export async function uploadFile(
+  file: File,
+  folder: string,
+  opts?: { oldKey?: string | null },
+): Promise<{ url: string; key: string }> {
+  const safeBase = (file.name.replace(/\.[^.]+$/, "") || "doc")
+    .toLowerCase().replace(/[^a-z0-9-_]+/g, "-").slice(0, 40);
+  const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+  const filename = `${folder}/${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const res = await withRetry(async () => {
+    const strat = await getStrategy(BUCKET, filename, file.type, file.size);
+    if (strat.method === "presigned") {
+      await postPresigned(strat, file);
+      let finalUrl = "";
+      if (strat.confirmRequired && strat.confirmUrl) {
+        const done = await confirmUpload(strat.confirmUrl, file.size, file.type);
+        finalUrl = done?.url ? toAbsolute(done.url) : "";
+      }
+      if (!finalUrl) {
+        finalUrl = toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`);
+      }
+      return { url: finalUrl, key: strat.key };
+    }
+    await putDirect(strat.uploadUrl, file);
+    return {
+      url: toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`),
+      key: strat.key,
+    };
+  });
+
+  if (opts?.oldKey && opts.oldKey !== res.key) {
+    void deleteObject(opts.oldKey).catch(() => {});
+  }
+  return res;
+}
+
 /** Upload an image and return an ImageRef. Old ref (if any) is deleted after
  *  the new upload succeeds to keep storage clean. */
 export async function uploadImage(
@@ -260,16 +316,18 @@ export async function uploadImage(
   // Orphan cleanup — best-effort, never blocks success.
   const oldKey = opts?.oldRef?.optimized_reference;
   if (oldKey && oldKey !== ref.optimized_reference) {
-    void deleteImage(oldKey).catch(() => { /* ignore */ });
+    void deleteObject(oldKey).catch(() => { /* ignore */ });
   }
   return ref;
 }
 
 /** Delete a stored object by key (best-effort). */
-export async function deleteImage(key: string): Promise<void> {
+export async function deleteObject(key: string): Promise<void> {
   if (!key) return;
   await fetch(`${INSFORGE_URL}/api/storage/buckets/${BUCKET}/objects/${encodeURI(key)}`, {
     method: "DELETE",
     headers: { ...insforgeHeaders() },
   }).catch(() => { /* ignore */ });
 }
+
+export { deleteObject as deleteImage };

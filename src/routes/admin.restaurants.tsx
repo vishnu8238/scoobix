@@ -1,13 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Star, Percent, Pencil, Save, X, Check, Ban, Search, Loader2, UserRound, Rocket, ShieldCheck } from "lucide-react";
+import { Star, Percent, Pencil, Save, X, Check, Ban, Search, Loader2, UserRound, Rocket, ShieldCheck, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { formatPrice } from "@/lib/format";
 import { useCms } from "@/lib/cms-store";
-import { listTable, patchRecord } from "@/lib/insforge-crud";
-import { setRestaurantApprovalStatus, setRestaurantCommission, updateRestaurantStatus } from "@/lib/insforge";
+import { listTable, patchRecord, deleteRecord } from "@/lib/insforge-crud";
+import { setRestaurantApprovalStatus, setRestaurantCommission, updateRestaurantStatus, deleteRestaurantComplete } from "@/lib/insforge";
 import { ensureRestaurantCode } from "@/lib/restaurant-id";
 import type { RestaurantRow } from "@/lib/partner-store";
 import { ChecklistList, ChecklistProgress, useGoLiveChecklist } from "@/components/cravio/GoLiveChecklist";
@@ -122,7 +131,7 @@ function AdminRestaurants() {
                 <div key={r.id + "act"} className="flex items-center gap-1.5">
                   <ActionButton tone="primary" icon={Check} label="Approve" onClick={() => void updateStatus(r, "approved", "approved")} />
                   <ActionButton tone="warn" icon={Ban} label="Suspend" onClick={() => void updateStatus(r, "suspended", "suspended")} />
-                  <ActionButton tone="danger" icon={X} label="Reject" onClick={() => void updateStatus(r, "rejected", "rejected")} />
+                  <DeleteRestaurantDialog restaurant={r} onDeleted={refresh} />
                 </div>,
               ];
             })}
@@ -364,5 +373,80 @@ function AdminGoLivePanel({ restaurant }: { restaurant: GoLiveRow }) {
         )}
       </div>
     </div>
+  );
+}
+
+function DeleteRestaurantDialog({ restaurant, onDeleted }: { restaurant: RestaurantRow; onDeleted: () => void }) {
+  const [confirmName, setConfirmName] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const handleDelete = async () => {
+    if (confirmName !== restaurant.name) {
+      toast.error("Restaurant name does not match.");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await deleteRestaurantComplete(restaurant.id);
+      if (res.ok) {
+        toast.success(`${restaurant.name} deleted successfully`);
+        onDeleted();
+        setOpen(false);
+      } else {
+        throw new Error("Failed to delete restaurant");
+      }
+    } catch (err) {
+      toast.error("Failed to delete restaurant. Try archiving instead.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button title="Delete" className="grid h-7 w-7 place-items-center rounded-full bg-rose-100 text-rose-700 transition active:scale-90">
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 mb-4">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <DialogTitle className="text-xl font-bold">Delete {restaurant.name}?</DialogTitle>
+          <DialogDescription className="text-sm py-2">
+            This action is destructive. Menu items, categories, and documents will be permanently removed.
+            Historical orders and financial records will be preserved.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <p className="text-sm font-medium">Type <span className="font-bold text-foreground">"{restaurant.name}"</span> to confirm:</p>
+          <input
+            value={confirmName}
+            onChange={(e) => setConfirmName(e.target.value)}
+            className="w-full rounded-xl border-border/60 bg-muted/30 px-3 py-2.5 text-sm outline-none ring-1 ring-border/60 focus:ring-rose-500/40"
+            placeholder="Restaurant name"
+          />
+        </div>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <button
+            onClick={() => setOpen(false)}
+            className="rounded-xl px-4 py-2.5 text-sm font-bold text-muted-foreground hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={confirmName !== restaurant.name || isDeleting}
+            className="flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 transition active:scale-95 disabled:opacity-50"
+          >
+            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Delete permanently
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
