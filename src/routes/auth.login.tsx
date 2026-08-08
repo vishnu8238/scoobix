@@ -37,6 +37,7 @@ function LoginPage() {
     requestPhoneOtp,
     verifyPhoneLogin,
     resendVerification,
+    signOut,
     oauthError,
     clearOAuthError,
   } = useAuth();
