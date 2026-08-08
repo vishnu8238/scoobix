@@ -108,7 +108,7 @@ function OnboardingFlow() {
     if (!id) return;
     let cancelled = false;
     void (async () => {
-      const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 });
+      const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 }, { fresh: true });
       const r = rows[0];
       if (cancelled || !r) { setLoading(false); return; }
       setRecord(r);

@@ -165,9 +165,9 @@ export async function fetchDocs(subject: VerifySubject, subjectId: string): Prom
   if (!subjectId) return [];
   return listTable<KycRow>(VERIFICATION_TABLE, {
     ...subjectParams(subject, subjectId),
-    order: "created_at.asc",
+    order: "created_at.desc", // Latest first
     limit: 200,
-  });
+  }, { fresh: true }); // Always fresh for KYC
 }
 
 export async function fetchLogs(subject: VerifySubject, subjectId: string): Promise<KycAuditRow[]> {

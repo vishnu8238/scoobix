@@ -38,6 +38,9 @@ export function useVerification(subject: VerifySubject, subjectId?: string | nul
     if (!sid) { setRows([]); setLoading(false); return; }
     setLoading(true);
     setRows(await fetchDocs(subject, sid));
+    // Immediately invalidate the table to ensure subsequent loads are fresh
+    // since KYC updates are critical.
+    import("@/lib/insforge-crud").then(m => m.invalidateTable("restaurant_kyc"));
     setLoading(false);
   }, [subject, sid]);
 
