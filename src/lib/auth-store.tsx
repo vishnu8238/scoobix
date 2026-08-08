@@ -643,6 +643,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setTokens(null, null);
       clearLastRoute();
+      writeCachedRole(null);
+      setCachedRole(null);
       try {
         sessionStorage.removeItem(PENDING_ROLE_KEY);
         localStorage.removeItem(PENDING_ROLE_KEY);
