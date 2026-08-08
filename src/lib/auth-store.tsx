@@ -344,7 +344,28 @@ async function userIsPlatformAdmin(userId: string, email: string): Promise<boole
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
-  const [activePortal, setPortal] = useState<Role | null>(null);
+  const [activePortal, setActivePortalState] = useState<Role | null>(null);
+  const setPortal = useCallback((portal: Role | null) => {
+    setActivePortalState(portal);
+    if (portal) {
+      try {
+        localStorage.setItem("scoobix_active_portal_v1", portal);
+      } catch { /* */ }
+    } else {
+      try {
+        localStorage.removeItem("scoobix_active_portal_v1");
+      } catch { /* */ }
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("scoobix_active_portal_v1") as Role | null;
+      if (stored && ALL_ROLES.includes(stored)) {
+        setActivePortalState(stored);
+      }
+    } catch { /* */ }
+  }, []);
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
