@@ -435,10 +435,10 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
   bootstrapPromise = (async () => {
     try {
       const [rests, cats, menu, addons] = await Promise.all([
-        fetchAll<RestaurantRow[]>("/api/database/records/restaurants", 2000),
-        fetchAll<CategoryRow[]>("/api/database/records/categories", 500),
-        fetchAll<MenuItemRow[]>("/api/database/records/menu_items", 5000),
-        fetchAll<AddonRow[]>("/api/database/records/addons", 5000),
+        fetchAll<RestaurantRow>("/api/database/records/restaurants", 2000),
+        fetchAll<CategoryRow>("/api/database/records/categories", 500),
+        fetchAll<MenuItemRow>("/api/database/records/menu_items", 5000),
+        fetchAll<AddonRow>("/api/database/records/addons", 5000),
       ]);
 
       const totalRows = rests.length + cats.length + menu.length + addons.length;
