@@ -1,0 +1,293 @@
+import { useState, useEffect } from "react";
+import { X, Save, Loader2, MapPin } from "lucide-react";
+import { toast } from "sonner";
+import { createNewZone, createNewSubzone } from "@/lib/zones.functions";
+import { LeafletMap } from "./cravio/LeafletMap";
+import type { DeliveryZone, Subzone } from "@/lib/zones-api";
+
+type ZoneFormProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  initialData?: Partial<DeliveryZone>;
+};
+
+export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneFormProps) {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: initialData?.name || "",
+    city: initialData?.city || "Vadodara",
+    status: initialData?.status || "ACTIVE",
+    pickup_radius_km: initialData?.pickup_radius_km || 1,
+    max_delivery_distance_km: initialData?.max_delivery_distance_km || 4,
+    description: initialData?.description || "",
+    boundary: initialData?.boundary || { type: "Polygon", coordinates: [] }
+  });
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await createNewZone(formData as any);
+      toast.success("Zone created successfully");
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      toast.error(`Failed to create zone: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-background/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+        <header className="flex items-center justify-between p-6 border-b border-border/60">
+          <h2 className="font-display text-xl font-extrabold">{initialData ? "Edit Zone" : "Create Zone"}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition">
+            <X className="h-5 w-5" />
+          </button>
+        </header>
+
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Zone Name</label>
+                <input 
+                  required
+                  value={formData.name}
+                  onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g. West Zone"
+                  className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 focus:ring-primary/40 outline-none transition"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">City</label>
+                  <input 
+                    required
+                    value={formData.city}
+                    onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                    className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Status</label>
+                  <select 
+                    value={formData.status}
+                    onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                    className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none appearance-none"
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="DISABLED">Disabled</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Pickup Radius (km)</label>
+                  <input 
+                    type="number" step="0.1" required
+                    value={formData.pickup_radius_km}
+                    onChange={e => setFormData(prev => ({ ...prev, pickup_radius_km: parseFloat(e.target.value) }))}
+                    className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Max Delivery (km)</label>
+                  <input 
+                    type="number" step="0.1" required
+                    value={formData.max_delivery_distance_km}
+                    onChange={e => setFormData(prev => ({ ...prev, max_delivery_distance_km: parseFloat(e.target.value) }))}
+                    className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Description</label>
+                <textarea 
+                  rows={3}
+                  value={formData.description}
+                  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Zone Boundary (Draw on Map)</label>
+              <div className="flex-1 min-h-[300px] rounded-3xl overflow-hidden ring-1 ring-border/60">
+                 <LeafletMap 
+                   className="h-full w-full" 
+                   interactive 
+                   onPick={(coords) => {
+                     // For MVP, we use a simple circular-style rectangle or the picked point
+                     // Real boundary drawing would require more complex Leaflet Draw integration
+                     const lat = coords.lat;
+                     const lng = coords.lng;
+                     const offset = 0.02;
+                     const newCoords = [
+                       [lng - offset, lat - offset],
+                       [lng + offset, lat - offset],
+                       [lng + offset, lat + offset],
+                       [lng - offset, lat + offset],
+                       [lng - offset, lat - offset]
+                     ];
+                     setFormData(prev => ({ 
+                       ...prev, 
+                       boundary: { type: "Polygon", coordinates: [newCoords] } 
+                     }));
+                     toast.info(`Set boundary center to ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                   }}
+                 />
+              </div>
+              <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                <MapPin className="h-3 w-3" /> Click on the map to set the zone center and generate a default boundary.
+              </p>
+            </div>
+          </div>
+        </form>
+
+        <footer className="p-6 border-t border-border/60 flex justify-end gap-3 bg-muted/20">
+          <button 
+            type="button" 
+            onClick={onClose}
+            className="rounded-2xl px-6 py-2.5 text-sm font-bold text-muted-foreground transition hover:bg-muted"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {initialData ? "Save Changes" : "Create Zone"}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+type SubzoneFormProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  zoneId: string;
+  initialData?: Partial<Subzone>;
+};
+
+export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, initialData }: SubzoneFormProps) {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    zone_id: zoneId,
+    name: initialData?.name || "",
+    status: initialData?.status || "ACTIVE",
+    boundary: initialData?.boundary || { type: "Polygon", coordinates: [] }
+  });
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await createNewSubzone(formData as any);
+      toast.success("Subzone created successfully");
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      toast.error(`Failed to create subzone: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-background/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+        <header className="flex items-center justify-between p-6 border-b border-border/60">
+          <h2 className="font-display text-xl font-extrabold">{initialData ? "Edit Subzone" : "Add Subzone"}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition">
+            <X className="h-5 w-5" />
+          </button>
+        </header>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Subzone Name</label>
+            <input 
+              required
+              value={formData.name}
+              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g. Alkapuri"
+              className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none"
+            />
+          </div>
+          
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Status</label>
+            <select 
+              value={formData.status}
+              onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+              className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none appearance-none"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="DISABLED">Disabled</option>
+            </select>
+          </div>
+
+          <div className="h-[200px] rounded-2xl overflow-hidden ring-1 ring-border/60">
+             <LeafletMap 
+               className="h-full w-full" 
+               interactive 
+               onPick={(coords) => {
+                 const lat = coords.lat;
+                 const lng = coords.lng;
+                 const offset = 0.005;
+                 const newCoords = [
+                   [lng - offset, lat - offset],
+                   [lng + offset, lat - offset],
+                   [lng + offset, lat + offset],
+                   [lng - offset, lat + offset],
+                   [lng - offset, lat - offset]
+                 ];
+                 setFormData(prev => ({ 
+                   ...prev, 
+                   boundary: { type: "Polygon", coordinates: [newCoords] } 
+                 }));
+               }}
+             />
+          </div>
+          <p className="text-[10px] text-muted-foreground italic">Click map to set subzone boundary.</p>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button 
+              type="button" 
+              onClick={onClose}
+              className="rounded-2xl px-6 py-2.5 text-sm font-bold text-muted-foreground transition hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {initialData ? "Save Changes" : "Create Subzone"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { Search, Plus, Map as MapIcon, Layers, Users, Store, Bike, ClipboardList, Shield, ShieldAlert, Ban, Check, Edit2, Trash2, ChevronRight, X, Loader2, Save } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Search, Plus, Map as MapIcon, Layers, Users, Store, Bike, ClipboardList, Ban, Check, Edit2, Trash2, X, Loader2, Database, ChevronDown, ChevronRight, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { LeafletMap } from "@/components/cravio/LeafletMap";
-import { fetchZones, fetchSubzones, createZone, updateZone, deleteZone, createSubzone, updateSubzone, deleteSubzone, getZoneStats, type DeliveryZone, type Subzone } from "@/lib/zones-api";
-import { listTable } from "@/lib/insforge-crud";
+import { updateZone, deleteZone, getZoneStats, type DeliveryZone, type Subzone } from "@/lib/zones-api";
+import { getZonesWithSubzones, seedVadodaraStructure } from "@/lib/zones.functions";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { format } from "date-fns";
+import { ZoneFormModal, SubzoneFormModal } from "@/components/ZoneFormModal";
 
 export const Route = createFileRoute("/admin/live")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Zones & Delivery Management" }] }),
@@ -20,23 +21,52 @@ function AdminZonesDashboard() {
   const [subzones, setSubzones] = useState<Subzone[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [isZoneModalOpen, setIsZoneModalOpen] = useState(false);
+  const [isSubzoneModalOpen, setIsSubzoneModalOpen] = useState(false);
+  const [expandedZones, setExpandedZones] = useState<Record<string, boolean>>({});
   
   const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders"]);
 
   const refresh = useCallback(async () => {
+    if (loading) return;
     setLoading(true);
-    const [z, sz, st] = await Promise.all([
-      fetchZones({ city: "eq.Vadodara" }),
-      fetchSubzones(),
-      getZoneStats()
-    ]);
-    setZones(z);
-    setSubzones(sz);
-    setStats(st);
-    setLoading(false);
+    try {
+      const data = await getZonesWithSubzones();
+      const z = data?.zones || [];
+      const sz = data?.subzones || [];
+      const st = await getZoneStats();
+        getZonesWithSubzones(),
+        getZoneStats()
+      ]);
+      setZones(z);
+      setSubzones(sz);
+      setStats(st);
+    } catch (err) {
+      toast.error("Failed to load zones data");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const res = await seedVadodaraStructure();
+      toast.success(`Seeding complete: ${res.createdZones} zones, ${res.createdSubzones} subzones created. ${res.skipped} skipped.`);
+      await refresh();
+    } catch (err) {
+      toast.error("Seeding failed");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const toggleZone = (id: string) => {
+    setExpandedZones(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => { void refresh(); }, [refresh, version]);
 
@@ -75,11 +105,35 @@ function AdminZonesDashboard() {
               Live Map
             </button>
           </div>
-          <button className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">
+          <button 
+            disabled={seeding}
+            onClick={handleSeed}
+            className="flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-glow transition active:scale-95 disabled:opacity-50"
+          >
+            {seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+            Seed Vadodara
+          </button>
+          <button 
+            onClick={() => setIsZoneModalOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95"
+          >
             <Plus className="h-4 w-4" /> Create Zone
           </button>
         </div>
       </header>
+...
+      <ZoneFormModal 
+        isOpen={isZoneModalOpen} 
+        onClose={() => setIsZoneModalOpen(false)} 
+        onSuccess={refresh} 
+      />
+
+      <SubzoneFormModal 
+        isOpen={isSubzoneModalOpen} 
+        onClose={() => setIsSubzoneModalOpen(false)} 
+        onSuccess={refresh}
+        zoneId={selectedZoneId || ""}
+      />
 
       {stats && (
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
@@ -109,25 +163,42 @@ function AdminZonesDashboard() {
 
           <DataTable
             columns={["Zone Name", "City", "Status", "Riders", "Subzones", "Radius", "Orders", "Created", "Actions"]}
-            rows={filtered.map(z => {
-              const szCount = subzones.filter(s => s.zone_id === z.id).length;
-              return [
-                <button 
-                  key={z.id + "n"} 
-                  onClick={() => { setSelectedZoneId(z.id); setView("detail"); }}
-                  className="font-bold text-primary hover:underline"
-                >
-                  {z.name}
-                </button>,
+            rows={filtered.flatMap(z => {
+              const szs = subzones.filter(s => s.zone_id === z.id);
+              const szCount = szs.length;
+              const isExpanded = expandedZones[z.id];
+              
+              const zoneRow = [
+                <div key={z.id + "n"} className="flex items-center gap-2">
+                  <button 
+                    onClick={() => toggleZone(z.id)}
+                    className="p-1 hover:bg-muted rounded-md"
+                  >
+                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </button>
+                  <button 
+                    onClick={() => { setSelectedZoneId(z.id); setView("detail"); }}
+                    className="font-bold text-primary hover:underline"
+                  >
+                    {z.name}
+                  </button>
+                </div>,
                 z.city,
                 <StatusBadge key={z.id + "s"} label={z.status} />,
-                "12 active", // Mock aggregation for now
+                "12 active",
                 szCount,
                 `${z.pickup_radius_km}km`,
                 "8 active",
                 format(new Date(z.created_at), "MMM d, yyyy"),
                 <div key={z.id + "a"} className="flex items-center gap-1.5">
                    <ZoneStatusToggle zone={z} />
+                   <button 
+                     onClick={() => { setSelectedZoneId(z.id); setIsSubzoneModalOpen(true); }}
+                     className="grid h-7 w-7 place-items-center rounded-full bg-muted text-muted-foreground transition hover:bg-primary-soft hover:text-primary"
+                     title="Add Subzone"
+                   >
+                     <Plus className="h-3.5 w-3.5" />
+                   </button>
                    <button className="grid h-7 w-7 place-items-center rounded-full bg-muted text-muted-foreground transition hover:bg-primary-soft hover:text-primary">
                      <Edit2 className="h-3.5 w-3.5" />
                    </button>
@@ -136,6 +207,26 @@ function AdminZonesDashboard() {
                    </button>
                 </div>
               ];
+
+              const subzoneRows = isExpanded ? szs.map(s => [
+                <div key={s.id + "n"} className="flex items-center gap-2 pl-8 text-xs font-medium text-muted-foreground">
+                  <MapIcon className="h-3 w-3" />
+                  {s.name}
+                </div>,
+                "-",
+                <StatusBadge key={s.id + "s"} label={s.status} />,
+                "2 active",
+                "-",
+                "-",
+                "1 active",
+                "-",
+                <div key={s.id + "a"} className="flex items-center gap-1.5">
+                  <button className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase bg-emerald-100 text-emerald-700">On</button>
+                  <button className="text-muted-foreground hover:text-primary"><Edit2 className="h-3 w-3" /></button>
+                </div>
+              ]) : [];
+
+              return [zoneRow, ...subzoneRows];
             })}
           />
         </section>
