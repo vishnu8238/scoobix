@@ -344,7 +344,28 @@ async function userIsPlatformAdmin(userId: string, email: string): Promise<boole
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
-  const [activePortal, setPortal] = useState<Role | null>(null);
+  const [activePortal, setActivePortalState] = useState<Role | null>(null);
+  const setPortal = useCallback((portal: Role | null) => {
+    setActivePortalState(portal);
+    if (portal) {
+      try {
+        localStorage.setItem("scoobix_active_portal_v1", portal);
+      } catch { /* */ }
+    } else {
+      try {
+        localStorage.removeItem("scoobix_active_portal_v1");
+      } catch { /* */ }
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("scoobix_active_portal_v1") as Role | null;
+      if (stored && ALL_ROLES.includes(stored)) {
+        setActivePortalState(stored);
+      }
+    } catch { /* */ }
+  }, []);
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
@@ -382,8 +403,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const pending = takePendingRole();
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
-              role: pending.role,
-              forceRole: pending.claim,
+              role: pending.role ?? activePortal ?? undefined,
+              forceRole: pending.claim || !!activePortal,
             });
             if (!cancelled && next) {
               const blocked = await admitSession(next, String(callback.provider));
@@ -411,7 +432,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const sess = await ifGetSession();
         if (cancelled) return;
         if (sess) {
-          const next = await syncProfile(sess);
+          const next = await syncProfile(sess, { role: activePortal ?? undefined, forceRole: !!activePortal });
           if (!cancelled && next) setUser(next);
         } else if (!callback) setUser(null);
       } finally {
@@ -488,7 +509,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const { user: sess } = await ifLogin(address, password);
-      const next = await syncProfile(sess, { provider: "email", role });
+      const next = await syncProfile(sess, { provider: "email", role: role ?? activePortal ?? undefined, forceRole: !!(role || activePortal) });
       if (!next) return { ok: false, message: "Could not load your account" };
 
       const blocked = await admitSession(next, "email");
@@ -563,7 +584,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(res.accessToken, res.refreshToken ?? null);
     const sess = await ifGetSession();
     if (!sess) return { ok: false, message: "Could not start a session" };
-    const next = await syncProfile(sess, { provider: "phone", role, phone: normalisePhone(phone) });
+    const next = await syncProfile(sess, { provider: "phone", role: role ?? activePortal ?? undefined, forceRole: !!(role || activePortal), phone: normalisePhone(phone) });
     if (!next) return { ok: false, message: "Could not load your account. Please try again." };
     const blocked = await admitSession(next, "phone");
     if (blocked) return { ok: false, message: blocked };

@@ -113,7 +113,7 @@ function LoginPage() {
 
   const oauth = async (provider: "google" | "apple") => {
     setBusy(true);
-    const res = await signInWithProvider(provider, app?.role);
+    const res = await signInWithProvider(provider, app?.role, !!app?.role);
     if (!res.ok) {
       setBusy(false);
       toast.error(res.message ?? "Could not start sign-in");
