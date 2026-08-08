@@ -64,7 +64,7 @@ type AuthCtx = {
   activePortal: Role | null;
   signIn: (email: string, password: string, role?: Role) => Promise<AuthResult>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<AuthResult>;
-  signInWithProvider: (provider: OAuthProvider, role?: Role, claimRole?: boolean) => Promise<{ ok: boolean; message?: string }>;
+  signInWithProvider: (provider: OAuthProvider, role?: Role, claimRole?: boolean, forceSelect?: boolean) => Promise<{ ok: boolean; message?: string }>;
   phoneOtpEnabled: boolean;
   requestPhoneOtp: (phone: string) => Promise<{ ok: boolean; message?: string; resendAfter: number }>;
   verifyPhoneLogin: (phone: string, otp: string, role?: Role) => Promise<AuthResult>;
@@ -554,12 +554,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false) => {
+  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false, forceSelect = false) => {
     try {
       setOauthError(null);
       rememberPendingRole(role, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
-      const authUrl = await ifCreateOAuthUrl(provider, redirectUri);
+      const queryParams: Record<string, string> = {};
+      if (forceSelect) {
+        if (provider === "google") {
+          queryParams.prompt = "select_account";
+        } else if (provider === "apple") {
+          // Apple doesn't have a direct 'select_account' equivalent via standard query params in many InsForge setups,
+          // but often passing a new nonce or state forces re-auth. Standard is prompt=login or similar if supported.
+          queryParams.prompt = "login";
+        }
+      }
+      const authUrl = await ifCreateOAuthUrl(provider, redirectUri, undefined, queryParams);
       navigateToOAuthUrl(authUrl);
       return { ok: true };
     } catch (err) {
@@ -633,6 +643,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setTokens(null, null);
       clearLastRoute();
+      writeCachedRole(null);
+      setCachedRole(null);
       try {
         sessionStorage.removeItem(PENDING_ROLE_KEY);
         localStorage.removeItem(PENDING_ROLE_KEY);
