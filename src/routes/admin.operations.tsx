@@ -41,33 +41,32 @@ function AdminOperationsDashboard() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [z, sz, st, live] = await Promise.all([
-      fetchZones({ city: "eq.Vadodara" }).catch(() => []),
-      fetchSubzones(selectedZoneId || undefined).catch(() => []),
-      getZoneStats(selectedZoneId || undefined).catch(() => ({})),
-      fetchLiveShipmentOrders().catch(() => [])
-    ]);
-      fetchZones({ city: "eq.Vadodara" }),
-      fetchSubzones(selectedZoneId || undefined),
-      getZoneStats(selectedZoneId || undefined),
-      fetchLiveShipmentOrders()
-    ]);
-    
-    setZones(z);
-    setSubzones(sz);
-    setStats(st);
-    setShipments(live);
-    
-    if (selectedZoneId) {
-      const [br, an] = await Promise.all([
-        fetchZoneOrderBreakdown(selectedZoneId),
-        fetchZoneDemandAnalytics(selectedZoneId, selectedSubzoneId || undefined)
+    try {
+      const [z, sz, st, live] = await Promise.all([
+        fetchZones({ city: "eq.Vadodara" }).catch(() => []),
+        fetchSubzones(selectedZoneId || undefined).catch(() => []),
+        getZoneStats(selectedZoneId || undefined).catch(() => ({})),
+        fetchLiveShipmentOrders().catch(() => [])
       ]);
-      setBreakdown(br);
-      setAnalytics(an);
+      
+      setZones(z);
+      setSubzones(sz);
+      setStats(st);
+      setShipments(live);
+      
+      if (selectedZoneId) {
+        const [br, an] = await Promise.all([
+          fetchZoneOrderBreakdown(selectedZoneId).catch(() => null),
+          fetchZoneDemandAnalytics(selectedZoneId, selectedSubzoneId || undefined).catch(() => null)
+        ]);
+        setBreakdown(br);
+        setAnalytics(an);
+      }
+    } catch (err) {
+      console.error("Refresh error:", err);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   }, [selectedZoneId, selectedSubzoneId, version]);
 
   useEffect(() => { void refresh(); }, [refresh]);
