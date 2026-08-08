@@ -21,10 +21,9 @@ function Splash() {
 
 
   useEffect(() => {
+    // We only redirect once the authoritative session is resolved.
     if (loading) return;
     
-    // Determine the intended destination. 
-    // On the root path, we default to the current session's role home or /auth/login.
     const role = user?.role;
     if (role) {
       console.log("[auth] Root redirect to role home:", role);
@@ -34,6 +33,7 @@ function Splash() {
       navigate({ to: "/auth/login", replace: true });
     }
   }, [navigate, user, loading]);
+
 
 
   return (

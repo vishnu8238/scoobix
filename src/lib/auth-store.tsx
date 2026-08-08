@@ -207,7 +207,7 @@ type SyncInput = {
  *   (self-healing for accounts created before the profile write worked),
  * - never reads a property off a profile that may not exist.
  */
-async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}): Promise<User | null> {
+async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}, requestedPortal?: Role): Promise<User | null> {
   console.log("[auth] Syncing profile for session user:", sess?.id, "with input:", JSON.stringify(input));
   if (!sess || typeof sess.id !== "string" || !sess.id) return null;
 
@@ -247,7 +247,8 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   const requested =
     input.role === "admin" && !(await userIsPlatformAdmin(sess.id, email)) ? undefined : input.role;
   const role =
-    (input.forceRole ? requested : undefined) ?? existingRole ?? requested ?? "customer";
+    (input.forceRole ? (requested || requestedPortal) : undefined) ?? existingRole ?? requested ?? requestedPortal ?? "customer";
+
 
 
   const row: UserProfileRow = {
@@ -398,15 +399,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Every session update also mirrors the resolved role to local storage, so a
-   * refresh or cold app start can route to the right surface before the
-   * profile round-trip finishes.
+   * refresh or cold app start can route to the right surface.
    */
   const setUser = useCallback((next: User | null) => {
     console.log("[auth] setUser state update:", next?.id, next?.role);
     setUserState(next);
     
-    // Mirror role to cache only on positive session to help initial routing
-    // but clearing it on null is crucial to stop the stale Customer App loop.
+    // We update the cache to persist the role, but it must NEVER be used to
+    // authorize authentication or portal navigation.
     if (next) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
@@ -418,11 +418,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
 
+
   // Auto-login + OAuth return handling.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let handledOAuth = false;
       try {
         console.log("[auth] BOOT: Starting authentication flow...");
         const providerError = readOAuthError();
@@ -431,18 +431,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) setOauthError(providerError);
           clearOAuthParamsFromUrl();
         }
+
         const callback = readOAuthCallback();
+        const currentPortal = resolvePortalFromPath(window.location.pathname);
+
         if (callback) {
           console.log("[auth] OAuth callback detected", callback.provider);
           try {
             const { user: sess } = await ifCompleteOAuth(callback.code);
             console.log("[auth] OAuth code exchanged for session:", sess?.id);
             const pending = takePendingRole();
+            
+            // Priority: pending.role (stashed) -> currentPortal (URL)
+            const targetPortal = pending.role ?? currentPortal ?? undefined;
+            
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
-              role: pending.role ?? activePortal ?? undefined,
-              forceRole: pending.claim || !!activePortal,
+              role: targetPortal,
+              forceRole: !!targetPortal, // Force if any target portal specified
             });
+            
             if (!cancelled && next) {
               console.log("[auth] Profile synced for OAuth user:", next.id, next.role);
               const blocked = await admitSession(next, String(callback.provider));
@@ -452,14 +460,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               } else {
                 console.log("[auth] Session admitted, setting user state.");
                 setUser(next);
-                handledOAuth = true;
                 try {
                   window.opener?.postMessage({ type: "scoobix_oauth_complete" }, window.location.origin);
                   if (window.opener && !window.opener.closed) window.setTimeout(() => window.close(), 250);
                 } catch { /* */ }
               }
             }
-
           } catch (err) {
             console.error("[auth] OAuth callback failed", err);
             if (!cancelled) {
@@ -467,19 +473,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
           clearOAuthParamsFromUrl();
+        } else {
+          // Restore existing session
+          const sess = await ifGetSession();
+          console.log("[auth] INITIAL_SESSION check:", sess ? "FOUND" : "NONE", sess?.id);
+          if (!cancelled) {
+            if (sess) {
+              // For session restoration, we only force role if a portal is explicitly active in THIS tab
+              const next = await syncProfile(sess, { 
+                role: currentPortal ?? undefined, 
+                forceRole: !!currentPortal 
+              }, currentPortal ?? undefined);
+              console.log("[auth] Profile restored for session user:", next?.id, next?.role);
+              if (!cancelled && next) setUser(next);
+            } else {
+              console.log("[auth] No active session, user is UNAUTHENTICATED.");
+              setUser(null);
+            }
+          }
         }
-        if (handledOAuth) return;
-        const sess = await ifGetSession();
-        console.log("[auth] INITIAL_SESSION check:", sess ? "FOUND" : "NONE", sess?.id);
-        if (cancelled) return;
-        if (sess) {
-          const next = await syncProfile(sess, { role: activePortal ?? undefined, forceRole: !!activePortal });
-          console.log("[auth] Profile restored for session user:", next?.id, next?.role);
-          if (!cancelled && next) setUser(next);
-        } else if (!callback) {
-          console.log("[auth] No active session, user is UNAUTHENTICATED.");
-          setUser(null);
-        }
+      } catch (err) {
+        console.error("[auth] Global BOOT error", err);
       } finally {
         if (!cancelled) {
           console.log("[auth] Auth boot complete, loading = false.");
@@ -488,7 +502,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [activePortal]);
+  }, [setUser]);
+
 
 
   useEffect(() => {
@@ -572,7 +587,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const { user: sess } = await ifLogin(address, password);
-      const next = await syncProfile(sess, { provider: "email", role: role ?? activePortal ?? undefined, forceRole: !!(role || activePortal) });
+      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const targetPortal = role || currentPortal || undefined;
+      const next = await syncProfile(sess, { 
+        provider: "email", 
+        role: targetPortal, 
+        forceRole: !!targetPortal 
+      }, targetPortal);
+
       if (!next) return { ok: false, message: "Could not load your account" };
 
       const blocked = await admitSession(next, "email");
@@ -599,7 +621,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Profile creation is attempted for every signup; when verification is
       // pending there may be no session user yet — the row is then created on
       // the first successful login (self-healing).
-      const next = await syncProfile(sess, { provider: "email", role, forceRole: true, name: name.trim(), phone });
+      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const targetPortal = role || currentPortal || undefined;
+      const next = await syncProfile(sess, { 
+        provider: "email", 
+        role: targetPortal, 
+        forceRole: true, 
+        name: name.trim(), 
+        phone 
+      }, targetPortal);
+
       if (requireEmailVerification) {
         return {
           ok: true,
@@ -620,8 +651,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false, forceSelect = false) => {
     try {
       setOauthError(null);
-      rememberPendingRole(role, claimRole);
+      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const targetPortal = role || currentPortal || undefined;
+      rememberPendingRole(targetPortal, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
+
       const queryParams: Record<string, string> = {};
       if (forceSelect) {
         if (provider === "google") {
@@ -657,7 +691,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(res.accessToken, res.refreshToken ?? null);
     const sess = await ifGetSession();
     if (!sess) return { ok: false, message: "Could not start a session" };
-    const next = await syncProfile(sess, { provider: "phone", role: role ?? activePortal ?? undefined, forceRole: !!(role || activePortal), phone: normalisePhone(phone) });
+    const currentPortal = resolvePortalFromPath(window.location.pathname);
+    const targetPortal = role || currentPortal || undefined;
+    const next = await syncProfile(sess, { 
+      provider: "phone", 
+      role: targetPortal, 
+      forceRole: !!targetPortal, 
+      phone: normalisePhone(phone) 
+    }, targetPortal);
+
     if (!next) return { ok: false, message: "Could not load your account. Please try again." };
     const blocked = await admitSession(next, "phone");
     if (blocked) return { ok: false, message: blocked };
