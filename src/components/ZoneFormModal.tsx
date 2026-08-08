@@ -181,6 +181,7 @@ type SubzoneFormProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  zoneId?: string;
   zones?: DeliveryZone[];
   initialData?: Partial<Subzone>;
 };
@@ -188,7 +189,7 @@ type SubzoneFormProps = {
 export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, initialData }: SubzoneFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    zone_id: zoneId,
+    zone_id: zoneId || initialData?.zone_id || "",
     name: initialData?.name || "",
     status: initialData?.status || "ACTIVE",
     boundary: initialData?.boundary || { type: "Polygon", coordinates: [] }
@@ -199,6 +200,11 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    if (!formData.zone_id) {
+      toast.error("Please select a parent zone");
+      setLoading(false);
+      return;
+    }
     try {
       await createNewSubzone(formData as any);
       toast.success("Subzone created successfully");
