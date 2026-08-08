@@ -100,7 +100,7 @@ function PartnerMenu() {
     setItems((prev) => prev.filter((d) => d.id !== id));
     toast.success("Item removed");
   };
-  const save = (d: EditableDish) => {
+  const save = async (d: EditableDish) => {
     const { upsertMenuItem } = await import("@/lib/insforge");
     void upsertMenuItem({
       id: d.id,
