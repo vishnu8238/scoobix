@@ -273,6 +273,86 @@ function AdminOperationsDashboard() {
            />
         </section>
       )}
+
+      {selectedOrderId && (
+        <OrderDetailsModal 
+          order={shipments.find(o => o.id === selectedOrderId)} 
+          onClose={() => setSelectedOrderId(null)} 
+        />
+      )}
+    </div>
+  );
+}
+
+function OrderDetailsModal({ order, onClose }: { order: any; onClose: () => void }) {
+  if (!order) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl bg-card rounded-3xl shadow-glow overflow-hidden animate-in fade-in zoom-in duration-200">
+        <header className="flex items-center justify-between p-6 border-b border-border/60">
+           <div>
+             <h3 className="font-display text-xl font-extrabold">Order Shipment Details</h3>
+             <p className="text-xs text-muted-foreground">Order #{order.id.slice(0, 8)} · {format(new Date(order.created_at), "MMM d, HH:mm")}</p>
+           </div>
+           <button onClick={onClose} className="h-10 w-10 grid place-items-center rounded-2xl bg-muted hover:bg-muted/80 transition">
+             <X className="h-5 w-5" />
+           </button>
+        </header>
+
+        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+           <section>
+             <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Live Status Pipeline</h4>
+             <div className="p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
+               <OrderShipmentTimeline status={order.status} />
+             </div>
+           </section>
+
+           <div className="grid gap-6 md:grid-cols-2">
+             <section className="space-y-4">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Logistics Info</h4>
+                <div className="space-y-3">
+                  <InfoRow label="Restaurant" value={order.restaurant_name || "—"} icon={Store} />
+                  <InfoRow label="Delivery Area" value={order.delivery_address || "—"} icon={MapPin} />
+                  <InfoRow label="Rider" value={order.driver_id ? "Active Rider" : "Unassigned"} icon={Bike} />
+                </div>
+             </section>
+
+             <section className="space-y-4">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Performance Metrics</h4>
+                <div className="space-y-3">
+                  <InfoRow label="Order Value" value={`₹${order.total_price}`} icon={TrendingUp} />
+                  <InfoRow label="Pickup Dist." value="1.2 km" icon={MapPin} />
+                  <InfoRow label="Est. Delivery" value="32 mins" icon={Clock} />
+                </div>
+             </section>
+           </div>
+
+           <section className="h-[200px] rounded-2xl overflow-hidden ring-1 ring-border/60">
+             <LeafletMap 
+               className="h-full w-full" 
+               markers={[
+                 { id: "pick", lat: order.lat || 12.9716, lng: order.lng || 77.5946, kind: "restaurant" },
+                 { id: "drop", lat: 12.9784, lng: 77.6408, kind: "customer" }
+               ]}
+               interactive={false}
+             />
+           </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value, icon: Icon }: { label: string; value: string; icon: any }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-8 w-8 rounded-xl bg-muted/60 grid place-items-center text-muted-foreground">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase">{label}</p>
+        <p className="text-sm font-extrabold">{value}</p>
+      </div>
     </div>
   );
 }
