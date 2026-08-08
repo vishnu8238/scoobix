@@ -130,7 +130,9 @@ function LoginPage() {
 
   const oauth = async (provider: "google" | "apple", forceSelect = false) => {
     setBusy(true);
-    const res = await signInWithProvider(provider, app?.role, !!app?.role, forceSelect);
+    // Explicitly pass the requested role/portal to the OAuth flow so it survives the round-trip.
+    const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
+    const res = await signInWithProvider(provider, requestedPortal ?? undefined, !!requestedPortal, forceSelect);
     if (!res.ok) {
       setBusy(false);
       toast.error(res.message ?? "Could not start sign-in");
