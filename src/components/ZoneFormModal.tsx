@@ -181,11 +181,11 @@ type SubzoneFormProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  zoneId: string;
+  zones?: DeliveryZone[];
   initialData?: Partial<Subzone>;
 };
 
-export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, initialData }: SubzoneFormProps) {
+export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, initialData }: SubzoneFormProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     zone_id: zoneId,
@@ -222,15 +222,32 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, initialDa
         </header>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Subzone Name</label>
-            <input 
-              required
-              value={formData.name}
-              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g. Alkapuri"
-              className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none"
-            />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Parent Zone</label>
+              <select 
+                required
+                value={formData.zone_id}
+                onChange={e => setFormData(prev => ({ ...prev, zone_id: e.target.value }))}
+                className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none appearance-none disabled:opacity-50"
+                disabled={!!zoneId}
+              >
+                <option value="">Select a zone...</option>
+                {zones?.map(z => (
+                  <option key={z.id} value={z.id}>{z.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Subzone Name</label>
+              <input 
+                required
+                value={formData.name}
+                onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. Alkapuri"
+                className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none"
+              />
+            </div>
           </div>
           
           <div>
