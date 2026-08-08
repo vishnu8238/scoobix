@@ -12,25 +12,24 @@ import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
  *   their own application home. There is no manual portal switching.
  */
 export function RoleGuard({ allow, children }: { allow: Role; children: React.ReactNode }) {
-  const { user, loading, cachedRole } = useAuth();
+  const { user, loading, cachedRole, setPortal } = useAuth();
   const navigate = useNavigate();
   const href = useRouterState({ select: (s) => s.location.href });
+
+  // Update active portal when entering a guarded area.
+  useEffect(() => {
+    setPortal(allow);
+  }, [allow, setPortal]);
 
   const mismatched = !!user && user.role !== allow;
 
   useEffect(() => {
     if (loading) {
-      // Known-wrong surface on a cold reload: leave immediately instead of
-      // waiting for the profile round-trip.
-      if (cachedRole && cachedRole !== allow) {
-        navigate({ to: ROLE_HOME[cachedRole] as never, replace: true });
-      }
       return;
     }
     if (!user) {
-      // Never bounce auth screens back into themselves (that nests
-      // ?redirect= params forever).
-      const safeRedirect = href.startsWith("/auth") ? undefined : href;
+      // Send to the login screen for this app.
+      const safeRedirect = href.startsWith("/auth") || href.includes("login") ? undefined : href;
       navigate({
         to: "/auth/login",
         search: { app: allow, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
@@ -38,8 +37,18 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
       } as never);
       return;
     }
+    
+    // Authorization check: If the user has a session but the wrong role for this portal.
     if (user.role !== allow) {
-      navigate({ to: ROLE_HOME[user.role] as never, replace: true });
+      // The user is authenticated but doesn't have the right role for this portal.
+      // We don't automatically redirect them to their home; the Login page 
+      // will handle the "Wrong Account" flow if they landed there from a link.
+      // However, if they are already inside the app tree, we must enforce the role.
+      navigate({
+        to: "/auth/login",
+        search: { app: allow, redirect: href },
+        replace: true,
+      } as never);
     }
   }, [user, loading, allow, navigate, href, cachedRole]);
 

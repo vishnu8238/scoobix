@@ -37,9 +37,16 @@ function LoginPage() {
     requestPhoneOtp,
     verifyPhoneLogin,
     resendVerification,
+    signOut,
     oauthError,
     clearOAuthError,
+    setPortal,
   } = useAuth();
+
+  // Ensure portal context is set if we arrive via direct URL with ?app=
+  useEffect(() => {
+    if (appId) setPortal(appId);
+  }, [appId, setPortal]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -61,9 +68,20 @@ function LoginPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-    const home = ROLE_HOME[user.role];
-    const canResume = !!redirect && (!app || app.role === user.role) && redirect.startsWith(home);
-    navigate({ to: (canResume ? redirect : home) as never, replace: true });
+    
+    // Authorization logic:
+    // If the authenticated user matches the app's role, go home.
+    // If they have a different role, they need to sign out before signing in 
+    // to this portal with a different account.
+    if (user.role === app?.role) {
+      const home = ROLE_HOME[user.role];
+      const canResume = !!redirect && redirect.startsWith(home);
+      navigate({ to: (canResume ? redirect : home) as never, replace: true });
+    } else {
+      // User is authenticated but role doesn't match this app's role.
+      // We keep them on the login page to show "Wrong Account" / "Sign out" flow.
+      // No automatic redirect to their own app home.
+    }
   }, [app, loading, navigate, redirect, user]);
 
   const land = (user: User) => {
@@ -130,6 +148,50 @@ function LoginPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp, otpSent, mode]);
+
+  if (user && app && user.role !== app.role) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center">
+        <div className="mx-auto flex max-w-md flex-col items-center">
+          <ScoobixMark size={48} className="mb-6" />
+          <h1 className="font-display text-2xl font-extrabold tracking-tight">Wrong Account</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You are currently signed in as a <span className="font-bold text-foreground capitalize">{user.role}</span>.
+            To access the <span className="font-bold text-foreground">{app.name}</span>, please use an authorized account.
+          </p>
+          
+          <div className="mt-8 flex w-full flex-col gap-3">
+            <Button 
+              onClick={() => {
+                // If they have a redirect URL that belongs to their actual role, go there.
+                const home = ROLE_HOME[user.role];
+                const canResume = !!redirect && redirect.startsWith(home);
+                navigate({ to: (canResume ? redirect : home) as never, replace: true });
+              }}
+              className="h-12 w-full rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
+            >
+              Continue as {user.name} ({user.role})
+            </Button>
+            
+            <Button 
+              disabled={busy}
+              variant="outline"
+              onClick={async () => {
+                setBusy(true);
+                await signOut();
+                setBusy(false);
+                // After logout, they remain on this login page but without a session,
+                // allowing them to sign in with a different account.
+              }}
+              className="h-12 w-full rounded-full border-2 border-primary/20 bg-background text-sm font-bold text-primary transition-all hover:bg-primary/5 active:scale-[0.98]"
+            >
+              {busy ? "Signing out..." : "Use another account"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-svh px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-12">
