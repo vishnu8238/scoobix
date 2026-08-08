@@ -110,6 +110,7 @@ export function LeafletMap({
         maxZoom: 19,
       }).addTo(map);
       markerLayerRef.current = L.layerGroup().addTo(map);
+      polygonLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       setReady(true);
     })();
