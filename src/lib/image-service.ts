@@ -124,12 +124,12 @@ export async function uploadFile(
   const filename = `${folder}/${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const res = await withRetry(async () => {
-    const strat = await getUploadStrategy({ data: { bucket: BUCKET, filename, contentType: file.type, size: file.size } });
+    const strat = await getUploadStrategy({ bucket: BUCKET, filename, contentType: file.type, size: file.size });
     if (strat.method === "presigned") {
       await postPresigned(strat, file);
       let finalUrl = "";
       if (strat.confirmRequired && strat.confirmUrl) {
-        await confirmStorageUpload({ data: { bucket: BUCKET, confirmUrl: strat.confirmUrl, size: file.size, contentType: file.type } });
+        await confirmStorageUpload({ bucket: BUCKET, confirmUrl: strat.confirmUrl, size: file.size, contentType: file.type });
         finalUrl = toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`);
       }
       if (!finalUrl) {
@@ -166,11 +166,11 @@ export async function uploadImage(
   const filename = `${cfg.folder}/${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const ref: ImageRef = await withRetry(async () => {
-    const strat = await getUploadStrategy({ data: { bucket: BUCKET, filename, contentType: mime, size: blob.size } });
+    const strat = await getUploadStrategy({ bucket: BUCKET, filename, contentType: mime, size: blob.size });
     if (strat.method === "presigned") {
       await postPresigned(strat, blob);
       if (strat.confirmRequired && strat.confirmUrl) {
-        await confirmStorageUpload({ data: { bucket: BUCKET, confirmUrl: strat.confirmUrl, size: blob.size, contentType: mime } });
+        await confirmStorageUpload({ bucket: BUCKET, confirmUrl: strat.confirmUrl, size: blob.size, contentType: mime });
       }
       const finalUrl = toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`);
       return { image_url: finalUrl, image_type: type, optimized_reference: strat.key };

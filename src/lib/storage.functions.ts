@@ -4,24 +4,15 @@ import { z } from "zod";
 const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";
 const INSFORGE_ANON_KEY = "anon_f8c2fce9afe385f45eb6d00d434eb365833a70386175df3707743df3b751b102";
 
-/**
- * Proxy an upload strategy request to the backend with the service role key.
- * This bypasses restrictive client-side RLS on storage buckets while keeping
- * the frontend simple.
- */
 export const getUploadStrategy = createServerFn({ method: "POST" })
   .inputValidator(z.object({
-    data: z.object({
-      bucket: z.string(),
-      filename: z.string(),
-      contentType: z.string(),
-      size: z.number(),
-    })
+    bucket: z.string(),
+    filename: z.string(),
+    contentType: z.string(),
+    size: z.number(),
   }))
-  .handler(async ({ data: { data } }) => {
+  .handler(async ({ data }) => {
     const key = process.env.INSFORGE_API_KEY || INSFORGE_ANON_KEY;
-    
-    console.log("[storage-fn] Requesting strategy for:", data.filename, "in bucket:", data.bucket);
     
     const res = await fetch(`${INSFORGE_URL}/api/storage/buckets/${data.bucket}/upload-strategy`, {
       method: "POST",
@@ -39,28 +30,20 @@ export const getUploadStrategy = createServerFn({ method: "POST" })
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error("[storage-fn] Strategy failed:", res.status, errorText);
       throw new Error(`Failed to get upload strategy: ${res.status} ${errorText}`);
     }
 
-    const strategy = await res.json();
-    console.log("[storage-fn] Strategy acquired:", strategy.method, strategy.key);
-    return strategy;
+    return res.json();
   });
 
-/**
- * Proxy a document confirmation to the backend.
- */
 export const confirmStorageUpload = createServerFn({ method: "POST" })
   .inputValidator(z.object({
-    data: z.object({
-      bucket: z.string(),
-      confirmUrl: z.string(),
-      size: z.number(),
-      contentType: z.string(),
-    })
+    bucket: z.string(),
+    confirmUrl: z.string(),
+    size: z.number(),
+    contentType: z.string(),
   }))
-  .handler(async ({ data: { data } }) => {
+  .handler(async ({ data }) => {
     const key = process.env.INSFORGE_API_KEY || INSFORGE_ANON_KEY;
     
     const url = data.confirmUrl.startsWith("http") 
