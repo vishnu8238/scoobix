@@ -30,6 +30,7 @@ function SignupPage() {
 
   useEffect(() => {
     if (loading || !user) return;
+    // If already logged in, go to that role's home.
     navigate({ to: ROLE_HOME[user.role] as never, replace: true });
   }, [loading, navigate, user]);
 
