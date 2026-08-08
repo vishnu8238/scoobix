@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import splashBg from "@/assets/splash-bg.jpg";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { useAuth, ROLE_HOME } from "@/lib/auth-store";
+import type { Role } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,10 +25,16 @@ function Splash() {
     // We only redirect once the authoritative session is resolved.
     if (loading) return;
     
-    const role = user?.role;
-    if (role) {
-      console.log("[auth] Root redirect to role home:", role);
-      navigate({ to: ROLE_HOME[role] as never, replace: true });
+    if (user) {
+      const hasRole = (r: Role) => user.roles.includes(r);
+      let target = "/app";
+      if (hasRole("admin")) target = "/admin";
+      else if (hasRole("manager")) target = "/manager";
+      else if (hasRole("partner")) target = "/partner";
+      else if (hasRole("rider")) target = "/rider";
+
+      console.log("[auth] Root redirect to target:", target, "for roles:", user.roles);
+      navigate({ to: target as never, replace: true });
     } else {
       console.log("[auth] Root redirect to login (no session).");
       navigate({ to: "/auth/login", replace: true });

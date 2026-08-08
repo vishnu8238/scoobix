@@ -15,7 +15,8 @@ export type User = {
   name: string;
   email: string;
   phone: string;
-  role: Role;
+  role: Role; // Compatibility default
+  roles: Role[]; // All authorized roles
   avatar?: string;
   created_at?: string;
 };

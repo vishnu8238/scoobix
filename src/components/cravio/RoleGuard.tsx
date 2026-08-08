@@ -24,10 +24,10 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
   useEffect(() => {
     if (loading) return;
     
-    // Authorization check: session exists but the role is wrong for this portal.
-    if (user && user.role !== allow) {
-      console.warn(`[auth] RoleGuard mismatch: user is ${user.role} but portal requires ${allow}`);
-      // Send to the login screen specifically for THIS portal so the user can sign in with the right account.
+    // Authorization check: session exists but the required role is missing from the user's role list.
+    if (user && !user.roles.includes(allow)) {
+      console.warn(`[auth] RoleGuard mismatch: user has roles [${user.roles.join(", ")}] but portal requires ${allow}`);
+      // Send to the login screen specifically for THIS portal so the user can sign in with the right account or resolve access.
       navigate({
         to: "/auth/login",
         search: { app: allow, redirect: href },
@@ -49,7 +49,7 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
 
 
 
-  if (loading || !user || user.role !== allow) {
+  if (loading || !user || !user.roles.includes(allow)) {
     return (
       <div className="flex min-h-svh w-full items-center justify-center bg-background">
         <div className="animate-pulse-soft">
