@@ -382,8 +382,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const pending = takePendingRole();
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
-              role: pending.role,
-              forceRole: pending.claim,
+              role: pending.role ?? activePortal ?? undefined,
+              forceRole: pending.claim || !!activePortal,
             });
             if (!cancelled && next) {
               const blocked = await admitSession(next, String(callback.provider));
