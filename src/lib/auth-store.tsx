@@ -60,6 +60,8 @@ type AuthCtx = {
   loading: boolean;
   /** Persisted role from the previous session; used to route before `user` resolves. */
   cachedRole: Role | null;
+  /** The portal currently being used for login/authentication. */
+  activePortal: Role | null;
   signIn: (email: string, password: string, role?: Role) => Promise<AuthResult>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<AuthResult>;
   signInWithProvider: (provider: OAuthProvider, role?: Role, claimRole?: boolean) => Promise<{ ok: boolean; message?: string }>;
@@ -68,11 +70,12 @@ type AuthCtx = {
   verifyPhoneLogin: (phone: string, otp: string, role?: Role) => Promise<AuthResult>;
   verifyEmailCode: (email: string, code: string) => Promise<AuthResult>;
   resendVerification: (email: string) => Promise<{ ok: boolean; message: string }>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   /** Last provider sign-in failure (Google / Apple), surfaced by the login UI. */
   oauthError: string | null;
   clearOAuthError: () => void;
   resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
+  setPortal: (portal: Role | null) => void;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
