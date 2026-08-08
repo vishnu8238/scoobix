@@ -355,6 +355,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const setUser = useCallback((next: User | null) => {
     setUserState(next);
+    // Only write to CACHED_ROLE if we are NOT on a different portal's login page.
+    // Actually, CACHED_ROLE is used for cold start routing. 
+    // If the user logs in as a Customer, and then opens Rider Login, 
+    // the Rider Login RoleGuard will check user.role vs 'rider'.
     writeCachedRole(next?.role ?? null);
     setCachedRole(next?.role ?? null);
   }, []);
