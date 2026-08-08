@@ -554,12 +554,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false) => {
+  const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false, forceSelect = false) => {
     try {
       setOauthError(null);
       rememberPendingRole(role, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
-      const authUrl = await ifCreateOAuthUrl(provider, redirectUri);
+      const queryParams: Record<string, string> = {};
+      if (forceSelect) {
+        if (provider === "google") {
+          queryParams.prompt = "select_account";
+        } else if (provider === "apple") {
+          // Apple doesn't have a direct 'select_account' equivalent via standard query params in many InsForge setups,
+          // but often passing a new nonce or state forces re-auth. Standard is prompt=login or similar if supported.
+          queryParams.prompt = "login";
+        }
+      }
+      const authUrl = await ifCreateOAuthUrl(provider, redirectUri, undefined, queryParams);
       navigateToOAuthUrl(authUrl);
       return { ok: true };
     } catch (err) {
