@@ -3,7 +3,7 @@ import { Upload, X, RotateCcw, Loader2, CheckCircle2, AlertCircle } from "lucide
 import { uploadImage, type ImageRef, type ImageType } from "@/lib/image-service";
 import { cn } from "@/lib/utils";
 
-type Status = "idle" | "preview" | "uploading" | "processing" | "done" | "error";
+type Status = "idle" | "preview" | "optimizing" | "uploading" | "processing" | "done" | "error";
 
 type Props = {
   type: ImageType;            // "logo" | "cover" | "dish" | "banner" | "avatar"
@@ -27,6 +27,7 @@ export function ImageUploader({
   const [status, setStatus] = useState<Status>(value ? "done" : "idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(value?.image_url ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<{ original: number; optimized: number; ratio: number } | null>(null);
   const lastFile = useRef<File | null>(null);
 
   const pick = () => inputRef.current?.click();
@@ -56,8 +57,8 @@ export function ImageUploader({
     setStatus("preview");
 
     try {
-      setStatus("uploading");
-      let ref: ImageRef;
+      setStatus("optimizing");
+      let ref: ImageRef & { metadata?: any };
       if (isImage) {
         ref = await uploadImage(file, type, { oldRef: value ?? null });
       } else {
@@ -69,9 +70,22 @@ export function ImageUploader({
         ref = {
           image_url: res.url,
           image_type: type,
-          optimized_reference: res.key
+          optimized_reference: res.key,
+          metadata: res.metadata
         };
       }
+      
+      if (ref.metadata?.optimized_size) {
+        setStats({
+          original: ref.metadata.original_size,
+          optimized: ref.metadata.optimized_size,
+          ratio: ref.metadata.compression_ratio
+        });
+      }
+
+      setStatus("uploading");
+      // status change for UI feedback, upload happens inside uploadImage/uploadFile now
+      await new Promise((r) => setTimeout(r, 200)); 
       setStatus("processing");
       await new Promise((r) => setTimeout(r, 150));
       setStatus("done");
@@ -103,7 +117,7 @@ export function ImageUploader({
     onChange?.(null);
   };
 
-  const busy = status === "uploading" || status === "processing";
+  const busy = status === "optimizing" || status === "uploading" || status === "processing";
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -130,7 +144,7 @@ export function ImageUploader({
           <div className="absolute inset-0 grid place-items-center bg-background/70 backdrop-blur-sm">
             <div className="flex items-center gap-2 rounded-full bg-foreground/90 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-widest text-background">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {status === "uploading" ? "Uploading…" : "Processing…"}
+              {status === "optimizing" ? "Optimizing…" : status === "uploading" ? "Uploading…" : "Processing…"}
             </div>
           </div>
         )}
@@ -152,6 +166,15 @@ export function ImageUploader({
           </button>
         )}
       </div>
+
+      {status === "done" && stats && (
+        <div className="flex items-center gap-2 px-1 text-[10px] text-muted-foreground">
+          <span>
+            Reduced by {Math.round(stats.ratio * 100)}% 
+            ({(stats.original / 1024).toFixed(0)}KB → {(stats.optimized / 1024).toFixed(0)}KB)
+          </span>
+        </div>
+      )}
 
       {status === "error" && (
         <div className="flex items-center justify-between gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-[12px] font-semibold text-destructive">

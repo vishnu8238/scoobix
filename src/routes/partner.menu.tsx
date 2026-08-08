@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { partnerMenu } from "@/lib/role-data";
 import type { Dish } from "@/lib/mock-data";
 import { Plus, Pencil, Trash2, X, Leaf, Sparkles, Trophy } from "lucide-react";
+import { ImageUploader } from "@/components/cravio/ImageUploader";
+import { type ImageRef } from "@/lib/image-service";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
 import { partnerRestaurant } from "@/lib/role-data";
@@ -269,6 +271,17 @@ function EditSheet({ dish, onClose, onSave }: { dish: EditableDish | null; onClo
             <select value={category} onChange={(e) => setCategory(e.target.value as Dish["category"])} className="w-full rounded-2xl bg-muted px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/40">
               {["Starters", "Main Course", "Drinks", "Desserts"].map((c) => <option key={c}>{c}</option>)}
             </select>
+          </Field>
+
+          <Field label="Dish Image">
+            <ImageUploader
+              type="dish"
+              value={dish?.image ? { image_url: dish.image, image_type: "dish" } : null}
+              onChange={(ref) => {
+                if (ref) dish ? (dish.image = ref.image_url) : null;
+              }}
+              aspect="aspect-square"
+            />
           </Field>
 
           <div className="rounded-2xl bg-muted/60 p-3 ring-1 ring-border/60">

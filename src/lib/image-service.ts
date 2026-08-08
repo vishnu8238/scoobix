@@ -5,6 +5,7 @@
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { getAccessToken } from "./insforge-auth";
 import { getUploadStrategy, confirmStorageUpload } from "./storage.functions";
+import { optimizeUpload, type OptimizationOptions } from "./file-optimizer";
 
 const BUCKET = "images";
 const DOC_BUCKET = "documents";
@@ -117,31 +118,50 @@ async function putDirect(uploadUrl: string, blob: Blob): Promise<void> {
 export async function uploadFile(
   file: File,
   folder: string,
-  opts?: { oldKey?: string | null },
-): Promise<{ url: string; key: string }> {
+  opts?: { oldKey?: string | null; skipOptimization?: boolean },
+): Promise<{ url: string; key: string; metadata?: any }> {
+  let activeFile: File | Blob = file;
+  let metadata: any = {
+    original_size: file.size,
+    mime_type: file.type,
+    original_filename: file.name
+  };
+
+  if (!opts?.skipOptimization) {
+    const optimized = await optimizeUpload(file);
+    activeFile = optimized.file;
+    metadata = {
+      ...metadata,
+      optimized_size: optimized.optimizedSize,
+      compression_ratio: optimized.compressionRatio,
+      mime_type: optimized.mimeType
+    };
+  }
+
   const safeBase = (file.name.replace(/\.[^.]+$/, "") || "doc")
     .toLowerCase().replace(/[^a-z0-9-_]+/g, "-").slice(0, 40);
-  const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+  const ext = activeFile instanceof File ? activeFile.name.split(".").pop() : (metadata.mime_type.split("/")[1] || "bin");
   const filename = `${folder}/${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const res = await withRetry(async () => {
-    const strat = await getUploadStrategy({ data: { bucket: DOC_BUCKET, filename, contentType: file.type, size: file.size } });
+    const strat = await getUploadStrategy({ data: { bucket: DOC_BUCKET, filename, contentType: metadata.mime_type, size: activeFile.size } });
     if (strat.method === "presigned") {
-      await postPresigned(strat, file);
+      await postPresigned(strat, activeFile as Blob);
       let finalUrl = "";
       if (strat.confirmRequired && strat.confirmUrl) {
-        await confirmStorageUpload({ data: { bucket: DOC_BUCKET, confirmUrl: strat.confirmUrl, size: file.size, contentType: file.type } });
+        await confirmStorageUpload({ data: { bucket: DOC_BUCKET, confirmUrl: strat.confirmUrl, size: activeFile.size, contentType: metadata.mime_type } });
         finalUrl = toAbsolute(`/api/storage/buckets/${DOC_BUCKET}/objects/${strat.key}`);
       }
       if (!finalUrl) {
         finalUrl = toAbsolute(`/api/storage/buckets/${DOC_BUCKET}/objects/${strat.key}`);
       }
-      return { url: finalUrl, key: strat.key };
+      return { url: finalUrl, key: strat.key, metadata };
     }
-    await putDirect(strat.uploadUrl, file);
+    await putDirect(strat.uploadUrl, activeFile as Blob);
     return {
       url: toAbsolute(`/api/storage/buckets/${DOC_BUCKET}/objects/${strat.key}`),
       key: strat.key,
+      metadata
     };
   });
 
@@ -154,33 +174,56 @@ export async function uploadFile(
 export async function uploadImage(
   file: File,
   type: ImageType,
-  opts?: { oldRef?: ImageRef | null },
-): Promise<ImageRef> {
+  opts?: { oldRef?: ImageRef | null; skipOptimization?: boolean },
+): Promise<ImageRef & { metadata?: any }> {
   const cfg = IMAGE_SIZES[type];
-  // Simple pass-through for now to focus on the permission fix
-  const blob = file;
-  const ext = file.name.split(".").pop() || "jpg";
-  const mime = file.type;
+  
+  let activeFile: File | Blob = file;
+  let metadata: any = {
+    original_size: file.size,
+    mime_type: file.type,
+    original_filename: file.name
+  };
 
+  if (!opts?.skipOptimization) {
+    const optimized = await optimizeUpload(file, {
+      maxWidth: cfg.w,
+      maxHeight: cfg.h,
+      quality: cfg.quality
+    });
+    activeFile = optimized.file;
+    metadata = {
+      ...metadata,
+      optimized_size: optimized.optimizedSize,
+      compression_ratio: optimized.compressionRatio,
+      mime_type: optimized.mimeType,
+      width: optimized.width,
+      height: optimized.height
+    };
+  }
+
+  const mime = metadata.mime_type;
   const safeBase = (file.name.replace(/\.[^.]+$/, "") || "img")
     .toLowerCase().replace(/[^a-z0-9-_]+/g, "-").slice(0, 40);
+  const ext = mime.split("/")[1] || "webp";
   const filename = `${cfg.folder}/${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-  const ref: ImageRef = await withRetry(async () => {
-    const strat = await getUploadStrategy({ data: { bucket: BUCKET, filename, contentType: mime, size: blob.size } });
+  const ref = await withRetry(async () => {
+    const strat = await getUploadStrategy({ data: { bucket: BUCKET, filename, contentType: mime, size: activeFile.size } });
     if (strat.method === "presigned") {
-      await postPresigned(strat, blob);
+      await postPresigned(strat, activeFile as Blob);
       if (strat.confirmRequired && strat.confirmUrl) {
-        await confirmStorageUpload({ data: { bucket: BUCKET, confirmUrl: strat.confirmUrl, size: blob.size, contentType: mime } });
+        await confirmStorageUpload({ data: { bucket: BUCKET, confirmUrl: strat.confirmUrl, size: activeFile.size, contentType: mime } });
       }
       const finalUrl = toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`);
-      return { image_url: finalUrl, image_type: type, optimized_reference: strat.key };
+      return { image_url: finalUrl, image_type: type, optimized_reference: strat.key, metadata };
     }
-    await putDirect(strat.uploadUrl, blob);
+    await putDirect(strat.uploadUrl, activeFile as Blob);
     return {
       image_url: toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`),
       image_type: type,
       optimized_reference: strat.key,
+      metadata
     };
   });
 
