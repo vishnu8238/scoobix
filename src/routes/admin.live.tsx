@@ -31,9 +31,13 @@ function AdminZonesDashboard() {
   const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders"]);
 
   const refresh = useCallback(async () => {
+    if (loading) return;
     setLoading(true);
     try {
-      const [{ zones: z, subzones: sz }, st] = await Promise.all([
+      const data = await getZonesWithSubzones();
+      const z = data?.zones || [];
+      const sz = data?.subzones || [];
+      const st = await getZoneStats();
         getZonesWithSubzones(),
         getZoneStats()
       ]);

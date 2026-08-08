@@ -42,6 +42,11 @@ function AdminOperationsDashboard() {
   const refresh = useCallback(async () => {
     setLoading(true);
     const [z, sz, st, live] = await Promise.all([
+      fetchZones({ city: "eq.Vadodara" }).catch(() => []),
+      fetchSubzones(selectedZoneId || undefined).catch(() => []),
+      getZoneStats(selectedZoneId || undefined).catch(() => ({})),
+      fetchLiveShipmentOrders().catch(() => [])
+    ]);
       fetchZones({ city: "eq.Vadodara" }),
       fetchSubzones(selectedZoneId || undefined),
       getZoneStats(selectedZoneId || undefined),
