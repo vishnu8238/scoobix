@@ -78,7 +78,7 @@ export const rejectOrderOffer = createServerFn({ method: "POST" })
     offerId: z.string(),
     reason: z.string().optional(),
   }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: { orderId: string; offerId: string; reason?: string } }) => {
     await fetch(`${INSFORGE_URL}/api/database/records/rider_offers?id=eq.${data.offerId}`, {
       method: "PATCH",
       headers: HEADERS,
