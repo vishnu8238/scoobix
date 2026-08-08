@@ -65,6 +65,7 @@ function buildDivIcon(L: any, kind: MarkerKind, pulse = false) {
 export function LeafletMap({
   markers = [],
   route,
+  polygons = [],
   riderProgress = 0,
   riderLabel,
   center,
