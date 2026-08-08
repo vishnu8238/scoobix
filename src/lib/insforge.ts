@@ -156,6 +156,55 @@ export function deleteMenuItem(id: string) {
   return ifWrite(`/api/database/records/menu_items?id=eq.${id}`, "DELETE");
 }
 
+/** Admin: Destructive delete for a restaurant and its tightly coupled sub-records.
+ *  Preserves orders, payments, and audit logs.
+ */
+export async function deleteRestaurantComplete(id: string) {
+  // 1. Get all related records that should be cleaned up
+  const [menuItems, categories, coupons, kycDocs] = await Promise.all([
+    ifFetch<MenuItemRow[]>(`/api/database/records/menu_items?restaurant_id=eq.${id}`),
+    ifFetch<CategoryRow[]>(`/api/database/records/categories?restaurant_id=eq.${id}`),
+    ifFetch<any[]>(`/api/database/records/coupons?restaurant_id=eq.${id}`),
+    ifFetch<any[]>(`/api/database/records/restaurant_kyc?restaurant_id=eq.${id}`),
+  ]).catch(() => [[], [], [], []]);
+
+  // 2. Cleanup Storage (Images)
+  const { deleteObject } = await import("./image-service");
+  const keysToDelete = new Set<string>();
+
+  // Collect keys from restaurant itself
+  const [rest] = await ifFetch<RestaurantRow[]>(`/api/database/records/restaurants?id=eq.${id}&limit=1`).catch(() => []);
+  if (rest?.logo_url?.includes("/objects/")) keysToDelete.add(rest.logo_url.split("/objects/")[1]);
+  if (rest?.cover_url?.includes("/objects/")) keysToDelete.add(rest.cover_url.split("/objects/")[1]);
+
+  // Collect keys from menu items
+  menuItems.forEach(item => {
+    if (item.image_url?.includes("/objects/")) keysToDelete.add(item.image_url.split("/objects/")[1]);
+  });
+
+  // Collect keys from KYC
+  kycDocs.forEach(doc => {
+    if (doc.file_url?.includes("/objects/")) keysToDelete.add(doc.file_url.split("/objects/")[1]);
+  });
+
+  // Perform storage deletion (best-effort)
+  for (const key of keysToDelete) {
+    void deleteObject(decodeURIComponent(key)).catch(() => {});
+  }
+
+  // 3. Delete DB records in order (respecting possible FKs)
+  await Promise.all([
+    ifWrite(`/api/database/records/addons?dish_id=in.(${menuItems.map(m => m.id).join(",") || "0"})`, "DELETE"),
+    ifWrite(`/api/database/records/menu_items?restaurant_id=eq.${id}`, "DELETE"),
+    ifWrite(`/api/database/records/categories?restaurant_id=eq.${id}`, "DELETE"),
+    ifWrite(`/api/database/records/coupons?restaurant_id=eq.${id}`, "DELETE"),
+    ifWrite(`/api/database/records/restaurant_kyc?restaurant_id=eq.${id}`, "DELETE"),
+  ]).catch(() => {});
+
+  // 4. Finally delete the restaurant
+  return ifWrite(`/api/database/records/restaurants?id=eq.${id}`, "DELETE");
+}
+
 /** Addon CRUD. */
 export function upsertAddon(addon: {
   id?: string;
