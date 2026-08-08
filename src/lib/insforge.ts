@@ -374,6 +374,24 @@ function toCategory(row: CategoryRow): Category {
 // ---------- one-shot bootstrap ----------
 
 let bootstrapPromise: Promise<{ ok: boolean; error?: string }> | null = null;
+const BOOTSTRAP_BATCH_SIZE = 500;
+
+async function fetchAll<T>(path: string, limit = 2000): Promise<T[]> {
+  const all: T[] = [];
+  let offset = 0;
+  const signal = new AbortController().signal;
+
+  while (offset < limit) {
+    const batchLimit = Math.min(BOOTSTRAP_BATCH_SIZE, limit - offset);
+    const qs = path.includes("?") ? `&limit=${batchLimit}&offset=${offset}` : `?limit=${batchLimit}&offset=${offset}`;
+    const batch = await ifFetch<T[]>(`${path}${qs}`, signal).catch(() => [] as T[]);
+    if (!batch.length) break;
+    all.push(...batch);
+    if (batch.length < batchLimit) break;
+    offset += batchLimit;
+  }
+  return all;
+}
 
 export type InsForgeStatus = "idle" | "loading" | "ready" | "error" | "empty";
 
@@ -417,10 +435,10 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
   bootstrapPromise = (async () => {
     try {
       const [rests, cats, menu, addons] = await Promise.all([
-        ifFetch<RestaurantRow[]>("/api/database/records/restaurants?limit=200").catch(() => [] as RestaurantRow[]),
-        ifFetch<CategoryRow[]>("/api/database/records/categories?limit=200").catch(() => [] as CategoryRow[]),
-        ifFetch<MenuItemRow[]>("/api/database/records/menu_items?limit=2000").catch(() => [] as MenuItemRow[]),
-        ifFetch<AddonRow[]>("/api/database/records/addons?limit=2000").catch(() => [] as AddonRow[]),
+        fetchAll<RestaurantRow[]>("/api/database/records/restaurants", 2000),
+        fetchAll<CategoryRow[]>("/api/database/records/categories", 500),
+        fetchAll<MenuItemRow[]>("/api/database/records/menu_items", 5000),
+        fetchAll<AddonRow[]>("/api/database/records/addons", 5000),
       ]);
 
       const totalRows = rests.length + cats.length + menu.length + addons.length;

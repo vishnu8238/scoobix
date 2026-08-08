@@ -249,6 +249,24 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     },
   };
 
+  // Email uniqueness check to prevent duplicates.
+  if (!ownRow && row.email) {
+    const conflict = await findUserProfileByEmail(row.email).catch(() => null);
+    if (conflict && conflict.id !== sess.id) {
+       // A profile for this email already exists under a different auth ID.
+       // Redirect to login or merge if appropriate, but do NOT overwrite or duplicate.
+       console.warn("[auth] Email conflict detected in profile sync", row.email);
+       return {
+         id: conflict.id,
+         name: conflict.name || name,
+         email: conflict.email || row.email,
+         phone: conflict.phone || row.phone || "",
+         role: toUiRole(conflict.role) ?? "customer",
+         avatar: conflict.avatar || avatar,
+       };
+    }
+  }
+
   // Blocking: the profile must exist before the UI ever sees the user.
   const saved = await upsertUserProfile(row, { writeRole: input.forceRole || !ownRow }).catch(() => null);
   let finalRole = input.forceRole ? role : toUiRole(saved?.role) ?? role;
