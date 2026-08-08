@@ -7,6 +7,7 @@ import { getAccessToken } from "./insforge-auth";
 import { getUploadStrategy, confirmStorageUpload } from "./storage.functions";
 
 const BUCKET = "images";
+const DOC_BUCKET = "documents";
 
 const insforgeHeaders = () => {
   const token = getAccessToken();
@@ -124,22 +125,22 @@ export async function uploadFile(
   const filename = `${folder}/${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const res = await withRetry(async () => {
-    const strat = await getUploadStrategy({ data: { bucket: BUCKET, filename, contentType: file.type, size: file.size } });
+    const strat = await getUploadStrategy({ data: { bucket: DOC_BUCKET, filename, contentType: file.type, size: file.size } });
     if (strat.method === "presigned") {
       await postPresigned(strat, file);
       let finalUrl = "";
       if (strat.confirmRequired && strat.confirmUrl) {
-        await confirmStorageUpload({ data: { bucket: BUCKET, confirmUrl: strat.confirmUrl, size: file.size, contentType: file.type } });
-        finalUrl = toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`);
+        await confirmStorageUpload({ data: { bucket: DOC_BUCKET, confirmUrl: strat.confirmUrl, size: file.size, contentType: file.type } });
+        finalUrl = toAbsolute(`/api/storage/buckets/${DOC_BUCKET}/objects/${strat.key}`);
       }
       if (!finalUrl) {
-        finalUrl = toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`);
+        finalUrl = toAbsolute(`/api/storage/buckets/${DOC_BUCKET}/objects/${strat.key}`);
       }
       return { url: finalUrl, key: strat.key };
     }
     await putDirect(strat.uploadUrl, file);
     return {
-      url: toAbsolute(`/api/storage/buckets/${BUCKET}/objects/${strat.key}`),
+      url: toAbsolute(`/api/storage/buckets/${DOC_BUCKET}/objects/${strat.key}`),
       key: strat.key,
     };
   });
@@ -192,10 +193,16 @@ export async function uploadImage(
 
 export async function deleteObject(key: string): Promise<void> {
   if (!key) return;
-  await fetch(`${INSFORGE_URL}/api/storage/buckets/${BUCKET}/objects/${encodeURI(key)}`, {
-    method: "DELETE",
-    headers: { ...insforgeHeaders() },
-  }).catch(() => {});
+  // Best effort: try images bucket then documents bucket
+  const buckets = [BUCKET, DOC_BUCKET];
+  for (const b of buckets) {
+    try {
+      await fetch(`${INSFORGE_URL}/api/storage/buckets/${b}/objects/${encodeURI(key)}`, {
+        method: "DELETE",
+        headers: { ...insforgeHeaders() },
+      });
+    } catch { /* ignore */ }
+  }
 }
 
 export { deleteObject as deleteImage };

@@ -145,7 +145,7 @@ export function updateRestaurantStatus(
 }
 
 /** Upsert a menu item (insert if new id, patch otherwise). */
-export function upsertMenuItem(item: {
+export async function upsertMenuItem(item: {
   id?: string;
   restaurant_id: string;
   name: string;
@@ -158,10 +158,17 @@ export function upsertMenuItem(item: {
   recommended?: boolean;
   best_seller?: boolean;
 }) {
-  if (item.id && !item.id.startsWith("n")) {
-    return ifWrite(`/api/database/records/menu_items?id=eq.${item.id}`, "PATCH", item);
+  const method = item.id && !item.id.startsWith("n") ? "PATCH" : "POST";
+  const path = method === "PATCH" 
+    ? `/api/database/records/menu_items?id=eq.${item.id}` 
+    : `/api/database/records/menu_items`;
+    
+  const res = await ifWrite(path, method, item);
+  if (res.ok) {
+    const { invalidateTable } = await import("./insforge-crud");
+    invalidateTable("menu_items");
   }
-  return ifWrite(`/api/database/records/menu_items`, "POST", item);
+  return res;
 }
 
 export function deleteMenuItem(id: string) {
@@ -177,7 +184,7 @@ export async function deleteRestaurantComplete(id: string) {
     ifFetch<MenuItemRow[]>(`/api/database/records/menu_items?restaurant_id=eq.${id}`),
     ifFetch<CategoryRow[]>(`/api/database/records/categories?restaurant_id=eq.${id}`),
     ifFetch<any[]>(`/api/database/records/coupons?restaurant_id=eq.${id}`),
-    ifFetch<any[]>(`/api/database/records/restaurant_kyc?restaurant_id=eq.${id}`),
+    ifFetch<any[]>(`/api/database/records/restaurant_kyc?restaurant_id=eq.${id}&limit=100`),
   ]).catch(() => [[], [], [], []]);
 
   // 2. Cleanup Storage (Images)

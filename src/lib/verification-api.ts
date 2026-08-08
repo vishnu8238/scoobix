@@ -165,9 +165,9 @@ export async function fetchDocs(subject: VerifySubject, subjectId: string): Prom
   if (!subjectId) return [];
   return listTable<KycRow>(VERIFICATION_TABLE, {
     ...subjectParams(subject, subjectId),
-    order: "created_at.asc",
+    order: "created_at.desc", // Latest first
     limit: 200,
-  });
+  }, { fresh: true }); // Always fresh for KYC
 }
 
 export async function fetchLogs(subject: VerifySubject, subjectId: string): Promise<KycAuditRow[]> {
@@ -288,6 +288,16 @@ export async function submitDoc(
     const created = await createRecord<KycRow | KycRow[]>(VERIFICATION_TABLE, { ...payload, created_at: now });
     const row = Array.isArray(created) ? created[0] : created;
     kycId = row?.id ?? null;
+    if (!kycId) {
+      // Fallback: fetch the record we just created to get the ID
+      const latest = await listTable<KycRow>(VERIFICATION_TABLE, {
+        ...subjectParams(subject, subjectId),
+        doc_type: `eq.${def.type}`,
+        order: "created_at.desc",
+        limit: 1
+      }, { fresh: true });
+      kycId = latest[0]?.id ?? null;
+    }
   }
 
   await log({
@@ -339,6 +349,15 @@ export async function reviewDoc(
       ...patch,
     });
     row = (Array.isArray(created) ? created[0] : created) ?? null;
+    if (!row?.id) {
+       const latest = await listTable<KycRow>(VERIFICATION_TABLE, {
+        ...subjectParams(subject, subjectId),
+        doc_type: `eq.${def.type}`,
+        order: "created_at.desc",
+        limit: 1
+      }, { fresh: true });
+      row = latest[0] ?? null;
+    }
   }
 
   await log({

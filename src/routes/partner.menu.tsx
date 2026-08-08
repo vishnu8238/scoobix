@@ -22,16 +22,47 @@ type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSell
 function PartnerMenu() {
   const { restaurant, restaurantId } = usePartnerRestaurant();
   const rid = restaurantId || partnerRestaurant.id;
-  const [items, setItems] = useState<EditableDish[]>(() => partnerMenu.map((d) => ({ ...d, available: true })));
+  const [items, setItems] = useState<EditableDish[]>([]);
   const syncedFor = useRef<string | null>(null);
 
   // Load the resolved restaurant's live menu once identity resolves.
   useEffect(() => {
-    const menu = partnerMenu as Dish[];
-    if (!rid || syncedFor.current === rid) return;
-    if (!menu || menu.length === 0) return;
-    syncedFor.current = rid;
-    setItems(menu.map((d) => ({ available: true, ...d }) as EditableDish));
+    if (!rid) { setItems([]); return; }
+    if (syncedFor.current === rid) return;
+    
+    let cancelled = false;
+    void (async () => {
+      const { listTable } = await import("@/lib/insforge-crud");
+      const rows = await listTable<any>("menu_items", { 
+        restaurant_id: `eq.${rid}`,
+        order: "created_at.desc",
+        limit: 200
+      }, { fresh: true });
+      
+      if (cancelled) return;
+      syncedFor.current = rid;
+      
+      if (rows.length > 0) {
+        setItems(rows.map((row) => ({
+          id: row.id,
+          name: row.name ?? "Untitled",
+          description: row.description ?? "",
+          price: Number(row.price ?? 0),
+          image: row.image_url || "/placeholder.svg",
+          category: row.category ?? "Main Course",
+          veg: row.veg_type === "veg",
+          available: row.available !== false,
+          recommended: !!row.recommended,
+          bestSeller: !!row.best_seller
+        } as EditableDish)));
+      } else {
+        // Fallback to role-data if no live items yet
+        const menu = partnerMenu as Dish[];
+        setItems(menu.map((d) => ({ available: true, ...d }) as EditableDish));
+      }
+    })();
+    
+    return () => { cancelled = true; };
   }, [rid, restaurant]);
 
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
@@ -69,20 +100,29 @@ function PartnerMenu() {
     setItems((prev) => prev.filter((d) => d.id !== id));
     toast.success("Item removed");
   };
-  const save = (d: EditableDish) => {
-    void upsertMenuItem({
-      id: d.id,
-      restaurant_id: rid,
-      name: d.name,
-      description: d.description,
-      price: d.price,
-      image_url: d.image,
-      category: d.category,
-      veg_type: d.veg ? "veg" : "non_veg",
-      available: d.available,
-      recommended: !!d.recommended,
-      best_seller: !!d.bestSeller,
-    });
+  const save = async (d: EditableDish) => {
+    const { upsertMenuItem } = await import("@/lib/insforge");
+    try {
+      const res = await upsertMenuItem({
+        id: d.id,
+        restaurant_id: rid,
+        name: d.name,
+        description: d.description,
+        price: d.price,
+        image_url: d.image,
+        category: d.category,
+        veg_type: d.veg ? "veg" : "non_veg",
+        available: d.available,
+        recommended: !!d.recommended,
+        best_seller: !!d.bestSeller,
+      });
+      if (res?.ok) {
+        const { invalidateTable } = await import("@/lib/insforge-crud");
+        invalidateTable("menu_items");
+      }
+    } catch (e) {
+      console.error("Menu save failed:", e);
+    }
     (d.addons ?? []).forEach((a) => {
       void upsertAddon({ id: a.id, dish_id: d.id, name: a.name, price: a.price, available: a.available });
     });
