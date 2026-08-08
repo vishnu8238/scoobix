@@ -17,7 +17,8 @@ export const Route = createFileRoute("/")({
 function Splash() {
   const navigate = useNavigate();
   const { user, loading, cachedRole } = useAuth();
-  const routerState = useRouterState();
+  const location = useRouterState({ select: (s) => s.location });
+
 
   useEffect(() => {
     if (loading) return;
