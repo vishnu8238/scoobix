@@ -113,6 +113,7 @@ import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
 import { Route as AdminPerformanceRouteImport } from './routes/admin.performance'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminOperationsRouteImport } from './routes/admin.operations'
 import { Route as AdminManagersRouteImport } from './routes/admin.managers'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
@@ -648,6 +649,11 @@ const AdminOrdersRoute = AdminOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminOperationsRoute = AdminOperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminManagersRoute = AdminManagersRouteImport.update({
   id: '/managers',
   path: '/managers',
@@ -741,6 +747,7 @@ export interface FileRoutesByFullPath {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
+  '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/performance': typeof AdminPerformanceRoute
@@ -856,6 +863,7 @@ export interface FileRoutesByTo {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
+  '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/performance': typeof AdminPerformanceRoute
@@ -977,6 +985,7 @@ export interface FileRoutesById {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/managers': typeof AdminManagersRoute
+  '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/performance': typeof AdminPerformanceRoute
@@ -1099,6 +1108,7 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
+    | '/admin/operations'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/performance'
@@ -1214,6 +1224,7 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
+    | '/admin/operations'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/performance'
@@ -1334,6 +1345,7 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/live'
     | '/admin/managers'
+    | '/admin/operations'
     | '/admin/orders'
     | '/admin/payments'
     | '/admin/performance'
@@ -2177,6 +2189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/operations': {
+      id: '/admin/operations'
+      path: '/operations'
+      fullPath: '/admin/operations'
+      preLoaderRoute: typeof AdminOperationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/managers': {
       id: '/admin/managers'
       path: '/managers'
@@ -2291,6 +2310,7 @@ interface AdminRouteChildren {
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
   AdminLiveRoute: typeof AdminLiveRoute
   AdminManagersRoute: typeof AdminManagersRoute
+  AdminOperationsRoute: typeof AdminOperationsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminPerformanceRoute: typeof AdminPerformanceRoute
@@ -2322,6 +2342,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDuplicatesRoute: AdminDuplicatesRoute,
   AdminLiveRoute: AdminLiveRoute,
   AdminManagersRoute: AdminManagersRoute,
+  AdminOperationsRoute: AdminOperationsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminPerformanceRoute: AdminPerformanceRoute,
