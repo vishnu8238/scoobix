@@ -443,12 +443,15 @@ function SupplyRow({ label, count, color, total }: { label: string; count: numbe
   );
 }
 
-function FilterButton({ label, active = false }: { label: string; active?: boolean }) {
+function FilterButton({ label, active, onClick }: { label: string; active?: boolean; onClick?: () => void }) {
   return (
-    <button className={cn(
-      "px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition",
-      active ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground hover:text-foreground"
-    )}>
+    <button 
+      onClick={onClick}
+      className={cn(
+        "rounded-xl px-4 py-2 text-xs font-bold transition",
+        active ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground"
+      )}
+    >
       {label}
     </button>
   );
