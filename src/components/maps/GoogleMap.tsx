@@ -3,8 +3,6 @@ import {
   Map,
   AdvancedMarker,
   useMap,
-  MapControl,
-  ControlPosition,
   MapMouseEvent,
 } from "@vis.gl/react-google-maps";
 import type { LatLng } from "@/lib/geo";
@@ -55,7 +53,7 @@ function CustomMarker({ kind, pulse, label, lat, lng }: { kind: MarkerKind; puls
         )}
         <span style={{ position: "relative" }}>{emoji}</span>
         {label && (
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[10px] font-bold text-background shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-[10px] font-bold text-background shadow-lg transition-opacity pointer-events-none group-hover:opacity-100">
             {label}
           </div>
         )}
@@ -64,16 +62,15 @@ function CustomMarker({ kind, pulse, label, lat, lng }: { kind: MarkerKind; puls
   );
 }
 
-// Polyline component using Google Maps JS SDK directly
 function Polyline({ points, color, dash }: { points: LatLng[]; color?: string; dash?: boolean }) {
   const map = useMap();
   useEffect(() => {
     if (!map) return;
-    const poly = new window.google.maps.Polyline({
+    const poly = new (window as any).google.maps.Polyline({
       path: points,
       geodesic: true,
       strokeColor: color || "#3B82F6",
-      strokeOpacity: 0.9,
+      strokeOpacity: dash ? 0 : 0.9,
       strokeWeight: 4,
       icons: dash ? [{
         icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 4 },
@@ -82,18 +79,16 @@ function Polyline({ points, color, dash }: { points: LatLng[]; color?: string; d
       }] : [],
       map,
     });
-    if (dash) poly.setOptions({ strokeOpacity: 0 });
     return () => poly.setMap(null);
   }, [map, points, color, dash]);
   return null;
 }
 
-// Polygon component
 function Polygon({ points, color, label }: { points: LatLng[]; color?: string; label?: string }) {
   const map = useMap();
   useEffect(() => {
-    if (!map) return;
-    const poly = new window.google.maps.Polygon({
+    if (!map || !points.length) return;
+    const poly = new (window as any).google.maps.Polygon({
       paths: points,
       strokeColor: color || "#3B82F6",
       strokeOpacity: 0.8,
@@ -124,24 +119,21 @@ function GoogleMapInner({
   const map = useMap();
   const [currentRiderPos, setCurrentRiderPos] = useState<LatLng | null>(null);
 
-  // Sync rider position
   useEffect(() => {
     if (route) {
       setCurrentRiderPos(interpolate(route.from, route.to, riderProgress));
     }
   }, [route, riderProgress]);
 
-  // Handle map click for picking
   const handleMapClick = (e: MapMouseEvent) => {
     if (onPick && e.detail.latLng) {
       onPick(e.detail.latLng);
     }
   };
 
-  // Fit bounds when markers/route change
   useEffect(() => {
     if (!map) return;
-    const bounds = new window.google.maps.LatLngBounds();
+    const bounds = new (window as any).google.maps.LatLngBounds();
     let hasPoints = false;
 
     markers.forEach(m => {
@@ -169,8 +161,7 @@ function GoogleMapInner({
 
     if (hasPoints) {
       map.fitBounds(bounds, { top: 40, bottom: 40, left: 40, right: 40 });
-      // Only set max zoom if it's too zoomed in
-      window.google.maps.event.addListenerOnce(map, 'idle', () => {
+      (window as any).google.maps.event.addListenerOnce(map, 'idle', () => {
         if (map.getZoom()! > 16) map.setZoom(16);
       });
     }
@@ -191,7 +182,7 @@ function GoogleMapInner({
         gestureHandling={interactive ? 'auto' : 'none'}
         disableDefaultUI={!interactive}
         onClick={handleMapClick}
-        mapId="bf51a910020fa25a" // Use a generic map ID for advanced markers
+        mapId="DEMO_MAP_ID"
       >
         {markers.map(m => (
           <CustomMarker key={m.id} kind={m.kind} label={m.label} lat={m.lat} lng={m.lng} />
@@ -216,12 +207,12 @@ function GoogleMapInner({
           </>
         )}
 
-        {(pickedAt || (onPick && !pickedAt)) && (
+        {pickedAt && (
           <CustomMarker 
             kind="pin" 
             pulse 
-            lat={pickedAt?.lat ?? 0} 
-            lng={pickedAt?.lng ?? 0} 
+            lat={pickedAt.lat} 
+            lng={pickedAt.lng} 
           />
         )}
       </Map>
