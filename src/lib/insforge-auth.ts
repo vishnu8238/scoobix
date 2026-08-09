@@ -1,3 +1,4 @@
+// [AUTH_FORENSIC] INSFORGE SESSION ENGINE AUDIT
 /**
  * InsForge Auth client — thin wrapper around the InsForge auth endpoints.
  * Used by `auth-store.tsx` to power real authentication for all four apps
@@ -184,14 +185,15 @@ export async function ifSignup(email: string, password: string, name: string, re
 export async function ifLogin(email: string, password: string): Promise<{
   user: InsForgeUser; accessToken: string; refreshToken: string | null;
 }> {
-  console.log("[auth] ifLogin request for:", email);
+  console.log("[AUTH_FORENSIC] ifLogin: Starting email/password authentication for", email);
   try {
     const res = await raw(`/api/auth/sessions?client_type=mobile`, {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    console.log("[auth] ifLogin HTTP Status:", res.status);
+    console.log("[AUTH_FORENSIC] ifLogin: HTTP Status:", res.status);
     const data = await jsonOrThrow(res);
+    console.log("[AUTH_FORENSIC] ifLogin: Response payload parsed successfully.");
     
     // Normalise shape into a consistent session/user structure
     const sess = normalizeSession(data);
@@ -199,12 +201,12 @@ export async function ifLogin(email: string, password: string): Promise<{
     const refreshToken = data?.refreshToken || data?.data?.refreshToken;
 
     if (accessToken) {
-      console.log("[auth] ifLogin: Persisting tokens for user:", sess?.id);
+      console.log("[AUTH_FORENSIC] ifLogin: Tokens received. Persisting...");
       setTokens(accessToken, refreshToken ?? null);
       
       const verify = localStorage.getItem(ACCESS_KEY);
       if (!verify) {
-        console.error("[auth] CRITICAL: localStorage write failed to persist tokens during sign-in!");
+        console.error("[AUTH_FORENSIC] ifLogin: CRITICAL: Token read-back verification failed immediately after write.");
       }
     }
 
@@ -212,10 +214,10 @@ export async function ifLogin(email: string, password: string): Promise<{
       throw new Error("Sign in response did not contain a valid user session");
     }
 
-    console.log("[auth] ifLogin success. User Identity:", sess.id);
+    console.log("[AUTH_FORENSIC] ifLogin: Authentication flow successful for User ID:", sess.id);
     return { ...data, user: sess, accessToken, refreshToken };
   } catch (error) {
-    console.error("[auth] ifLogin FAILED:", error);
+    console.error("[AUTH_FORENSIC] ifLogin: FAILED. Trace details:", error);
     throw error;
   }
 }
@@ -248,16 +250,18 @@ export async function ifLogout(): Promise<void> {
 
 export async function ifGetSession(): Promise<InsForgeUser | null> {
   const token = getAccessToken();
-  console.log("[auth] ifGetSession check, local access token exists:", !!token);
-  if (!token) return null;
+  if (!token) {
+    console.log("[AUTH_FORENSIC] ifGetSession: No access token in storage.");
+    return null;
+  }
+  console.log("[AUTH_FORENSIC] ifGetSession: Attempting to verify token with server...");
 
   const res = await raw(`/api/auth/sessions/current`, { method: "GET" });
   if (res.status === 401 || res.status === 403) {
-    console.log("[auth] Access token expired, attempting refresh...");
-    // Expired or revoked access token — try the refresh token once.
+    console.log("[AUTH_FORENSIC] ifGetSession: Token rejected (401/403). Attempting refresh...");
     const refreshed = await ifRefresh();
     if (!refreshed) {
-      console.log("[auth] Refresh failed, session is null.");
+      console.log("[AUTH_FORENSIC] ifGetSession: Refresh failed. Clearing session.");
       return null;
     }
     const res2 = await raw(`/api/auth/sessions/current`, { method: "GET" });
@@ -267,15 +271,15 @@ export async function ifGetSession(): Promise<InsForgeUser | null> {
       return null;
     }
     const data = normalizeSession(await res2.json());
-    console.log("[auth] Session restored after refresh:", data?.id);
+    console.log("[AUTH_FORENSIC] ifGetSession: Refresh successful. New user ID:", data?.id);
     return data;
   }
   if (!res.ok) {
-    console.log("[auth] Session check failed with status:", res.status);
+    console.log("[AUTH_FORENSIC] ifGetSession: Server check failed with HTTP:", res.status);
     return null;
   }
   const data = normalizeSession(await res.json());
-  console.log("[auth] Session found:", data?.id);
+  console.log("[AUTH_FORENSIC] ifGetSession: Server verified session for user:", data?.id);
   return data;
 }
 
@@ -307,11 +311,11 @@ export async function ifRefresh(): Promise<boolean> {
   }
   const body = await res.json().catch(() => null);
   if (!body?.accessToken) {
-    console.log("[auth] Refresh response missing access token.");
+    console.log("[AUTH_FORENSIC] ifRefresh: Response missing tokens. Invalid session.");
     setTokens(null, null);
     return false;
   }
-  console.log("[auth] Refresh successful, updating tokens.");
+  console.log("[AUTH_FORENSIC] ifRefresh: Tokens updated successfully.");
   setTokens(body.accessToken, body.refreshToken ?? refreshToken);
   return true;
 }
@@ -523,6 +527,7 @@ export function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUser; isN
   const existing = inflightExchanges.get(code);
   if (existing) return existing;
   const run = (async () => {
+    console.log("[AUTH_FORENSIC] ifCompleteOAuth: Starting code exchange for provider return.");
     const verifier = readOAuthState(PKCE_KEY) || null;
     let data: any = null;
     let firstError: unknown = null;
@@ -540,6 +545,7 @@ export function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUser; isN
     dropOAuthState(OAUTH_META_KEY);
 
     if (data) {
+      console.log("[AUTH_FORENSIC] ifCompleteOAuth: Exchange successful. Persisting session tokens.");
       setTokens(data.accessToken ?? null, data.refreshToken ?? null);
       const user = await ensureSessionUser(data, "Provider sign-in");
       return { user, isNewUser: !!data.isNewUser };
@@ -548,7 +554,10 @@ export function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUser; isN
     // The exchange may already have succeeded (duplicate delivery of the same
     // code). Trust an existing session before failing the sign-in.
     const fallback = await ifGetSession().catch(() => null);
-    if (fallback?.id) return { user: fallback };
+    if (fallback?.id) {
+      console.log("[AUTH_FORENSIC] ifCompleteOAuth: Code already used or exchange redundant. Active session exists:", fallback.id);
+      return { user: fallback };
+    }
     throw firstError instanceof Error
       ? firstError
       : new Error("Sign-in session expired — please try again");
