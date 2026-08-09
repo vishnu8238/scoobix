@@ -250,6 +250,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   const provider = input.provider ?? "email";
   let existing: UserProfileRow | null = null;
   try {
+    // Authority: Auth UUID (sess.id). Never fallback to email for profile resolution.
     existing = await fetchUserProfile(sess.id);
   } catch {
     existing = null;
