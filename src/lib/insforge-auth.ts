@@ -399,7 +399,10 @@ export async function ifStartOAuth(
   meta?: Record<string, string>,
   queryParams?: Record<string, string>,
 ): Promise<void> {
+  console.log(`[OAUTH_DEBUG] OAuth button clicked. Provider: ${provider}, intent: ${meta?.app || "none"}`);
+  console.log(`[OAUTH_DEBUG] Current URL: ${window.location.href}`);
   const authUrl = await ifCreateOAuthUrl(provider, redirectUri, meta, queryParams);
+  console.log(`[OAUTH_DEBUG] Authorization URL generated: ${authUrl}`);
   navigateToOAuthUrl(authUrl);
 }
 
@@ -426,6 +429,7 @@ export async function ifCreateOAuthUrl(
     Object.entries(queryParams).forEach(([k, v]) => url.searchParams.set(k, v));
   }
   const res = await fetch(url.toString(), { headers: { apikey: INSFORGE_ANON_KEY } });
+  console.log(`[OAUTH_DEBUG] InsForge OAuth URL request status: ${res.status}`);
   const data = await jsonOrThrow(res);
   const authUrl =
     data?.authUrl ??
@@ -436,6 +440,8 @@ export async function ifCreateOAuthUrl(
     data?.data?.url ??
     data?.data?.authorizationUrl ??
     data?.data?.redirectUrl;
+
+  console.log(`[OAUTH_DEBUG] Provider authorization URL: ${authUrl ? "FOUND" : "MISSING"}`);
   if (typeof authUrl !== "string" || !/^https?:\/\//i.test(authUrl)) {
     throw new Error("Could not start sign-in with this provider");
   }
@@ -450,6 +456,7 @@ export function navigateToOAuthUrl(authUrl: string) {
       return;
     }
   } catch { /* cross-origin frame access can throw */ }
+  console.log(`[OAUTH_DEBUG] Redirecting to provider: ${authUrl}`);
   window.location.assign(authUrl);
 }
 
@@ -514,11 +521,13 @@ const inflightExchanges = new Map<string, Promise<{ user: InsForgeUser; isNewUse
 async function exchangeOAuthCode(code: string, verifier: string | null): Promise<any> {
   const body: Record<string, string> = { code };
   if (verifier) body.code_verifier = verifier;
+  console.log(`[OAUTH_DEBUG] Exchanging code for session... (Verifier present: ${!!verifier})`);
   const res = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange?client_type=mobile`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: INSFORGE_ANON_KEY },
     body: JSON.stringify(body),
   });
+  console.log(`[OAUTH_DEBUG] Exchange HTTP status: ${res.status}`);
   return jsonOrThrow(res);
 }
 
