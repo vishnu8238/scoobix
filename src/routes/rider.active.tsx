@@ -151,7 +151,12 @@ function RiderActive() {
 
   // ---- load the driver's active order -----------------------------------
   const load = useCallback(async () => {
-    if (!driverId) { setOrder(null); setLoading(false); return; }
+    if (!driverId) { 
+      console.log("[RIDER_FLOW] load: No driverId yet");
+      setOrder(null); 
+      setLoading(false); 
+      return; 
+    }
     const rows = await listTable<OrderRow>("orders", {
       driver_id: `eq.${driverId}`,
       order: "created_at.desc",
@@ -350,7 +355,7 @@ function RiderActive() {
     return (
       <div className="flex min-h-[60svh] flex-col items-center justify-center gap-3 px-6">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading your trip…</p>
+        <p className="text-sm text-muted-foreground">Resolving driver context…</p>
       </div>
     );
   }
