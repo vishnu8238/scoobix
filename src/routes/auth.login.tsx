@@ -89,35 +89,11 @@ function LoginPage() {
     const canResume = !!redirect && intent && redirect.startsWith(home);
     
     navigate({ to: (canResume ? redirect : target) as never, replace: true });
-  }, [app, loading, navigate, redirect, user]);
-  }, [app, loading, navigate, redirect, user]);
-
   const land = (user: User) => {
     toast.success(`Welcome back, ${user.name}`);
-    
-    // Auth-session destination logic:
-    // 1. If we are on a specific portal's login page (?app= or /rider/login etc), 
-    //    and the user has that role, go there.
-    // 2. If the roles don't match, STAY HERE so the "Wrong Account" UI renders.
-    // 3. If no specific portal requested, go to user's role home.
-
-    const portal = app?.role || resolvePortalFromPath(window.location.pathname);
-    console.log("[auth] landing for user:", user.id, "requested portal:", portal, "user roles:", user.roles);
-    
-    if (portal) {
-      if (user.roles.includes(portal)) {
-        const home = ROLE_HOME[portal];
-        const canResume = !!redirect && redirect.startsWith(home);
-        navigate({ to: (canResume ? redirect : home) as never, replace: true });
-      } else {
-        const onboarding = ROLE_ONBOARDING[portal];
-        navigate({ to: onboarding as never, replace: true });
-      }
-      return;
-    }
-
-    // Default to Customer if no specific portal intent
-    navigate({ to: "/app" as never, replace: true });
+    const intent = getPortalIntent(window.location.pathname, window.location.search);
+    const target = resolveAuthenticatedDestination(user, intent);
+    navigate({ to: target as never, replace: true });
   };
 
   const submit = async (e: React.FormEvent) => {
