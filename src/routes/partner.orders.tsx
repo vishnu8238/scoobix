@@ -64,7 +64,6 @@ function PartnerOrders() {
   const [prepMins, setPrepMins] = useState<Record<string, number>>({});
 
   const orders = useMemo<PartnerOrder[]>(() => {
-    if (!rows.length) return fallbackOrders;
     return rows.map((r) => mapRow(r as OrderRow));
   }, [rows]);
 

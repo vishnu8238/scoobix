@@ -10,9 +10,7 @@ import { DishCard } from "@/components/cravio/DishCard";
 import { restaurants, allDishes, trendingDishIds, recommendedDishIds, type Restaurant } from "@/lib/mock-data";
 import { useCms, type FilterOption } from "@/lib/cms-store";
 import { useAppUI } from "@/lib/stores";
-import { useAds } from "@/lib/ads-store";
 import { useSpotlight } from "@/lib/scoobix-extras";
-import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
 import { DiscoverMore, TrendingNow } from "@/components/cravio/DiscoverMore";
 import { CampaignBanners } from "@/components/cravio/CampaignBanners";
 
@@ -448,19 +446,8 @@ function Pill({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 /* SPONSORED RESTAURANTS ROW                                                   */
 /* -------------------------------------------------------------------------- */
 function SponsoredRestaurantsRow() {
-  const { sponsoredRestaurants } = useAds();
-  const { vegMode } = useAppUI();
-  const { pureVegOverrides } = useCms();
-  const items = sponsoredRestaurants();
-  const filtered = vegMode
-    ? items.filter(({ restaurant }) =>
-        pureVegOverrides && restaurant.id in pureVegOverrides
-          ? pureVegOverrides[restaurant.id]
-          : isPureVeg(restaurant.id))
-    : items;
-  if (filtered.length === 0) return null;
-  return (
-    <section className="space-y-4">
+  return null;
+}
       <SectionHeader title="Sponsored restaurants" />
       <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
         {filtered.slice(0, 6).map(({ restaurant, ad }) => (

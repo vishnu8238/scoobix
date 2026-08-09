@@ -58,9 +58,8 @@ function PartnerMenu() {
           bestSeller: !!row.best_seller
         } as EditableDish)));
       } else {
-        // Fallback to role-data if no live items yet
-        const menu = partnerMenu as Dish[];
-        setItems(menu.map((d) => ({ available: true, ...d }) as EditableDish));
+        // Fallback to empty menu if no live items yet
+        setItems([]);
       }
     })();
     
