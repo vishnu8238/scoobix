@@ -250,11 +250,11 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   const provider = input.provider ?? "email";
   let existing: UserProfileRow | null = null;
   try {
-    existing = (await fetchUserProfile(sess.id)) ?? (sess.email ? await findUserProfileByEmail(sess.email) : null);
+    existing = await fetchUserProfile(sess.id);
   } catch {
     existing = null;
   }
-  const ownRow = existing && existing.id === sess.id ? existing : null;
+  const ownRow = existing;
 
   const name =
     existing?.name ||
