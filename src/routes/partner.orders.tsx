@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-;
+import { type PartnerOrder, type PartnerOrderStatus, PARTNER_STATUS_FLOW } from "@/lib/partner-types";
 import { Check, X, ChevronRight, Phone } from "lucide-react";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";

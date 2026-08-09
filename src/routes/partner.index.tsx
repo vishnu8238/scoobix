@@ -152,7 +152,8 @@ function PartnerDashboard() {
       <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
         <h2 className="font-display text-lg font-bold">Top dishes today</h2>
         <ul className="mt-3 space-y-2.5">
-          {restaurant?.menu?.slice(0, 4).map((d: any, i: number) => (
+          {/* Menu display temporarily disabled until live data mapping is finalized */}
+          {[].slice(0, 4).map((d: any, i: number) => (
             <li key={d.id} className="flex items-center gap-3">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-[12px] font-bold">{i + 1}</span>
               <span className="flex-1 truncate text-sm font-medium">{d.name}</span>
