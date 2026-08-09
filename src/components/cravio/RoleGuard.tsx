@@ -50,14 +50,27 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
 
 
 
-  if (loading || !user || !user.roles.includes(allow)) {
+  // If user resolution is definitely complete and the role is still missing, 
+  // the useEffect above will trigger the redirect to onboarding.
+  // We only show the logo while authenticating or loading memberships.
+  if (loading) {
     return (
       <div className="flex min-h-svh w-full items-center justify-center bg-background">
-        <div className="animate-pulse-soft">
+        <div className="animate-pulse-soft flex flex-col items-center gap-4">
           <ScoobixMark size={56} />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground animate-pulse">
+            Verifying Identity...
+          </p>
         </div>
       </div>
     );
+  }
+
+  // If loading is done but user is missing, useEffect will redirect to login.
+  // If loading is done and user is present but lacks role, useEffect will redirect to onboarding.
+  // In the tiny gap before navigation commits, we show a clean state.
+  if (!user || !user.roles.includes(allow)) {
+    return null;
   }
 
 
