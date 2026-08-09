@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useAuth, ROLE_ONBOARDING } from "@/lib/auth-store";
+import { useAuth, ROLE_ONBOARDING, ROLE_HOME } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 
@@ -24,22 +24,25 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
   useEffect(() => {
     if (loading) return;
     
-    // Authorization check: session exists but the required role is missing from the user's role list.
-    if (user && !user.roles.includes(allow)) {
-      console.warn(`[auth] RoleGuard mismatch: user has roles [${user.roles.join(", ")}] but portal requires ${allow}`);
+    if (user) {
+      // 1. Check if user has membership for THIS portal
+      if (!user.roles.includes(allow)) {
+        const onboarding = ROLE_ONBOARDING[allow];
+        console.warn(`[AUTH_FLOW] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
+        navigate({ to: onboarding as any, replace: true });
+        return;
+      }
       
-      // If they are authenticated but lack membership for this specific portal,
-      // it is a valid onboarding intent.
-      const onboarding = ROLE_ONBOARDING[allow];
-      console.log(`[auth] RoleGuard: Authenticated but no membership. Onboarding for ${allow}: ${onboarding}`);
-      navigate({ to: onboarding as never, replace: true });
-      return;
-    }
-
-    // Authentication check: no session.
-    if (!user) {
-      console.log(`[auth] RoleGuard: No session. Redirecting to login for portal: ${allow}`);
+      // 2. User is authorized for this portal.
+      // If they are on a generic /auth path, move them to the portal home.
+      if (typeof window !== "undefined" && window.location.pathname.startsWith("/auth")) {
+        const home = ROLE_HOME[allow];
+        navigate({ to: home as any, replace: true });
+      }
+    } else {
+      // 3. Not authenticated.
       const safeRedirect = href.startsWith("/auth") || href.includes("login") ? undefined : href;
+      console.log(`[AUTH_FLOW] RoleGuard: Unauthenticated. Redirecting to login for portal ${allow}`);
       navigate({
         to: "/auth/login",
         search: { app: allow, ...(safeRedirect ? { redirect: safeRedirect } : {}) },

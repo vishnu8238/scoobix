@@ -1,3 +1,4 @@
+// [AUTH_FLOW] IDENTITY SYNC STABILIZED
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import type { Role, User } from "./types";
 import {
@@ -115,6 +116,27 @@ export function getPortalIntent(pathname: string, search?: string | URLSearchPar
 }
 
 /**
+ * Resolves all application roles a user belongs to based on membership tables.
+ */
+export async function resolveUserMemberships(userId: string, email: string) {
+  const [isDriver, isManager, isAdmin, ownedRestaurants, managedRestaurants] = await Promise.all([
+    listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).then(rows => !!rows[0]?.id).catch(() => false),
+    userIsMerchantManager(userId),
+    userIsPlatformAdmin(userId, email),
+    listTable<{ id: string }>("restaurants", { owner_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
+    listTable<{ id: string }>("restaurants", { manager_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => [])
+  ]);
+
+  return {
+    customer: true, // Everyone is a customer
+    rider: isDriver,
+    manager: isManager,
+    admin: isAdmin,
+    partner: ownedRestaurants.length > 0 || managedRestaurants.length > 0
+  };
+}
+
+/**
  * Resolves the destination for an authenticated user based on their memberships and portal intent.
  * This is the SINGLE SOURCE OF TRUTH for post-authentication routing.
  */
@@ -122,16 +144,24 @@ export function resolveAuthenticatedDestination(user: User, intent: Role | null)
   // Priority: 
   // 1. Intent (Explicit URL Portal)
   // 2. Authenticated Membership matching that intent
-  // 3. Default to Customer if no membership or no intent
+  // 3. Default to highest staff role or Customer if no membership or no intent
   
-  const portal = intent || "customer";
+  const portal = intent || null;
   
-  if (user.roles.includes(portal)) {
-    return ROLE_HOME[portal];
-  } else if (portal !== "customer") {
-    // Authenticated but no membership -> Onboarding for THAT portal
-    return ROLE_ONBOARDING[portal];
+  if (portal) {
+    if (user.roles.includes(portal)) {
+      return ROLE_HOME[portal];
+    } else if (portal !== "customer") {
+      // Authenticated but no membership -> Onboarding for THAT portal
+      return ROLE_ONBOARDING[portal];
+    }
   }
+  
+  // No specific intent or unauthorized for intent: resolve from memberships
+  if (user.roles.includes("admin")) return ROLE_HOME.admin;
+  if (user.roles.includes("manager")) return ROLE_HOME.manager;
+  if (user.roles.includes("partner")) return ROLE_HOME.partner;
+  if (user.roles.includes("rider")) return ROLE_HOME.rider;
   
   return "/app";
 }
@@ -255,29 +285,13 @@ type SyncInput = {
  * Resolves all application roles a user belongs to based on membership tables.
  */
 async function resolveUserRoles(userId: string, email: string): Promise<Role[]> {
-  const roles: Role[] = ["customer"]; // Everyone is a customer by default
-
-  const [isDriver, isManager, isAdmin, ownedRestaurants, managedRestaurants] = await Promise.all([
-    listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).then(rows => !!rows[0]?.id).catch(() => false),
-    userIsMerchantManager(userId),
-    userIsPlatformAdmin(userId, email),
-    listTable<{ id: string }>("restaurants", { owner_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
-    listTable<{ id: string }>("restaurants", { manager_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => [])
-  ]);
-
-  console.log(`[auth] Resolving roles for ${userId}:`, { 
-    isDriver, isManager, isAdmin, 
-    ownedCount: ownedRestaurants.length,
-    managedCount: managedRestaurants.length 
-  });
-
-  if (isDriver) roles.push("rider");
-  if (isManager) roles.push("manager");
-  if (isAdmin) roles.push("admin");
-  // A 'partner' is either a restaurant owner OR a manager of a restaurant 
-  // (the partner app allows managing a restaurant you don't necessarily 'own' in the auth sense)
-  if (ownedRestaurants.length > 0 || managedRestaurants.length > 0) roles.push("partner");
-
+  const memberships = await resolveUserMemberships(userId, email);
+  const roles: Role[] = [];
+  if (memberships.customer) roles.push("customer");
+  if (memberships.rider) roles.push("rider");
+  if (memberships.manager) roles.push("manager");
+  if (memberships.partner) roles.push("partner");
+  if (memberships.admin) roles.push("admin");
   return roles;
 }
 
@@ -295,7 +309,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   const provider = input.provider ?? "email";
   let existing: UserProfileRow | null = null;
   try {
-    // Authority: Auth UUID (sess.id). Never fallback to email for profile resolution.
+    // Authority: Auth UUID (sess.id).
     existing = await fetchUserProfile(sess.id);
   } catch {
     existing = null;
@@ -442,13 +456,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
   const [activePortal, setActivePortalState] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authStatus, setAuthStatus] = useState<"BOOTING" | "AUTHENTICATED" | "UNAUTHENTICATED" | "AUTH_ERROR">("BOOTING");
   const [authBootTimeout, setAuthBootTimeout] = useState(false);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
   const setPortal = useCallback((portal: Role | null) => {
     setActivePortalState(portal);
     if (portal) {
-      console.log(`[auth] Tab portal set to: ${portal}`);
+      console.log(`[AUTH_FLOW] Tab portal set to: ${portal}`);
     }
   }, []);
 
@@ -466,8 +481,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * refresh or cold app start can route to the right surface.
    */
   const setUser = useCallback((next: User | null) => {
-    console.log("[auth] setUser state update:", next?.id, next?.role);
+    console.log("[AUTH_FLOW] setUser state update:", next?.id, next?.role, "memberships:", next?.roles);
     setUserState(next);
+    setAuthStatus(next ? "AUTHENTICATED" : "UNAUTHENTICATED");
     
     if (next) {
       // Mirrored locally for secondary UI hints (e.g. icon colors), but NOT authoritative for routing.
@@ -521,17 +537,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        console.log("[auth] BOOT: Starting authentication flow. URL:", window.location.href);
+        console.log("[AUTH_FLOW] BOOT: Starting authentication flow. URL:", window.location.href);
         const providerError = readOAuthError();
         if (providerError) {
-          console.error("[auth] OAuth provider returned an error", providerError);
-          if (!cancelled) setOauthError(providerError);
+          console.error("[AUTH_FLOW] OAuth provider returned an error", providerError);
+          if (!cancelled) {
+            setOauthError(providerError);
+            setAuthStatus("AUTH_ERROR");
+          }
           clearOAuthParamsFromUrl();
         }
 
         const callback = readOAuthCallback();
         const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
-        console.log("[auth] BOOT: Portal intent resolved:", currentPortal);
+        console.log("[AUTH_FLOW] BOOT: Portal intent resolved:", currentPortal);
 
         if (callback) {
           console.log("[auth] BOOT: OAuth callback detected", callback.provider);
@@ -680,7 +699,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      console.log(`[auth] signIn attempt for ${address} (requested role: ${role})`);
+      console.log(`[AUTH_FLOW] signIn attempt for ${address} (requested role: ${role})`);
       const { user: sess, accessToken } = await ifLogin(address, password);
       
       // Ensure tokens are persisted and verified before proceeding
