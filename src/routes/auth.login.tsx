@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_HOME, useAuth, getPortalIntent, resolveAuthenticatedDestination } from "@/lib/auth-store";
+import { ROLE_HOME, useAuth, getRequestedPortal, resolveAuthenticatedDestination } from "@/lib/auth-store";
 import { APPS, type AppId } from "@/lib/apps";
 import type { User } from "@/lib/types";
 import { OTP_LENGTH, OTP_RESEND_SECONDS } from "@/lib/phone-otp";
@@ -41,13 +41,7 @@ function LoginPage() {
     signOut,
     oauthError,
     clearOAuthError,
-    setPortal,
   } = useAuth();
-
-  // Ensure portal context is set if we arrive via direct URL with ?app=
-  useEffect(() => {
-    if (appId) setPortal(appId);
-  }, [appId, setPortal]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -105,7 +99,7 @@ function LoginPage() {
 
   const oauth = async (provider: "google" | "apple", forceSelect = false) => {
     setBusy(true);
-    const intent = getPortalIntent(window.location.pathname, window.location.search) || appId;
+    const intent = getRequestedPortal(window.location.pathname, window.location.search) || appId;
     console.log(`[AUTH_FORENSIC] LoginPage: Starting OAuth with intent: ${intent}`);
     const res = await signInWithProvider(provider, intent ?? undefined, !!intent, forceSelect);
     if (!res.ok) {
