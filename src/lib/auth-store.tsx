@@ -328,7 +328,8 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     },
   };
 
-  // Only write role for brand new profiles or if explicitly allowed (though we move away from this).
+  // Only write role for brand new profiles. NEVER overwrite an existing user's role 
+  // column merely because they are entering a different portal.
   const saved = await upsertUserProfile(row, { writeRole: !ownRow }).catch(() => null);
 
   return {
