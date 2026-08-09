@@ -286,7 +286,8 @@ function ZoneStatusToggle({ zone }: { zone: DeliveryZone }) {
   const toggle = async () => {
     const next = active ? "DISABLED" : "ACTIVE";
     if (active) {
-      if (!confirm(`Disable ${zone.name}? No new orders will be assigned to this zone.`)) return;
+      const confirmed = window.confirm(`Disable ${zone.name}? No new orders will be assigned to this zone.`);
+      if (!confirmed) return;
     }
     await updateZone(zone.id, { status: next });
     toast.success(`${zone.name} is now ${next.toLowerCase()}`);

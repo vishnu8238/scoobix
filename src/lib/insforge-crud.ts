@@ -42,6 +42,7 @@ const HEADERS = () => {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
     "Content-Type": "application/json",
+    "Prefer": "return=representation"
   };
 };
 

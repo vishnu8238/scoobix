@@ -51,7 +51,10 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
       } else {
         const createZ = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones`, {
           method: "POST",
-          headers: HEADERS,
+          headers: {
+            ...HEADERS,
+            "Prefer": "return=representation"
+          },
           body: JSON.stringify({
             name: zDef.name,
             city: "Vadodara",
@@ -108,7 +111,10 @@ export const createNewZone = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const res = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones`, {
       method: "POST",
-      headers: HEADERS,
+      headers: {
+        ...HEADERS,
+        "Prefer": "return=representation"
+      },
       body: JSON.stringify({
         ...data,
         max_orders_per_rider: 3,
@@ -138,7 +144,10 @@ export const createNewSubzone = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const res = await fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones`, {
       method: "POST",
-      headers: HEADERS,
+      headers: {
+        ...HEADERS,
+        "Prefer": "return=representation"
+      },
       body: JSON.stringify({
         ...data,
         boundary: data.boundary || { type: "Polygon", coordinates: [] }
