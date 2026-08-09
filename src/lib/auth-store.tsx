@@ -427,6 +427,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
     } else {
+      console.warn("[auth] setUser(null) called - clearing session state");
       writeCachedRole(null);
       setCachedRole(null);
       // HARDENED: Clear every portal-related preference on logout
