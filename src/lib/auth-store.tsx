@@ -400,14 +400,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("[auth] setUser state update:", next?.id, next?.role);
     setUserState(next);
     
-    // We update the cache to persist the role, but it must NEVER be used to
-    // authorize authentication or portal navigation.
     if (next) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
     } else {
       writeCachedRole(null);
       setCachedRole(null);
+      // HARDENED: Clear every portal-related preference on logout
+      try {
+        localStorage.removeItem("scoobix_active_portal_v1");
+        localStorage.removeItem("scoobix_role_v1");
+        sessionStorage.removeItem("scoobix_active_portal_v1");
+        sessionStorage.removeItem("scoobix_pending_role_v1");
+        sessionStorage.removeItem("scoobix_pending_role_claim_v1");
+      } catch { /* ignore */ }
     }
   }, []);
 
