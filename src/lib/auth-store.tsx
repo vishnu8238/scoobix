@@ -275,6 +275,10 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     sessionRole = "partner";
   } else if (allRoles.includes("rider")) {
     sessionRole = "rider";
+  } else if (allRoles.includes("customer")) {
+    sessionRole = "customer";
+  } else if (allRoles.length > 0) {
+    sessionRole = allRoles[0];
   }
 
   // 3. Ensure user profile exists in database.
