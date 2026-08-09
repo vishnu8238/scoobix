@@ -529,18 +529,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           clearOAuthParamsFromUrl();
         }
 
-        const callback = readOAuthCallback();
-        const currentPortal = resolvePortalFromPath(window.location.pathname);
-        console.log("[auth] BOOT: Portal resolved from path:", currentPortal);
+        const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
+        console.log("[auth] BOOT: Portal intent resolved:", currentPortal);
 
         if (callback) {
-          console.log("[auth] OAuth callback detected", callback.provider);
+          console.log("[auth] BOOT: OAuth callback detected", callback.provider);
           try {
             const { user: sess } = await ifCompleteOAuth(callback.code);
-            console.log("[auth] OAuth code exchanged for session:", sess?.id);
             const pending = takePendingRole();
             
-            // Priority: pending.role (stashed) -> currentPortal (URL)
+            // Priority: pending.role (stashed) -> currentPortal (URL intent)
             const targetPortal = pending.role ?? currentPortal ?? undefined;
             
             const next = await syncProfile(sess, {
@@ -550,22 +548,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }, targetPortal);
             
             if (!cancelled && next) {
-              console.log("[auth] Profile synced for OAuth user:", next.id, next.role);
+              console.log("[auth] BOOT: Profile synced for OAuth user:", next.id, next.role);
               const blocked = await admitSession(next, String(callback.provider));
               if (blocked) {
-                console.warn("[auth] Session admission blocked:", blocked);
                 setOauthError(blocked);
               } else {
-                console.log("[auth] Session admitted, setting user state.");
                 setUser(next);
-                try {
-                  window.opener?.postMessage({ type: "scoobix_oauth_complete" }, window.location.origin);
-                  if (window.opener && !window.opener.closed) window.setTimeout(() => window.close(), 250);
-                } catch { /* */ }
               }
             }
           } catch (err) {
-            console.error("[auth] OAuth callback failed", err);
+            console.error("[auth] BOOT: OAuth callback failed", err);
             if (!cancelled) {
               setOauthError(err instanceof Error ? err.message : "Provider sign-in failed");
             }
@@ -574,28 +566,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           // Restore existing session
           const sess = await ifGetSession();
-          console.log("[auth] INITIAL_SESSION check:", sess ? "FOUND" : "NONE", sess?.id);
           
           if (!cancelled) {
             if (sess) {
-              const portal = currentPortal || (typeof localStorage !== "undefined" ? localStorage.getItem("scoobix_active_portal_v1") as Role : null);
-              const next = await syncProfile(sess, { 
-                role: portal && ALL_ROLES.includes(portal) ? portal : undefined, 
-                forceRole: !!portal 
-              }, portal && ALL_ROLES.includes(portal) ? portal : undefined);
-              
-              console.log("[auth] Profile restored for session user:", next?.id, next?.role);
+              // Restore using URL intent
+              const next = await syncProfile(sess, {}, currentPortal ?? undefined);
               if (!cancelled && next) setUser(next);
             } else {
               const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
-              console.log("[auth] No active session. Tokens in storage:", hasTokens);
-              
-              if (!cancelled) {
-                if (!hasTokens) {
-                  setUser(null);
-                } else {
-                  console.log("[auth] tokens exist but session check failed - preserving state for potential refresh/retry");
-                }
+              if (!cancelled && !hasTokens) {
+                setUser(null);
               }
             }
           }
