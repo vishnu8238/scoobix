@@ -58,7 +58,6 @@ function PartnerMenu() {
           bestSeller: !!row.best_seller
         } as EditableDish)));
       } else {
-        // Fallback to empty menu if no live items yet
         setItems([]);
       }
     })();
