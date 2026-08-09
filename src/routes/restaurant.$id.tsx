@@ -5,7 +5,7 @@ import { findRestaurant, type Restaurant } from "@/lib/mock-data";
 import { useCart, useFavorites } from "@/lib/stores";
 import { useCms } from "@/lib/cms-store";
 import { DishCard } from "@/components/cravio/DishCard";
-import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { GoogleMap as LeafletMap } from "@/components/maps/GoogleMap";
 import { Button } from "@/components/ui/button";
 import { currency, cn } from "@/lib/format";
 import { restaurantCoords } from "@/lib/geo";
