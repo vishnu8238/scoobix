@@ -201,6 +201,10 @@ function OnboardingFlow() {
     });
     if (saved) {
       setRecord(saved);
+      // Ensure the URL is updated so a refresh doesn't lose the record link
+      if (!id) {
+        navigate({ to: "/manager/onboarding", search: { id: saved.id }, replace: true });
+      }
       await logOnboardingEvent({
         restaurantId: saved.id,
         managerId: manager.id,

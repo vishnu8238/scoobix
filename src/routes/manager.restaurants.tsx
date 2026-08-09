@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, Store, Phone, Mail, MapPin } from "lucide-react";
+import { Search, Store, Phone, Mail, MapPin, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import {
   useManager,
@@ -9,6 +10,7 @@ import {
   ONBOARDING_LABEL,
   ONBOARDING_TONE,
   ONBOARDING_STATUSES,
+  deleteManagedRestaurant,
 } from "@/lib/manager-api";
 import { cn } from "@/lib/format";
 
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/manager/restaurants")({
 
 function ManagerRestaurants() {
   const { manager } = useManager();
-  const { list, loading } = useManagerRestaurants(manager?.id);
+  const { list, loading, refresh } = useManagerRestaurants(manager?.id);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<string>("all");
 
@@ -125,10 +127,23 @@ function ManagerRestaurants() {
                       <Mail className="h-3.5 w-3.5" /> Email
                     </a>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="ml-auto h-8 w-8 rounded-full text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      if (!window.confirm(`Delete "${r.name || "this restaurant"}" draft?`)) return;
+                      const ok = await deleteManagedRestaurant(r.id);
+                      if (ok) void refresh();
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                   <Link
                     to="/manager/onboarding"
                     search={{ id: r.id }}
-                    className="ml-auto rounded-full bg-primary px-3.5 py-1.5 text-[11px] font-bold text-primary-foreground"
+                    className="rounded-full bg-primary px-3.5 py-1.5 text-[11px] font-bold text-primary-foreground"
                   >
                     {s === "draft" || s === "document_pending" ? "Continue" : "Open"}
                   </Link>
