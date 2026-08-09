@@ -146,26 +146,26 @@ export function resolveAuthenticatedDestination(user: User, intent: Role | null)
   // 2. Authenticated Membership matching that intent
   // 3. Default to highest staff role or Customer if no membership or no intent
   
-  const portal = intent || null;
+  const portal = intent || user.role || null;
   
-  if (portal) {
+  if (portal && portal !== "customer") {
     if (user.roles.includes(portal)) {
-      console.log(`[AUTH_ADMISSION] Authorized for intent: ${portal}. Target: ${ROLE_HOME[portal]}`);
+      console.log(`[AUTH_ADMISSION] Authorized for portal: ${portal}. Target: ${ROLE_HOME[portal]}`);
       return ROLE_HOME[portal];
-    } else if (portal !== "customer") {
+    } else {
       // Authenticated but no membership -> Onboarding for THAT portal
-      console.log(`[AUTH_ADMISSION] Unauthorized for intent: ${portal}. Redirecting to Onboarding: ${ROLE_ONBOARDING[portal]}`);
+      console.log(`[AUTH_ADMISSION] Unauthorized for portal: ${portal}. Redirecting to Onboarding: ${ROLE_ONBOARDING[portal]}`);
       return ROLE_ONBOARDING[portal];
     }
   }
   
-  // No specific intent or unauthorized for intent: resolve from memberships
+  // If user has a specific portal role in their memberships, use the most "important" one
   if (user.roles.includes("admin")) return ROLE_HOME.admin;
   if (user.roles.includes("manager")) return ROLE_HOME.manager;
   if (user.roles.includes("partner")) return ROLE_HOME.partner;
   if (user.roles.includes("rider")) return ROLE_HOME.rider;
   
-  console.log(`[AUTH_ADMISSION] No specific portal authority. Defaulting to Customer home.`);
+  console.log(`[AUTH_ADMISSION] Defaulting to Customer home.`);
   return "/app";
 }
 
@@ -348,21 +348,19 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   
   // 2. Determine the session's active role. 
   // Priority: 
-  // 1. requestedPortal (explicit context from URL/parameter)
-  // 2. target (from sign-in input)
-  // 3. Highest existing role from allRoles
-  // 4. 'customer'
+  // 1. target (requested portal from URL/parameter)
+  // 2. Highest existing role from allRoles
+  // 3. 'customer'
   let sessionRole: Role = "customer";
   
-  // Hardened Requested Portal Resolution
   const target = requestedPortal || input.role;
   
-  // PRIORITIZE the target (requested portal). 
-  // If the user lacks membership, we still treat them as entering that portal 
-  // (the UI will handle onboarding redirection).
-  if (target) {
+  // HARD CONSTRAINT: If target is provided, it MUST be the sessionRole.
+  // We do not fall back to 'customer' if target is 'partner' but user lacks membership.
+  // The UI (RoleGuard) handles the unauthorized state.
+  if (target && ALL_ROLES.includes(target as Role)) {
     sessionRole = target as Role;
-    console.log(`[auth] Using explicitly requested portal: ${sessionRole}`);
+    console.log(`[AUTH_FORENSIC] syncProfile: Forcing sessionRole to match target: ${sessionRole}`);
   } else if (allRoles.includes("admin")) {
     sessionRole = "admin";
   } else if (allRoles.includes("manager")) {
@@ -375,7 +373,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     sessionRole = "customer";
   }
 
-  console.log(`[AUTH_FORENSIC] syncProfile session role finalized: ${sessionRole} (requested: ${requestedPortal}, target: ${input.role}, all: ${allRoles.join(",")})`);
+  console.log(`[AUTH_FORENSIC] syncProfile session role finalized: ${sessionRole} (target: ${target}, all: ${allRoles.join(",")})`);
 
   // 3. Ensure user profile exists in database.
   // We NO LONGER overwrite the role column with requestedPortal if it exists.
@@ -496,17 +494,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * refresh or cold app start can route to the right surface.
    */
   const setUser = useCallback((next: User | null) => {
+    const currentIntent = getPortalIntent(window.location.pathname, window.location.search);
     console.log("[AUTH_FORENSIC] setUser state update:", { 
       id: next?.id, 
       role: next?.role, 
       memberships: next?.roles,
-      portalIntent: getPortalIntent(window.location.pathname, window.location.search)
+      portalIntent: currentIntent
     });
     
     if (next) {
       // Authority: Single Source of Truth for destination.
-      const intent = getPortalIntent(window.location.pathname, window.location.search);
-      const destination = resolveAuthenticatedDestination(next, intent);
+      const destination = resolveAuthenticatedDestination(next, currentIntent);
       
       // If we are on Splash or Login, perform the authoritative redirect IMMEDIATELY.
       const current = window.location.pathname;
@@ -514,7 +512,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("[AUTH_FORENSIC] setUser: Triggering authoritative redirect to", destination);
         // Using window.location to ensure a hard break from conflicting React effects.
         if (typeof window !== "undefined") {
-          window.location.assign(destination);
+          // Optimization: Only redirect if we're not already there
+          if (window.location.pathname !== destination) {
+            window.location.assign(destination);
+          }
         }
       }
     }
@@ -605,11 +606,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }, targetPortal);
             
             if (!cancelled && next) {
-              console.log("[AUTH_FORENSIC] BOOT: Profile synced for OAuth user. Resolved destination:", resolveAuthenticatedDestination(next, targetPortal || null));
+              console.log("[AUTH_FORENSIC] BOOT: Profile synced for OAuth user. Next user:", next);
               const blocked = await admitSession(next, String(callback.provider));
               if (blocked) {
                 setOauthError(blocked);
               } else {
+                console.log("[AUTH_FORENSIC] BOOT: Admitted session. Calling setUser...");
                 setUser(next);
               }
             }
@@ -630,7 +632,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.log("[AUTH_FORENSIC] BOOT: Session found. Restoring profile with intent:", currentPortal);
               const next = await syncProfile(sess, {}, currentPortal ?? undefined);
               if (!cancelled && next) {
-                console.log("[AUTH_FORENSIC] BOOT: Session restored. Destination:", resolveAuthenticatedDestination(next, currentPortal || null));
+                console.log("[AUTH_FORENSIC] BOOT: Session restored. Calling setUser...");
                 setUser(next);
               }
             } else {

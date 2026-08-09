@@ -34,8 +34,14 @@ function Splash() {
         search: { app: intent || undefined },
         replace: true 
       });
+      return;
     }
-    // If user exists, AuthProvider's setUser handles the authoritative redirect.
+    
+    // If user exists, ensure they are in the right place.
+    const intent = getPortalIntent(window.location.pathname, window.location.search);
+    const destination = resolveAuthenticatedDestination(user, intent);
+    console.log("[AUTH_FORENSIC] Splash: User exists. Redirecting to authoritative destination:", destination);
+    window.location.assign(destination);
   }, [navigate, user, loading]);
 
 

@@ -105,7 +105,8 @@ function LoginPage() {
 
   const oauth = async (provider: "google" | "apple", forceSelect = false) => {
     setBusy(true);
-    const intent = getPortalIntent(window.location.pathname, window.location.search);
+    const intent = getPortalIntent(window.location.pathname, window.location.search) || appId;
+    console.log(`[AUTH_FORENSIC] LoginPage: Starting OAuth with intent: ${intent}`);
     const res = await signInWithProvider(provider, intent ?? undefined, !!intent, forceSelect);
     if (!res.ok) {
       setBusy(false);
