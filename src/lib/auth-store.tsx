@@ -101,8 +101,43 @@ export const ROLE_ONBOARDING: Record<Role, string> = {
 };
 
 /**
+ * Resolves the portal type from a URL path and/or search parameters.
+ * This is the EXPLICIT URL PORTAL INTENT / CURRENT PORTAL PATH source of truth.
+ */
+export function getPortalIntent(pathname: string, search?: string | URLSearchParams): Role | null {
+  // 1. Explicit search param ?app=
+  const params = typeof search === "string" ? new URLSearchParams(search) : search;
+  const appParam = params?.get("app");
+  if (appParam && ALL_ROLES.includes(appParam as Role)) return appParam as Role;
+  
+  // 2. Path-based detection
+  return resolvePortalFromPath(pathname);
+}
+
+/**
+ * Resolves the destination for an authenticated user based on their memberships and portal intent.
+ * This is the SINGLE SOURCE OF TRUTH for post-authentication routing.
+ */
+export function resolveAuthenticatedDestination(user: User, intent: Role | null): string {
+  // Priority: 
+  // 1. Intent (Explicit URL Portal)
+  // 2. Authenticated Membership matching that intent
+  // 3. Default to Customer if no membership or no intent
+  
+  const portal = intent || "customer";
+  
+  if (user.roles.includes(portal)) {
+    return ROLE_HOME[portal];
+  } else if (portal !== "customer") {
+    // Authenticated but no membership -> Onboarding for THAT portal
+    return ROLE_ONBOARDING[portal];
+  }
+  
+  return "/app";
+}
+
+/**
  * Resolves the portal type from a URL path.
- * This is the authoritative way to determine WHICH app the user is trying to use.
  */
 export function resolvePortalFromPath(path: string): Role | null {
   const p = path.toLowerCase();
