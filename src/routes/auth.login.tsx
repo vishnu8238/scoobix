@@ -65,18 +65,16 @@ function LoginPage() {
   useEffect(() => {
     if (loading || !user) return;
     
-    // AuthProvider handles the initial landing redirect.
-    // This effect handles secondary "tokens just arrived" stabilization or re-auths.
-    console.log("[AUTH_FORENSIC] Login Page: User detected. Waiting for authoritative redirect...");
+    // AuthProvider's bootup/OAuth effects handle the authoritative admission redirect.
+    // We only log here for forensic tracking.
+    console.log("[AUTH_FORENSIC] Login Page: Authenticated user detected. Waiting for admission controller...");
   }, [loading, user]);
 
-  const land = (user: User) => {
-    toast.success(`Welcome back, ${user.name}`);
-    // DO NOT independently navigate here. 
-    // AuthProvider's setUser() will detect the new user state and 
-    // resolveAuthenticatedDestination() to handle the authoritative redirect.
-    console.log("[AUTH_ADMISSION] Login successful. Waiting for AuthProvider authoritative redirect...");
+  const land = () => {
+    toast.success("Identity verified");
+    console.log("[AUTH_ADMISSION] Login successful. Admission controller will now calculate destination.");
   };
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,8 +86,9 @@ function LoginPage() {
       toast.error(res.message ?? "Sign in failed");
       return;
     }
-    land(res.user!);
+    land();
   };
+
 
   useEffect(() => {
     if (!oauthError) return;
@@ -124,8 +123,9 @@ function LoginPage() {
     const res = await verifyPhoneLogin(phone, code, app?.role);
     setBusy(false);
     if (!res.ok) { toast.error(res.message ?? "Invalid code"); return; }
-    land(res.user!);
+    land();
   };
+
 
   useEffect(() => {
     if (mode !== "phone" || !otpSent || busy || autoVerified.current) return;

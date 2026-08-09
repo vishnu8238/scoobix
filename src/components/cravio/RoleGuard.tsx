@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useAuth, ROLE_ONBOARDING, ROLE_HOME } from "@/lib/auth-store";
+import { useAuth, ROLE_ONBOARDING, ROLE_HOME, getRequestedPortal } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 
@@ -77,19 +77,33 @@ export function RoleGuard({
   // If loading is done but user is missing or unauthorized, we show a transition state
   // while the useEffect above handles the redirect.
   if (!user || !user.roles.includes(allow)) {
+    if (authState === "ERROR") {
+      return (
+        <div className="flex min-h-svh w-full flex-col items-center justify-center bg-background p-6 text-center">
+          <ScoobixMark size={48} className="mb-4" />
+          <h2 className="font-display text-xl font-bold text-destructive">Authentication Error</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{authError || "An unexpected error occurred during admission."}</p>
+          <Button variant="outline" className="mt-6 rounded-full" onClick={() => window.location.assign("/auth/login")}>
+            Back to Login
+          </Button>
+        </div>
+      );
+    }
+
     if (user) {
       return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background p-6 text-center">
           <div className="max-w-xs space-y-4">
             <ScoobixMark size={48} className="mx-auto" />
             <h2 className="font-display text-xl font-bold">{transitionLabel || `Accessing ${allow} portal...`}</h2>
-            <p className="text-sm text-muted-foreground">Please wait while we set up your account.</p>
+            <p className="text-sm text-muted-foreground">Please wait while we verify your account status.</p>
           </div>
         </div>
       );
     }
     return null;
   }
+
 
   return <>{children}</>;
 }
