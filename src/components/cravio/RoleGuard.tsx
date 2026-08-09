@@ -20,14 +20,9 @@ export function RoleGuard({
   children: React.ReactNode;
   transitionLabel?: string;
 }) {
-  const { user, loading, setPortal } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const href = useRouterState({ select: (s) => s.location.href });
-
-  // Inform the provider of the required portal for this route tree.
-  useEffect(() => {
-    setPortal(allow);
-  }, [allow, setPortal]);
 
   useEffect(() => {
     if (loading) return;
