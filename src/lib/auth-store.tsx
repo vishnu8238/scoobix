@@ -606,11 +606,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }, targetPortal);
             
             if (!cancelled && next) {
-              console.log("[AUTH_FORENSIC] BOOT: Profile synced for OAuth user. Resolved destination:", resolveAuthenticatedDestination(next, targetPortal || null));
+              console.log("[AUTH_FORENSIC] BOOT: Profile synced for OAuth user. Next user:", next);
               const blocked = await admitSession(next, String(callback.provider));
               if (blocked) {
                 setOauthError(blocked);
               } else {
+                console.log("[AUTH_FORENSIC] BOOT: Admitted session. Calling setUser...");
                 setUser(next);
               }
             }
@@ -631,7 +632,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.log("[AUTH_FORENSIC] BOOT: Session found. Restoring profile with intent:", currentPortal);
               const next = await syncProfile(sess, {}, currentPortal ?? undefined);
               if (!cancelled && next) {
-                console.log("[AUTH_FORENSIC] BOOT: Session restored. Destination:", resolveAuthenticatedDestination(next, currentPortal || null));
+                console.log("[AUTH_FORENSIC] BOOT: Session restored. Calling setUser...");
                 setUser(next);
               }
             } else {
