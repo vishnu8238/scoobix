@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Save, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { createNewZone, createNewSubzone } from "@/lib/zones.functions";
-import { LeafletMap } from "./cravio/LeafletMap";
+import { GoogleMap as GoogleMap } from "./maps/GoogleMap";
 import type { DeliveryZone, Subzone } from "@/lib/zones-api";
 
 type ZoneFormProps = {
@@ -121,14 +121,13 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Zone Boundary (Draw on Map)</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Zone Boundary (Click Map to Drop Pin)</label>
               <div className="flex-1 min-h-[300px] rounded-3xl overflow-hidden ring-1 ring-border/60">
-                 <LeafletMap 
+                 <GoogleMap 
                    className="h-full w-full" 
                    interactive 
+                   pickedAt={formData.boundary.coordinates?.[0]?.length ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : null}
                    onPick={(coords) => {
-                     // For MVP, we use a simple circular-style rectangle or the picked point
-                     // Real boundary drawing would require more complex Leaflet Draw integration
                      const lat = coords.lat;
                      const lng = coords.lng;
                      const offset = 0.02;
@@ -269,9 +268,10 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
           </div>
 
           <div className="h-[200px] rounded-2xl overflow-hidden ring-1 ring-border/60">
-             <LeafletMap 
+             <GoogleMap 
                className="h-full w-full" 
                interactive 
+               pickedAt={formData.boundary.coordinates?.[0]?.length ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : null}
                onPick={(coords) => {
                  const lat = coords.lat;
                  const lng = coords.lng;

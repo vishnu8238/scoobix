@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
 import { 
   fetchZones, fetchSubzones, getZoneStats, fetchZoneOrderBreakdown, 
   fetchZoneDemandAnalytics, type DeliveryZone, type Subzone 
@@ -283,7 +283,7 @@ function AdminOperationsDashboard() {
 
       {activeTab === "map" && (
         <section className="h-[700px] rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
-           <LeafletMap 
+           <GoogleMap 
              className="h-full w-full" 
              polygons={zones.map(z => ({
                id: z.id,
@@ -362,7 +362,7 @@ function OrderDetailsModal({ order, onClose }: { order: any; onClose: () => void
            </div>
 
            <section className="h-[200px] rounded-2xl overflow-hidden ring-1 ring-border/60">
-             <LeafletMap 
+             <GoogleMap 
                className="h-full w-full" 
                markers={[
                  { id: "pick", lat: order.lat || 12.9716, lng: order.lng || 77.5946, kind: "restaurant" },

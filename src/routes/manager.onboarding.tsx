@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/cravio/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
 import { ImageUploader } from "@/components/cravio/ImageUploader";
 import type { ImageRef } from "@/lib/image-service";
 import { listTable } from "@/lib/insforge-crud";
@@ -444,7 +444,7 @@ function OnboardingFlow() {
                   Pin the exact location
                 </Label>
                 <div className="overflow-hidden rounded-2xl ring-1 ring-border/60">
-                  <LeafletMap
+                  <GoogleMap
                     height={220}
                     zoom={form.latitude ? 16 : 11}
                     center={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : undefined}
