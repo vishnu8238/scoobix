@@ -25,7 +25,7 @@ import {
   type UserProfileRow,
 } from "./insforge-auth";
 import { listTable } from "./insforge-crud";
-import { isPhoneOtpEnabled, requestPhoneOtp as ifRequestPhoneOtp, verifyPhoneOtp as ifVerifyPhoneOtp } from "./phone-otp";
+import { isPhoneOtpEnabled, sendPhoneOtp as ifSendPhoneOtp, verifyPhoneOtp as ifVerifyPhoneOtp } from "./phone-otp";
 import { recordLogin, endCurrentSession } from "./security-api";
 
 // --- Types ---
@@ -222,7 +222,7 @@ async function handleAuthenticatedAdmission(sess: InsForgeUser, intent?: Role) {
   const user = await syncProfile(sess, intent);
   if (!user) return null;
 
-  const memberships = await resolveUserMemberships(sess.id, user.email);
+          const memberships = await resolveUserMemberships(sess.id, user.email);
   const destination = resolveAuthenticatedDestination({
     requestedPortal: intent || null,
     memberships
