@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useAuth, ROLE_HOME, ROLE_ONBOARDING } from "@/lib/auth-store";
+import { useAuth, ROLE_ONBOARDING } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 
@@ -9,7 +9,7 @@ import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
  *
  * - Anonymous visitors are sent to the sign-in screen for this app.
  * - Signed-in users whose role does not own this surface are redirected to
- *   their own application home. There is no manual portal switching.
+ *   onboarding for THAT portal (intent preservation).
  */
 export function RoleGuard({ allow, children }: { allow: Role; children: React.ReactNode }) {
   const { user, loading, setPortal } = useAuth();
@@ -27,31 +27,27 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
     // Authorization check: session exists but the required role is missing from the user's role list.
     if (user && !user.roles.includes(allow)) {
       console.warn(`[auth] RoleGuard mismatch: user has roles [${user.roles.join(", ")}] but portal requires ${allow}`);
-      // Intentional Onboarding: Send to onboarding if they are trying to access a portal they don't have membership for.
+      
+      // If they are authenticated but lack membership for this specific portal,
+      // it is a valid onboarding intent.
       const onboarding = ROLE_ONBOARDING[allow];
-      console.log(`[auth] Redirecting to onboarding for ${allow}: ${onboarding}`);
-      navigate({
-        to: onboarding as never,
-        replace: true,
-      });
+      console.log(`[auth] RoleGuard: Authenticated but no membership. Onboarding for ${allow}: ${onboarding}`);
+      navigate({ to: onboarding as never, replace: true });
       return;
     }
 
     // Authentication check: no session.
     if (!user) {
+      console.log(`[auth] RoleGuard: No session. Redirecting to login for portal: ${allow}`);
       const safeRedirect = href.startsWith("/auth") || href.includes("login") ? undefined : href;
       navigate({
         to: "/auth/login",
         search: { app: allow, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
         replace: true,
-      } as never);
+      } as any);
     }
   }, [user, loading, allow, navigate, href]);
 
-
-
-  // If user resolution is definitely complete and the role is still missing, 
-  // the useEffect above will trigger the redirect to onboarding.
   // We only show the logo while authenticating or loading memberships.
   if (loading) {
     return (
@@ -66,13 +62,11 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
     );
   }
 
-  // If loading is done but user is missing, useEffect will redirect to login.
-  // If loading is done and user is present but lacks role, useEffect will redirect to onboarding.
-  // In the tiny gap before navigation commits, we show a clean state.
+  // If loading is done but user is missing or unauthorized, we show nothing 
+  // while the useEffect above handles the redirect.
   if (!user || !user.roles.includes(allow)) {
     return null;
   }
-
 
   return <>{children}</>;
 }

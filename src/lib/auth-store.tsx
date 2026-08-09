@@ -101,8 +101,43 @@ export const ROLE_ONBOARDING: Record<Role, string> = {
 };
 
 /**
+ * Resolves the portal type from a URL path and/or search parameters.
+ * This is the EXPLICIT URL PORTAL INTENT / CURRENT PORTAL PATH source of truth.
+ */
+export function getPortalIntent(pathname: string, search?: string | URLSearchParams): Role | null {
+  // 1. Explicit search param ?app=
+  const params = typeof search === "string" ? new URLSearchParams(search) : search;
+  const appParam = params?.get("app");
+  if (appParam && ALL_ROLES.includes(appParam as Role)) return appParam as Role;
+  
+  // 2. Path-based detection
+  return resolvePortalFromPath(pathname);
+}
+
+/**
+ * Resolves the destination for an authenticated user based on their memberships and portal intent.
+ * This is the SINGLE SOURCE OF TRUTH for post-authentication routing.
+ */
+export function resolveAuthenticatedDestination(user: User, intent: Role | null): string {
+  // Priority: 
+  // 1. Intent (Explicit URL Portal)
+  // 2. Authenticated Membership matching that intent
+  // 3. Default to Customer if no membership or no intent
+  
+  const portal = intent || "customer";
+  
+  if (user.roles.includes(portal)) {
+    return ROLE_HOME[portal];
+  } else if (portal !== "customer") {
+    // Authenticated but no membership -> Onboarding for THAT portal
+    return ROLE_ONBOARDING[portal];
+  }
+  
+  return "/app";
+}
+
+/**
  * Resolves the portal type from a URL path.
- * This is the authoritative way to determine WHICH app the user is trying to use.
  */
 export function resolvePortalFromPath(path: string): Role | null {
   const p = path.toLowerCase();
@@ -435,15 +470,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserState(next);
     
     if (next) {
-      // Mirrored locally for secondary UI hints, but NOT authoritative for routing.
+      // Mirrored locally for secondary UI hints (e.g. icon colors), but NOT authoritative for routing.
       writeCachedRole(next.role);
       setCachedRole(next.role);
     } else {
-      // ONLY clear storage if we are explicitly signing out (setUser(null))
-      // and NOT during an initialization race.
-      console.warn("[auth] setUser(null) called - clearing session state");
+      console.log("[auth] setUser(null) - clearing session state");
       
-      // If we are booting and have tokens but no user yet, do NOT clear tokens
       const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
       if (loading && hasTokens) {
         console.log("[auth] setUser(null) ignored during boot while tokens exist");
@@ -453,14 +485,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       writeCachedRole(null);
       setCachedRole(null);
       try {
+        localStorage.removeItem(CACHED_ROLE_KEY);
         localStorage.removeItem("scoobix_active_portal_v1");
-        localStorage.removeItem("scoobix_role_v1");
-        localStorage.removeItem("scoobix_pending_role_v1");
+        localStorage.removeItem(PENDING_ROLE_KEY);
         localStorage.removeItem("scoobix_if_access_v1");
         localStorage.removeItem("scoobix_if_refresh_v1");
+        sessionStorage.removeItem(PENDING_ROLE_KEY);
         sessionStorage.removeItem("scoobix_active_portal_v1");
-        sessionStorage.removeItem("scoobix_pending_role_v1");
-        sessionStorage.removeItem("scoobix_pending_role_claim_v1");
+        
         // Clear all cookies
         document.cookie.split(";").forEach((c) => {
           document.cookie = c
@@ -498,17 +530,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const callback = readOAuthCallback();
-        const currentPortal = resolvePortalFromPath(window.location.pathname);
-        console.log("[auth] BOOT: Portal resolved from path:", currentPortal);
+        const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
+        console.log("[auth] BOOT: Portal intent resolved:", currentPortal);
 
         if (callback) {
-          console.log("[auth] OAuth callback detected", callback.provider);
+          console.log("[auth] BOOT: OAuth callback detected", callback.provider);
           try {
             const { user: sess } = await ifCompleteOAuth(callback.code);
-            console.log("[auth] OAuth code exchanged for session:", sess?.id);
             const pending = takePendingRole();
             
-            // Priority: pending.role (stashed) -> currentPortal (URL)
+            // Priority: pending.role (stashed) -> currentPortal (URL intent)
             const targetPortal = pending.role ?? currentPortal ?? undefined;
             
             const next = await syncProfile(sess, {
@@ -518,22 +549,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }, targetPortal);
             
             if (!cancelled && next) {
-              console.log("[auth] Profile synced for OAuth user:", next.id, next.role);
+              console.log("[auth] BOOT: Profile synced for OAuth user:", next.id, next.role);
               const blocked = await admitSession(next, String(callback.provider));
               if (blocked) {
-                console.warn("[auth] Session admission blocked:", blocked);
                 setOauthError(blocked);
               } else {
-                console.log("[auth] Session admitted, setting user state.");
                 setUser(next);
-                try {
-                  window.opener?.postMessage({ type: "scoobix_oauth_complete" }, window.location.origin);
-                  if (window.opener && !window.opener.closed) window.setTimeout(() => window.close(), 250);
-                } catch { /* */ }
               }
             }
           } catch (err) {
-            console.error("[auth] OAuth callback failed", err);
+            console.error("[auth] BOOT: OAuth callback failed", err);
             if (!cancelled) {
               setOauthError(err instanceof Error ? err.message : "Provider sign-in failed");
             }
@@ -542,28 +567,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           // Restore existing session
           const sess = await ifGetSession();
-          console.log("[auth] INITIAL_SESSION check:", sess ? "FOUND" : "NONE", sess?.id);
           
           if (!cancelled) {
             if (sess) {
-              const portal = currentPortal || (typeof localStorage !== "undefined" ? localStorage.getItem("scoobix_active_portal_v1") as Role : null);
-              const next = await syncProfile(sess, { 
-                role: portal && ALL_ROLES.includes(portal) ? portal : undefined, 
-                forceRole: !!portal 
-              }, portal && ALL_ROLES.includes(portal) ? portal : undefined);
-              
-              console.log("[auth] Profile restored for session user:", next?.id, next?.role);
+              // Restore using URL intent
+              const next = await syncProfile(sess, {}, currentPortal ?? undefined);
               if (!cancelled && next) setUser(next);
             } else {
               const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
-              console.log("[auth] No active session. Tokens in storage:", hasTokens);
-              
-              if (!cancelled) {
-                if (!hasTokens) {
-                  setUser(null);
-                } else {
-                  console.log("[auth] tokens exist but session check failed - preserving state for potential refresh/retry");
-                }
+              if (!cancelled && !hasTokens) {
+                setUser(null);
               }
             }
           }
@@ -678,10 +691,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // But we must ensure the storage is working for the AuthProvider.
       }
 
-      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       
-      console.log(`[auth] Resolving profile for target portal: ${targetPortal}`);
+      console.log(`[auth] signIn resolving profile for target portal: ${targetPortal}`);
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
@@ -714,7 +727,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Profile creation is attempted for every signup; when verification is
       // pending there may be no session user yet — the row is then created on
       // the first successful login (self-healing).
-      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       const next = await syncProfile(sess, { 
         provider: "email", 
@@ -744,7 +757,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false, forceSelect = false) => {
     try {
       setOauthError(null);
-      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       rememberPendingRole(targetPortal, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
