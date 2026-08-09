@@ -748,7 +748,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTokens(null, null);
       clearLastRoute();
       
-      // Atomic storage removal
+      // Atomic storage removal for all portals and auth persistence
       if (typeof window !== "undefined") {
         try {
           localStorage.removeItem(CACHED_ROLE_KEY);
@@ -758,8 +758,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionStorage.removeItem(PENDING_ROLE_KEY);
           sessionStorage.removeItem(PENDING_ROLE_CLAIM_KEY);
           
-          // Also clear security-api local session if any
+          // Clear security-api local session if any
           localStorage.removeItem("scoobix.security.session_row");
+          
+          // Clear any cookies that might leak context
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i];
+            const eqPos = cookie.indexOf("=");
+            const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+          }
         } catch { /* */ }
       }
       
