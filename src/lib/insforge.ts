@@ -1,14 +1,14 @@
-/**
+// [AUTH_FORENSIC] INSFORGE DATA ENGINE AUDIT
  * InsForge data layer for Scoobix.
  *
  * Publishable values (project URL + anon key) are embedded here — they are
  * client-readable by design, same as a Supabase anon key. The server-only
  * INSFORGE_API_KEY secret is never imported in the client bundle.
  *
- * Strategy: fetch InsForge rows once at app boot, MERGE them into the existing
- * mock-data arrays (`restaurants`, `categories`). All 17 existing consumers
- * continue to work unchanged. On error or empty response the mock data is
- * left in place as a fallback.
+ * Strategy: fetch InsForge rows once at app boot and populate the data arrays
+ * (`restaurants`, `categories`). On error or empty response the arrays remain empty.
+ * All existing consumers continue to work unchanged.
+ */
  */
 
 import {
@@ -539,9 +539,7 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
       }
       insforgeState.addonsByDish = addonMap;
 
-      // Backend is authoritative: when rows exist, REPLACE the seed arrays
-      // entirely (no mock fallback). Empty tables leave seeds untouched so
-      // screens degrade to their existing empty/demo state.
+      // Backend is authoritative.
       if (rests.length) {
         // Clear all mock data if backend has data
         restaurants.length = 0;
