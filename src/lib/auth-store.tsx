@@ -28,7 +28,6 @@ import {
 } from "./insforge-auth";
 import { listTable } from "./insforge-crud";
 import { isPhoneOtpEnabled, sendPhoneOtp, verifyPhoneOtp, normalisePhone } from "./phone-otp";
-import { clearLastRoute } from "./last-route";
 import {
   accountUsable,
   endCurrentSession,
