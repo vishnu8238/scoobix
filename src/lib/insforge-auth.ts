@@ -1,16 +1,8 @@
-// [AUTH_FORENSIC] INSFORGE SESSION ENGINE AUDIT
 /**
- * InsForge Auth client — thin wrapper around the InsForge auth endpoints.
- * Used by `auth-store.tsx` to power real authentication for all four apps
- * (customer, restaurant/partner, driver/rider, admin).
- *
- * Supported here: email + password, email verification (6-digit code or link),
- * password reset, and OAuth (Google / Apple / any provider enabled in the
- * InsForge dashboard) using the PKCE flow. Phone OTP lives in `phone-otp.ts`.
- *
- * We use `client_type=mobile` so refresh tokens come back in the body
- * (cross-origin cookies are unreliable across the preview + published hosts).
+ * [AUTH_FORENSIC] INSFORGE SESSION ENGINE AUDIT
+ * InsForge Auth client.
  */
+
 
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 
