@@ -25,11 +25,11 @@ function Splash() {
     // Safety exit for hangs: if user isn't loading but also isn't present, 
     // we must redirect to login rather than staying on splash.
     if (!loading && !user) {
-      const portal = resolvePortalFromPath(window.location.pathname);
-      console.log("[auth] Splash: Not loading and no user. Redirecting to login. Context:", portal);
+      const intent = getPortalIntent(window.location.pathname, window.location.search);
+      console.log("[auth] Splash: Redirecting to login. Intent:", intent);
       navigate({ 
         to: "/auth/login", 
-        search: { app: portal || undefined },
+        search: { app: intent || undefined },
         replace: true 
       });
       return;
@@ -38,31 +38,17 @@ function Splash() {
     if (loading) return;
     
     if (user) {
-      const hasRole = (r: Role) => user.roles.includes(r);
-      // AUTHORITATIVE: The URL path determines the portal we land in.
-      // If we are at root "/", we default to the Customer portal.
-      const portal = resolvePortalFromPath(window.location.pathname) || "customer";
+      const intent = getPortalIntent(window.location.pathname, window.location.search);
+      const target = resolveAuthenticatedDestination(user, intent);
       
-      let target = "/app";
-      
-      if (hasRole(portal)) {
-        target = ROLE_HOME[portal];
-      } else {
-        // Explicit portal requested but user lacks membership -> Onboarding.
-        // If they are already in the portal path (e.g. /partner), send to that portal's onboarding.
-        target = ROLE_ONBOARDING[portal] || "/app";
-      }
-
-      console.log("[auth] Splash redirecting to target:", target, "requested portal:", portal);
+      console.log("[auth] Splash: Authenticated redirect. Intent:", intent, "Target:", target);
       navigate({ to: target as never, replace: true });
     } else {
-      // If we are on a portal subpath (e.g. /partner) and logged out,
-      // preserve that portal in the login redirect.
-      const portal = resolvePortalFromPath(window.location.pathname);
-      console.log("[auth] Splash redirecting to login. Context:", portal);
+      const intent = getPortalIntent(window.location.pathname, window.location.search);
+      console.log("[auth] Splash: Anonymous redirect. Intent:", intent);
       navigate({ 
         to: "/auth/login", 
-        search: { app: portal || undefined },
+        search: { app: intent || undefined },
         replace: true 
       });
     }
