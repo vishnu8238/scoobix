@@ -528,8 +528,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.log("[auth] Profile restored for session user:", next?.id, next?.role);
               if (!cancelled && next) setUser(next);
             } else {
-              console.log("[auth] No active session, user is UNAUTHENTICATED.");
-              setUser(null);
+              // ONLY clear session if we explicitly failed to get one and NO tokens exist
+              const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
+              console.log("[auth] No active session. Tokens in storage:", hasTokens);
+              
+              if (!cancelled) {
+                if (hasTokens) {
+                   // Tokens exist but session check failed. Likely expired.
+                   // we do NOT call setUser(null) here because ifRefresh might be running
+                   // or we might be in a temporary network failure.
+                   console.log("[auth] tokens exist but session check failed - preserving state for potential refresh/retry");
+                } else {
+                   setUser(null);
+                }
+              }
             }
           }
         }
