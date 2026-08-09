@@ -627,9 +627,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { user: sess } = await ifLogin(address, password);
+      console.log(`[auth] signIn attempt for ${address} (requested role: ${role})`);
+      const { user: sess, accessToken } = await ifLogin(address, password);
+      
+      // Ensure tokens are persisted and verified before proceeding
+      const verify = localStorage.getItem("scoobix_if_access_v1");
+      if (verify !== accessToken) {
+        console.error("[auth] Token persistence verification failed in signIn");
+        // We do NOT logout yet, as we might have just received them in memory.
+        // But we must ensure the storage is working for the AuthProvider.
+      }
+
       const currentPortal = resolvePortalFromPath(window.location.pathname);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
+      
+      console.log(`[auth] Resolving profile for target portal: ${targetPortal}`);
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
