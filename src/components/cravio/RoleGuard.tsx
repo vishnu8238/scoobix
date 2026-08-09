@@ -86,5 +86,5 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
     return null;
   }
 
-  return <>{children};</>;
+  return <>{children}</>;
 }
