@@ -30,9 +30,13 @@ import { recordLogin, endCurrentSession } from "./security-api";
 
 type AuthResult = { ok: boolean; user?: User; message?: string; needsVerification?: boolean };
 
+type AuthState = "IDLE" | "AUTHENTICATING" | "RESOLVING" | "ADMITTED" | "ERROR";
+
 type AuthCtx = {
   user: User | null;
   loading: boolean;
+  authState: AuthState;
+  authError: string | null;
   roles: Role[];
   signIn: (email: string, password: string, intent?: Role) => Promise<AuthResult>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<AuthResult>;
@@ -50,77 +54,8 @@ type AuthCtx = {
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
-// --- 1. Portal intent detection ---
-
+// --- Constants ---
 const ALL_ROLES: Role[] = ["customer", "partner", "rider", "admin", "manager"];
-
-export function getRequestedPortal(pathname: string, search?: string | URLSearchParams): Role | null {
-  if (typeof window === "undefined") return null;
-  const params = typeof search === "string" ? new URLSearchParams(search) : (search || new URLSearchParams(window.location.search));
-  
-  const appParam = params.get("app");
-  if (appParam && ALL_ROLES.includes(appParam as Role)) return appParam as Role;
-  
-  const p = pathname.toLowerCase();
-  if (p.includes("/partner") || p.includes("/merchant")) return "partner";
-  if (p.includes("/rider")) return "rider";
-  if (p.includes("/manager")) return "manager";
-  if (p.includes("/admin")) return "admin";
-  
-  return "customer";
-}
-
-// --- 2. Membership resolution ---
-
-async function userIsMerchantManager(userId: string): Promise<boolean> {
-  try {
-    const [managerRows, restaurantRows] = await Promise.all([
-      listTable<{ id: string }>("merchant_managers", { user_id: `eq.${userId}`, select: "id", limit: 1 }),
-      listTable<{ id: string }>("restaurants", { manager_id: `eq.${userId}`, select: "id", limit: 1 })
-    ]);
-    return !!managerRows[0]?.id || !!restaurantRows[0]?.id;
-  } catch { return false; }
-}
-
-async function userIsPlatformAdmin(userId: string, email: string): Promise<boolean> {
-  try {
-    const rows = await listTable<{ id: string; status?: string }>("platform_admins", {
-      select: "id,status",
-      limit: 1,
-      user_id: `eq.${userId}`,
-    });
-    if (rows[0]?.id && rows[0].status !== "disabled") return true;
-    if (email) {
-      const emailRows = await listTable<{ id: string; status?: string }>("platform_admins", {
-        select: "id,status",
-        limit: 1,
-        email: `eq.${email.toLowerCase()}`,
-      });
-      return !!emailRows[0]?.id && emailRows[0].status !== "disabled";
-    }
-    return false;
-  } catch { return false; }
-}
-
-export async function resolveUserMemberships(userId: string, email: string) {
-  const [isRider, isManager, isAdmin, ownedRestaurants, managedRestaurants] = await Promise.all([
-    listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).then(rows => !!rows[0]?.id).catch(() => false),
-    userIsMerchantManager(userId),
-    userIsPlatformAdmin(userId, email),
-    listTable<{ id: string }>("restaurants", { owner_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
-    listTable<{ id: string }>("restaurants", { manager_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => [])
-  ]);
-
-  return {
-    customer: true,
-    rider: isRider,
-    manager: isManager,
-    admin: isAdmin,
-    partner: ownedRestaurants.length > 0 || managedRestaurants.length > 0
-  };
-}
-
-// --- 3. Admission function ---
 
 export const ROLE_HOME: Record<Role, string> = {
   customer: "/app",
@@ -138,6 +73,50 @@ export const ROLE_ONBOARDING: Record<Role, string> = {
   manager: "/manager/onboarding",
 };
 
+// --- 1. Pure Resolution Logic ---
+
+export function getRequestedPortal(pathname: string, search?: string | URLSearchParams): Role | null {
+  if (typeof window === "undefined") return null;
+  const params = typeof search === "string" ? new URLSearchParams(search) : (search || new URLSearchParams(window.location.search));
+  
+  const appParam = params.get("app");
+  if (appParam && ALL_ROLES.includes(appParam as Role)) return appParam as Role;
+  
+  const p = pathname.toLowerCase();
+  if (p.includes("/partner") || p.includes("/merchant")) return "partner";
+  if (p.includes("/rider")) return "rider";
+  if (p.includes("/manager")) return "manager";
+  if (p.includes("/admin")) return "admin";
+  
+  return null;
+}
+
+export async function resolveUserMemberships(userId: string) {
+  try {
+    const [drivers, managers, admins, restaurants] = await Promise.all([
+      listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
+      listTable<{ id: string }>("merchant_managers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
+      listTable<{ id: string; status?: string }>("platform_admins", { user_id: `eq.${userId}`, select: "id,status", limit: 1 }).catch(() => []),
+      listTable<{ id: string; manager_id?: string; owner_id?: string }>("restaurants", { 
+        or: `(manager_id.eq.${userId},owner_id.eq.${userId})`, 
+        select: "id,manager_id,owner_id", 
+        limit: 1 
+      }).catch(() => [])
+    ]);
+
+    return {
+      customer: true,
+      rider: drivers.length > 0,
+      manager: managers.length > 0,
+      admin: admins.length > 0 && admins[0]?.status !== "disabled",
+      partner: restaurants.length > 0
+    };
+  } catch (err) {
+    console.error("[AUTH_ADMISSION] Membership query failed:", err);
+    throw err;
+  }
+}
+
 export function resolveAuthenticatedDestination({ 
   requestedPortal, 
   memberships 
@@ -147,12 +126,13 @@ export function resolveAuthenticatedDestination({
 }): string {
   const portal = requestedPortal || "customer";
 
-  if (portal === "customer") return ROLE_HOME.customer;
+  if (portal === "admin") return memberships.admin ? ROLE_HOME.admin : "/admin/login";
+  if (portal === "manager") return memberships.manager ? ROLE_HOME.manager : ROLE_ONBOARDING.manager;
   if (portal === "partner") return memberships.partner ? ROLE_HOME.partner : ROLE_ONBOARDING.partner;
   if (portal === "rider") return memberships.rider ? ROLE_HOME.rider : ROLE_ONBOARDING.rider;
-  if (portal === "manager") return memberships.manager ? ROLE_HOME.manager : ROLE_ONBOARDING.manager;
-  if (portal === "admin") return memberships.admin ? ROLE_HOME.admin : "/admin/login";
+  if (portal === "customer") return ROLE_HOME.customer;
 
+  // Fallback if no intent
   if (memberships.admin) return ROLE_HOME.admin;
   if (memberships.manager) return ROLE_HOME.manager;
   if (memberships.partner) return ROLE_HOME.partner;
@@ -161,16 +141,16 @@ export function resolveAuthenticatedDestination({
   return ROLE_HOME.customer;
 }
 
-// --- 4. Profile Sync ---
+// --- 2. Side-Effect Helpers ---
 
 async function syncProfile(sess: InsForgeUser, intent?: Role): Promise<User | null> {
   if (!sess?.id) return null;
   
-  const email = (sess.email || "").toLowerCase();
   const existing = await fetchUserProfile(sess.id);
-  const memberships = await resolveUserMemberships(sess.id, email);
+  const memberships = await resolveUserMemberships(sess.id);
   const roles: Role[] = ALL_ROLES.filter(r => memberships[r as keyof typeof memberships]);
 
+  const email = (sess.email || existing?.email || "").toLowerCase();
   const name = existing?.name || (sess.profile?.name as string) || (sess.metadata?.name as string) || email.split("@")[0] || "User";
   const avatar = existing?.avatar || (sess.profile?.avatar_url as string);
   const phone = existing?.phone || "";
@@ -196,40 +176,53 @@ async function syncProfile(sess: InsForgeUser, intent?: Role): Promise<User | nu
     name: saved?.name || name,
     email: saved?.email || email,
     phone: saved?.phone || phone,
-    role: intent || "customer",
+    role: intent || roles[0] || "customer",
     roles,
     avatar: saved?.avatar || avatar,
   };
 }
 
-// --- 5. Navigation Authority ---
-
-async function handleAuthenticatedAdmission(sess: InsForgeUser, intent?: Role) {
-  if (typeof window === "undefined") return null;
-  
-  console.log(`[AUTH_ADMISSION] Starting admission for ${sess.id} with intent ${intent || "none"}`);
-  
-  const user = await syncProfile(sess, intent);
-  if (!user) return null;
-
-  const memberships = await resolveUserMemberships(sess.id, user.email);
-  const destination = resolveAuthenticatedDestination({
-    requestedPortal: intent || null,
-    memberships
-  });
-
-  console.log(`[AUTH_ADMISSION] Final destination: ${destination}`);
-  window.location.assign(destination);
-  return user;
-}
-
-// --- Provider ---
+// --- 3. Provider ---
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState<AuthState>("IDLE");
+  const [authError, setAuthError] = useState<string | null>(null);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
+  const handleAdmission = useCallback(async (sess: InsForgeUser, intent?: Role) => {
+    if (typeof window === "undefined") return;
+    
+    setAuthState("RESOLVING");
+    try {
+      const profile = await syncProfile(sess, intent);
+      if (!profile) throw new Error("Could not sync profile");
+
+      setUser(profile);
+      const memberships = await resolveUserMemberships(sess.id);
+      const destination = resolveAuthenticatedDestination({
+        requestedPortal: intent || null,
+        memberships
+      });
+
+      console.log(`[AUTH_ADMISSION] Admission Success: ${sess.id} -> ${destination} (Intent: ${intent || "none"})`);
+      setAuthState("ADMITTED");
+      
+      // Perform navigation ONCE
+      if (window.location.pathname !== destination) {
+        window.location.assign(destination);
+      }
+    } catch (err: any) {
+      console.error("[AUTH_ADMISSION] Admission Failed:", err);
+      setAuthError(err.message || "Admission failed");
+      setAuthState("ERROR");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Bootup: Restore session
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -237,58 +230,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const sess = await ifGetSession();
         if (sess && active) {
           const intent = getRequestedPortal(window.location.pathname, window.location.search);
-          const profile = await syncProfile(sess, intent || undefined);
-          if (profile && active) {
-             setUser(profile);
-             const p = window.location.pathname;
-             if (p === "/" || p.startsWith("/auth/login")) {
-                const memberships = await resolveUserMemberships(profile.id, profile.email);
-                const dest = resolveAuthenticatedDestination({ requestedPortal: intent, memberships });
-                if (p !== dest) window.location.assign(dest);
-             }
+          // If we are on a protected route or splash, handle admission
+          const p = window.location.pathname;
+          if (p === "/" || p.startsWith("/auth/login") || p.includes("/onboarding")) {
+             await handleAdmission(sess, intent || undefined);
+          } else {
+             // Already in a portal, just sync profile state quietly
+             const profile = await syncProfile(sess, intent || undefined);
+             if (profile && active) setUser(profile);
+             setAuthState("ADMITTED");
+             setLoading(false);
           }
+        } else if (active) {
+          setLoading(false);
         }
       } catch (e) {
         console.error("Auth boot failed", e);
-      } finally {
-      if (active) setLoading(false);
+        if (active) setLoading(false);
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [handleAdmission]);
 
   const signIn = useCallback(async (email: string, password: string, intent?: Role) => {
+    setAuthState("AUTHENTICATING");
     try {
       const res = await ifLogin(email, password);
-      const profile = await handleAuthenticatedAdmission(res.user, intent);
-      if (profile) {
-        setUser(profile);
-        recordLogin({ userId: profile.id, event: "login", success: true });
-        return { ok: true, user: profile };
-      }
-      return { ok: false, message: "Could not establish session" };
+      recordLogin({ userId: res.user.id, event: "login", success: true });
+      await handleAdmission(res.user, intent);
+      return { ok: true };
     } catch (e: any) {
+      setAuthState("ERROR");
       return { ok: false, message: e.message || "Sign in failed" };
     }
-  }, []);
+  }, [handleAdmission]);
 
   const signUp = useCallback(async (input: { name: string; email: string; phone: string; password: string; role: Role }) => {
+    setAuthState("AUTHENTICATING");
     try {
       const res = await ifSignup(input.email, input.password, input.name);
       if (res.requireEmailVerification) return { ok: true, needsVerification: true };
       if (res.user) {
-        const profile = await handleAuthenticatedAdmission(res.user, input.role);
-        if (profile) {
-          setUser(profile);
-          recordLogin({ userId: profile.id, event: "login", success: true });
-          return { ok: true, user: profile };
-        }
+        recordLogin({ userId: res.user.id, event: "login", success: true });
+        await handleAdmission(res.user, input.role);
+        return { ok: true };
       }
-      return { ok: false, message: "Account created but session could not be established" };
+      throw new Error("Session could not be established");
     } catch (e: any) {
+      setAuthState("ERROR");
       return { ok: false, message: e.message || "Sign up failed" };
     }
-  }, []);
+  }, [handleAdmission]);
 
   const signInWithProvider = useCallback(async (provider: OAuthProvider, intent?: Role) => {
     try {
@@ -306,38 +298,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const verifyPhoneLogin = useCallback(async (phone: string, otp: string, intent?: Role) => {
+    setAuthState("AUTHENTICATING");
     try {
       const res = await ifVerifyPhoneOtp(phone, otp);
       if (res.ok && res.userId) {
         const sess: InsForgeUser = { id: res.userId, email: "" };
-        const profile = await handleAuthenticatedAdmission(sess, intent);
-        if (profile) {
-          setUser(profile);
-          recordLogin({ userId: profile.id, event: "login", success: true, provider: "phone" });
-          return { ok: true, user: profile };
-        }
+        recordLogin({ userId: sess.id, event: "login", success: true, provider: "phone" });
+        await handleAdmission(sess, intent);
+        return { ok: true };
       }
       return { ok: false, message: res.message || "Verification failed" };
     } catch (e: any) {
+      setAuthState("ERROR");
       return { ok: false, message: e.message || "Verification failed" };
     }
-  }, []);
+  }, [handleAdmission]);
 
   const verifyEmailCode = useCallback(async (email: string, code: string) => {
     try {
       const sess = await ifVerifyEmail(email, code);
       if (sess) {
-        const profile = await syncProfile(sess);
-        if (profile) {
-          setUser(profile);
-          return { ok: true, user: profile };
-        }
+        await handleAdmission(sess);
+        return { ok: true };
       }
-      return { ok: false, message: "Email verified but profile failed" };
+      return { ok: false, message: "Email verified but session failed" };
     } catch (e: any) {
       return { ok: false, message: e.message || "Verification failed" };
     }
-  }, []);
+  }, [handleAdmission]);
 
   const resendVerification = useCallback(async (email: string) => {
     try {
@@ -352,6 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const uid = user?.id;
     await ifLogout();
     setUser(null);
+    setAuthState("IDLE");
     if (uid) endCurrentSession(uid);
     if (typeof window !== "undefined") {
       window.location.assign("/auth/login");
@@ -367,22 +356,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // OAuth Callback Handler
   useEffect(() => {
     const callback = readOAuthCallback();
     if (callback) {
       clearOAuthParamsFromUrl();
+      setAuthState("AUTHENTICATING");
       setLoading(true);
       void (async () => {
         try {
           const { user: sess } = await ifCompleteOAuth(callback.code);
           const intent = (callback.meta?.app as Role) || getRequestedPortal(window.location.pathname);
-          const profile = await handleAuthenticatedAdmission(sess, intent);
-          if (profile) {
-            setUser(profile);
-            recordLogin({ userId: profile.id, event: "oauth", success: true });
-          }
+          recordLogin({ userId: sess.id, event: "oauth", success: true });
+          await handleAdmission(sess, intent);
         } catch (e: any) {
           setOauthError(e.message || "OAuth exchange failed");
+          setAuthState("ERROR");
         } finally {
           setLoading(false);
         }
@@ -394,11 +383,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearOAuthParamsFromUrl();
       }
     }
-  }, []);
+  }, [handleAdmission]);
 
   const value = {
     user,
     loading,
+    authState,
+    authError,
     roles: user?.roles || [],
     signIn,
     signUp,
@@ -422,3 +413,4 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
+
