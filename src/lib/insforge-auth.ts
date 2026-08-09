@@ -179,11 +179,16 @@ export async function ifLogout(): Promise<void> {
   // Revokes the server-side session for every provider linked to the account.
   try { await raw(`/api/auth/sessions/current`, { method: "DELETE" }); } catch { /* */ }
   try { await raw(`/api/auth/logout`, { method: "POST" }); } catch { /* */ }
+  
+  // Hardened cleanup: Clear all auth-related local state and cookies
   setTokens(null, null);
-  try {
-    sessionStorage.removeItem(PKCE_KEY);
-    sessionStorage.removeItem(OAUTH_META_KEY);
-  } catch { /* */ }
+  dropOAuthState(PKCE_KEY);
+  dropOAuthState(OAUTH_META_KEY);
+  
+  // Clear any potential leftover auth cookies
+  clearCookie("insforge-auth-token");
+  clearCookie("sb-access-token");
+  clearCookie("sb-refresh-token");
 }
 
 export async function ifGetSession(): Promise<InsForgeUser | null> {
