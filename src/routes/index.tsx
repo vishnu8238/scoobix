@@ -22,12 +22,11 @@ function Splash() {
 
 
   useEffect(() => {
-    // The Splash screen is a passive listener. 
-    // It should not trigger its own redirects if AuthProvider is booting.
     if (loading) return;
     
+    const intent = getPortalIntent(window.location.pathname, window.location.search);
+    
     if (!user) {
-      const intent = getPortalIntent(window.location.pathname, window.location.search);
       console.log("[AUTH_FORENSIC] Splash: No user. Redirecting to login. Intent:", intent);
       navigate({ 
         to: "/auth/login", 
@@ -37,11 +36,13 @@ function Splash() {
       return;
     }
     
-    // If user exists, ensure they are in the right place.
-    const intent = getPortalIntent(window.location.pathname, window.location.search);
+    // AuthProvider handles the initial authoritative redirect via window.location.assign.
+    // Splash only acts as a safety fallback if the user is authenticated but stuck here.
     const destination = resolveAuthenticatedDestination(user, intent);
-    console.log("[AUTH_FORENSIC] Splash: User exists. Redirecting to authoritative destination:", destination);
-    window.location.assign(destination);
+    if (window.location.pathname !== destination) {
+      console.log("[AUTH_FORENSIC] Splash: Safety redirect to destination:", destination);
+      window.location.assign(destination);
+    }
   }, [navigate, user, loading]);
 
 

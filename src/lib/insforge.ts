@@ -543,24 +543,25 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
       // entirely (no mock fallback). Empty tables leave seeds untouched so
       // screens degrade to their existing empty/demo state.
       if (rests.length) {
-        restaurants.splice(0, restaurants.length, ...rests.map((row) => toRestaurant(row, menuByRest.get(row.id) ?? [])));
+        // Clear all mock data if backend has data
+        restaurants.length = 0;
+        restaurants.push(...rests.map((row) => toRestaurant(row, menuByRest.get(row.id) ?? [])));
 
         // Rebuild the curated id lists from backend flags so trending /
         // recommended rails aren't pointing at removed seed dishes.
         const backendDishes = restaurants.flatMap((r) => r.menu);
         const popular = backendDishes.filter((d) => d.popular).map((d) => d.id);
         const trending = (popular.length ? popular : backendDishes.map((d) => d.id)).slice(0, 8);
-        trendingDishIds.splice(0, trendingDishIds.length, ...trending);
+        trendingDishIds.length = 0;
+        trendingDishIds.push(...trending);
         const recommended = backendDishes.map((d) => d.id).filter((id) => !trending.includes(id));
-        recommendedDishIds.splice(
-          0,
-          recommendedDishIds.length,
-          ...(recommended.length ? recommended : trending).slice(0, 6),
-        );
+        recommendedDishIds.length = 0;
+        recommendedDishIds.push(...(recommended.length ? recommended : trending).slice(0, 6));
       }
 
       if (cats.length) {
-        categories.splice(0, categories.length, ...cats.filter((c) => c.active !== false).map(toCategory));
+        categories.length = 0;
+        categories.push(...cats.filter((c) => c.active !== false).map(toCategory));
       }
 
 

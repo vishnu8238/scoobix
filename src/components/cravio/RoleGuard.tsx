@@ -11,7 +11,15 @@ import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
  * - Signed-in users whose role does not own this surface are redirected to
  *   onboarding for THAT portal (intent preservation).
  */
-export function RoleGuard({ allow, children }: { allow: Role; children: React.ReactNode }) {
+export function RoleGuard({ 
+  allow, 
+  children,
+  transitionLabel
+}: { 
+  allow: Role; 
+  children: React.ReactNode;
+  transitionLabel?: string;
+}) {
   const { user, loading, setPortal } = useAuth();
   const navigate = useNavigate();
   const href = useRouterState({ select: (s) => s.location.href });
@@ -28,9 +36,16 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
       // 1. Check if user has membership for THIS portal
       if (!user.roles.includes(allow)) {
         const onboarding = ROLE_ONBOARDING[allow];
+        
+        // Safety: If onboarding is not defined (e.g. customer), fallback to home
+        if (!onboarding) {
+           navigate({ to: "/app" as any, replace: true });
+           return;
+        }
+
         console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
         // Avoid redundant navigations if already there
-        if (!window.location.pathname.startsWith(onboarding)) {
+        if (window.location.pathname !== onboarding) {
           navigate({ to: onboarding as any, replace: true });
         }
         return;
@@ -62,7 +77,7 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
         <div className="animate-pulse-soft flex flex-col items-center gap-4">
           <ScoobixMark size={56} />
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground animate-pulse">
-            Verifying Identity...
+            {transitionLabel || "Verifying Identity..."}
           </p>
         </div>
       </div>
@@ -77,7 +92,7 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
         <div className="flex min-h-svh w-full items-center justify-center bg-background p-6 text-center">
           <div className="max-w-xs space-y-4">
             <ScoobixMark size={48} className="mx-auto" />
-            <h2 className="font-display text-xl font-bold">Accessing {allow} portal...</h2>
+            <h2 className="font-display text-xl font-bold">{transitionLabel || `Accessing ${allow} portal...`}</h2>
             <p className="text-sm text-muted-foreground">Please wait while we set up your account.</p>
           </div>
         </div>
