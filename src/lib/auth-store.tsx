@@ -22,6 +22,7 @@ import {
   type UserProfileRow,
 } from "./insforge-auth";
 import { listTable } from "./insforge-crud";
+import { resolveCanonicalUserId } from "./identity-links";
 import { isPhoneOtpEnabled, sendPhoneOtp as ifSendPhoneOtp, verifyPhoneOtp as ifVerifyPhoneOtp } from "./phone-otp";
 import { recordLogin, endCurrentSession } from "./security-api";
 
@@ -85,41 +86,22 @@ export function getRequestedPortal(pathname: string, search?: string | URLSearch
   return null;
 }
 
-export async function resolveUserMemberships(userId: string, email?: string) {
-  // If we have an email, we should also check if memberships are linked to OTHER user_ids with the same email.
-  // This handles the "Fragmentation" issue where different login methods (Google vs Email) create separate user rows.
-  const userIds = [userId];
-  
-  if (email) {
-    try {
-      const { INSFORGE_URL, INSFORGE_ANON_KEY } = await import("./insforge");
-      const res = await fetch(`${INSFORGE_URL}/api/database/records/users?email=eq.${encodeURIComponent(email)}&select=id`, {
-        headers: { apikey: INSFORGE_ANON_KEY, Authorization: `Bearer ${INSFORGE_ANON_KEY}` }
-      });
-      if (res.ok) {
-        const users = await res.json();
-        if (Array.isArray(users)) {
-          users.forEach(u => {
-            if (u.id && !userIds.includes(u.id)) userIds.push(u.id);
-          });
-        }
-      }
-    } catch (e) {
-      console.warn("[AUTH_FORENSIC] Identity lookup failed:", e);
-    }
-  }
-
-  console.log(`[AUTH_FORENSIC] Resolving memberships for IDs:`, userIds);
-
-  const restFilter = `or=(manager_id.in.(${userIds.join(",")}),owner_id.in.(${userIds.join(",")}))`;
-
+/**
+ * Membership resolution. Takes the CANONICAL application identity only.
+ *
+ * SECURITY: this function must never receive or use an email address. Roles are
+ * resolved exclusively from rows keyed by `canonicalUserId`. Cross-identity role
+ * inheritance is only possible through an explicit `auth_identity_links` row
+ * (see resolveCanonicalUserId), never through matching email strings.
+ */
+export async function resolveUserMemberships(canonicalUserId: string) {
   const [drivers, managers, admins, restaurants] = await Promise.all([
-    listTable<{ id: string }>("drivers", { user_id: `in.(${userIds.join(",")})`, select: "id", limit: 1 }).catch(() => []),
-    listTable<{ id: string }>("merchant_managers", { user_id: `in.(${userIds.join(",")})`, select: "id", limit: 1 }).catch(() => []),
-    listTable<{ id: string; status?: string }>("platform_admins", { user_id: `in.(${userIds.join(",")})`, select: "id,status", limit: 1 }).catch(() => []),
-    listTable<{ id: string }>("restaurants", { or: restFilter, select: "id", limit: 1 }).catch(() => []),
+    listTable<{ id: string }>("drivers", { user_id: `eq.${canonicalUserId}`, select: "id", limit: 1 }).catch(() => []),
+    listTable<{ id: string }>("merchant_managers", { user_id: `eq.${canonicalUserId}`, select: "id", limit: 1 }).catch(() => []),
+    listTable<{ id: string; status?: string }>("platform_admins", { user_id: `eq.${canonicalUserId}`, select: "id,status", limit: 1 }).catch(() => []),
+    listTable<{ id: string }>("restaurants", { or: `(manager_id.eq.${canonicalUserId},owner_id.eq.${canonicalUserId})`, select: "id", limit: 1 }).catch(() => []),
   ]);
-  
+
   return {
     customer: true,
     rider: (drivers?.length ?? 0) > 0,
@@ -162,36 +144,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log(`[AUTH_ADMISSION] Starting admission for ${sess.id} with intent ${intent || "none"}`);
       console.log(`[AUTH_DEBUG] SESSION_UUID: ${sess.id}`);
       
-      // 1. Resolve Identity and Profile
+      // 1. Resolve the CANONICAL application identity for this Auth UUID.
+      //    Only an explicit auth_identity_links row can map this session onto a
+      //    different canonical identity. No email matching, ever.
+      const { canonicalUserId, linked } = await resolveCanonicalUserId(sess.id);
+      console.log(`[AUTH_DEBUG] CANONICAL_IDENTITY: ${canonicalUserId} (explicit link: ${linked})`);
+
+      // 2. Resolve Profile (keyed by canonical identity)
       console.log(`[AUTH_DEBUG] PROFILE_START`);
-      const profile = await fetchUserProfile(sess.id);
-      const email = sess.email || profile?.email || "";
+      const profile = await fetchUserProfile(canonicalUserId);
+      const email = profile?.email || sess.email || "";
       const name = profile?.name || sess.metadata?.name as string || email.split("@")[0] || "User";
 
       if (!profile) {
-        console.log(`[AUTH_ADMISSION] Creating missing profile for ${sess.id}`);
+        console.log(`[AUTH_ADMISSION] Creating missing profile for ${canonicalUserId}`);
         await upsertUserProfile({
-          id: sess.id,
+          id: canonicalUserId,
           email,
           name,
-          referral_code: referralCodeFor(sess.id, name)
+          referral_code: referralCodeFor(canonicalUserId, name)
         });
       }
       console.log(`[AUTH_DEBUG] PROFILE_SUCCESS`);
 
-      // 2. Resolve Memberships
-      console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
-      
-      // 2. Resolve Memberships
+      // 3. Resolve Memberships — canonical identity only
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
       const requestedPortal = intent || getRequestedPortal(window.location.pathname);
-      const memberships = await resolveUserMemberships(sess.id, email);
+      const memberships = await resolveUserMemberships(canonicalUserId);
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT:`, memberships);
       const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
-      
-      // 3. Update User State
+
+      // 4. Update User State
       setUser({
-        id: sess.id,
+        id: canonicalUserId,
         name,
         email,
         phone: profile?.phone || "",
@@ -238,16 +223,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await admit(sess, intent || undefined);
           } else {
             // Already inside the app, just sync state silently
-            const memberships = await resolveUserMemberships(sess.id);
-            const profile = await fetchUserProfile(sess.id);
+            const { canonicalUserId } = await resolveCanonicalUserId(sess.id);
+            const memberships = await resolveUserMemberships(canonicalUserId);
+            const profile = await fetchUserProfile(canonicalUserId);
             if (!active) return;
 
             const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
             
             setUser({
-              id: sess.id,
+              id: canonicalUserId,
               name: profile?.name || sess.email.split("@")[0] || "User",
-              email: sess.email,
+              email: profile?.email || sess.email,
               phone: profile?.phone || "",
               role: intent || activeRoles[0] || "customer",
               roles: activeRoles,
