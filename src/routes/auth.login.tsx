@@ -181,7 +181,13 @@ function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp, otpSent, mode]);
 
-  if (user && app && !user.roles.includes(app.role)) {
+  // We only show the restricted UI IF:
+  // 1. We have a user AND a requested app
+  // 2. The user roles (resolved from DB) definitely do NOT include the app role
+  // 3. We are NOT currently loading/syncing memberships (loading state from hook)
+  const isRestricted = !loading && user && app && !user.roles.includes(app.role);
+
+  if (isRestricted) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center">
         <div className="mx-auto flex max-w-md flex-col items-center">

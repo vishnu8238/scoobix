@@ -280,7 +280,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   let sessionRole: Role = "customer";
   const target = requestedPortal || input.role;
   
-  if (target && allRoles.includes(target)) {
+  if (target && allRoles.includes(target as Role)) {
     sessionRole = target;
   } else if (allRoles.includes("admin")) {
     sessionRole = "admin";
@@ -600,7 +600,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
     const requestedPortal = resolvePortalFromPath(currentPath);
     
-    if (requestedPortal && !next.roles.includes(requestedPortal)) {
+    if (requestedPortal && !next.roles.includes(requestedPortal as Role)) {
        // We DO NOT block the session admission here, because the Login page 
        // needs the 'user' object to show the "Access Restricted" UI.
        // However, we record it for security.
