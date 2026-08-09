@@ -27,7 +27,8 @@ export const Route = createFileRoute("/auth/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const { app: appId, redirect } = Route.useSearch() as LoginSearch;
-  const app = appId ? APPS[appId] : null;
+  const requestedPortal = appId || resolvePortalFromPath(window.location.pathname);
+  const app = requestedPortal ? APPS[requestedPortal as AppId] : null;
   const {
     user,
     loading,
@@ -107,18 +108,18 @@ function LoginPage() {
     // 2. If the roles don't match, STAY HERE so the "Wrong Account" UI renders.
     // 3. If no specific portal requested, go to user's role home.
 
-    const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
-    console.log("[auth] landing for user:", user.id, "requested portal:", requestedPortal, "user roles:", user.roles);
+    const portal = app?.role || resolvePortalFromPath(window.location.pathname);
+    console.log("[auth] landing for user:", user.id, "requested portal:", portal, "user roles:", user.roles);
     
-    if (requestedPortal && user.roles.includes(requestedPortal)) {
-      const home = ROLE_HOME[requestedPortal];
+    if (portal && user.roles.includes(portal)) {
+      const home = ROLE_HOME[portal];
       const canResume = !!redirect && redirect.startsWith(home);
       console.log("[auth] redirecting to portal home:", canResume ? redirect : home);
       navigate({ to: (canResume ? redirect : home) as never, replace: true });
       return;
     }
 
-    if (!requestedPortal && user.role) {
+    if (!portal && user.role) {
       const home = ROLE_HOME[user.role];
       const canResume = !!redirect && redirect.startsWith(home);
       console.log("[auth] no specific portal, redirecting to default home:", home);
@@ -266,6 +267,11 @@ function LoginPage() {
         <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">
           Sign in to {app ? app.shortName : "Scoobix"}
         </h1>
+        {requestedPortal && requestedPortal !== "customer" && (
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
+            {requestedPortal} Portal
+          </p>
+        )}
         <p className="mt-1 text-sm text-muted-foreground">Use your Scoobix account credentials.</p>
       </div>
 

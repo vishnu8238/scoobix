@@ -28,6 +28,7 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
     if (user && !user.roles.includes(allow)) {
       console.warn(`[auth] RoleGuard mismatch: user has roles [${user.roles.join(", ")}] but portal requires ${allow}`);
       // Send to the login screen specifically for THIS portal so the user can sign in with the right account or resolve access.
+      console.log(`[auth] RoleGuard redirecting to login with app=${allow}`);
       navigate({
         to: "/auth/login",
         search: { app: allow, redirect: href },

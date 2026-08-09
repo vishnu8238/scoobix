@@ -27,11 +27,11 @@ function Splash() {
     
     if (user) {
       const hasRole = (r: Role) => user.roles.includes(r);
+      // AUTHORITATIVE: The URL path determines the portal we land in.
       const portal = resolvePortalFromPath(window.location.pathname);
       
       let target = "/app";
       
-      // If we have a detected portal from the URL and the user HAS that role, respect it.
       if (portal && hasRole(portal)) {
         target = ROLE_HOME[portal];
       } else if (hasRole("admin")) {
@@ -46,11 +46,18 @@ function Splash() {
         target = ROLE_HOME.customer;
       }
 
-      console.log("[auth] Root redirect to target:", target, "for roles:", user.roles, "active portal:", portal);
+      console.log("[auth] Splash redirecting to target:", target, "requested portal:", portal);
       navigate({ to: target as never, replace: true });
     } else {
-      console.log("[auth] Root redirect to login (no session).");
-      navigate({ to: "/auth/login", replace: true });
+      // If we are on a portal subpath (e.g. /partner) and logged out,
+      // preserve that portal in the login redirect.
+      const portal = resolvePortalFromPath(window.location.pathname);
+      console.log("[auth] Splash redirecting to login. Context:", portal);
+      navigate({ 
+        to: "/auth/login", 
+        search: { app: portal || undefined },
+        replace: true 
+      });
     }
   }, [navigate, user, loading]);
 
