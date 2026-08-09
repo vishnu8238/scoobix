@@ -529,6 +529,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           clearOAuthParamsFromUrl();
         }
 
+        const callback = readOAuthCallback();
         const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
         console.log("[auth] BOOT: Portal intent resolved:", currentPortal);
 
