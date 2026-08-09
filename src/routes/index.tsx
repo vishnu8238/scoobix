@@ -39,10 +39,11 @@ function Splash() {
         target = ROLE_HOME[user.roles[0]];
       } else {
         // Fallback to highest privilege order
-        if (hasRole("admin")) target = "/admin";
-        else if (hasRole("manager")) target = "/manager";
-        else if (hasRole("partner")) target = "/partner";
-        else if (hasRole("rider")) target = "/rider";
+        if (hasRole("admin")) target = ROLE_HOME.admin;
+        else if (hasRole("manager")) target = ROLE_HOME.manager;
+        else if (hasRole("partner")) target = ROLE_HOME.partner;
+        else if (hasRole("rider")) target = ROLE_HOME.rider;
+        else target = ROLE_HOME.customer;
       }
 
       console.log("[auth] Root redirect to target:", target, "for roles:", user.roles, "active portal:", portal);

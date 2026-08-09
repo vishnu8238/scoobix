@@ -275,6 +275,10 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     sessionRole = "partner";
   } else if (allRoles.includes("rider")) {
     sessionRole = "rider";
+  } else if (allRoles.includes("customer")) {
+    sessionRole = "customer";
+  } else if (allRoles.length > 0) {
+    sessionRole = allRoles[0];
   }
 
   // 3. Ensure user profile exists in database.
@@ -492,9 +496,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // For session restoration, we respect the portal from the URL OR the persisted portal state.
               const portal = currentPortal || (typeof localStorage !== "undefined" ? localStorage.getItem("scoobix_active_portal_v1") as Role : null);
               const next = await syncProfile(sess, { 
-                role: portal ?? undefined, 
+                role: portal && ALL_ROLES.includes(portal) ? portal : undefined, 
                 forceRole: !!portal 
-              }, portal ?? undefined);
+              }, portal && ALL_ROLES.includes(portal) ? portal : undefined);
               console.log("[auth] Profile restored for session user:", next?.id, next?.role);
               if (!cancelled && next) setUser(next);
             } else {
@@ -599,7 +603,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { user: sess } = await ifLogin(address, password);
       const currentPortal = resolvePortalFromPath(window.location.pathname);
-      const targetPortal = role || currentPortal || undefined;
+      const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
@@ -633,7 +637,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // pending there may be no session user yet — the row is then created on
       // the first successful login (self-healing).
       const currentPortal = resolvePortalFromPath(window.location.pathname);
-      const targetPortal = role || currentPortal || undefined;
+      const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
@@ -663,7 +667,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setOauthError(null);
       const currentPortal = resolvePortalFromPath(window.location.pathname);
-      const targetPortal = role || currentPortal || undefined;
+      const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       rememberPendingRole(targetPortal, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
 
@@ -703,7 +707,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sess = await ifGetSession();
     if (!sess) return { ok: false, message: "Could not start a session" };
     const currentPortal = resolvePortalFromPath(window.location.pathname);
-    const targetPortal = role || currentPortal || undefined;
+    const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
     const next = await syncProfile(sess, { 
       provider: "phone", 
       role: targetPortal, 

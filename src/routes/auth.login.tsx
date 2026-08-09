@@ -75,7 +75,7 @@ function LoginPage() {
 
     // If the authenticated user has the requested role, go home.
     if (requestedPortal && user.roles.includes(requestedPortal)) {
-      const home = ROLE_HOME[user.role];
+      const home = ROLE_HOME[requestedPortal];
       const canResume = !!redirect && redirect.startsWith(home);
       navigate({ to: (canResume ? redirect : home) as never, replace: true });
     } else if (!requestedPortal) {
@@ -84,6 +84,7 @@ function LoginPage() {
     } else {
       // User is authenticated but role doesn't match the requested portal.
       // We keep them on the login page to show "Wrong Account" / "Sign out" flow.
+      console.warn(`[auth] Portal mismatch: user roles [${user.roles.join(", ")}] lack ${requestedPortal}`);
     }
   }, [app, loading, navigate, redirect, user]);
 
