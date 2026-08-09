@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search, MapPin, Navigation, Plus, Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
-import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { GoogleMap as LeafletMap } from "@/components/maps/GoogleMap";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAddresses } from "@/lib/addresses-store";
