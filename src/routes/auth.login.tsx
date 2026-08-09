@@ -72,14 +72,17 @@ function LoginPage() {
     // Authorization logic:
     // The intended portal is derived from the search param ?app= OR the current URL.
     const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
+    console.log("[auth] Login page redirect check:", { requestedPortal, userRoles: user.roles, userId: user.id });
 
     // If the authenticated user has the requested role, go home.
     if (requestedPortal && user.roles.includes(requestedPortal)) {
       const home = ROLE_HOME[requestedPortal];
       const canResume = !!redirect && redirect.startsWith(home);
+      console.log("[auth] Authorized for portal, navigating to:", canResume ? redirect : home);
       navigate({ to: (canResume ? redirect : home) as never, replace: true });
     } else if (!requestedPortal) {
       // If we're at /auth/login (Customer portal) and no app specified, default to user role home
+      console.log("[auth] No portal requested, navigating to default home:", ROLE_HOME[user.role]);
       navigate({ to: ROLE_HOME[user.role] as never, replace: true });
     } else {
       // User is authenticated but role doesn't match the requested portal.

@@ -218,6 +218,8 @@ async function resolveUserRoles(userId: string, email: string): Promise<Role[]> 
     listTable<{ id: string }>("restaurants", { owner_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => [])
   ]);
 
+  console.log(`[auth] Resolving roles for ${userId}:`, { isDriver, isManager, isAdmin, ownedCount: ownedRestaurants.length });
+
   if (isDriver) roles.push("rider");
   if (isManager) roles.push("manager");
   if (isAdmin) roles.push("admin");
@@ -280,11 +282,11 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     sessionRole = "partner";
   } else if (allRoles.includes("rider")) {
     sessionRole = "rider";
-  } else if (allRoles.includes("customer")) {
+  } else {
     sessionRole = "customer";
-  } else if (allRoles.length > 0) {
-    sessionRole = allRoles[0];
   }
+
+  console.log(`[auth] Session role finalized: ${sessionRole} (requested: ${requestedPortal}, target: ${input.role}, all: ${allRoles.join(",")})`);
 
   // 3. Ensure user profile exists in database.
   // We NO LONGER overwrite the role column with requestedPortal if it exists.
