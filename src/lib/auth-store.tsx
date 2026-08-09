@@ -263,7 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = await handleAuthenticatedAdmission(res.user, intent);
       if (profile) {
         setUser(profile);
-        recordLogin(profile.id, "email");
+        recordLogin({ userId: profile.id, event: "login", success: true });
         return { ok: true, user: profile };
       }
       return { ok: false, message: "Could not establish session" };
@@ -280,7 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profile = await handleAuthenticatedAdmission(res.user, input.role);
         if (profile) {
           setUser(profile);
-          recordLogin(profile.id, "email");
+          recordLogin({ userId: profile.id, event: "login", success: true });
           return { ok: true, user: profile };
         }
       }
@@ -313,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profile = await handleAuthenticatedAdmission(sess, intent);
         if (profile) {
           setUser(profile);
-          recordLogin(profile.id, "phone");
+          recordLogin({ userId: profile.id, event: "login", success: true, provider: "phone" });
           return { ok: true, user: profile };
         }
       }
@@ -379,7 +379,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const profile = await handleAuthenticatedAdmission(sess, intent);
           if (profile) {
             setUser(profile);
-            recordLogin(profile.id, "oauth");
+            recordLogin({ userId: profile.id, event: "oauth", success: true });
           }
         } catch (e: any) {
           setOauthError(e.message || "OAuth exchange failed");
