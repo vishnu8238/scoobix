@@ -223,16 +223,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await admit(sess, intent || undefined);
           } else {
             // Already inside the app, just sync state silently
-            const memberships = await resolveUserMemberships(sess.id);
-            const profile = await fetchUserProfile(sess.id);
+            const { canonicalUserId } = await resolveCanonicalUserId(sess.id);
+            const memberships = await resolveUserMemberships(canonicalUserId);
+            const profile = await fetchUserProfile(canonicalUserId);
             if (!active) return;
 
             const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
             
             setUser({
-              id: sess.id,
+              id: canonicalUserId,
               name: profile?.name || sess.email.split("@")[0] || "User",
-              email: sess.email,
+              email: profile?.email || sess.email,
               phone: profile?.phone || "",
               role: intent || activeRoles[0] || "customer",
               roles: activeRoles,
