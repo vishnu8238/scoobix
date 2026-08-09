@@ -78,6 +78,7 @@ type AuthCtx = {
   clearOAuthError: () => void;
   resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
   setPortal: (portal: Role | null) => void;
+  authBootTimeout: boolean;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -911,6 +912,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         resetPassword,
         setPortal,
+        authBootTimeout,
       }}
     >
       {children}
