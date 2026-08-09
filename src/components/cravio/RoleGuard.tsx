@@ -29,7 +29,10 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
       if (!user.roles.includes(allow)) {
         const onboarding = ROLE_ONBOARDING[allow];
         console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
-        navigate({ to: onboarding as any, replace: true });
+        // Avoid redundant navigations if already there
+        if (!window.location.pathname.startsWith(onboarding)) {
+          navigate({ to: onboarding as any, replace: true });
+        }
         return;
       }
       
@@ -66,11 +69,9 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
     );
   }
 
-  // If loading is done but user is missing or unauthorized, we show nothing 
+  // If loading is done but user is missing or unauthorized, we show a transition state
   // while the useEffect above handles the redirect.
   if (!user || !user.roles.includes(allow)) {
-    // If authenticated but not authorized, show a message while redirecting 
-    // to prevent the "Blank Page" symptom.
     if (user) {
       return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background p-6 text-center">
@@ -85,5 +86,5 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
     return null;
   }
 
-  return <>{children}</>;
+  return <>{children};</>;
 }
