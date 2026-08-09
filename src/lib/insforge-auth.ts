@@ -423,6 +423,7 @@ export async function ifCreateOAuthUrl(
 
   const url = new URL(`${INSFORGE_URL}/api/auth/oauth/${provider}`);
   url.searchParams.set("redirect_uri", redirectUri);
+  console.log(`[OAUTH_DEBUG] Configured redirect_uri: ${redirectUri}`);
   url.searchParams.set("code_challenge", challenge);
   url.searchParams.set("code_challenge_method", "S256");
   if (queryParams) {
@@ -541,21 +542,34 @@ export function ifCompleteOAuth(code: string): Promise<{ user: InsForgeUser; isN
     let firstError: unknown = null;
 
     if (verifier) {
-      try { data = await exchangeOAuthCode(code, verifier); } catch (err) { firstError = err; }
+      try { 
+        console.log("[OAUTH_DEBUG] Attempting exchange with verifier");
+        data = await exchangeOAuthCode(code, verifier); 
+      } catch (err) { 
+        console.warn("[OAUTH_DEBUG] Exchange with verifier failed:", err);
+        firstError = err; 
+      }
     }
     // Verifier missing or rejected (lost/partitioned storage): try once without
     // it — some providers/configs complete the exchange server-side.
     if (!data) {
-      try { data = await exchangeOAuthCode(code, null); } catch (err) { firstError ??= err; }
+      try { 
+        console.log("[OAUTH_DEBUG] Attempting exchange without verifier (fallback)");
+        data = await exchangeOAuthCode(code, null); 
+      } catch (err) { 
+        console.error("[OAUTH_DEBUG] Exchange without verifier failed:", err);
+        firstError ??= err; 
+      }
     }
 
     dropOAuthState(PKCE_KEY);
     dropOAuthState(OAUTH_META_KEY);
 
     if (data) {
-      console.log("[AUTH_FORENSIC] ifCompleteOAuth: Exchange successful. Persisting session tokens.");
+      console.log("[OAUTH_DEBUG] ifCompleteOAuth: Exchange successful. Data user ID:", data?.user?.id || data?.id);
       setTokens(data.accessToken ?? null, data.refreshToken ?? null);
       const user = await ensureSessionUser(data, "Provider sign-in");
+      console.log("[OAUTH_DEBUG] ifCompleteOAuth: Session user ensured:", user.id);
       return { user, isNewUser: !!data.isNewUser };
     }
 
