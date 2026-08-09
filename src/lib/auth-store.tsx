@@ -387,20 +387,12 @@ async function userIsPlatformAdmin(userId: string, email: string): Promise<boole
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
-  const [activePortal, setActivePortalState] = useState<Role | null>(() => {
-    if (typeof window === "undefined") return null;
-    return resolvePortalFromPath(window.location.pathname);
-  });
+  const [activePortal, setActivePortalState] = useState<Role | null>(null); // Start as null to avoid race
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
-
   const setPortal = useCallback((portal: Role | null) => {
     setActivePortalState(portal);
-    // Portal state is now tab-specific (held in component state), 
-    // but we can still use local storage as a hint for NEW tabs if needed.
-    // However, to satisfy "CRITICAL: Do NOT use a single global localStorage activePortal value as authoritative",
-    // we strictly rely on the state + path resolution.
     if (portal) {
       console.log(`[auth] Tab portal set to: ${portal}`);
     }
