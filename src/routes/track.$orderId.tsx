@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, MessageSquare, Phone, Star, MapPin, Clock, ShieldCheck, StickyNote, X } from "lucide-react";
 import { useOrders, useAppUI, STATUS_LABEL } from "@/lib/stores";
-import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { GoogleMap as LeafletMap } from "@/components/maps/GoogleMap";
 import { TimelineStepper } from "@/components/cravio/TimelineStepper";
 import { Button } from "@/components/ui/button";
 import { currency } from "@/lib/format";
