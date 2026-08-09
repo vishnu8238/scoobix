@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_HOME, useAuth, getRequestedPortal, resolveAuthenticatedDestination } from "@/lib/auth-store";
+import { useAuth, getRequestedPortal } from "@/lib/auth-store";
 import { APPS, type AppId } from "@/lib/apps";
 import type { User } from "@/lib/types";
 import { OTP_LENGTH, OTP_RESEND_SECONDS } from "@/lib/phone-otp";
