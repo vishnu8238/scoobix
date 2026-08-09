@@ -182,20 +182,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2. Resolve Memberships
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
       
-      // TEMPORARY DIAGNOSTIC BYPASS for /auth/login?app=manager
+      // 2. Resolve Memberships
+      console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
       const requestedPortal = intent || getRequestedPortal(window.location.pathname);
-      if (requestedPortal === "manager") {
-        console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT: BYPASSED`);
-        console.log(`[AUTH_DEBUG] ADMISSION_RESULT: BYPASS_SUCCESS`);
-        console.log(`[AUTH_DEBUG] DESTINATION: /manager/onboarding`);
-        console.log(`[AUTH_DEBUG] NAVIGATION_START`);
-        setAuthState("ADMITTED");
-        setLoading(false);
-        window.location.assign("/manager/onboarding");
-        return;
-      }
-
-      const memberships = await resolveUserMemberships(sess.id);
+      const memberships = await resolveUserMemberships(sess.id, email);
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT:`, memberships);
       const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
       
