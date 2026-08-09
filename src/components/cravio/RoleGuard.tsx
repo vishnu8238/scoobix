@@ -26,13 +26,15 @@ export function RoleGuard({
   const href = useRouterState({ select: (s) => s.location.href });
 
   useEffect(() => {
-    if (loading || authState === "RESOLVING") return;
+    if (loading || authState === "RESOLVING") {
+      console.log(`[AUTH_DEBUG] RoleGuard stage: waiting | portal: ${allow} | authState: ${authState} | loading: ${loading}`);
+      return;
+    }
     
     if (!user) {
-      // 3. Not authenticated.
+      console.log(`[AUTH_DEBUG] RoleGuard stage: no_user | redirecting_to_login | portal: ${allow}`);
       const intent = getRequestedPortal(window.location.pathname, window.location.search) || allow;
       const safeRedirect = href.startsWith("/auth") || href.includes("login") ? undefined : href;
-      console.log(`[AUTH_ADMISSION] RoleGuard: Unauthenticated. Redirecting to login for portal ${allow}`);
       navigate({
         to: "/auth/login",
         search: { app: intent, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
@@ -41,23 +43,19 @@ export function RoleGuard({
       return;
     }
 
-    // 1. Check if user has membership for THIS portal
     if (!user.roles.includes(allow)) {
+      console.log(`[AUTH_DEBUG] RoleGuard stage: forbidden | user_roles: ${user.roles.join(',')} | required: ${allow}`);
       const onboarding = ROLE_ONBOARDING[allow];
-      
-      // Safety: If onboarding is not defined (e.g. customer), fallback to home
       if (!onboarding) {
          navigate({ to: "/app" as any, replace: true });
          return;
       }
-
-      console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
-      // Avoid redundant navigations if already there
       if (typeof window !== "undefined" && window.location.pathname !== onboarding) {
         window.location.assign(onboarding);
       }
       return;
     }
+    console.log(`[AUTH_DEBUG] RoleGuard stage: access_granted | portal: ${allow}`);
   }, [user, loading, authState, allow, navigate, href]);
 
 

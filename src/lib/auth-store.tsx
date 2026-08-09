@@ -92,27 +92,46 @@ export function getRequestedPortal(pathname: string, search?: string | URLSearch
 }
 
 export async function resolveUserMemberships(userId: string) {
+  const debug = (stage: string, data: any) => {
+    console.log(`[AUTH_DEBUG] stage: membership_query | sub_stage: ${stage} | userId: ${userId}`, data);
+  };
+
   try {
+    debug("start", {});
     const [drivers, managers, admins, restaurants] = await Promise.all([
-      listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
-      listTable<{ id: string }>("merchant_managers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
-      listTable<{ id: string; status?: string }>("platform_admins", { user_id: `eq.${userId}`, select: "id,status", limit: 1 }).catch(() => []),
+      listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).catch((e) => {
+        debug("drivers_error", { error: e.message });
+        return [];
+      }),
+      listTable<{ id: string }>("merchant_managers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).catch((e) => {
+        debug("managers_error", { error: e.message });
+        return [];
+      }),
+      listTable<{ id: string; status?: string }>("platform_admins", { user_id: `eq.${userId}`, select: "id,status", limit: 1 }).catch((e) => {
+        debug("admins_error", { error: e.message });
+        return [];
+      }),
       listTable<{ id: string; manager_id?: string; owner_id?: string }>("restaurants", { 
         or: `(manager_id.eq.${userId},owner_id.eq.${userId})`, 
         select: "id,manager_id,owner_id", 
         limit: 1 
-      }).catch(() => [])
+      }).catch((e) => {
+        debug("restaurants_error", { error: e.message });
+        return [];
+      })
     ]);
 
-    return {
+    const result = {
       customer: true,
       rider: drivers.length > 0,
       manager: managers.length > 0,
       admin: admins.length > 0 && admins[0]?.status !== "disabled",
       partner: restaurants.length > 0
     };
-  } catch (err) {
-    console.error("[AUTH_ADMISSION] Membership query failed:", err);
+    debug("complete", { result, counts: { drivers: drivers.length, managers: managers.length, admins: admins.length, restaurants: restaurants.length } });
+    return result;
+  } catch (err: any) {
+    debug("fatal_error", { error: err.message });
     throw err;
   }
 }
@@ -194,31 +213,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleAdmission = useCallback(async (sess: InsForgeUser, intent?: Role) => {
     if (typeof window === "undefined") return;
     
-    setAuthState("RESOLVING");
-    try {
-      const profile = await syncProfile(sess, intent);
-      if (!profile) throw new Error("Could not sync profile");
+    const sessionId = sess?.id;
+    const requestedPortal = intent || getRequestedPortal(window.location.pathname, window.location.search);
+    
+    const debug = (stage: string, data: any = {}) => {
+      console.log(`[AUTH_DEBUG] stage: ${stage} | sessionId: ${sessionId} | requestedPortal: ${requestedPortal} | authState: RESOLVING | loading: true`, data);
+    };
 
+    setAuthState("RESOLVING");
+    setLoading(true);
+
+    const timeout = setTimeout(() => {
+      console.warn(`[AUTH_DEBUG_TIMEOUT] stage: admission | sessionId: ${sessionId} | requestedPortal: ${requestedPortal} | url: ${window.location.href}`);
+    }, 10000);
+
+    try {
+      debug("sync_profile_start");
+      const profile = await syncProfile(sess, intent);
+      debug("sync_profile_end", { profile: !!profile });
+      
+      if (!profile) throw new Error("Could not sync profile");
       setUser(profile);
+
+      debug("membership_check_start");
       const memberships = await resolveUserMemberships(sess.id);
+      debug("membership_check_end", { memberships });
+
+      debug("destination_calc_start");
       const destination = resolveAuthenticatedDestination({
         requestedPortal: intent || null,
         memberships
       });
+      debug("destination_calc_end", { destination });
 
       console.log(`[AUTH_ADMISSION] Admission Success: ${sess.id} -> ${destination} (Intent: ${intent || "none"})`);
-      setAuthState("ADMITTED");
       
       // Perform navigation ONCE
       if (window.location.pathname !== destination) {
+        debug("navigating", { to: destination });
         window.location.assign(destination);
+      } else {
+        debug("already_at_destination");
+        setAuthState("ADMITTED");
+        setLoading(false);
       }
     } catch (err: any) {
-      console.error("[AUTH_ADMISSION] Admission Failed:", err);
+      console.error("[AUTH_DEBUG] stage: fatal_admission_error", { error: err.message, stack: err.stack });
       setAuthError(err.message || "Admission failed");
       setAuthState("ERROR");
-    } finally {
       setLoading(false);
+    } finally {
+      clearTimeout(timeout);
     }
   }, []);
 
@@ -226,26 +271,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     void (async () => {
+      console.log("[AUTH_DEBUG] stage: bootup_start");
       try {
         const sess = await ifGetSession();
+        console.log("[AUTH_DEBUG] stage: get_session", { hasSession: !!sess, sessionId: sess?.id });
+        
         if (sess && active) {
           const intent = getRequestedPortal(window.location.pathname, window.location.search);
-          // If we are on a protected route or splash, handle admission
           const p = window.location.pathname;
+          console.log("[AUTH_DEBUG] stage: bootup_intent", { intent, path: p });
+
           if (p === "/" || p.startsWith("/auth/login") || p.includes("/onboarding")) {
+             console.log("[AUTH_DEBUG] stage: triggering_admission");
              await handleAdmission(sess, intent || undefined);
           } else {
-             // Already in a portal, just sync profile state quietly
+             console.log("[AUTH_DEBUG] stage: silent_profile_sync");
              const profile = await syncProfile(sess, intent || undefined);
              if (profile && active) setUser(profile);
              setAuthState("ADMITTED");
              setLoading(false);
           }
         } else if (active) {
+          console.log("[AUTH_DEBUG] stage: no_session_detected");
           setLoading(false);
         }
-      } catch (e) {
-        console.error("Auth boot failed", e);
+      } catch (e: any) {
+        console.error("[AUTH_DEBUG] stage: bootup_fatal", { error: e.message });
         if (active) setLoading(false);
       }
     })();
