@@ -94,10 +94,10 @@ export async function resolveUserMemberships(userId: string) {
   ]);
   return {
     customer: true,
-    rider: drivers.length > 0,
-    manager: managers.length > 0,
-    admin: admins.length > 0 && admins[0]?.status !== "disabled",
-    partner: restaurants.length > 0
+    rider: (drivers?.length ?? 0) > 0,
+    manager: (managers?.length ?? 0) > 0,
+    admin: (admins?.length ?? 0) > 0 && admins[0]?.status !== "disabled",
+    partner: (restaurants?.length ?? 0) > 0
   };
 }
 

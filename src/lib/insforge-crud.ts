@@ -155,15 +155,16 @@ export function listTable<T = Record<string, unknown>>(
   const qs = buildQuery(params);
   const url = `${base(table)}${qs}`;
   const load = () => withRetry(() => once(url, "GET")).then((v) => (Array.isArray(v) ? (v as T[]) : []));
-  // Cache hits are recorded too, so the dashboard can show a real hit rate.
+  
   if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
-    // console.log(`[AUTH_FORENSIC] listTable: Cache hit for ${table}`);
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
   }
+  
   if (opts?.fresh) {
     invalidateTable(table);
     return load();
   }
+  
   return cached<T[]>(`db:${table}${qs}`, opts?.ttl ?? READ_TTL, load);
 }
 
