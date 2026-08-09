@@ -135,7 +135,7 @@ function ManagerRestaurants() {
                       e.preventDefault();
                       if (!window.confirm(`Delete "${r.name || "this restaurant"}" draft?`)) return;
                       const ok = await deleteManagedRestaurant(r.id);
-                      if (ok) refresh();
+                      if (ok) void refresh();
                     }}
                   >
                     <Trash2 className="h-4 w-4" />
