@@ -78,9 +78,10 @@ function LoginPage() {
 
   const land = (user: User) => {
     toast.success(`Welcome back, ${user.name}`);
-    const intent = getPortalIntent(window.location.pathname, window.location.search);
-    const target = resolveAuthenticatedDestination(user, intent);
-    navigate({ to: target as never, replace: true });
+    // DO NOT independently navigate here. 
+    // AuthProvider's setUser() will detect the new user state and 
+    // resolveAuthenticatedDestination() to handle the authoritative redirect.
+    console.log("[AUTH_ADMISSION] Login successful. Waiting for AuthProvider authoritative redirect...");
   };
 
   const submit = async (e: React.FormEvent) => {

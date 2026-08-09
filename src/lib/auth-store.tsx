@@ -151,9 +151,11 @@ export function resolveAuthenticatedDestination(user: User, intent: Role | null)
   
   if (portal) {
     if (user.roles.includes(portal)) {
+      console.log(`[AUTH_ADMISSION] Authorized for intent: ${portal}. Target: ${ROLE_HOME[portal]}`);
       return ROLE_HOME[portal];
     } else if (portal !== "customer") {
       // Authenticated but no membership -> Onboarding for THAT portal
+      console.log(`[AUTH_ADMISSION] Unauthorized for intent: ${portal}. Redirecting to Onboarding: ${ROLE_ONBOARDING[portal]}`);
       return ROLE_ONBOARDING[portal];
     }
   }
@@ -164,6 +166,7 @@ export function resolveAuthenticatedDestination(user: User, intent: Role | null)
   if (user.roles.includes("partner")) return ROLE_HOME.partner;
   if (user.roles.includes("rider")) return ROLE_HOME.rider;
   
+  console.log(`[AUTH_ADMISSION] No specific portal authority. Defaulting to Customer home.`);
   return "/app";
 }
 
