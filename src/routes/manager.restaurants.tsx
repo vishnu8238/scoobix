@@ -26,7 +26,7 @@ export const Route = createFileRoute("/manager/restaurants")({
 
 function ManagerRestaurants() {
   const { manager } = useManager();
-  const { list, loading } = useManagerRestaurants(manager?.id);
+  const { list, loading, refresh } = useManagerRestaurants(manager?.id);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<string>("all");
 
