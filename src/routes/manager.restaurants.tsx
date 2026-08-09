@@ -133,9 +133,15 @@ function ManagerRestaurants() {
                     className="ml-auto h-8 w-8 rounded-full text-rose-500 hover:bg-rose-50 hover:text-rose-600"
                     onClick={async (e) => {
                       e.preventDefault();
-                      if (!window.confirm(`Delete "${r.name || "this restaurant"}" draft?`)) return;
+                      e.stopPropagation();
+                      if (!window.confirm(`Are you sure you want to permanently delete "${r.name || "this restaurant"}"? This cannot be undone.`)) return;
                       const ok = await deleteManagedRestaurant(r.id);
-                      if (ok) void refresh();
+                      if (ok) {
+                        toast.success("Restaurant deleted");
+                        void refresh();
+                      } else {
+                        toast.error("Could not delete restaurant");
+                      }
                     }}
                   >
                     <Trash2 className="h-4 w-4" />

@@ -211,6 +211,10 @@ function OnboardingFlow() {
         status: String(extra.onboarding_status ?? "draft"),
         note: statusLabel,
       });
+      // Invalidate cache so history shows up immediately
+      const { invalidateTable } = await import("@/lib/insforge-crud");
+      invalidateTable("onboarding_events");
+      invalidateTable("restaurants");
     }
     setBusy(false);
     return saved;

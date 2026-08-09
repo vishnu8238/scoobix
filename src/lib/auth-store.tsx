@@ -410,9 +410,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         localStorage.removeItem("scoobix_active_portal_v1");
         localStorage.removeItem("scoobix_role_v1");
+        localStorage.removeItem("scoobix_pending_role_v1");
+        localStorage.removeItem("scoobix_if_access_v1");
+        localStorage.removeItem("scoobix_if_refresh_v1");
         sessionStorage.removeItem("scoobix_active_portal_v1");
         sessionStorage.removeItem("scoobix_pending_role_v1");
         sessionStorage.removeItem("scoobix_pending_role_claim_v1");
+        // Clear all cookies
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
       } catch { /* ignore */ }
     }
   }, []);
