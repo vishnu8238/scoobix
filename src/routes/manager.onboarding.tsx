@@ -266,7 +266,7 @@ function OnboardingFlow() {
     );
     if (!saved) return;
     toast.success(`Submitted · ${saved.rst_code}`, {
-      description: `Owner login: ${form.owner_email} · temporary password ${account.password}`,
+      description: `Your application has been submitted successfully for admin approval. Owner login: ${form.owner_email} · temporary password ${account.password}`,
       duration: 12000,
     });
     navigate({ to: "/manager/restaurants" });
