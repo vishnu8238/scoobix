@@ -265,8 +265,9 @@ function Home() {
         <section className="space-y-4">
           <SectionHeader title="Recommended restaurants" action={{ label: "See all", to: "/app/search" }} />
           <div className="space-y-7 px-5">
-            {recRestaurants.slice(0, 2).map((r) => (
+            {recRestaurants.slice(0, 3).map((r) => (
               <RestaurantCard key={r.id} r={r} closed={!!closedRestaurants[r.id]} />
+
             ))}
           </div>
         </section>
