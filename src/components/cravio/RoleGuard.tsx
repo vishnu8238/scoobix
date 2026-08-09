@@ -29,10 +29,11 @@ export function RoleGuard({
     if (loading || authState === "RESOLVING") return;
     
     if (!user) {
-      const intent = getRequestedPortal(window.location.pathname) || allow;
+      const pathname = window.location.pathname;
+      const intent = getRequestedPortal(pathname) || allow;
       const search: any = { app: intent };
-      if (href !== "/auth/login" && !href.includes("/auth")) {
-        search.redirect = href;
+      if (pathname !== "/auth/login" && !pathname.includes("/auth")) {
+        search.redirect = pathname + window.location.search;
       }
       navigate({
         to: "/auth/login",
