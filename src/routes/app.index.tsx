@@ -37,7 +37,7 @@ function chipMatches(r: Restaurant, opt: FilterOption, index: number): boolean {
     case "fast":        return r.deliveryMins <= (opt.value ?? 25);
     case "top_rated":   return r.rating >= (opt.value ?? 4.7);
     case "offers":      return !!r.offer;
-    case "new":         return index >= restaurants.length - 2;
+    case "new":         return true; // Placeholder for backend 'created_at' check
     case "nearest":     return r.distanceKm <= (opt.value ?? 1.5);
     case "rating_min":  return r.rating >= (opt.value ?? 4);
     case "veg":         return isPureVeg(r.id) || r.menu.some((d) => d.veg);
@@ -67,8 +67,8 @@ function Home() {
     sections.find((s) => s.key === key)?.active !== false;
 
   const dishes = allDishes();
-  const trending = trendingDishIds.map((id) => dishes.find((d) => d.id === id)!).filter(Boolean);
-  const recommended = recommendedDishIds.map((id) => dishes.find((d) => d.id === id)!).filter(Boolean);
+  const trending = trendingDishIds.map((id) => dishes.find((d) => d.id === id)).filter((d): d is any => !!d);
+  const recommended = recommendedDishIds.map((id) => dishes.find((d) => d.id === id)).filter((d): d is any => !!d);
 
   const homeChips = (filters.find((g) => g.key === "home")?.options ?? []).filter((o) => o.active);
   const [activeChips, setActiveChips] = useState<string[]>([]);
@@ -122,8 +122,10 @@ function Home() {
   }, [vegMode, pureVegOverrides, activeChips, adv, homeChips]);
 
   const recRestaurants = useMemo(() => {
+    // If we have backend recommendations, use them. Otherwise show first 2.
     const ids = recommendedRestaurantIds;
-    const base = restaurants.filter((r) => ids.includes(r.id));
+    const base = ids.length ? restaurants.filter((r) => ids.includes(r.id)) : restaurants.slice(0, 3);
+
     return filterVeg(base, vegMode, pureVegOverrides);
   }, [vegMode, pureVegOverrides]);
 
@@ -263,8 +265,9 @@ function Home() {
         <section className="space-y-4">
           <SectionHeader title="Recommended restaurants" action={{ label: "See all", to: "/app/search" }} />
           <div className="space-y-7 px-5">
-            {recRestaurants.slice(0, 2).map((r) => (
+            {recRestaurants.slice(0, 3).map((r) => (
               <RestaurantCard key={r.id} r={r} closed={!!closedRestaurants[r.id]} />
+
             ))}
           </div>
         </section>

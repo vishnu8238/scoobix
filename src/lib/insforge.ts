@@ -1,15 +1,8 @@
 /**
+ * [AUTH_FORENSIC] INSFORGE DATA ENGINE AUDIT
  * InsForge data layer for Scoobix.
- *
- * Publishable values (project URL + anon key) are embedded here — they are
- * client-readable by design, same as a Supabase anon key. The server-only
- * INSFORGE_API_KEY secret is never imported in the client bundle.
- *
- * Strategy: fetch InsForge rows once at app boot, MERGE them into the existing
- * mock-data arrays (`restaurants`, `categories`). All 17 existing consumers
- * continue to work unchanged. On error or empty response the mock data is
- * left in place as a fallback.
  */
+
 
 import {
   restaurants,
@@ -21,8 +14,6 @@ import {
   type Category,
 } from "./mock-data";
 import { Map as MapIcon } from "lucide-react";
-
-
 
 import { getAccessToken } from "./insforge-auth";
 
@@ -36,7 +27,6 @@ const insforgeHeaders = () => {
     Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
   };
 };
-
 
 // ---------- raw row shapes (loose — backend may add/omit fields) ----------
 
@@ -93,7 +83,6 @@ async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
-
     signal,
   });
   if (!res.ok) throw new Error(`InsForge ${path} → ${res.status}`);
@@ -101,8 +90,6 @@ async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit
 }
 
 // ---------- writes ----------
-
-// ---------- partner-side writes (best-effort, never throw) ----------
 
 async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown, headers?: Record<string, string>): Promise<{ ok: boolean }> {
   try {
@@ -113,11 +100,9 @@ async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?:
         "Content-Type": "application/json",
         ...headers,
       },
-
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     if (res.ok) {
-      // Push the change to every other open client (rider, partner, admin…).
       const table = path.split("/records/")[1]?.split("?")[0];
       if (table) {
         const idMatch = path.match(/id=eq\.([^&]+)/);
@@ -136,8 +121,6 @@ async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?:
   }
 }
 
-
-/** Update restaurant open / accepting / status flags. */
 export function updateRestaurantStatus(
   id: string,
   patch: { is_open?: boolean; accepting_orders?: boolean; status?: string },
@@ -145,7 +128,6 @@ export function updateRestaurantStatus(
   return ifWrite(`/api/database/records/restaurants?id=eq.${id}`, "PATCH", patch);
 }
 
-/** Upsert a menu item (insert if new id, patch otherwise). */
 export async function upsertMenuItem(item: {
   id?: string;
   restaurant_id: string;
@@ -179,11 +161,7 @@ export function deleteMenuItem(id: string) {
   return ifWrite(`/api/database/records/menu_items?id=eq.${id}`, "DELETE");
 }
 
-/** Admin: Destructive delete for a restaurant and its tightly coupled sub-records.
- *  Preserves orders, payments, and audit logs.
- */
 export async function deleteRestaurantComplete(id: string) {
-  // 1. Get all related records that should be cleaned up
   const [menuItems, categories, coupons, kycDocs] = await Promise.all([
     ifFetch<MenuItemRow[]>(`/api/database/records/menu_items?restaurant_id=eq.${id}`),
     ifFetch<CategoryRow[]>(`/api/database/records/categories?restaurant_id=eq.${id}`),
@@ -191,31 +169,25 @@ export async function deleteRestaurantComplete(id: string) {
     ifFetch<any[]>(`/api/database/records/restaurant_kyc?restaurant_id=eq.${id}&limit=100`),
   ]).catch(() => [[], [], [], []]);
 
-  // 2. Cleanup Storage (Images)
   const { deleteObject } = await import("./image-service");
   const keysToDelete = new Set<string>();
 
-  // Collect keys from restaurant itself
   const [rest] = await ifFetch<RestaurantRow[]>(`/api/database/records/restaurants?id=eq.${id}&limit=1`).catch(() => []);
   if (rest?.logo_url?.includes("/objects/")) keysToDelete.add(rest.logo_url.split("/objects/")[1]);
   if (rest?.cover_url?.includes("/objects/")) keysToDelete.add(rest.cover_url.split("/objects/")[1]);
 
-  // Collect keys from menu items
   menuItems.forEach(item => {
     if (item.image_url?.includes("/objects/")) keysToDelete.add(item.image_url.split("/objects/")[1]);
   });
 
-  // Collect keys from KYC
   kycDocs.forEach(doc => {
     if (doc.file_url?.includes("/objects/")) keysToDelete.add(doc.file_url.split("/objects/")[1]);
   });
 
-  // Perform storage deletion (best-effort)
   for (const key of keysToDelete) {
     void deleteObject(decodeURIComponent(key)).catch(() => {});
   }
 
-  // 3. Delete DB records in order (respecting possible FKs)
   await Promise.all([
     ifWrite(`/api/database/records/addons?dish_id=in.(${menuItems.map(m => m.id).join(",") || "0"})`, "DELETE"),
     ifWrite(`/api/database/records/menu_items?restaurant_id=eq.${id}`, "DELETE"),
@@ -224,11 +196,9 @@ export async function deleteRestaurantComplete(id: string) {
     ifWrite(`/api/database/records/restaurant_kyc?restaurant_id=eq.${id}`, "DELETE"),
   ]).catch(() => {});
 
-  // 4. Finally delete the restaurant
   return ifWrite(`/api/database/records/restaurants?id=eq.${id}`, "DELETE");
 }
 
-/** Addon CRUD. */
 export function upsertAddon(addon: {
   id?: string;
   dish_id: string;
@@ -246,12 +216,10 @@ export function deleteAddon(id: string) {
   return ifWrite(`/api/database/records/addons?id=eq.${id}`, "DELETE");
 }
 
-/** Order lifecycle for partner. */
 export function updateOrderStatus(
   id: string,
   patch: { status?: string; prep_minutes?: number; reject_reason?: string },
 ) {
-  // Only columns that exist on `orders` are sent; prep time is stored as an ETA.
   const body: Record<string, unknown> = {};
   if (patch.status) body.status = patch.status;
   if (typeof patch.prep_minutes === "number") {
@@ -262,14 +230,10 @@ export function updateOrderStatus(
   return ifWrite(`/api/database/records/orders?id=eq.${id}`, "PATCH", body);
 }
 
-// ---------- rider-side writes (best-effort, never throw) ----------
-
-/** Toggle driver online/offline. */
 export function setDriverOnline(driverId: string, online: boolean) {
   return ifWrite(`/api/database/records/drivers?id=eq.${driverId}`, "PATCH", { online_status: online });
 }
 
-/** Accept a delivery request — claim the order for this driver. */
 export function acceptDeliveryRequest(orderId: string, driverId: string) {
   return ifWrite(`/api/database/records/orders?id=eq.${orderId}`, "PATCH", {
     driver_id: driverId,
@@ -277,12 +241,10 @@ export function acceptDeliveryRequest(orderId: string, driverId: string) {
   });
 }
 
-/** Driver-side order status update (READY → PICKED_UP → DELIVERED, etc.). */
 export function updateDeliveryStatus(orderId: string, status: string) {
   return ifWrite(`/api/database/records/orders?id=eq.${orderId}`, "PATCH", { status });
 }
 
-/** Append a live-location ping for the driver (driver_tracking: lat/lng/bearing). */
 export function pingDriverLocation(driverId: string, lat: number, lng: number) {
   return ifWrite(`/api/database/records/driver_tracking`, "POST", {
     driver_id: driverId,
@@ -291,10 +253,6 @@ export function pingDriverLocation(driverId: string, lat: number, lng: number) {
   });
 }
 
-
-// ---------- admin-side writes (best-effort, never throw) ----------
-
-/** Generic record CRUD — for admin pages with diverse tables. */
 export function adminCreate(table: string, record: Record<string, unknown>) {
   return ifWrite(`/api/database/records/${table}`, "POST", record);
 }
@@ -305,17 +263,13 @@ export function adminDelete(table: string, id: string) {
   return ifWrite(`/api/database/records/${table}?id=eq.${id}`, "DELETE");
 }
 
-/** Admin-set commission %. */
 export function setRestaurantCommission(id: string, commission: number) {
   return ifWrite(`/api/database/records/restaurants?id=eq.${id}`, "PATCH", { commission });
 }
 
-/** Admin approve/reject/suspend a restaurant. */
 export function setRestaurantApprovalStatus(id: string, status: "approved" | "rejected" | "suspended" | "pending") {
   return ifWrite(`/api/database/records/restaurants?id=eq.${id}`, "PATCH", { status });
 }
-
-// ---------- Scoobix feature extensions (best-effort, never throw) ----------
 
 export function createMealSubscription(sub: {
   customer_id: string;
@@ -364,10 +318,6 @@ export function updateGroupCart(id: string, patch: Record<string, unknown>) {
   return ifWrite(`/api/database/records/group_carts?id=eq.${id}`, "PATCH", patch);
 }
 
-/**
- * Spotlight has no dedicated table — it is stored as a JSON row in
- * `app_settings` (key = 'spotlight') through the shared kv helpers.
- */
 export async function getSpotlightRow(): Promise<Record<string, unknown>[]> {
   const { kvGet } = await import("./kv-store");
   const v = await kvGet<Record<string, unknown>>("spotlight");
@@ -379,25 +329,12 @@ export async function setSpotlight(record: Record<string, unknown>) {
   return null;
 }
 
-
-/** Scheduling / batching have no backing columns yet — kept as no-ops so
- *  callers stay stable once the schema gains them. */
 export function scheduleOrder(_orderId: string, _iso: string) {
   return Promise.resolve({ ok: true });
 }
 export function assignBatch(_orderId: string, _batchId: string) {
   return Promise.resolve({ ok: true });
 }
-
-
-
-
-
-
-
-
-
-// ---------- row → mock-shape adapters ----------
 
 function toRestaurant(row: RestaurantRow, menu: Dish[]): Restaurant {
   const logo = row.logo_url || row.logo || "";
@@ -443,8 +380,6 @@ function toCategory(row: CategoryRow): Category {
   };
 }
 
-// ---------- one-shot bootstrap ----------
-
 let bootstrapPromise: Promise<{ ok: boolean; error?: string }> | null = null;
 const BOOTSTRAP_BATCH_SIZE = 500;
 
@@ -467,10 +402,6 @@ async function fetchAll<T>(path: string, limit = 2000): Promise<T[]> {
 
 export type InsForgeStatus = "idle" | "loading" | "ready" | "error" | "empty";
 
-/**
- * Catalog version — bumped once live restaurants/categories replace the seed
- * arrays, so screens that read those arrays synchronously can re-render.
- */
 let catalogVersion = 0;
 const catalogListeners = new Set<() => void>();
 function bumpCatalog() {
@@ -486,7 +417,6 @@ export function getCatalogVersion(): number {
 }
 
 export const insforgeState: {
-
   status: InsForgeStatus;
   error?: string;
   addonsByDish: Map<string, AddonRow[]>;
@@ -495,11 +425,6 @@ export const insforgeState: {
   addonsByDish: new Map(),
 };
 
-/**
- * Fetch restaurants + categories + menu_items + addons in parallel and merge
- * them into the existing mock arrays. Safe to call multiple times — only
- * runs once. Returns `{ ok }` so callers can show a retry UI.
- */
 export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
   if (bootstrapPromise) return bootstrapPromise;
   insforgeState.status = "loading";
@@ -519,7 +444,6 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
         return { ok: true };
       }
 
-      // group menu items by restaurant
       const menuByRest = new Map<string, Dish[]>();
       for (const m of menu) {
         if (m.available === false) continue;
@@ -529,7 +453,6 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
         menuByRest.set(rid, list);
       }
 
-      // group addons by dish
       const addonMap = new Map<string, AddonRow[]>();
       for (const a of addons) {
         if (a.available === false) continue;
@@ -539,30 +462,24 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
       }
       insforgeState.addonsByDish = addonMap;
 
-      // Backend is authoritative: when rows exist, REPLACE the seed arrays
-      // entirely (no mock fallback). Empty tables leave seeds untouched so
-      // screens degrade to their existing empty/demo state.
       if (rests.length) {
-        restaurants.splice(0, restaurants.length, ...rests.map((row) => toRestaurant(row, menuByRest.get(row.id) ?? [])));
+        restaurants.length = 0;
+        restaurants.push(...rests.map((row) => toRestaurant(row, menuByRest.get(row.id) ?? [])));
 
-        // Rebuild the curated id lists from backend flags so trending /
-        // recommended rails aren't pointing at removed seed dishes.
         const backendDishes = restaurants.flatMap((r) => r.menu);
         const popular = backendDishes.filter((d) => d.popular).map((d) => d.id);
         const trending = (popular.length ? popular : backendDishes.map((d) => d.id)).slice(0, 8);
-        trendingDishIds.splice(0, trendingDishIds.length, ...trending);
+        trendingDishIds.length = 0;
+        trendingDishIds.push(...trending);
         const recommended = backendDishes.map((d) => d.id).filter((id) => !trending.includes(id));
-        recommendedDishIds.splice(
-          0,
-          recommendedDishIds.length,
-          ...(recommended.length ? recommended : trending).slice(0, 6),
-        );
+        recommendedDishIds.length = 0;
+        recommendedDishIds.push(...(recommended.length ? recommended : trending).slice(0, 6));
       }
 
       if (cats.length) {
-        categories.splice(0, categories.length, ...cats.filter((c) => c.active !== false).map(toCategory));
+        categories.length = 0;
+        categories.push(...cats.filter((c) => c.active !== false).map(toCategory));
       }
-
 
       insforgeState.status = "ready";
       bumpCatalog();
@@ -572,7 +489,6 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
       const msg = err instanceof Error ? err.message : String(err);
       insforgeState.status = "error";
       insforgeState.error = msg;
-      // Reset so a retry can run.
       bootstrapPromise = null;
       return { ok: false, error: msg };
     }
@@ -581,7 +497,6 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
   return bootstrapPromise;
 }
 
-/** Lookup add-ons for a dish (used by customer customization sheet). */
 export function addonsForDish(dishId: string): AddonRow[] {
   return insforgeState.addonsByDish.get(dishId) ?? [];
 }

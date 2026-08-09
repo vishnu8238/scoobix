@@ -19,7 +19,7 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
 function RiderLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <RoleGuard allow="rider">
+    <RoleGuard allow="rider" transitionLabel="Accessing Rider Portal...">
       <div className="relative pb-24">
         <Outlet />
         <nav className="glass fixed bottom-3 left-1/2 z-40 flex w-[min(440px,calc(100%-1.5rem))] -translate-x-1/2 items-center justify-between rounded-full px-2 py-2 shadow-float">

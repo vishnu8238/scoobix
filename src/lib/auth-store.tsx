@@ -141,31 +141,26 @@ export async function resolveUserMemberships(userId: string, email: string) {
  * This is the SINGLE SOURCE OF TRUTH for post-authentication routing.
  */
 export function resolveAuthenticatedDestination(user: User, intent: Role | null): string {
-  // Priority: 
-  // 1. Intent (Explicit URL Portal)
-  // 2. Authenticated Membership matching that intent
-  // 3. Default to highest staff role or Customer if no membership or no intent
+  // If we have an explicit intent from the URL or state, respect it.
+  const portal = intent && intent !== "customer" ? intent : null;
   
-  const portal = intent || user.role || null;
-  
-  if (portal && portal !== "customer") {
+  if (portal) {
     if (user.roles.includes(portal)) {
       console.log(`[AUTH_ADMISSION] Authorized for portal: ${portal}. Target: ${ROLE_HOME[portal]}`);
       return ROLE_HOME[portal];
     } else {
-      // Authenticated but no membership -> Onboarding for THAT portal
-      console.log(`[AUTH_ADMISSION] Unauthorized for portal: ${portal}. Redirecting to Onboarding: ${ROLE_ONBOARDING[portal]}`);
-      return ROLE_ONBOARDING[portal];
+      const onboarding = ROLE_ONBOARDING[portal];
+      console.log(`[AUTH_ADMISSION] Unauthorized for portal: ${portal}. Redirecting to Onboarding: ${onboarding}`);
+      return onboarding || "/app";
     }
   }
   
-  // If user has a specific portal role in their memberships, use the most "important" one
+  // No explicit intent? Fallback to existing staff memberships or default to Customer.
   if (user.roles.includes("admin")) return ROLE_HOME.admin;
   if (user.roles.includes("manager")) return ROLE_HOME.manager;
   if (user.roles.includes("partner")) return ROLE_HOME.partner;
   if (user.roles.includes("rider")) return ROLE_HOME.rider;
   
-  console.log(`[AUTH_ADMISSION] Defaulting to Customer home.`);
   return "/app";
 }
 
@@ -175,18 +170,15 @@ export function resolveAuthenticatedDestination(user: User, intent: Role | null)
 export function resolvePortalFromPath(path: string): Role | null {
   const p = path.toLowerCase();
   
-  // Check for exact login patterns first to avoid ambiguity
-  if (p.includes("/partner/login") || p.includes("/merchant/login")) return "partner";
-  if (p.includes("/rider/login")) return "rider";
-  if (p.includes("/manager/login")) return "manager";
-  if (p.includes("/admin/login")) return "admin";
-
-  if (p.startsWith("/partner") || p.startsWith("/merchant")) return "partner";
-  if (p.startsWith("/rider")) return "rider";
-  if (p.startsWith("/manager")) return "manager";
-  if (p.startsWith("/admin")) return "admin";
-  // /auth and /app are customer portal
+  // Specific portal sub-paths
+  if (p.includes("/partner") || p.includes("/merchant")) return "partner";
+  if (p.includes("/rider")) return "rider";
+  if (p.includes("/manager")) return "manager";
+  if (p.includes("/admin")) return "admin";
+  
+  // /app and /auth default to customer
   if (p.startsWith("/app") || p.startsWith("/auth")) return "customer";
+  
   return null;
 }
 
@@ -277,8 +269,6 @@ function mergeProviders(existing: string | null | undefined, provider: string): 
 
 type SyncInput = {
   role?: Role;
-  /** Signup paths claim the chosen role even if a default profile row exists. */
-  forceRole?: boolean;
   name?: string;
   phone?: string;
   provider?: string;
@@ -307,11 +297,9 @@ async function resolveUserRoles(userId: string, email: string): Promise<Role[]> 
  */
 async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}, requestedPortal?: Role): Promise<User | null> {
   const meta = {
-    pathname: typeof window !== "undefined" ? window.location.pathname : "",
     requestedPortal: requestedPortal || input.role || "none",
     sessionId: sess?.id || "none",
     hasSession: !!sess,
-    hasAccessToken: !!getAccessToken(),
   };
   console.log("[AUTH_FORENSIC] syncProfile starting:", meta);
   
@@ -346,34 +334,31 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   const allRoles = await resolveUserRoles(sess.id, email);
   console.log("[AUTH_FORENSIC] syncProfile resolved roles:", allRoles);
   
-  // 2. Determine the session's active role. 
-  // Priority: 
+  // 2. Determine the session's active role.
+  // Priority:
   // 1. target (requested portal from URL/parameter)
-  // 2. Highest existing role from allRoles
+  // 2. Highest existing staff role from allRoles
   // 3. 'customer'
   let sessionRole: Role = "customer";
-  
+
   const target = requestedPortal || input.role;
-  
-  // HARD CONSTRAINT: If target is provided, it MUST be the sessionRole.
-  // We do not fall back to 'customer' if target is 'partner' but user lacks membership.
-  // The UI (RoleGuard) handles the unauthorized state.
+
+  // If target is provided, we use it for the session role.
+  // The RoleGuard handles users who land on a portal without membership.
   if (target && ALL_ROLES.includes(target as Role)) {
     sessionRole = target as Role;
-    console.log(`[AUTH_FORENSIC] syncProfile: Forcing sessionRole to match target: ${sessionRole}`);
-  } else if (allRoles.includes("admin")) {
-    sessionRole = "admin";
-  } else if (allRoles.includes("manager")) {
-    sessionRole = "manager";
-  } else if (allRoles.includes("partner")) {
-    sessionRole = "partner";
-  } else if (allRoles.includes("rider")) {
-    sessionRole = "rider";
+    console.log(`[AUTH_FORENSIC] syncProfile: Session role set to target: ${sessionRole}`);
   } else {
-    sessionRole = "customer";
+    // Staff role priority for auto-resolution when no explicit intent
+    // IMPORTANT: 'partner' is the most common staff role, so it ranks high.
+    if (allRoles.includes("admin")) sessionRole = "admin";
+    else if (allRoles.includes("partner")) sessionRole = "partner";
+    else if (allRoles.includes("manager")) sessionRole = "manager";
+    else if (allRoles.includes("rider")) sessionRole = "rider";
+    else sessionRole = "customer";
   }
 
-  console.log(`[AUTH_FORENSIC] syncProfile session role finalized: ${sessionRole} (target: ${target}, all: ${allRoles.join(",")})`);
+  console.log(`[AUTH_FORENSIC] syncProfile finalized: sessionRole=${sessionRole}, target=${target}, memberships=[${allRoles.join(",")}]`);
 
   // 3. Ensure user profile exists in database.
   // We NO LONGER overwrite the role column with requestedPortal if it exists.
@@ -482,6 +467,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Sync portal state with path on navigation
+    if (typeof window === "undefined") return;
     const portal = resolvePortalFromPath(window.location.pathname);
     if (portal && portal !== activePortal) {
       setActivePortalState(portal);
@@ -508,14 +494,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // If we are on Splash or Login, perform the authoritative redirect IMMEDIATELY.
       const current = window.location.pathname;
-      if (current === "/" || current.startsWith("/auth")) {
-        console.log("[AUTH_FORENSIC] setUser: Triggering authoritative redirect to", destination);
-        // Using window.location to ensure a hard break from conflicting React effects.
-        if (typeof window !== "undefined") {
-          // Optimization: Only redirect if we're not already there
-          if (window.location.pathname !== destination) {
-            window.location.assign(destination);
-          }
+      if (current === "/" || current.startsWith("/auth") || current.includes("/login")) {
+        console.log(`[AUTH_FORENSIC] setUser: Authoritative redirect to ${destination} (Intent: ${currentIntent})`);
+        if (typeof window !== "undefined" && window.location.pathname !== destination) {
+          window.location.assign(destination);
         }
       }
     }
@@ -602,7 +584,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
               role: targetPortal,
-              forceRole: !!targetPortal,
             }, targetPortal);
             
             if (!cancelled && next) {
@@ -628,17 +609,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (!cancelled) {
             if (sess) {
-              // Restore using URL intent
-              console.log("[AUTH_FORENSIC] BOOT: Session found. Restoring profile with intent:", currentPortal);
-              const next = await syncProfile(sess, {}, currentPortal ?? undefined);
+              // Restore using the CURRENT path/intent to prevent cross-portal leakage
+              const bootIntent = getPortalIntent(window.location.pathname, window.location.search);
+              console.log("[AUTH_FORENSIC] BOOT: Session found. Restoring profile with intent:", bootIntent);
+              const next = await syncProfile(sess, {}, bootIntent ?? undefined);
               if (!cancelled && next) {
-                console.log("[AUTH_FORENSIC] BOOT: Session restored. Calling setUser...");
                 setUser(next);
               }
             } else {
               const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
               if (!cancelled && !hasTokens) {
                 setUser(null);
+              } else if (!cancelled && hasTokens) {
+                // We have tokens but session read failed. Force a fresh read.
+                console.log("[AUTH_FORENSIC] BOOT: Tokens exist but session missing. Attempting recovery...");
+                const recoveredSess = await ifGetSession(); 
+                if (recoveredSess) {
+                   const next = await syncProfile(recoveredSess);
+                   if (next) setUser(next);
+                }
               }
             }
           }
@@ -667,7 +656,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const restoreFromSharedSession = async () => {
       const sess = await ifGetSession();
       if (cancelled) return;
-      const next = await syncProfile(sess);
+      const intent = getPortalIntent(window.location.pathname, window.location.search);
+      const next = await syncProfile(sess, {}, intent ?? undefined);
       if (!cancelled && next) setUser(next);
     };
     const onStorage = (event: StorageEvent) => {
@@ -759,8 +749,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log(`[AUTH_FORENSIC] signIn: Resolving profile for target portal: ${targetPortal}`);
       const next = await syncProfile(sess, { 
         provider: "email", 
-        role: targetPortal, 
-        forceRole: !!targetPortal 
+        role: targetPortal
       }, targetPortal);
 
       if (!next) return { ok: false, message: "Could not load your account" };
@@ -794,7 +783,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
-        forceRole: true, 
         name: name.trim(), 
         phone 
       }, targetPortal);
@@ -865,7 +853,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const next = await syncProfile(sess, { 
       provider: "phone", 
       role: targetPortal, 
-      forceRole: !!targetPortal, 
       phone: normalisePhone(phone) 
     }, targetPortal);
 

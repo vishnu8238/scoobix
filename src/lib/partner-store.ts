@@ -48,8 +48,14 @@ export async function getRestaurantForUser(userId: string): Promise<RestaurantRo
   if (!userId) return null;
   const hit = cache.get(userId);
   if (hit) return hit;
-  const rows = await listTable<RestaurantRow>("restaurants", { owner_id: `eq.${userId}`, limit: 1 });
-  const row = rows[0] ?? null;
+  
+  // Try finding as owner first, then as manager
+  const [ownerRows, managerRows] = await Promise.all([
+    listTable<RestaurantRow>("restaurants", { owner_id: `eq.${userId}`, limit: 1 }),
+    listTable<RestaurantRow>("restaurants", { manager_id: `eq.${userId}`, limit: 1 })
+  ]);
+  
+  const row = ownerRows[0] || managerRows[0] || null;
   if (row?.id) cache.set(userId, row);
   return row;
 }

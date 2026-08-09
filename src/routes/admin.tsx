@@ -51,7 +51,7 @@ function AdminLayout() {
   // Heavy aggregation runs in the background, never during a user request.
   useEffect(() => { warmAnalytics(); }, []);
   return (
-    <RoleGuard allow="admin">
+    <RoleGuard allow="admin" transitionLabel="Accessing Admin Dashboard...">
     <div className="min-h-svh w-full bg-[radial-gradient(circle_at_top_left,_oklch(0.96_0.04_148_/_0.4),_oklch(0.99_0.005_120)_45%)]">
       <div className="mx-auto flex min-h-svh max-w-[1600px]">
         {/* Sidebar */}
