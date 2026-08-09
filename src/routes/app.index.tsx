@@ -124,7 +124,8 @@ function Home() {
   const recRestaurants = useMemo(() => {
     // If we have backend recommendations, use them. Otherwise show first 2.
     const ids = recommendedRestaurantIds;
-    const base = ids.length ? restaurants.filter((r) => ids.includes(r.id)) : restaurants.slice(0, 2);
+    const base = ids.length ? restaurants.filter((r) => ids.includes(r.id)) : restaurants.slice(0, 3);
+
     return filterVeg(base, vegMode, pureVegOverrides);
   }, [vegMode, pureVegOverrides]);
 
