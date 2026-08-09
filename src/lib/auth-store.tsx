@@ -496,9 +496,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // For session restoration, we respect the portal from the URL OR the persisted portal state.
               const portal = currentPortal || (typeof localStorage !== "undefined" ? localStorage.getItem("scoobix_active_portal_v1") as Role : null);
               const next = await syncProfile(sess, { 
-                role: portal ?? undefined, 
+                role: portal && ALL_ROLES.includes(portal) ? portal : undefined, 
                 forceRole: !!portal 
-              }, portal ?? undefined);
+              }, portal && ALL_ROLES.includes(portal) ? portal : undefined);
               console.log("[auth] Profile restored for session user:", next?.id, next?.role);
               if (!cancelled && next) setUser(next);
             } else {
