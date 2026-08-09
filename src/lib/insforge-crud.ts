@@ -89,19 +89,17 @@ async function once(url: string, method: Method, body?: unknown) {
  * Retry ONLY when it can help: network failures, 429 and 5xx. A 4xx is a bad
  * request — retrying just doubles the cost and the latency.
  */
-async function withRetry<T>(fn: () => Promise<T>): Promise<T | null> {
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err) {
     const status = err instanceof HttpError ? err.status : 0;
     const retryable = status === 0 || status === 429 || status >= 500;
-    if (!retryable) return null;
-    await new Promise((r) => setTimeout(r, 300));
-    try {
-      return await fn();
-    } catch {
-      return null;
-    }
+    if (!retryable) throw err;
+    
+    console.warn(`[AUTH_FORENSIC] listTable: Retrying request after ${status || "network"} error`);
+    await new Promise((r) => setTimeout(r, 500));
+    return await fn();
   }
 }
 
@@ -157,15 +155,16 @@ export function listTable<T = Record<string, unknown>>(
   const qs = buildQuery(params);
   const url = `${base(table)}${qs}`;
   const load = () => withRetry(() => once(url, "GET")).then((v) => (Array.isArray(v) ? (v as T[]) : []));
-  // Cache hits are recorded too, so the dashboard can show a real hit rate.
+  
   if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
-    // console.log(`[AUTH_FORENSIC] listTable: Cache hit for ${table}`);
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
   }
+  
   if (opts?.fresh) {
     invalidateTable(table);
     return load();
   }
+  
   return cached<T[]>(`db:${table}${qs}`, opts?.ttl ?? READ_TTL, load);
 }
 

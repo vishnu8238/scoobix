@@ -25,6 +25,7 @@ function Splash() {
     
     if (!user) {
       const intent = getRequestedPortal(window.location.pathname, window.location.search);
+      console.log(`[AUTH_BOOT] Redirecting to login with intent: ${intent || "none"}`);
       navigate({ 
         to: "/auth/login", 
         search: { app: intent || undefined },

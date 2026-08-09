@@ -94,10 +94,10 @@ export async function resolveUserMemberships(userId: string) {
   ]);
   return {
     customer: true,
-    rider: drivers.length > 0,
-    manager: managers.length > 0,
-    admin: admins.length > 0 && admins[0]?.status !== "disabled",
-    partner: restaurants.length > 0
+    rider: (drivers?.length ?? 0) > 0,
+    manager: (managers?.length ?? 0) > 0,
+    admin: (admins?.length ?? 0) > 0 && admins[0]?.status !== "disabled",
+    partner: (restaurants?.length ?? 0) > 0
   };
 }
 
@@ -128,14 +128,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const admit = useCallback(async (sess: InsForgeUser, intent?: Role) => {
     setAuthState("RESOLVING");
     setLoading(true);
+    setAuthError(null);
+    
     try {
-      const memberships = await resolveUserMemberships(sess.id);
-      const profile = await fetchUserProfile(sess.id);
+      console.log(`[AUTH_ADMISSION] Starting admission for ${sess.id} with intent ${intent || "none"}`);
       
+      // 1. Resolve Identity and Profile
+      const profile = await fetchUserProfile(sess.id);
       const email = sess.email || profile?.email || "";
       const name = profile?.name || sess.metadata?.name as string || email.split("@")[0] || "User";
 
       if (!profile) {
+        console.log(`[AUTH_ADMISSION] Creating missing profile for ${sess.id}`);
         await upsertUserProfile({
           id: sess.id,
           email,
@@ -144,8 +148,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
 
+      // 2. Resolve Memberships
+      console.log(`[AUTH_ADMISSION] Resolving memberships for ${sess.id}`);
+      const memberships = await resolveUserMemberships(sess.id);
       const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
       
+      // 3. Update User State
       setUser({
         id: sess.id,
         name,
@@ -156,18 +164,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar: profile?.avatar || undefined,
       });
 
+      // 4. Determine Destination
       const requestedPortal = intent || getRequestedPortal(window.location.pathname);
       const destination = resolveAuthenticatedDestination({ requestedPortal, memberships });
       
-      console.log(`[AUTH_ADMISSION] Destination: ${destination}`);
+      console.log(`[AUTH_ADMISSION] Admission complete. Redirecting to ${destination}`);
+      
+      // 5. Navigate exactly once
+      setAuthState("ADMITTED");
+      setLoading(false);
+      
       if (window.location.pathname !== destination) {
         window.location.assign(destination);
-      } else {
-        setAuthState("ADMITTED");
-        setLoading(false);
       }
     } catch (e: any) {
-      setAuthError(e.message || "Admission failed");
+      console.error("[AUTH_ADMISSION] CRITICAL ERROR:", e);
+      setAuthError(e.message || "Unable to verify your access. Please try again.");
       setAuthState("ERROR");
       setLoading(false);
     }
@@ -178,30 +190,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         const sess = await ifGetSession();
-        if (sess && active) {
+        if (!active) return;
+        
+        if (sess) {
           const intent = getRequestedPortal(window.location.pathname);
           const isLoginPage = window.location.pathname === "/" || window.location.pathname.startsWith("/auth/login");
+          
           if (isLoginPage) {
+            // Admission handles the redirect if we are on a login/splash page
             await admit(sess, intent || undefined);
           } else {
+            // Already inside the app, just sync state silently
             const memberships = await resolveUserMemberships(sess.id);
             const profile = await fetchUserProfile(sess.id);
+            if (!active) return;
+
+            const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
+            
             setUser({
               id: sess.id,
               name: profile?.name || sess.email.split("@")[0] || "User",
               email: sess.email,
               phone: profile?.phone || "",
-              role: intent || "customer",
-              roles: (Object.keys(memberships) as Role[]).filter(r => memberships[r]),
+              role: intent || activeRoles[0] || "customer",
+              roles: activeRoles,
+              avatar: profile?.avatar || undefined,
             });
             setAuthState("ADMITTED");
             setLoading(false);
           }
-        } else if (active) {
+        } else {
           setLoading(false);
+          setAuthState("IDLE");
         }
       } catch (e) {
-        if (active) setLoading(false);
+        console.error("[AUTH_BOOT] Boot failed:", e);
+        if (active) {
+          setLoading(false);
+          setAuthState("IDLE");
+        }
       }
     })();
     return () => { active = false; };
