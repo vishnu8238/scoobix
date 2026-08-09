@@ -39,13 +39,13 @@ export function navigationUrl(target: NavTarget): string | null {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}&travelmode=driving`;
 }
 
-/** OpenStreetMap fallback — used when the native/Google handler doesn't open. */
-export function osmUrl(target: NavTarget): string | null {
+/** Google Maps fallback — used when the native handler doesn't open. */
+export function googleFallbackUrl(target: NavTarget): string | null {
   if (hasCoords(target)) {
-    return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=;${target.lat},${target.lng}`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}&travelmode=driving`;
   }
   const q = (target.address ?? "").trim();
-  return q ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(q)}` : null;
+  return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
 }
 
 /**
@@ -65,7 +65,7 @@ export function startNavigation(target: NavTarget): boolean {
       if (document.visibilityState === "visible" && Date.now() - start < 2500) {
         const web = hasCoords(target)
           ? `https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}&travelmode=driving`
-          : osmUrl(target);
+          : googleFallbackUrl(target);
         if (web) window.open(web, "_blank", "noopener");
       }
     }, 1200);
