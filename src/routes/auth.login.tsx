@@ -204,23 +204,23 @@ function LoginPage() {
         <div className="mx-auto flex max-w-md flex-col items-center">
           <ScoobixMark size={48} className="mb-6" />
           <h1 className="font-display text-2xl font-extrabold tracking-tight">Access Restricted</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your account does not have <span className="font-bold text-foreground capitalize">{app.role}</span> access.
-            Please sign in with an authorized account or complete onboarding.
-          </p>
-          
-          <div className="mt-8 flex w-full flex-col gap-3">
-            <Button 
-              onClick={() => {
-                const home = ROLE_HOME[user.role];
-                // If they have a redirect URL that belongs to their actual role, go there.
-                const canResume = !!redirect && redirect.startsWith(home);
-                navigate({ to: (canResume ? redirect : home) as never, replace: true });
-              }}
-              className="h-12 w-full rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
-            >
-              Continue as {user.name} ({user.role})
-            </Button>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your account does not have <span className="font-bold text-foreground capitalize">{app?.role}</span> access.
+              Please sign in with an authorized account or complete onboarding.
+            </p>
+            
+            <div className="mt-8 flex w-full flex-col gap-3">
+              <Button 
+                onClick={() => {
+                  const home = user ? ROLE_HOME[user.role] : "/app";
+                  // If they have a redirect URL that belongs to their actual role, go there.
+                  const canResume = !!redirect && redirect.startsWith(home);
+                  navigate({ to: (canResume ? redirect : home) as never, replace: true });
+                }}
+                className="h-12 w-full rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
+              >
+                Continue as {user?.name} ({user?.role})
+              </Button>
             
             <Button 
               disabled={busy}
