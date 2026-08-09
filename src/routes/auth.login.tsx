@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_HOME, ROLE_ONBOARDING, useAuth, getPortalIntent, resolveAuthenticatedDestination } from "@/lib/auth-store";
+import { ROLE_HOME, useAuth, getPortalIntent, resolveAuthenticatedDestination } from "@/lib/auth-store";
 import { APPS, type AppId } from "@/lib/apps";
 import type { User } from "@/lib/types";
 import { OTP_LENGTH, OTP_RESEND_SECONDS } from "@/lib/phone-otp";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/auth/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const { app: appId, redirect } = Route.useSearch() as LoginSearch;
-  const requestedPortal = appId || resolvePortalFromPath(window.location.pathname);
+  const requestedPortal = appId;
   const app = requestedPortal ? APPS[requestedPortal as AppId] : null;
   const {
     user,
@@ -48,12 +48,13 @@ function LoginPage() {
   useEffect(() => {
     if (appId) setPortal(appId);
   }, [appId, setPortal]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [unverified, setUnverified] = useState(false);
 
-  // Phone OTP (only rendered when a phone provider is configured).
+  // Phone OTP
   const [mode, setMode] = useState<"password" | "phone">("password");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -70,8 +71,7 @@ function LoginPage() {
   useEffect(() => {
     if (loading || !user) return;
     
-    // Authorization logic:
-    // The intended portal is derived from the search param ?app= OR the current URL.
+    // Authorization logic
     const intent = getPortalIntent(window.location.pathname, window.location.search);
     console.log("[auth] Login: Post-auth check. Intent:", intent, "Roles:", user.roles);
 
@@ -89,6 +89,8 @@ function LoginPage() {
     const canResume = !!redirect && intent && redirect.startsWith(home);
     
     navigate({ to: (canResume ? redirect : target) as never, replace: true });
+  }, [app, loading, navigate, redirect, user]);
+
   const land = (user: User) => {
     toast.success(`Welcome back, ${user.name}`);
     const intent = getPortalIntent(window.location.pathname, window.location.search);
@@ -117,9 +119,8 @@ function LoginPage() {
 
   const oauth = async (provider: "google" | "apple", forceSelect = false) => {
     setBusy(true);
-    // Explicitly pass the requested role/portal to the OAuth flow so it survives the round-trip.
-    const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
-    const res = await signInWithProvider(provider, requestedPortal ?? undefined, !!requestedPortal, forceSelect);
+    const intent = getPortalIntent(window.location.pathname, window.location.search);
+    const res = await signInWithProvider(provider, intent ?? undefined, !!intent, forceSelect);
     if (!res.ok) {
       setBusy(false);
       toast.error(res.message ?? "Could not start sign-in");
@@ -145,7 +146,6 @@ function LoginPage() {
     land(res.user!);
   };
 
-  // Auto-verify as soon as the full code is entered.
   useEffect(() => {
     if (mode !== "phone" || !otpSent || busy || autoVerified.current) return;
     if (otp.replace(/\D/g, "").length === OTP_LENGTH) {
@@ -155,79 +155,6 @@ function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp, otpSent, mode]);
 
-  // We only show the restricted UI IF:
-  // 1. We have a user AND a requested app
-  // 2. The user roles (resolved from DB) definitely do NOT include the app role
-  // 3. We are NOT currently loading/syncing memberships (loading state from hook)
-  // A portal is only "restricted" if the user has a different identity signed in and explicitly refuses to onboard.
-  // For standard flows, we send them to onboarding instead of showing this screen.
-  const isRestricted = false; 
-  // const isRestricted = !loading && user && app && !user.roles.includes(app.role);
-
-  if (isRestricted) {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center">
-        <div className="mx-auto flex max-w-md flex-col items-center">
-          <ScoobixMark size={48} className="mb-6" />
-          <h1 className="font-display text-2xl font-extrabold tracking-tight">Access Restricted</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Your account does not have <span className="font-bold text-foreground capitalize">{app?.role}</span> access.
-              Please sign in with an authorized account or complete onboarding.
-            </p>
-            
-            <div className="mt-8 flex w-full flex-col gap-3">
-              <Button 
-                onClick={() => {
-                  const home = user ? ROLE_HOME[user.role] : "/app";
-                  // If they have a redirect URL that belongs to their actual role, go there.
-                  const canResume = !!redirect && redirect.startsWith(home);
-                  navigate({ to: (canResume ? redirect : home) as never, replace: true });
-                }}
-                className="h-12 w-full rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
-              >
-                Continue as {user?.name} ({user?.role})
-              </Button>
-            
-            <Button 
-              disabled={busy}
-              variant="outline"
-              onClick={async () => {
-                setBusy(true);
-                console.log("[auth] Explicit sign-out requested from login screen");
-                await signOut();
-                setBusy(false);
-              }}
-
-              className="h-12 w-full rounded-full border-2 border-primary/20 bg-background text-sm font-bold text-primary transition-all hover:bg-primary/5 active:scale-[0.98]"
-            >
-              {busy ? "Signing out..." : "Use another account"}
-            </Button>
-
-            <div className="flex flex-col gap-2 mt-4 w-full">
-               <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Or switch identity provider</p>
-               <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline"
-                    onClick={() => oauth("google", true)}
-                    className="h-11 rounded-full text-xs font-bold"
-                  >
-                    Use another Google
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => oauth("apple", true)}
-                    className="h-11 rounded-full text-xs font-bold"
-                  >
-                    Use another Apple
-                  </Button>
-               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-svh px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-12">
       <div className="mx-auto flex max-w-md flex-col items-center text-center">
@@ -236,9 +163,9 @@ function LoginPage() {
         <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">
           Sign in to {app ? app.shortName : "Scoobix"}
         </h1>
-        {requestedPortal && requestedPortal !== "customer" && (
+        {appId && appId !== "customer" && (
           <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
-            {requestedPortal} Portal
+            {appId} Portal
           </p>
         )}
         <p className="mt-1 text-sm text-muted-foreground">Use your Scoobix account credentials.</p>
@@ -364,8 +291,7 @@ function AppleGlyph() {
   );
 }
 
-
-function Field({ icon: Icon, label, type, value, onChange, placeholder }: { icon: typeof Mail; label: string; type: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+function Field({ icon: Icon, label, type, value, onChange, placeholder }: { icon: any; label: string; type: string; value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</Label>
