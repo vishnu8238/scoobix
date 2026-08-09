@@ -101,7 +101,7 @@ function LoginPage() {
     setBusy(true);
     const intent = getRequestedPortal(window.location.pathname, window.location.search) || appId;
     console.log(`[AUTH_FORENSIC] LoginPage: Starting OAuth with intent: ${intent}`);
-    const res = await signInWithProvider(provider, intent ?? undefined, !!intent, forceSelect);
+    const res = await signInWithProvider(provider, intent ?? undefined);
     if (!res.ok) {
       setBusy(false);
       toast.error(res.message ?? "Could not start sign-in");

@@ -251,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         console.error("Auth boot failed", e);
       } finally {
-        if (active) setLoading(false);
+      if (active) setLoading(false);
       }
     })();
     return () => { active = false; };
