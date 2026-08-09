@@ -28,7 +28,6 @@ import {
 } from "./insforge-auth";
 import { listTable } from "./insforge-crud";
 import { isPhoneOtpEnabled, sendPhoneOtp, verifyPhoneOtp, normalisePhone } from "./phone-otp";
-import { clearLastRoute } from "./last-route";
 import {
   accountUsable,
   endCurrentSession,
@@ -918,7 +917,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       console.log("[auth] Clearing local session tokens and state.");
       setTokens(null, null);
-      clearLastRoute();
       
       // Atomic storage removal for all portals and auth persistence
       if (typeof window !== "undefined") {

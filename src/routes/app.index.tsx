@@ -10,9 +10,7 @@ import { DishCard } from "@/components/cravio/DishCard";
 import { restaurants, allDishes, trendingDishIds, recommendedDishIds, type Restaurant } from "@/lib/mock-data";
 import { useCms, type FilterOption } from "@/lib/cms-store";
 import { useAppUI } from "@/lib/stores";
-import { useAds } from "@/lib/ads-store";
 import { useSpotlight } from "@/lib/scoobix-extras";
-import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
 import { DiscoverMore, TrendingNow } from "@/components/cravio/DiscoverMore";
 import { CampaignBanners } from "@/components/cravio/CampaignBanners";
 
@@ -448,53 +446,7 @@ function Pill({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 /* SPONSORED RESTAURANTS ROW                                                   */
 /* -------------------------------------------------------------------------- */
 function SponsoredRestaurantsRow() {
-  const { sponsoredRestaurants } = useAds();
-  const { vegMode } = useAppUI();
-  const { pureVegOverrides } = useCms();
-  const items = sponsoredRestaurants();
-  const filtered = vegMode
-    ? items.filter(({ restaurant }) =>
-        pureVegOverrides && restaurant.id in pureVegOverrides
-          ? pureVegOverrides[restaurant.id]
-          : isPureVeg(restaurant.id))
-    : items;
-  if (filtered.length === 0) return null;
-  return (
-    <section className="space-y-4">
-      <SectionHeader title="Sponsored restaurants" />
-      <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
-        {filtered.slice(0, 6).map(({ restaurant, ad }) => (
-          <Link
-            key={ad.id}
-            to="/restaurant/$id"
-            params={{ id: restaurant.id }}
-            className="group block w-[260px] shrink-0"
-          >
-            <div className="relative h-40 overflow-hidden rounded-[28px] shadow-card">
-              <img
-                src={restaurant.cover}
-                alt={restaurant.name}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                loading="lazy" decoding="async"
-              />
-              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
-              <SponsoredBadge className="absolute left-3 top-3" />
-              <span className="glass absolute right-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold shadow-soft">
-                ★ {restaurant.rating.toFixed(1)}
-              </span>
-              <span className="glass-dark absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest">
-                {restaurant.deliveryMins} min · {restaurant.distanceKm} km
-              </span>
-            </div>
-            <div className="mt-2.5 px-1">
-              <h4 className="truncate font-display text-[15px] font-bold tracking-tight">{restaurant.name}</h4>
-              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{restaurant.cuisine}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
+  return null;
 }
 
 /* ============================================================
@@ -509,7 +461,7 @@ function SpotlightBanner() {
         <div className="relative h-36">
           <img src={spotlight.image} alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-          {spotlight.sponsored && <span className="absolute right-3 top-3"><SponsoredBadge dark /></span>}
+          
           <div className="absolute inset-x-0 bottom-0 p-4 text-white">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] opacity-90">Scoobix Spotlight</p>
             <h3 className="mt-0.5 font-display text-lg font-extrabold">{spotlight.title}</h3>

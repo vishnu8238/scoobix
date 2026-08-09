@@ -43,7 +43,6 @@ import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
 import { Route as PartnerSupportRouteImport } from './routes/partner.support'
 import { Route as PartnerSubscriptionRouteImport } from './routes/partner.subscription'
 import { Route as PartnerSettingsRouteImport } from './routes/partner.settings'
-import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
 import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
 import { Route as PartnerOnboardingRouteImport } from './routes/partner.onboarding'
 import { Route as PartnerNotificationsRouteImport } from './routes/partner.notifications'
@@ -51,7 +50,6 @@ import { Route as PartnerMoreRouteImport } from './routes/partner.more'
 import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as PartnerMealsRouteImport } from './routes/partner.meals'
 import { Route as PartnerLoginRouteImport } from './routes/partner.login'
-import { Route as PartnerInvoiceRouteImport } from './routes/partner.invoice'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
 import { Route as PartnerCouponsRouteImport } from './routes/partner.coupons'
 import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
@@ -59,8 +57,6 @@ import { Route as PartnerCampaignsRouteImport } from './routes/partner.campaigns
 import { Route as PartnerBulkRouteImport } from './routes/partner.bulk'
 import { Route as PartnerBranchesRouteImport } from './routes/partner.branches'
 import { Route as PartnerAnalyticsRouteImport } from './routes/partner.analytics'
-import { Route as PartnerAdsRouteImport } from './routes/partner.ads'
-import { Route as PartnerAddonsRouteImport } from './routes/partner.addons'
 import { Route as ManagerVerificationRouteImport } from './routes/manager.verification'
 import { Route as ManagerTransfersRouteImport } from './routes/manager.transfers'
 import { Route as ManagerTargetsRouteImport } from './routes/manager.targets'
@@ -125,12 +121,10 @@ import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
 import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
-import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
-import { Route as AdminAdsRouteImport } from './routes/admin.ads'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
 
@@ -304,11 +298,6 @@ const PartnerSettingsRoute = PartnerSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => PartnerRoute,
 } as any)
-const PartnerProfileRoute = PartnerProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => PartnerRoute,
-} as any)
 const PartnerOrdersRoute = PartnerOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -344,11 +333,6 @@ const PartnerLoginRoute = PartnerLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => PartnerRoute,
 } as any)
-const PartnerInvoiceRoute = PartnerInvoiceRouteImport.update({
-  id: '/invoice',
-  path: '/invoice',
-  getParentRoute: () => PartnerRoute,
-} as any)
 const PartnerHoursRoute = PartnerHoursRouteImport.update({
   id: '/hours',
   path: '/hours',
@@ -382,16 +366,6 @@ const PartnerBranchesRoute = PartnerBranchesRouteImport.update({
 const PartnerAnalyticsRoute = PartnerAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
-  getParentRoute: () => PartnerRoute,
-} as any)
-const PartnerAdsRoute = PartnerAdsRouteImport.update({
-  id: '/ads',
-  path: '/ads',
-  getParentRoute: () => PartnerRoute,
-} as any)
-const PartnerAddonsRoute = PartnerAddonsRouteImport.update({
-  id: '/addons',
-  path: '/addons',
   getParentRoute: () => PartnerRoute,
 } as any)
 const ManagerVerificationRoute = ManagerVerificationRouteImport.update({
@@ -714,11 +688,6 @@ const AdminCouponsRoute = AdminCouponsRouteImport.update({
   path: '/coupons',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminCommissionRoute = AdminCommissionRouteImport.update({
-  id: '/commission',
-  path: '/commission',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminCmsRoute = AdminCmsRouteImport.update({
   id: '/cms',
   path: '/cms',
@@ -737,11 +706,6 @@ const AdminBulkRoute = AdminBulkRouteImport.update({
 const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
   id: '/approvals',
   path: '/approvals',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAdsRoute = AdminAdsRouteImport.update({
-  id: '/ads',
-  path: '/ads',
   getParentRoute: () => AdminRoute,
 } as any)
 const ManagerLeadIdRoute = ManagerLeadIdRouteImport.update({
@@ -765,12 +729,10 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
-  '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
-  '/admin/commission': typeof AdminCommissionRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
@@ -835,8 +797,6 @@ export interface FileRoutesByFullPath {
   '/manager/targets': typeof ManagerTargetsRoute
   '/manager/transfers': typeof ManagerTransfersRoute
   '/manager/verification': typeof ManagerVerificationRoute
-  '/partner/addons': typeof PartnerAddonsRoute
-  '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
@@ -844,7 +804,6 @@ export interface FileRoutesByFullPath {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
-  '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
@@ -852,7 +811,6 @@ export interface FileRoutesByFullPath {
   '/partner/notifications': typeof PartnerNotificationsRoute
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
-  '/partner/profile': typeof PartnerProfileRoute
   '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
@@ -886,12 +844,10 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
-  '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
-  '/admin/commission': typeof AdminCommissionRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
@@ -956,8 +912,6 @@ export interface FileRoutesByTo {
   '/manager/targets': typeof ManagerTargetsRoute
   '/manager/transfers': typeof ManagerTransfersRoute
   '/manager/verification': typeof ManagerVerificationRoute
-  '/partner/addons': typeof PartnerAddonsRoute
-  '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
@@ -965,7 +919,6 @@ export interface FileRoutesByTo {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
-  '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
@@ -973,7 +926,6 @@ export interface FileRoutesByTo {
   '/partner/notifications': typeof PartnerNotificationsRoute
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
-  '/partner/profile': typeof PartnerProfileRoute
   '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
@@ -1013,12 +965,10 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
-  '/admin/ads': typeof AdminAdsRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
-  '/admin/commission': typeof AdminCommissionRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/drivers': typeof AdminDriversRoute
@@ -1083,8 +1033,6 @@ export interface FileRoutesById {
   '/manager/targets': typeof ManagerTargetsRoute
   '/manager/transfers': typeof ManagerTransfersRoute
   '/manager/verification': typeof ManagerVerificationRoute
-  '/partner/addons': typeof PartnerAddonsRoute
-  '/partner/ads': typeof PartnerAdsRoute
   '/partner/analytics': typeof PartnerAnalyticsRoute
   '/partner/branches': typeof PartnerBranchesRoute
   '/partner/bulk': typeof PartnerBulkRoute
@@ -1092,7 +1040,6 @@ export interface FileRoutesById {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
-  '/partner/invoice': typeof PartnerInvoiceRoute
   '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
@@ -1100,7 +1047,6 @@ export interface FileRoutesById {
   '/partner/notifications': typeof PartnerNotificationsRoute
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
-  '/partner/profile': typeof PartnerProfileRoute
   '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
@@ -1141,12 +1087,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rider'
     | '/terms'
-    | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
     | '/admin/cms'
-    | '/admin/commission'
     | '/admin/coupons'
     | '/admin/discover'
     | '/admin/drivers'
@@ -1211,8 +1155,6 @@ export interface FileRouteTypes {
     | '/manager/targets'
     | '/manager/transfers'
     | '/manager/verification'
-    | '/partner/addons'
-    | '/partner/ads'
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
@@ -1220,7 +1162,6 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
-    | '/partner/invoice'
     | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
@@ -1228,7 +1169,6 @@ export interface FileRouteTypes {
     | '/partner/notifications'
     | '/partner/onboarding'
     | '/partner/orders'
-    | '/partner/profile'
     | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
@@ -1262,12 +1202,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/privacy'
     | '/terms'
-    | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
     | '/admin/cms'
-    | '/admin/commission'
     | '/admin/coupons'
     | '/admin/discover'
     | '/admin/drivers'
@@ -1332,8 +1270,6 @@ export interface FileRouteTypes {
     | '/manager/targets'
     | '/manager/transfers'
     | '/manager/verification'
-    | '/partner/addons'
-    | '/partner/ads'
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
@@ -1341,7 +1277,6 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
-    | '/partner/invoice'
     | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
@@ -1349,7 +1284,6 @@ export interface FileRouteTypes {
     | '/partner/notifications'
     | '/partner/onboarding'
     | '/partner/orders'
-    | '/partner/profile'
     | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
@@ -1388,12 +1322,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rider'
     | '/terms'
-    | '/admin/ads'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
     | '/admin/cms'
-    | '/admin/commission'
     | '/admin/coupons'
     | '/admin/discover'
     | '/admin/drivers'
@@ -1458,8 +1390,6 @@ export interface FileRouteTypes {
     | '/manager/targets'
     | '/manager/transfers'
     | '/manager/verification'
-    | '/partner/addons'
-    | '/partner/ads'
     | '/partner/analytics'
     | '/partner/branches'
     | '/partner/bulk'
@@ -1467,7 +1397,6 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
-    | '/partner/invoice'
     | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
@@ -1475,7 +1404,6 @@ export interface FileRouteTypes {
     | '/partner/notifications'
     | '/partner/onboarding'
     | '/partner/orders'
-    | '/partner/profile'
     | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
@@ -1759,13 +1687,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerSettingsRouteImport
       parentRoute: typeof PartnerRoute
     }
-    '/partner/profile': {
-      id: '/partner/profile'
-      path: '/profile'
-      fullPath: '/partner/profile'
-      preLoaderRoute: typeof PartnerProfileRouteImport
-      parentRoute: typeof PartnerRoute
-    }
     '/partner/orders': {
       id: '/partner/orders'
       path: '/orders'
@@ -1815,13 +1736,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnerLoginRouteImport
       parentRoute: typeof PartnerRoute
     }
-    '/partner/invoice': {
-      id: '/partner/invoice'
-      path: '/invoice'
-      fullPath: '/partner/invoice'
-      preLoaderRoute: typeof PartnerInvoiceRouteImport
-      parentRoute: typeof PartnerRoute
-    }
     '/partner/hours': {
       id: '/partner/hours'
       path: '/hours'
@@ -1869,20 +1783,6 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/partner/analytics'
       preLoaderRoute: typeof PartnerAnalyticsRouteImport
-      parentRoute: typeof PartnerRoute
-    }
-    '/partner/ads': {
-      id: '/partner/ads'
-      path: '/ads'
-      fullPath: '/partner/ads'
-      preLoaderRoute: typeof PartnerAdsRouteImport
-      parentRoute: typeof PartnerRoute
-    }
-    '/partner/addons': {
-      id: '/partner/addons'
-      path: '/addons'
-      fullPath: '/partner/addons'
-      preLoaderRoute: typeof PartnerAddonsRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/manager/verification': {
@@ -2333,13 +2233,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCouponsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/commission': {
-      id: '/admin/commission'
-      path: '/commission'
-      fullPath: '/admin/commission'
-      preLoaderRoute: typeof AdminCommissionRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/cms': {
       id: '/admin/cms'
       path: '/cms'
@@ -2368,13 +2261,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminApprovalsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/ads': {
-      id: '/admin/ads'
-      path: '/ads'
-      fullPath: '/admin/ads'
-      preLoaderRoute: typeof AdminAdsRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/manager/lead/$id': {
       id: '/manager/lead/$id'
       path: '/lead/$id'
@@ -2393,12 +2279,10 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
-  AdminAdsRoute: typeof AdminAdsRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminBulkRoute: typeof AdminBulkRoute
   AdminCampaignsRoute: typeof AdminCampaignsRoute
   AdminCmsRoute: typeof AdminCmsRoute
-  AdminCommissionRoute: typeof AdminCommissionRoute
   AdminCouponsRoute: typeof AdminCouponsRoute
   AdminDiscoverRoute: typeof AdminDiscoverRoute
   AdminDriversRoute: typeof AdminDriversRoute
@@ -2426,12 +2310,10 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminAdsRoute: AdminAdsRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminBulkRoute: AdminBulkRoute,
   AdminCampaignsRoute: AdminCampaignsRoute,
   AdminCmsRoute: AdminCmsRoute,
-  AdminCommissionRoute: AdminCommissionRoute,
   AdminCouponsRoute: AdminCouponsRoute,
   AdminDiscoverRoute: AdminDiscoverRoute,
   AdminDriversRoute: AdminDriversRoute,
@@ -2576,8 +2458,6 @@ const ManagerRouteWithChildren =
   ManagerRoute._addFileChildren(ManagerRouteChildren)
 
 interface PartnerRouteChildren {
-  PartnerAddonsRoute: typeof PartnerAddonsRoute
-  PartnerAdsRoute: typeof PartnerAdsRoute
   PartnerAnalyticsRoute: typeof PartnerAnalyticsRoute
   PartnerBranchesRoute: typeof PartnerBranchesRoute
   PartnerBulkRoute: typeof PartnerBulkRoute
@@ -2585,7 +2465,6 @@ interface PartnerRouteChildren {
   PartnerCollectionsRoute: typeof PartnerCollectionsRoute
   PartnerCouponsRoute: typeof PartnerCouponsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
-  PartnerInvoiceRoute: typeof PartnerInvoiceRoute
   PartnerLoginRoute: typeof PartnerLoginRoute
   PartnerMealsRoute: typeof PartnerMealsRoute
   PartnerMenuRoute: typeof PartnerMenuRoute
@@ -2593,7 +2472,6 @@ interface PartnerRouteChildren {
   PartnerNotificationsRoute: typeof PartnerNotificationsRoute
   PartnerOnboardingRoute: typeof PartnerOnboardingRoute
   PartnerOrdersRoute: typeof PartnerOrdersRoute
-  PartnerProfileRoute: typeof PartnerProfileRoute
   PartnerSettingsRoute: typeof PartnerSettingsRoute
   PartnerSubscriptionRoute: typeof PartnerSubscriptionRoute
   PartnerSupportRoute: typeof PartnerSupportRoute
@@ -2601,8 +2479,6 @@ interface PartnerRouteChildren {
 }
 
 const PartnerRouteChildren: PartnerRouteChildren = {
-  PartnerAddonsRoute: PartnerAddonsRoute,
-  PartnerAdsRoute: PartnerAdsRoute,
   PartnerAnalyticsRoute: PartnerAnalyticsRoute,
   PartnerBranchesRoute: PartnerBranchesRoute,
   PartnerBulkRoute: PartnerBulkRoute,
@@ -2610,7 +2486,6 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerCollectionsRoute: PartnerCollectionsRoute,
   PartnerCouponsRoute: PartnerCouponsRoute,
   PartnerHoursRoute: PartnerHoursRoute,
-  PartnerInvoiceRoute: PartnerInvoiceRoute,
   PartnerLoginRoute: PartnerLoginRoute,
   PartnerMealsRoute: PartnerMealsRoute,
   PartnerMenuRoute: PartnerMenuRoute,
@@ -2618,7 +2493,6 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerNotificationsRoute: PartnerNotificationsRoute,
   PartnerOnboardingRoute: PartnerOnboardingRoute,
   PartnerOrdersRoute: PartnerOrdersRoute,
-  PartnerProfileRoute: PartnerProfileRoute,
   PartnerSettingsRoute: PartnerSettingsRoute,
   PartnerSubscriptionRoute: PartnerSubscriptionRoute,
   PartnerSupportRoute: PartnerSupportRoute,

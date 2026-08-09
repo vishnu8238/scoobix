@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { partnerRestaurant } from "@/lib/role-data";
 import { TrendingUp, Clock, CheckCircle2, DollarSign, BellRing, ChefHat, Power, StoreIcon } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import { useCms } from "@/lib/cms-store";
@@ -22,7 +21,7 @@ function PartnerDashboard() {
   const { closedRestaurants, setRestaurantClosed, acceptingOrders, setAcceptingOrders } = useCms();
   const { user } = useAuth();
   const { restaurant, restaurantId } = usePartnerRestaurant();
-  const rid = restaurantId || partnerRestaurant.id;
+  const rid = restaurantId;
   const goLive = useGoLiveChecklist(restaurant as GoLiveRow | null);
   const live = !!(restaurant as GoLiveRow | null)?.is_live;
   const isClosed = !!closedRestaurants[rid];
@@ -153,13 +152,7 @@ function PartnerDashboard() {
       <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
         <h2 className="font-display text-lg font-bold">Top dishes today</h2>
         <ul className="mt-3 space-y-2.5">
-          {partnerRestaurant.menu.slice(0, 4).map((d, i) => (
-            <li key={d.id} className="flex items-center gap-3">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-[12px] font-bold">{i + 1}</span>
-              <span className="flex-1 truncate text-sm font-medium">{d.name}</span>
-              <span className="text-[12px] font-bold text-muted-foreground">{42 - i * 8} sold</span>
-            </li>
-          ))}
+          <p className="py-4 text-center text-sm text-muted-foreground">Dish popularity data will appear here.</p>
         </ul>
       </section>
 

@@ -2,14 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { Star, Clock, Bike, Heart } from "lucide-react";
 import type { Restaurant } from "@/lib/mock-data";
 import { useFavorites } from "@/lib/stores";
-import { useAds } from "@/lib/ads-store";
-import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
 import { cn } from "@/lib/format";
 import { useState } from "react";
 
-export function RestaurantCard({ r, variant = "full", closed = false, sponsored: sponsoredProp }: { r: Restaurant; variant?: "full" | "compact"; closed?: boolean; sponsored?: boolean }) {
-  const { isSponsored } = useAds();
-  const sponsored = sponsoredProp ?? isSponsored(r.id);
+export function RestaurantCard({ r, variant = "full", closed = false }: { r: Restaurant; variant?: "full" | "compact"; closed?: boolean }) {
+  const sponsored = false;
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const fav = isRestaurantFav(r.id);
   const [pop, setPop] = useState(0);
@@ -34,9 +31,7 @@ export function RestaurantCard({ r, variant = "full", closed = false, sponsored:
               {r.offer}
             </span>
           )}
-          {sponsored && !closed && (
-            <SponsoredBadge className="absolute bottom-3 right-3" dark />
-          )}
+          {/* Sponsored badge removed */}
           <span className="absolute right-3 top-3 glass flex items-center gap-1 rounded-full px-2.5 py-1 shadow-soft">
             <Star className="h-3 w-3 fill-primary text-primary" />
             <span className="text-[11px] font-extrabold">{r.rating.toFixed(1)}</span>
@@ -101,9 +96,7 @@ export function RestaurantCard({ r, variant = "full", closed = false, sponsored:
               </span>
             )}
           </div>
-          {sponsored && !closed && (
-            <SponsoredBadge className="absolute right-4 bottom-4" />
-          )}
+          {/* Sponsored badge removed */}
         </div>
 
         <div className="mt-4 flex items-start justify-between gap-3 px-1">

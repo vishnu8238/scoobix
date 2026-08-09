@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { partnerMenu } from "@/lib/role-data";
+// Broken imports removed
 import type { Dish } from "@/lib/mock-data";
 import { Plus, Pencil, Trash2, X, Leaf, Sparkles, Trophy } from "lucide-react";
 import { ImageUploader } from "@/components/cravio/ImageUploader";
 import { type ImageRef } from "@/lib/image-service";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
-import { partnerRestaurant } from "@/lib/role-data";
+// Broken imports removed
 import { upsertMenuItem, deleteMenuItem, upsertAddon, deleteAddon } from "@/lib/insforge";
 import { usePartnerRestaurant } from "@/lib/partner-store";
 
@@ -23,7 +23,7 @@ type EditableDish = Dish & { available: boolean; recommended?: boolean; bestSell
 
 function PartnerMenu() {
   const { restaurant, restaurantId } = usePartnerRestaurant();
-  const rid = restaurantId || partnerRestaurant.id;
+  const rid = restaurantId;
   const [items, setItems] = useState<EditableDish[]>([]);
   const syncedFor = useRef<string | null>(null);
 
@@ -58,9 +58,7 @@ function PartnerMenu() {
           bestSeller: !!row.best_seller
         } as EditableDish)));
       } else {
-        // Fallback to role-data if no live items yet
-        const menu = partnerMenu as Dish[];
-        setItems(menu.map((d) => ({ available: true, ...d }) as EditableDish));
+        setItems([]);
       }
     })();
     

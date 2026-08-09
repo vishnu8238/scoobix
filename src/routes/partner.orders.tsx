@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { partnerOrders as fallbackOrders, PARTNER_STATUS_FLOW, type PartnerOrder, type PartnerOrderStatus } from "@/lib/role-data";
+import { type PartnerOrder, type PartnerOrderStatus, PARTNER_STATUS_FLOW } from "@/lib/partner-types";
 import { Check, X, ChevronRight, Phone } from "lucide-react";
 import { cn, formatPrice } from "@/lib/format";
 import { toast } from "sonner";
@@ -64,7 +64,6 @@ function PartnerOrders() {
   const [prepMins, setPrepMins] = useState<Record<string, number>>({});
 
   const orders = useMemo<PartnerOrder[]>(() => {
-    if (!rows.length) return fallbackOrders;
     return rows.map((r) => mapRow(r as OrderRow));
   }, [rows]);
 

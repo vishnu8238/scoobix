@@ -693,8 +693,6 @@ export const useAppUI = () => {
 
 import { CmsProvider } from "./cms-store";
 import { AuthProvider } from "./auth-store";
-import { AdsProvider } from "./ads-store";
-import { RewardsProvider } from "./rewards-store";
 import { ScoobixExtrasProviders } from "./scoobix-extras";
 import { ScoobixLoyaltyProviders } from "./scoobix-loyalty";
 
@@ -702,8 +700,6 @@ export function ScoobixProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <CmsProvider>
-        <AdsProvider>
-          <RewardsProvider>
             <AppUIProvider>
               <FavoritesProvider>
                 <OrdersProvider>
@@ -716,8 +712,6 @@ export function ScoobixProviders({ children }: { children: ReactNode }) {
 
               </FavoritesProvider>
             </AppUIProvider>
-          </RewardsProvider>
-        </AdsProvider>
       </CmsProvider>
     </AuthProvider>
   );

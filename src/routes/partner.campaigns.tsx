@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Megaphone, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { EmptyState } from "@/components/cravio/EmptyState";
-import { SponsoredBadge } from "@/components/cravio/SponsoredBadge";
 import { usePartnerRestaurant } from "@/lib/partner-store";
 import { formatPrice, cn } from "@/lib/format";
 import {
@@ -60,7 +59,7 @@ function PartnerCampaigns() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="truncate text-sm font-bold">{c.name}</h3>
-                    {sponsoredByMe && <SponsoredBadge />}
+                    
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {CAMPAIGN_TYPE_LABEL[c.type]}
