@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useAuth, ROLE_HOME } from "@/lib/auth-store";
+import { useAuth, ROLE_HOME, ROLE_ONBOARDING } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 
@@ -27,13 +27,13 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
     // Authorization check: session exists but the required role is missing from the user's role list.
     if (user && !user.roles.includes(allow)) {
       console.warn(`[auth] RoleGuard mismatch: user has roles [${user.roles.join(", ")}] but portal requires ${allow}`);
-      // Send to the login screen specifically for THIS portal so the user can sign in with the right account or resolve access.
-      console.log(`[auth] RoleGuard redirecting to login with app=${allow}`);
+      // Intentional Onboarding: Send to onboarding if they are trying to access a portal they don't have membership for.
+      const onboarding = ROLE_ONBOARDING[allow];
+      console.log(`[auth] Redirecting to onboarding for ${allow}: ${onboarding}`);
       navigate({
-        to: "/auth/login",
-        search: { app: allow, redirect: href },
+        to: onboarding as never,
         replace: true,
-      } as never);
+      });
       return;
     }
 

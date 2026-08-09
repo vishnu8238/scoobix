@@ -90,6 +90,15 @@ export const ROLE_HOME: Record<Role, string> = {
   manager: "/manager",
 };
 
+/** Portal-specific onboarding routes for users who intend to enter a portal but lack membership. */
+export const ROLE_ONBOARDING: Record<Role, string> = {
+  customer: "/app",
+  partner: "/partner/onboarding",
+  rider: "/rider/onboarding",
+  admin: "/admin",
+  manager: "/manager/onboarding",
+};
+
 /**
  * Resolves the portal type from a URL path.
  * This is the authoritative way to determine WHICH app the user is trying to use.
@@ -283,8 +292,10 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   // Hardened Requested Portal Resolution
   const target = requestedPortal || input.role;
   
-  // PRIORITIZE the target (requested portal) if the user has that role
-  if (target && allRoles.includes(target as Role)) {
+  // PRIORITIZE the target (requested portal). 
+  // If the user lacks membership, we still treat them as entering that portal 
+  // (the UI will handle onboarding redirection).
+  if (target) {
     sessionRole = target as Role;
     console.log(`[auth] Using explicitly requested portal: ${sessionRole}`);
   } else if (allRoles.includes("admin")) {
@@ -422,6 +433,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserState(next);
     
     if (next) {
+      // Mirrored locally for secondary UI hints, but NOT authoritative for routing.
       writeCachedRole(next.role);
       setCachedRole(next.role);
     } else {
