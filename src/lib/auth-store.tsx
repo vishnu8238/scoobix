@@ -256,15 +256,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // OAuth Callback
   useEffect(() => {
     const callback = readOAuthCallback();
+    const error = readOAuthError();
+    
+    if (error) {
+      console.error("[OAUTH_DEBUG] Provider returned error:", error);
+      setOauthError(error);
+      clearOAuthParamsFromUrl();
+      return;
+    }
+
     if (callback) {
+      console.log("[OAUTH_DEBUG] OAuth callback detected", { 
+        provider: callback.provider, 
+        hasCode: !!callback.code,
+        meta: callback.meta 
+      });
       clearOAuthParamsFromUrl();
       setAuthState("AUTHENTICATING");
       setLoading(true);
       void (async () => {
         try {
+          console.log("[OAUTH_DEBUG] ifCompleteOAuth starting...");
           const { user: sess } = await ifCompleteOAuth(callback.code);
+          console.log("[OAUTH_DEBUG] ifCompleteOAuth success. User ID:", sess.id);
+          
+          console.log("[OAUTH_DEBUG] Verifying token persistence...");
+          const hasAccessToken = !!localStorage.getItem("scoobix_if_access_v1");
+          const hasRefreshToken = !!localStorage.getItem("scoobix_if_refresh_v1");
+          console.log("[OAUTH_DEBUG] Tokens in storage:", { access: hasAccessToken, refresh: hasRefreshToken });
+
           await admit(sess, (callback.meta?.app as Role) || undefined);
         } catch (e: any) {
+          console.error("[OAUTH_DEBUG] ifCompleteOAuth failed:", e.message);
           setOauthError(e.message);
           setAuthState("ERROR");
           setLoading(false);
