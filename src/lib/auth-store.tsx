@@ -1,4 +1,4 @@
-// [AUTH_FLOW] IDENTITY SYNC STABILIZED
+// [AUTH_FORENSIC] IDENTITY SYNC & PORTAL ROUTING AUDIT
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import type { Role, User } from "./types";
 import {
@@ -19,6 +19,8 @@ import {
   findUserProfileByEmail,
   upsertUserProfile,
   referralCodeFor,
+  getAccessToken,
+  setTokens,
   type DbRole,
   type InsForgeUser,
   type OAuthProvider,
@@ -26,7 +28,6 @@ import {
 } from "./insforge-auth";
 import { listTable } from "./insforge-crud";
 import { isPhoneOtpEnabled, sendPhoneOtp, verifyPhoneOtp, normalisePhone } from "./phone-otp";
-import { setTokens } from "./insforge-auth";
 import { clearLastRoute } from "./last-route";
 import {
   accountUsable,
@@ -303,8 +304,19 @@ async function resolveUserRoles(userId: string, email: string): Promise<Role[]> 
  * based on the requested portal, WITHOUT overwriting the DB role column.
  */
 async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInput = {}, requestedPortal?: Role): Promise<User | null> {
-  console.log("[auth] Syncing profile for session user:", sess?.id, "with input:", JSON.stringify(input));
-  if (!sess || typeof sess.id !== "string" || !sess.id) return null;
+  const meta = {
+    pathname: typeof window !== "undefined" ? window.location.pathname : "",
+    requestedPortal: requestedPortal || input.role || "none",
+    sessionId: sess?.id || "none",
+    hasSession: !!sess,
+    hasAccessToken: !!getAccessToken(),
+  };
+  console.log("[AUTH_FORENSIC] syncProfile starting:", meta);
+  
+  if (!sess || typeof sess.id !== "string" || !sess.id) {
+    console.warn("[AUTH_FORENSIC] syncProfile: No valid session user id.");
+    return null;
+  }
 
   const provider = input.provider ?? "email";
   let existing: UserProfileRow | null = null;
@@ -330,6 +342,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
 
   // 1. Resolve ALL roles from authoritative membership sources.
   const allRoles = await resolveUserRoles(sess.id, email);
+  console.log("[AUTH_FORENSIC] syncProfile resolved roles:", allRoles);
   
   // 2. Determine the session's active role. 
   // Priority: 
@@ -360,7 +373,7 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     sessionRole = "customer";
   }
 
-  console.log(`[auth] Session role finalized: ${sessionRole} (requested: ${requestedPortal}, target: ${input.role}, all: ${allRoles.join(",")})`);
+  console.log(`[AUTH_FORENSIC] syncProfile session role finalized: ${sessionRole} (requested: ${requestedPortal}, target: ${input.role}, all: ${allRoles.join(",")})`);
 
   // 3. Ensure user profile exists in database.
   // We NO LONGER overwrite the role column with requestedPortal if it exists.
@@ -463,7 +476,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setPortal = useCallback((portal: Role | null) => {
     setActivePortalState(portal);
     if (portal) {
-      console.log(`[AUTH_FLOW] Tab portal set to: ${portal}`);
+      console.log(`[AUTH_FORENSIC] Tab portal intent updated: ${portal}`);
     }
   }, []);
 
@@ -481,7 +494,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * refresh or cold app start can route to the right surface.
    */
   const setUser = useCallback((next: User | null) => {
-    console.log("[AUTH_FLOW] setUser state update:", next?.id, next?.role, "memberships:", next?.roles);
+    console.log("[AUTH_FORENSIC] setUser state update:", { 
+      id: next?.id, 
+      role: next?.role, 
+      memberships: next?.roles,
+      portalIntent: getPortalIntent(window.location.pathname, window.location.search)
+    });
+    
+    if (next) {
+      // Authority: Single Source of Truth for destination.
+      const intent = getPortalIntent(window.location.pathname, window.location.search);
+      const destination = resolveAuthenticatedDestination(next, intent);
+      
+      // If we are on Splash or Login, perform the authoritative redirect IMMEDIATELY.
+      const current = window.location.pathname;
+      if (current === "/" || current.startsWith("/auth")) {
+        console.log("[AUTH_FORENSIC] setUser: Triggering authoritative redirect to", destination);
+        // Using window.location to ensure a hard break from conflicting React effects.
+        if (typeof window !== "undefined") {
+          window.location.assign(destination);
+        }
+      }
+    }
+
     setUserState(next);
     setAuthStatus(next ? "AUTHENTICATED" : "UNAUTHENTICATED");
     
@@ -537,10 +572,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        console.log("[AUTH_FLOW] BOOT: Starting authentication flow. URL:", window.location.href);
+        console.log("[AUTH_FORENSIC] BOOT: Starting authentication flow. URL:", window.location.href);
         const providerError = readOAuthError();
         if (providerError) {
-          console.error("[AUTH_FLOW] OAuth provider returned an error", providerError);
+          console.error("[AUTH_FORENSIC] BOOT: OAuth provider returned an error", providerError);
           if (!cancelled) {
             setOauthError(providerError);
             setAuthStatus("AUTH_ERROR");
@@ -550,7 +585,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const callback = readOAuthCallback();
         const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
-        console.log("[AUTH_FLOW] BOOT: Portal intent resolved:", currentPortal);
+        console.log("[AUTH_FORENSIC] BOOT: Portal intent resolved from URL:", currentPortal);
 
         if (callback) {
           console.log("[auth] BOOT: OAuth callback detected", callback.provider);
@@ -568,7 +603,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }, targetPortal);
             
             if (!cancelled && next) {
-              console.log("[auth] BOOT: Profile synced for OAuth user:", next.id, next.role);
+              console.log("[AUTH_FORENSIC] BOOT: Profile synced for OAuth user. Resolved destination:", resolveAuthenticatedDestination(next, targetPortal || null));
               const blocked = await admitSession(next, String(callback.provider));
               if (blocked) {
                 setOauthError(blocked);
@@ -590,8 +625,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) {
             if (sess) {
               // Restore using URL intent
+              console.log("[AUTH_FORENSIC] BOOT: Session found. Restoring profile with intent:", currentPortal);
               const next = await syncProfile(sess, {}, currentPortal ?? undefined);
-              if (!cancelled && next) setUser(next);
+              if (!cancelled && next) {
+                console.log("[AUTH_FORENSIC] BOOT: Session restored. Destination:", resolveAuthenticatedDestination(next, currentPortal || null));
+                setUser(next);
+              }
             } else {
               const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
               if (!cancelled && !hasTokens) {
@@ -604,7 +643,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("[auth] Global BOOT error:", err);
       } finally {
         if (!cancelled) {
-          console.log("[auth] Auth boot complete, loading = false.");
+          console.log("[AUTH_FORENSIC] BOOT: Auth boot complete. authStatus:", authStatus);
           clearTimeout(timeout);
           setLoading(false);
         }
@@ -699,7 +738,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      console.log(`[AUTH_FLOW] signIn attempt for ${address} (requested role: ${role})`);
+      console.log(`[AUTH_FORENSIC] signIn attempt for ${address} (requested portal: ${role})`);
       const { user: sess, accessToken } = await ifLogin(address, password);
       
       // Ensure tokens are persisted and verified before proceeding
@@ -713,7 +752,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       
-      console.log(`[auth] signIn resolving profile for target portal: ${targetPortal}`);
+      console.log(`[AUTH_FORENSIC] signIn: Resolving profile for target portal: ${targetPortal}`);
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
@@ -778,6 +817,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOauthError(null);
       const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
+      console.log(`[AUTH_FORENSIC] signInWithProvider: Starting OAuth. Portal intent preserved: ${targetPortal}`);
       rememberPendingRole(targetPortal, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
 

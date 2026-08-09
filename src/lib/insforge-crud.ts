@@ -1,3 +1,4 @@
+// [AUTH_FORENSIC] DATABASE ACCESS LAYER AUDIT
 /**
  * Generic InsForge CRUD helper.
  *
@@ -72,7 +73,10 @@ async function once(url: string, method: Method, body?: unknown) {
     ok: res.ok,
     status: res.status,
   });
-  if (!res.ok) throw new HttpError(res.status, `${method} ${url} → ${res.status}`);
+  if (!res.ok) {
+    console.error("[AUTH_FORENSIC] listTable: HTTP Error from server:", { status: res.status, url, method });
+    throw new HttpError(res.status, `${method} ${url} → ${res.status}`);
+  }
   // Some DELETE responses have no body.
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
@@ -152,6 +156,7 @@ export function listTable<T = Record<string, unknown>>(
   const load = () => withRetry(() => once(url, "GET")).then((v) => (Array.isArray(v) ? (v as T[]) : []));
   // Cache hits are recorded too, so the dashboard can show a real hit rate.
   if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
+    // console.log(`[AUTH_FORENSIC] listTable: Cache hit for ${table}`);
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
   }
   if (opts?.fresh) {
