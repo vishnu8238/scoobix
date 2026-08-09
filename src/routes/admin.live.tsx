@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, Plus, Map as MapIcon, Layers, Users, Store, Bike, ClipboardList, Ban, Check, Edit2, Trash2, X, Loader2, Database, ChevronDown, ChevronRight, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { GoogleMap as LeafletMap } from "@/components/maps/GoogleMap";
 import { updateZone, deleteZone, getZoneStats, type DeliveryZone, type Subzone } from "@/lib/zones-api";
 import { getZonesWithSubzones, seedVadodaraStructure } from "@/lib/zones.functions";
 import { useTableVersion } from "@/lib/realtime-hooks";
