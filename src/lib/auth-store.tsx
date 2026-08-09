@@ -707,7 +707,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const sess = await ifGetSession();
     if (!sess) return { ok: false, message: "Could not start a session" };
     const currentPortal = resolvePortalFromPath(window.location.pathname);
-    const targetPortal = role || currentPortal || undefined;
+    const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
     const next = await syncProfile(sess, { 
       provider: "phone", 
       role: targetPortal, 
