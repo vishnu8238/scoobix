@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useAuth, ROLE_ONBOARDING, ROLE_HOME } from "@/lib/auth-store";
+import { useAuth, ROLE_ONBOARDING, ROLE_HOME, getRequestedPortal } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
+import { Button } from "@/components/ui/button";
 
 /**
  * Hard role isolation.
@@ -20,50 +21,45 @@ export function RoleGuard({
   children: React.ReactNode;
   transitionLabel?: string;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading, authState, authError } = useAuth();
   const navigate = useNavigate();
   const href = useRouterState({ select: (s) => s.location.href });
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || authState === "RESOLVING") return;
     
-    if (user) {
-      // 1. Check if user has membership for THIS portal
-      if (!user.roles.includes(allow)) {
-        const onboarding = ROLE_ONBOARDING[allow];
-        
-        // Safety: If onboarding is not defined (e.g. customer), fallback to home
-        if (!onboarding) {
-           navigate({ to: "/app" as any, replace: true });
-           return;
-        }
-
-        console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
-        // Avoid redundant navigations if already there
-        if (typeof window !== "undefined" && window.location.pathname !== onboarding) {
-          window.location.assign(onboarding);
-        }
-        return;
-      }
-      
-      // 2. User is authorized for this portal.
-      // If they are on a generic /auth path, move them to the portal home.
-      if (typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname.startsWith("/auth") || window.location.pathname.includes("/login"))) {
-        const home = ROLE_HOME[allow];
-        console.log(`[AUTH_ADMISSION] RoleGuard: Authorized on auth path. Moving to ${home}`);
-        window.location.assign(home);
-      }
-    } else {
+    if (!user) {
       // 3. Not authenticated.
+      const intent = getRequestedPortal(window.location.pathname, window.location.search) || allow;
       const safeRedirect = href.startsWith("/auth") || href.includes("login") ? undefined : href;
       console.log(`[AUTH_ADMISSION] RoleGuard: Unauthenticated. Redirecting to login for portal ${allow}`);
       navigate({
         to: "/auth/login",
-        search: { app: allow, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
+        search: { app: intent, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
         replace: true,
       } as any);
+      return;
     }
-  }, [user, loading, allow, navigate, href]);
+
+    // 1. Check if user has membership for THIS portal
+    if (!user.roles.includes(allow)) {
+      const onboarding = ROLE_ONBOARDING[allow];
+      
+      // Safety: If onboarding is not defined (e.g. customer), fallback to home
+      if (!onboarding) {
+         navigate({ to: "/app" as any, replace: true });
+         return;
+      }
+
+      console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
+      // Avoid redundant navigations if already there
+      if (typeof window !== "undefined" && window.location.pathname !== onboarding) {
+        window.location.assign(onboarding);
+      }
+      return;
+    }
+  }, [user, loading, authState, allow, navigate, href]);
+
 
   // We only show the logo while authenticating or loading memberships.
   if (loading) {
@@ -82,19 +78,33 @@ export function RoleGuard({
   // If loading is done but user is missing or unauthorized, we show a transition state
   // while the useEffect above handles the redirect.
   if (!user || !user.roles.includes(allow)) {
+    if (authState === "ERROR") {
+      return (
+        <div className="flex min-h-svh w-full flex-col items-center justify-center bg-background p-6 text-center">
+          <ScoobixMark size={48} className="mb-4" />
+          <h2 className="font-display text-xl font-bold text-destructive">Authentication Error</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{authError || "An unexpected error occurred during admission."}</p>
+          <Button variant="outline" className="mt-6 rounded-full" onClick={() => window.location.assign("/auth/login")}>
+            Back to Login
+          </Button>
+        </div>
+      );
+    }
+
     if (user) {
       return (
         <div className="flex min-h-svh w-full items-center justify-center bg-background p-6 text-center">
           <div className="max-w-xs space-y-4">
             <ScoobixMark size={48} className="mx-auto" />
             <h2 className="font-display text-xl font-bold">{transitionLabel || `Accessing ${allow} portal...`}</h2>
-            <p className="text-sm text-muted-foreground">Please wait while we set up your account.</p>
+            <p className="text-sm text-muted-foreground">Please wait while we verify your account status.</p>
           </div>
         </div>
       );
     }
     return null;
   }
+
 
   return <>{children}</>;
 }

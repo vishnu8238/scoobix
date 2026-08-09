@@ -74,9 +74,12 @@ async function once(url: string, method: Method, body?: unknown) {
     status: res.status,
   });
   if (!res.ok) {
-    console.error("[AUTH_FORENSIC] listTable: HTTP Error from server:", { status: res.status, url, method });
-    throw new HttpError(res.status, `${method} ${url} → ${res.status}`);
+    const body = await res.json().catch(() => ({}));
+    const message = body?.message || body?.error || `${method} ${url} → ${res.status}`;
+    console.error("[AUTH_FORENSIC] listTable: HTTP Error from server:", { status: res.status, url, method, message });
+    throw new HttpError(res.status, message);
   }
+
   // Some DELETE responses have no body.
   const txt = await res.text();
   return txt ? JSON.parse(txt) : null;
