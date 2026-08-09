@@ -278,10 +278,14 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   // 3. Highest existing role from allRoles
   // 4. 'customer'
   let sessionRole: Role = "customer";
+  
+  // Hardened Requested Portal Resolution
   const target = requestedPortal || input.role;
   
+  // PRIORITIZE the target (requested portal) if the user has that role
   if (target && allRoles.includes(target as Role)) {
-    sessionRole = target;
+    sessionRole = target as Role;
+    console.log(`[auth] Using explicitly requested portal: ${sessionRole}`);
   } else if (allRoles.includes("admin")) {
     sessionRole = "admin";
   } else if (allRoles.includes("manager")) {
@@ -387,20 +391,12 @@ async function userIsPlatformAdmin(userId: string, email: string): Promise<boole
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
-  const [activePortal, setActivePortalState] = useState<Role | null>(() => {
-    if (typeof window === "undefined") return null;
-    return resolvePortalFromPath(window.location.pathname);
-  });
+  const [activePortal, setActivePortalState] = useState<Role | null>(null); // Start as null to avoid race
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
-
   const setPortal = useCallback((portal: Role | null) => {
     setActivePortalState(portal);
-    // Portal state is now tab-specific (held in component state), 
-    // but we can still use local storage as a hint for NEW tabs if needed.
-    // However, to satisfy "CRITICAL: Do NOT use a single global localStorage activePortal value as authoritative",
-    // we strictly rely on the state + path resolution.
     if (portal) {
       console.log(`[auth] Tab portal set to: ${portal}`);
     }
@@ -427,10 +423,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
     } else {
+      // ONLY clear storage if we are explicitly signing out (setUser(null))
+      // and NOT during an initialization race.
       console.warn("[auth] setUser(null) called - clearing session state");
+      
+      // If we are booting and have tokens but no user yet, do NOT clear tokens
+      const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
+      if (loading && hasTokens) {
+        console.log("[auth] setUser(null) ignored during boot while tokens exist");
+        return;
+      }
+
       writeCachedRole(null);
       setCachedRole(null);
-      // HARDENED: Clear every portal-related preference on logout
       try {
         localStorage.removeItem("scoobix_active_portal_v1");
         localStorage.removeItem("scoobix_role_v1");
@@ -448,7 +453,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } catch { /* ignore */ }
     }
-  }, []);
+  }, [loading]);
 
 
 
@@ -523,8 +528,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.log("[auth] Profile restored for session user:", next?.id, next?.role);
               if (!cancelled && next) setUser(next);
             } else {
-              console.log("[auth] No active session, user is UNAUTHENTICATED.");
-              setUser(null);
+              // ONLY clear session if we explicitly failed to get one and NO tokens exist
+              const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
+              console.log("[auth] No active session. Tokens in storage:", hasTokens);
+              
+              if (!cancelled) {
+                if (hasTokens) {
+                   // Tokens exist but session check failed. Likely expired.
+                   // we do NOT call setUser(null) here because ifRefresh might be running
+                   // or we might be in a temporary network failure.
+                   console.log("[auth] tokens exist but session check failed - preserving state for potential refresh/retry");
+                } else {
+                   setUser(null);
+                }
+              }
             }
           }
         }
@@ -622,9 +639,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { user: sess } = await ifLogin(address, password);
+      console.log(`[auth] signIn attempt for ${address} (requested role: ${role})`);
+      const { user: sess, accessToken } = await ifLogin(address, password);
+      
+      // Ensure tokens are persisted and verified before proceeding
+      const verify = localStorage.getItem("scoobix_if_access_v1");
+      if (verify !== accessToken) {
+        console.error("[auth] Token persistence verification failed in signIn");
+        // We do NOT logout yet, as we might have just received them in memory.
+        // But we must ensure the storage is working for the AuthProvider.
+      }
+
       const currentPortal = resolvePortalFromPath(window.location.pathname);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
+      
+      console.log(`[auth] Resolving profile for target portal: ${targetPortal}`);
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 

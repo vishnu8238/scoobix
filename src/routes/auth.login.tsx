@@ -74,6 +74,13 @@ function LoginPage() {
     const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
     console.log("[auth] Login page redirect check:", { requestedPortal, userRoles: user.roles, userId: user.id });
 
+    // Ensure state persistence check
+    const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
+    if (!hasTokens) {
+      console.warn("[auth] User state exists but tokens missing from storage - delaying navigation");
+      return;
+    }
+
     // If the authenticated user has the requested role, go home.
     if (requestedPortal && user.roles.includes(requestedPortal)) {
       const home = ROLE_HOME[requestedPortal];
