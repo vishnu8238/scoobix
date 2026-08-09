@@ -104,13 +104,14 @@ async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit
 
 // ---------- partner-side writes (best-effort, never throw) ----------
 
-async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<{ ok: boolean }> {
+async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown, headers?: Record<string, string>): Promise<{ ok: boolean }> {
   try {
     const res = await fetch(`${INSFORGE_URL}${path}`, {
       method,
       headers: {
         ...insforgeHeaders(),
         "Content-Type": "application/json",
+        ...headers,
       },
 
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -162,8 +163,11 @@ export async function upsertMenuItem(item: {
   const path = method === "PATCH" 
     ? `/api/database/records/menu_items?id=eq.${item.id}` 
     : `/api/database/records/menu_items`;
+
+  const headers: Record<string, string> = {};
+  if (method === "POST") headers["Prefer"] = "return=representation";
     
-  const res = await ifWrite(path, method, item);
+  const res = await ifWrite(path, method, item, headers);
   if (res.ok) {
     const { invalidateTable } = await import("./insforge-crud");
     invalidateTable("menu_items");
@@ -235,7 +239,7 @@ export function upsertAddon(addon: {
   if (addon.id && !addon.id.startsWith("a")) {
     return ifWrite(`/api/database/records/addons?id=eq.${addon.id}`, "PATCH", addon);
   }
-  return ifWrite(`/api/database/records/addons`, "POST", addon);
+  return ifWrite(`/api/database/records/addons`, "POST", addon, { "Prefer": "return=representation" });
 }
 
 export function deleteAddon(id: string) {

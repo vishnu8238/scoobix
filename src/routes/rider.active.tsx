@@ -331,7 +331,8 @@ function RiderActive() {
 
   const handleSelfCancel = async () => {
     if (!order?.id || busy) return;
-    if (!confirm("Are you sure you want to cancel this delivery? This may affect your rating.")) return;
+    const confirmed = window.confirm("Are you sure you want to cancel this delivery? This may affect your rating.");
+    if (!confirmed) return;
     setBusy(true);
     await cancelAssignment({ 
       data: {
