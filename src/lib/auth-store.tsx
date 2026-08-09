@@ -96,6 +96,12 @@ export const ROLE_HOME: Record<Role, string> = {
  */
 export function resolvePortalFromPath(path: string): Role | null {
   const p = path.toLowerCase();
+  // Check for exact login patterns first to avoid ambiguity
+  if (p.includes("/partner/login")) return "partner";
+  if (p.includes("/rider/login")) return "rider";
+  if (p.includes("/manager/login")) return "manager";
+  if (p.includes("/admin/login")) return "admin";
+
   if (p.startsWith("/partner")) return "partner";
   if (p.startsWith("/rider")) return "rider";
   if (p.startsWith("/manager")) return "manager";
@@ -257,13 +263,12 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   
   // 2. Determine the session's active role. 
   // Priority: 
-  // 1. target (from sign-in input)
-  // 2. requestedPortal (from URL/activePortal state)
-  // 3. Current activePortal from state (persisted)
-  // 4. Highest existing role from allRoles
-  // 5. 'customer'
+  // 1. requestedPortal (explicit context from URL/parameter)
+  // 2. target (from sign-in input)
+  // 3. Highest existing role from allRoles
+  // 4. 'customer'
   let sessionRole: Role = "customer";
-  const target = input.role || requestedPortal;
+  const target = requestedPortal || input.role;
   
   if (target && allRoles.includes(target)) {
     sessionRole = target;

@@ -98,17 +98,25 @@ function LoginPage() {
     // 3. If no specific portal requested, go to user's role home.
 
     const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
+    console.log("[auth] landing for user:", user.id, "requested portal:", requestedPortal, "user roles:", user.roles);
     
     if (requestedPortal && user.roles.includes(requestedPortal)) {
       const home = ROLE_HOME[requestedPortal];
       const canResume = !!redirect && redirect.startsWith(home);
+      console.log("[auth] redirecting to portal home:", canResume ? redirect : home);
       navigate({ to: (canResume ? redirect : home) as never, replace: true });
       return;
     }
 
-    const home = ROLE_HOME[user.role];
-    const canResume = !!redirect && redirect.startsWith(home);
-    navigate({ to: (canResume ? redirect : home) as never, replace: true });
+    if (!requestedPortal && user.role) {
+      const home = ROLE_HOME[user.role];
+      const canResume = !!redirect && redirect.startsWith(home);
+      console.log("[auth] no specific portal, redirecting to default home:", home);
+      navigate({ to: (canResume ? redirect : home) as never, replace: true });
+      return;
+    }
+
+    console.warn("[auth] Land logic could not determine destination. User stayed on login page.");
   };
 
   const submit = async (e: React.FormEvent) => {
