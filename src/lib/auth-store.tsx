@@ -1,3 +1,4 @@
+// [AUTH_FLOW] IDENTITY SYNC STABILIZED
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import type { Role, User } from "./types";
 import {

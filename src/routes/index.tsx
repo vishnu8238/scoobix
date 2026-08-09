@@ -37,15 +37,14 @@ function Splash() {
 
     if (loading) return;
     
+    const intent = getPortalIntent(window.location.pathname, window.location.search);
+    
     if (user) {
-      const intent = getPortalIntent(window.location.pathname, window.location.search);
       const target = resolveAuthenticatedDestination(user, intent);
-      
-      console.log("[auth] Splash: Authenticated redirect. Intent:", intent, "Target:", target);
-      navigate({ to: target as never, replace: true });
+      console.log("[AUTH_FLOW] Splash: User authenticated. Intent:", intent, "Redirecting to:", target);
+      navigate({ to: target as any, replace: true });
     } else {
-      const intent = getPortalIntent(window.location.pathname, window.location.search);
-      console.log("[auth] Splash: Anonymous redirect. Intent:", intent);
+      console.log("[AUTH_FLOW] Splash: Anonymous redirect. Intent:", intent);
       navigate({ 
         to: "/auth/login", 
         search: { app: intent || undefined },

@@ -73,22 +73,23 @@ function LoginPage() {
     
     // Authorization logic
     const intent = getPortalIntent(window.location.pathname, window.location.search);
-    console.log("[auth] Login: Post-auth check. Intent:", intent, "Roles:", user.roles);
+    const target = resolveAuthenticatedDestination(user, intent);
+    
+    console.log("[AUTH_FLOW] Login: Auth verified. Intent:", intent, "Target:", target);
 
     const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
     if (!hasTokens) {
-      console.warn("[auth] Login: Session present but tokens missing from storage - waiting");
+      console.warn("[AUTH_FLOW] Login: Session present but tokens missing from storage - waiting");
       return;
     }
 
-    const target = resolveAuthenticatedDestination(user, intent);
-    console.log("[auth] Login: Navigating to target:", target);
-    
     // If we have a redirect, and it's compatible with the target portal, use it.
     const home = intent ? ROLE_HOME[intent] : "/app";
     const canResume = !!redirect && intent && redirect.startsWith(home);
+    const finalDest = canResume ? redirect : target;
     
-    navigate({ to: (canResume ? redirect : target) as never, replace: true });
+    console.log("[AUTH_FLOW] Login: Navigating to final destination:", finalDest);
+    navigate({ to: finalDest as any, replace: true });
   }, [app, loading, navigate, redirect, user]);
 
   const land = (user: User) => {
