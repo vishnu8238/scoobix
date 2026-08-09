@@ -69,7 +69,7 @@ function Polyline({ points, color, dash }: { points: LatLng[]; color?: string; d
   const map = useMap();
   useEffect(() => {
     if (!map) return;
-    const poly = new google.maps.Polyline({
+    const poly = new window.google.maps.Polyline({
       path: points,
       geodesic: true,
       strokeColor: color || "#3B82F6",
@@ -93,7 +93,7 @@ function Polygon({ points, color, label }: { points: LatLng[]; color?: string; l
   const map = useMap();
   useEffect(() => {
     if (!map) return;
-    const poly = new google.maps.Polygon({
+    const poly = new window.google.maps.Polygon({
       paths: points,
       strokeColor: color || "#3B82F6",
       strokeOpacity: 0.8,
@@ -141,7 +141,7 @@ function GoogleMapInner({
   // Fit bounds when markers/route change
   useEffect(() => {
     if (!map) return;
-    const bounds = new google.maps.LatLngBounds();
+    const bounds = new window.google.maps.LatLngBounds();
     let hasPoints = false;
 
     markers.forEach(m => {
@@ -170,7 +170,7 @@ function GoogleMapInner({
     if (hasPoints) {
       map.fitBounds(bounds, { top: 40, bottom: 40, left: 40, right: 40 });
       // Only set max zoom if it's too zoomed in
-      google.maps.event.addListenerOnce(map, 'idle', () => {
+      window.google.maps.event.addListenerOnce(map, 'idle', () => {
         if (map.getZoom()! > 16) map.setZoom(16);
       });
     }
