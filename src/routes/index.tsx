@@ -27,13 +27,22 @@ function Splash() {
     
     if (user) {
       const hasRole = (r: Role) => user.roles.includes(r);
+      const portal = localStorage.getItem("scoobix_active_portal_v1") as Role | null;
+      
       let target = "/app";
-      if (hasRole("admin")) target = "/admin";
-      else if (hasRole("manager")) target = "/manager";
-      else if (hasRole("partner")) target = "/partner";
-      else if (hasRole("rider")) target = "/rider";
+      
+      // If we have a persisted portal preference and the user HAS that role, respect it.
+      if (portal && hasRole(portal)) {
+        target = ROLE_HOME[portal];
+      } else {
+        // Fallback to highest privilege
+        if (hasRole("admin")) target = "/admin";
+        else if (hasRole("manager")) target = "/manager";
+        else if (hasRole("partner")) target = "/partner";
+        else if (hasRole("rider")) target = "/rider";
+      }
 
-      console.log("[auth] Root redirect to target:", target, "for roles:", user.roles);
+      console.log("[auth] Root redirect to target:", target, "for roles:", user.roles, "active portal:", portal);
       navigate({ to: target as never, replace: true });
     } else {
       console.log("[auth] Root redirect to login (no session).");

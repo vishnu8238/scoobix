@@ -99,8 +99,9 @@ function LoginPage() {
     const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
     
     if (requestedPortal && user.roles.includes(requestedPortal)) {
-      // Role mismatch. Do nothing. The 'user' state update will trigger the 
-      // Wrong Account view in this component.
+      const home = ROLE_HOME[requestedPortal];
+      const canResume = !!redirect && redirect.startsWith(home);
+      navigate({ to: (canResume ? redirect : home) as never, replace: true });
       return;
     }
 

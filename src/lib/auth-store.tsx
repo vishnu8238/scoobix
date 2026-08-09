@@ -256,9 +256,15 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   const allRoles = await resolveUserRoles(sess.id, email);
   
   // 2. Determine the session's active role. 
-  // Priority: 1. requestedPortal (if they have it), 2. highest existing role, 3. 'customer'
+  // Priority: 
+  // 1. target (from sign-in input)
+  // 2. requestedPortal (from URL/activePortal state)
+  // 3. Current activePortal from state (persisted)
+  // 4. Highest existing role from allRoles
+  // 5. 'customer'
   let sessionRole: Role = "customer";
   const target = input.role || requestedPortal;
+  
   if (target && allRoles.includes(target)) {
     sessionRole = target;
   } else if (allRoles.includes("admin")) {
