@@ -458,7 +458,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        console.log("[auth] BOOT: Starting authentication flow...");
+        console.log("[auth] BOOT: Starting authentication flow. URL:", window.location.href);
         const providerError = readOAuthError();
         if (providerError) {
           console.error("[auth] OAuth provider returned an error", providerError);
@@ -468,6 +468,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const callback = readOAuthCallback();
         const currentPortal = resolvePortalFromPath(window.location.pathname);
+        console.log("[auth] BOOT: Portal resolved:", currentPortal);
 
         if (callback) {
           console.log("[auth] OAuth callback detected", callback.provider);

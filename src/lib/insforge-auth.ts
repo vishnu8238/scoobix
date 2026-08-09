@@ -166,16 +166,39 @@ export async function ifLogin(email: string, password: string): Promise<{
   user: InsForgeUser; accessToken: string; refreshToken: string | null;
 }> {
   console.log("[auth] ifLogin request for:", email);
-  const res = await raw(`/api/auth/sessions?client_type=mobile`, {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-  const data = await jsonOrThrow(res);
-  console.log("[auth] ifLogin success, tokens received.");
-  setTokens(data?.accessToken ?? null, data?.refreshToken ?? null);
-  const user = await ensureSessionUser(data, "Sign in");
-  console.log("[auth] ifLogin session user resolved:", user.id);
-  return { ...data, user };
+  try {
+    const res = await raw(`/api/auth/sessions?client_type=mobile`, {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+    console.log("[auth] ifLogin HTTP Status:", res.status);
+    const data = await jsonOrThrow(res);
+    console.log("[auth] ifLogin Success (data parsed), tokens:", {
+      access: !!data?.accessToken,
+      refresh: !!data?.refreshToken
+    });
+    
+    if (data?.accessToken) {
+      console.log("[auth] Calling setTokens explicitly...");
+      setTokens(data.accessToken, data.refreshToken ?? null);
+      
+      const verify = localStorage.getItem(ACCESS_KEY);
+      console.log("[auth] Verification read-back from localStorage:", verify ? "SUCCESS" : "FAILED");
+      
+      if (!verify) {
+        console.error("[auth] CRITICAL: localStorage write failed to persist!");
+      }
+    } else {
+      console.error("[auth] No accessToken returned in successful login response");
+    }
+
+    const user = await ensureSessionUser(data, "Sign in");
+    console.log("[auth] ifLogin session user resolved:", user.id);
+    return { ...data, user };
+  } catch (error) {
+    console.error("[auth] ifLogin FAILED:", error);
+    throw error;
+  }
 }
 
 
