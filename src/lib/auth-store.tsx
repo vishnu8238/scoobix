@@ -85,13 +85,41 @@ export function getRequestedPortal(pathname: string, search?: string | URLSearch
   return null;
 }
 
-export async function resolveUserMemberships(userId: string) {
+export async function resolveUserMemberships(userId: string, email?: string) {
+  // If we have an email, we should also check if memberships are linked to OTHER user_ids with the same email.
+  // This handles the "Fragmentation" issue where different login methods (Google vs Email) create separate user rows.
+  const userIds = [userId];
+  
+  if (email) {
+    try {
+      const { INSFORGE_URL, INSFORGE_ANON_KEY } = await import("./insforge");
+      const res = await fetch(`${INSFORGE_URL}/api/database/records/users?email=eq.${encodeURIComponent(email)}&select=id`, {
+        headers: { apikey: INSFORGE_ANON_KEY, Authorization: `Bearer ${INSFORGE_ANON_KEY}` }
+      });
+      if (res.ok) {
+        const users = await res.json();
+        if (Array.isArray(users)) {
+          users.forEach(u => {
+            if (u.id && !userIds.includes(u.id)) userIds.push(u.id);
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("[AUTH_FORENSIC] Identity lookup failed:", e);
+    }
+  }
+
+  console.log(`[AUTH_FORENSIC] Resolving memberships for IDs:`, userIds);
+
+  const restFilter = `or=(manager_id.in.(${userIds.join(",")}),owner_id.in.(${userIds.join(",")}))`;
+
   const [drivers, managers, admins, restaurants] = await Promise.all([
-    listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
-    listTable<{ id: string }>("merchant_managers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
-    listTable<{ id: string; status?: string }>("platform_admins", { user_id: `eq.${userId}`, select: "id,status", limit: 1 }).catch(() => []),
-    listTable<{ id: string }>("restaurants", { or: `(manager_id.eq.${userId},owner_id.eq.${userId})`, select: "id", limit: 1 }).catch(() => []),
+    listTable<{ id: string }>("drivers", { user_id: `in.(${userIds.join(",")})`, select: "id", limit: 1 }).catch(() => []),
+    listTable<{ id: string }>("merchant_managers", { user_id: `in.(${userIds.join(",")})`, select: "id", limit: 1 }).catch(() => []),
+    listTable<{ id: string; status?: string }>("platform_admins", { user_id: `in.(${userIds.join(",")})`, select: "id,status", limit: 1 }).catch(() => []),
+    listTable<{ id: string }>("restaurants", { or: restFilter, select: "id", limit: 1 }).catch(() => []),
   ]);
+  
   return {
     customer: true,
     rider: (drivers?.length ?? 0) > 0,
@@ -154,20 +182,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2. Resolve Memberships
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
       
-      // TEMPORARY DIAGNOSTIC BYPASS for /auth/login?app=manager
+      // 2. Resolve Memberships
+      console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
       const requestedPortal = intent || getRequestedPortal(window.location.pathname);
-      if (requestedPortal === "manager") {
-        console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT: BYPASSED`);
-        console.log(`[AUTH_DEBUG] ADMISSION_RESULT: BYPASS_SUCCESS`);
-        console.log(`[AUTH_DEBUG] DESTINATION: /manager/onboarding`);
-        console.log(`[AUTH_DEBUG] NAVIGATION_START`);
-        setAuthState("ADMITTED");
-        setLoading(false);
-        window.location.assign("/manager/onboarding");
-        return;
-      }
-
-      const memberships = await resolveUserMemberships(sess.id);
+      const memberships = await resolveUserMemberships(sess.id, email);
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT:`, memberships);
       const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
       
