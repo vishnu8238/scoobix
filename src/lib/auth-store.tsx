@@ -375,28 +375,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setPortal = useCallback((portal: Role | null) => {
     setActivePortalState(portal);
+    // Portal state is now tab-specific (held in component state), 
+    // but we can still use local storage as a hint for NEW tabs if needed.
+    // However, to satisfy "CRITICAL: Do NOT use a single global localStorage activePortal value as authoritative",
+    // we strictly rely on the state + path resolution.
     if (portal) {
-      try {
-        localStorage.setItem("scoobix_active_portal_v1", portal);
-        console.log(`[auth] Portal set to: ${portal}`);
-      } catch { /* */ }
-    } else {
-      try {
-        localStorage.removeItem("scoobix_active_portal_v1");
-        console.log(`[auth] Portal cleared`);
-      } catch { /* */ }
+      console.log(`[auth] Tab portal set to: ${portal}`);
     }
   }, []);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("scoobix_active_portal_v1") as Role | null;
-      if (stored && ALL_ROLES.includes(stored)) {
-        setActivePortalState(stored);
-        console.log(`[auth] Restored portal from storage: ${stored}`);
-      }
-    } catch { /* */ }
-  }, []);
+    // Sync portal state with path on navigation
+    const portal = resolvePortalFromPath(window.location.pathname);
+    if (portal && portal !== activePortal) {
+      setActivePortalState(portal);
+    }
+  }, [activePortal]);
 
 
   /**
