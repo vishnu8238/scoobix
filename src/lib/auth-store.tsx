@@ -256,9 +256,15 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   const allRoles = await resolveUserRoles(sess.id, email);
   
   // 2. Determine the session's active role. 
-  // Priority: 1. requestedPortal (if they have it), 2. highest existing role, 3. 'customer'
+  // Priority: 
+  // 1. target (from sign-in input)
+  // 2. requestedPortal (from URL/activePortal state)
+  // 3. Current activePortal from state (persisted)
+  // 4. Highest existing role from allRoles
+  // 5. 'customer'
   let sessionRole: Role = "customer";
   const target = input.role || requestedPortal;
+  
   if (target && allRoles.includes(target)) {
     sessionRole = target;
   } else if (allRoles.includes("admin")) {
@@ -468,11 +474,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("[auth] INITIAL_SESSION check:", sess ? "FOUND" : "NONE", sess?.id);
           if (!cancelled) {
             if (sess) {
-              // For session restoration, we only force role if a portal is explicitly active in THIS tab
+              // For session restoration, we respect the portal from the URL OR the persisted portal state.
+              const portal = currentPortal || (typeof localStorage !== "undefined" ? localStorage.getItem("scoobix_active_portal_v1") as Role : null);
               const next = await syncProfile(sess, { 
-                role: currentPortal ?? undefined, 
-                forceRole: !!currentPortal 
-              }, currentPortal ?? undefined);
+                role: portal ?? undefined, 
+                forceRole: !!portal 
+              }, portal ?? undefined);
               console.log("[auth] Profile restored for session user:", next?.id, next?.role);
               if (!cancelled && next) setUser(next);
             } else {
