@@ -20,50 +20,45 @@ export function RoleGuard({
   children: React.ReactNode;
   transitionLabel?: string;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading, authState, authError } = useAuth();
   const navigate = useNavigate();
   const href = useRouterState({ select: (s) => s.location.href });
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || authState === "RESOLVING") return;
     
-    if (user) {
-      // 1. Check if user has membership for THIS portal
-      if (!user.roles.includes(allow)) {
-        const onboarding = ROLE_ONBOARDING[allow];
-        
-        // Safety: If onboarding is not defined (e.g. customer), fallback to home
-        if (!onboarding) {
-           navigate({ to: "/app" as any, replace: true });
-           return;
-        }
-
-        console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
-        // Avoid redundant navigations if already there
-        if (typeof window !== "undefined" && window.location.pathname !== onboarding) {
-          window.location.assign(onboarding);
-        }
-        return;
-      }
-      
-      // 2. User is authorized for this portal.
-      // If they are on a generic /auth path, move them to the portal home.
-      if (typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname.startsWith("/auth") || window.location.pathname.includes("/login"))) {
-        const home = ROLE_HOME[allow];
-        console.log(`[AUTH_ADMISSION] RoleGuard: Authorized on auth path. Moving to ${home}`);
-        window.location.assign(home);
-      }
-    } else {
+    if (!user) {
       // 3. Not authenticated.
+      const intent = getRequestedPortal(window.location.pathname, window.location.search) || allow;
       const safeRedirect = href.startsWith("/auth") || href.includes("login") ? undefined : href;
       console.log(`[AUTH_ADMISSION] RoleGuard: Unauthenticated. Redirecting to login for portal ${allow}`);
       navigate({
         to: "/auth/login",
-        search: { app: allow, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
+        search: { app: intent, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
         replace: true,
       } as any);
+      return;
     }
-  }, [user, loading, allow, navigate, href]);
+
+    // 1. Check if user has membership for THIS portal
+    if (!user.roles.includes(allow)) {
+      const onboarding = ROLE_ONBOARDING[allow];
+      
+      // Safety: If onboarding is not defined (e.g. customer), fallback to home
+      if (!onboarding) {
+         navigate({ to: "/app" as any, replace: true });
+         return;
+      }
+
+      console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
+      // Avoid redundant navigations if already there
+      if (typeof window !== "undefined" && window.location.pathname !== onboarding) {
+        window.location.assign(onboarding);
+      }
+      return;
+    }
+  }, [user, loading, authState, allow, navigate, href]);
+
 
   // We only show the logo while authenticating or loading memberships.
   if (loading) {
