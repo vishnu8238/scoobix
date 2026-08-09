@@ -603,7 +603,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { user: sess } = await ifLogin(address, password);
       const currentPortal = resolvePortalFromPath(window.location.pathname);
-      const targetPortal = role || currentPortal || undefined;
+      const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
