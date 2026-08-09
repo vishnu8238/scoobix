@@ -350,9 +350,10 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
     console.log(`[AUTH_FORENSIC] syncProfile: Session role set to target: ${sessionRole}`);
   } else {
     // Staff role priority for auto-resolution when no explicit intent
+    // IMPORTANT: 'partner' is the most common staff role, so it ranks high.
     if (allRoles.includes("admin")) sessionRole = "admin";
-    else if (allRoles.includes("manager")) sessionRole = "manager";
     else if (allRoles.includes("partner")) sessionRole = "partner";
+    else if (allRoles.includes("manager")) sessionRole = "manager";
     else if (allRoles.includes("rider")) sessionRole = "rider";
     else sessionRole = "customer";
   }

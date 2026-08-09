@@ -45,18 +45,18 @@ export function RoleGuard({
 
         console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
         // Avoid redundant navigations if already there
-        if (window.location.pathname !== onboarding) {
-          navigate({ to: onboarding as any, replace: true });
+        if (typeof window !== "undefined" && window.location.pathname !== onboarding) {
+          window.location.assign(onboarding);
         }
         return;
       }
       
       // 2. User is authorized for this portal.
       // If they are on a generic /auth path, move them to the portal home.
-      if (typeof window !== "undefined" && window.location.pathname.startsWith("/auth")) {
+      if (typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname.startsWith("/auth") || window.location.pathname.includes("/login"))) {
         const home = ROLE_HOME[allow];
         console.log(`[AUTH_ADMISSION] RoleGuard: Authorized on auth path. Moving to ${home}`);
-        navigate({ to: home as any, replace: true });
+        window.location.assign(home);
       }
     } else {
       // 3. Not authenticated.
