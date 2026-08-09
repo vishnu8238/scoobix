@@ -64,6 +64,7 @@ type AuthCtx = {
   clearOAuthError: () => void;
   resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
   resendVerification: (email: string) => Promise<{ ok: boolean; message: string }>;
+  verifyEmailCode: (email: string, code: string) => Promise<{ ok: boolean; message?: string }>;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -293,6 +294,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resendVerification: async (email: string) => {
       await ifResendVerificationEmail(email);
       return { ok: true, message: "Verification email sent" };
+    },
+    verifyEmailCode: async (email: string, code: string) => {
+      try {
+        const sess = await ifVerifyEmail(email, code);
+        if (sess) {
+          await admit(sess);
+          return { ok: true };
+        }
+        return { ok: false, message: "Verification failed" };
+      } catch (e: any) {
+        return { ok: false, message: e.message };
+      }
     }
   };
 
