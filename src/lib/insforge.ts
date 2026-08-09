@@ -3,6 +3,7 @@
  * InsForge data layer for Scoobix.
  */
 
+
 import {
   restaurants,
   categories,
