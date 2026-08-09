@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_HOME, ROLE_ONBOARDING, useAuth, resolvePortalFromPath } from "@/lib/auth-store";
+import { ROLE_HOME, ROLE_ONBOARDING, useAuth, getPortalIntent, resolveAuthenticatedDestination } from "@/lib/auth-store";
 import { APPS, type AppId } from "@/lib/apps";
 import type { User } from "@/lib/types";
 import { OTP_LENGTH, OTP_RESEND_SECONDS } from "@/lib/phone-otp";
@@ -72,34 +72,24 @@ function LoginPage() {
     
     // Authorization logic:
     // The intended portal is derived from the search param ?app= OR the current URL.
-    const requestedPortal = app?.role || resolvePortalFromPath(window.location.pathname);
-    console.log("[auth] Login page redirect check:", { requestedPortal, userRoles: user.roles, userId: user.id });
+    const intent = getPortalIntent(window.location.pathname, window.location.search);
+    console.log("[auth] Login: Post-auth check. Intent:", intent, "Roles:", user.roles);
 
-    // Ensure state persistence check
     const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
     if (!hasTokens) {
-      console.warn("[auth] User state exists but tokens missing from storage - delaying navigation");
+      console.warn("[auth] Login: Session present but tokens missing from storage - waiting");
       return;
     }
 
-    if (requestedPortal) {
-      if (user.roles.includes(requestedPortal)) {
-        // Authorized for portal, go home.
-        const home = ROLE_HOME[requestedPortal];
-        const canResume = !!redirect && redirect.startsWith(home);
-        navigate({ to: (canResume ? redirect : home) as never, replace: true });
-      } else {
-        // Intentional Onboarding Flow: User wants this portal but lacks membership.
-        // Do NOT show "Restricted" for legitimate onboarding intents.
-        const onboarding = ROLE_ONBOARDING[requestedPortal];
-        console.log(`[auth] User lacks ${requestedPortal} membership, redirecting to onboarding: ${onboarding}`);
-        navigate({ to: onboarding as never, replace: true });
-      }
-    } else {
-      // No portal requested, default to Customer.
-      console.log("[auth] No portal requested, navigating to Customer home");
-      navigate({ to: "/app" as never, replace: true });
-    }
+    const target = resolveAuthenticatedDestination(user, intent);
+    console.log("[auth] Login: Navigating to target:", target);
+    
+    // If we have a redirect, and it's compatible with the target portal, use it.
+    const home = intent ? ROLE_HOME[intent] : "/app";
+    const canResume = !!redirect && intent && redirect.startsWith(home);
+    
+    navigate({ to: (canResume ? redirect : target) as never, replace: true });
+  }, [app, loading, navigate, redirect, user]);
   }, [app, loading, navigate, redirect, user]);
 
   const land = (user: User) => {

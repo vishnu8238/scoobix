@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useRouterState } from "@tanstack/react-ro
 import { useEffect } from "react";
 import splashBg from "@/assets/splash-bg.jpg";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
-import { useAuth, ROLE_HOME, ROLE_ONBOARDING, resolvePortalFromPath } from "@/lib/auth-store";
+import { useAuth, ROLE_HOME, ROLE_ONBOARDING, getPortalIntent, resolveAuthenticatedDestination } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
