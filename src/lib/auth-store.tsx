@@ -18,8 +18,6 @@ import {
   fetchUserProfile,
   upsertUserProfile,
   referralCodeFor,
-  getAccessToken,
-  setTokens,
   type InsForgeUser,
   type OAuthProvider,
   type UserProfileRow,
@@ -60,11 +58,9 @@ export function getRequestedPortal(pathname: string, search?: string | URLSearch
   if (typeof window === "undefined") return null;
   const params = typeof search === "string" ? new URLSearchParams(search) : (search || new URLSearchParams(window.location.search));
   
-  // 1. Explicit search param ?app=
   const appParam = params.get("app");
   if (appParam && ALL_ROLES.includes(appParam as Role)) return appParam as Role;
   
-  // 2. Path-based detection
   const p = pathname.toLowerCase();
   if (p.includes("/partner") || p.includes("/merchant")) return "partner";
   if (p.includes("/rider")) return "rider";
@@ -152,13 +148,11 @@ export function resolveAuthenticatedDestination({
   const portal = requestedPortal || "customer";
 
   if (portal === "customer") return ROLE_HOME.customer;
-
   if (portal === "partner") return memberships.partner ? ROLE_HOME.partner : ROLE_ONBOARDING.partner;
   if (portal === "rider") return memberships.rider ? ROLE_HOME.rider : ROLE_ONBOARDING.rider;
   if (portal === "manager") return memberships.manager ? ROLE_HOME.manager : ROLE_ONBOARDING.manager;
   if (portal === "admin") return memberships.admin ? ROLE_HOME.admin : "/admin/login";
 
-  // Fallback priority for missing intent
   if (memberships.admin) return ROLE_HOME.admin;
   if (memberships.manager) return ROLE_HOME.manager;
   if (memberships.partner) return ROLE_HOME.partner;
@@ -174,12 +168,9 @@ async function syncProfile(sess: InsForgeUser, intent?: Role): Promise<User | nu
   
   const email = (sess.email || "").toLowerCase();
   const existing = await fetchUserProfile(sess.id);
-  
-  // Resolve memberships
   const memberships = await resolveUserMemberships(sess.id, email);
   const roles: Role[] = ALL_ROLES.filter(r => memberships[r as keyof typeof memberships]);
 
-  // Establish identity profile
   const name = existing?.name || (sess.profile?.name as string) || (sess.metadata?.name as string) || email.split("@")[0] || "User";
   const avatar = existing?.avatar || (sess.profile?.avatar_url as string);
   const phone = existing?.phone || "";
@@ -198,7 +189,6 @@ async function syncProfile(sess: InsForgeUser, intent?: Role): Promise<User | nu
     loyalty_points: existing?.loyalty_points ?? 0,
   };
 
-  // Upsert profile ONLY using UUID. Never overwrite existing roles on the row itself if it's not new.
   const saved = await upsertUserProfile(profileRow, { writeRole: !existing }).catch(() => null);
 
   return {
@@ -206,7 +196,7 @@ async function syncProfile(sess: InsForgeUser, intent?: Role): Promise<User | nu
     name: saved?.name || name,
     email: saved?.email || email,
     phone: saved?.phone || phone,
-    role: intent || "customer", // Active role for current session
+    role: intent || "customer",
     roles,
     avatar: saved?.avatar || avatar,
   };
@@ -222,7 +212,7 @@ async function handleAuthenticatedAdmission(sess: InsForgeUser, intent?: Role) {
   const user = await syncProfile(sess, intent);
   if (!user) return null;
 
-          const memberships = await resolveUserMemberships(sess.id, user.email);
+  const memberships = await resolveUserMemberships(sess.id, user.email);
   const destination = resolveAuthenticatedDestination({
     requestedPortal: intent || null,
     memberships
@@ -240,7 +230,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
-  // Application boot: Restore session
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -251,7 +240,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const profile = await syncProfile(sess, intent || undefined);
           if (profile && active) {
              setUser(profile);
-             // Safety: if on splash or login but authenticated, move them.
              const p = window.location.pathname;
              if (p === "/" || p.startsWith("/auth/login")) {
                 const memberships = await resolveUserMemberships(profile.id, profile.email);
@@ -314,13 +302,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requestPhoneOtp = useCallback(async (phone: string) => {
-    return ifRequestPhoneOtp(phone);
+    return ifSendPhoneOtp(phone);
   }, []);
 
   const verifyPhoneLogin = useCallback(async (phone: string, otp: string, intent?: Role) => {
     try {
-      const sess = await ifVerifyPhoneOtp(phone, otp);
-      if (sess) {
+      const res = await ifVerifyPhoneOtp(phone, otp);
+      if (res.ok && res.userId) {
+        const sess: InsForgeUser = { id: res.userId, email: "" };
         const profile = await handleAuthenticatedAdmission(sess, intent);
         if (profile) {
           setUser(profile);
@@ -328,7 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { ok: true, user: profile };
         }
       }
-      return { ok: false, message: "OTP verified but session failed" };
+      return { ok: false, message: res.message || "Verification failed" };
     } catch (e: any) {
       return { ok: false, message: e.message || "Verification failed" };
     }
@@ -364,7 +353,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await ifLogout();
     setUser(null);
     if (uid) endCurrentSession(uid);
-    // AUTHORITATIVE LOGOUT REDIRECT
     if (typeof window !== "undefined") {
       window.location.assign("/auth/login");
     }
@@ -379,7 +367,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // OAuth callback handling
   useEffect(() => {
     const callback = readOAuthCallback();
     if (callback) {
