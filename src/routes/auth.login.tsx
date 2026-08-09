@@ -62,17 +62,8 @@ function LoginPage() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  useEffect(() => {
-    if (loading || !user) return;
-    
-    // AuthProvider's bootup/OAuth effects handle the authoritative admission redirect.
-    // We only log here for forensic tracking.
-    console.log("[AUTH_FORENSIC] Login Page: Authenticated user detected. Waiting for admission controller...");
-  }, [loading, user]);
-
   const land = () => {
     toast.success("Identity verified");
-    console.log("[AUTH_ADMISSION] Login successful. Admission controller will now calculate destination.");
   };
 
 
