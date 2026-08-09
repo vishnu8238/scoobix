@@ -470,15 +470,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserState(next);
     
     if (next) {
-      // Mirrored locally for secondary UI hints, but NOT authoritative for routing.
+      // Mirrored locally for secondary UI hints (e.g. icon colors), but NOT authoritative for routing.
       writeCachedRole(next.role);
       setCachedRole(next.role);
     } else {
-      // ONLY clear storage if we are explicitly signing out (setUser(null))
-      // and NOT during an initialization race.
-      console.warn("[auth] setUser(null) called - clearing session state");
+      console.log("[auth] setUser(null) - clearing session state");
       
-      // If we are booting and have tokens but no user yet, do NOT clear tokens
       const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
       if (loading && hasTokens) {
         console.log("[auth] setUser(null) ignored during boot while tokens exist");
@@ -488,14 +485,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       writeCachedRole(null);
       setCachedRole(null);
       try {
+        localStorage.removeItem(CACHED_ROLE_KEY);
         localStorage.removeItem("scoobix_active_portal_v1");
-        localStorage.removeItem("scoobix_role_v1");
-        localStorage.removeItem("scoobix_pending_role_v1");
+        localStorage.removeItem(PENDING_ROLE_KEY);
         localStorage.removeItem("scoobix_if_access_v1");
         localStorage.removeItem("scoobix_if_refresh_v1");
+        sessionStorage.removeItem(PENDING_ROLE_KEY);
         sessionStorage.removeItem("scoobix_active_portal_v1");
-        sessionStorage.removeItem("scoobix_pending_role_v1");
-        sessionStorage.removeItem("scoobix_pending_role_claim_v1");
+        
         // Clear all cookies
         document.cookie.split(";").forEach((c) => {
           document.cookie = c
