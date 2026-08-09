@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useRouterState } from "@tanstack/react-ro
 import { useEffect } from "react";
 import splashBg from "@/assets/splash-bg.jpg";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
-import { useAuth, ROLE_HOME } from "@/lib/auth-store";
+import { useAuth, ROLE_HOME, resolvePortalFromPath } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
@@ -27,11 +27,11 @@ function Splash() {
     
     if (user) {
       const hasRole = (r: Role) => user.roles.includes(r);
-      const portal = localStorage.getItem("scoobix_active_portal_v1") as Role | null;
+      const portal = resolvePortalFromPath(window.location.pathname);
       
       let target = "/app";
       
-      // If we have a persisted portal preference and the user HAS that role, respect it.
+      // If we have a detected portal from the URL and the user HAS that role, respect it.
       if (portal && hasRole(portal)) {
         target = ROLE_HOME[portal];
       } else if (user.roles.length === 1) {
