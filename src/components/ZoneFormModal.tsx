@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Save, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { createNewZone, createNewSubzone } from "@/lib/zones.functions";
-import { LeafletMap } from "./cravio/LeafletMap";
+import { GoogleMap as LeafletMap } from "./maps/GoogleMap";
 import type { DeliveryZone, Subzone } from "@/lib/zones-api";
 
 type ZoneFormProps = {
