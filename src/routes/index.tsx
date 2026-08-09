@@ -34,8 +34,11 @@ function Splash() {
       // If we have a persisted portal preference and the user HAS that role, respect it.
       if (portal && hasRole(portal)) {
         target = ROLE_HOME[portal];
+      } else if (user.roles.length === 1) {
+        // If user only has ONE role, always go there regardless of generic defaults.
+        target = ROLE_HOME[user.roles[0]];
       } else {
-        // Fallback to highest privilege
+        // Fallback to highest privilege order
         if (hasRole("admin")) target = "/admin";
         else if (hasRole("manager")) target = "/manager";
         else if (hasRole("partner")) target = "/partner";

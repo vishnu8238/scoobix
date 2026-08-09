@@ -185,10 +185,18 @@ export async function ifLogout(): Promise<void> {
   dropOAuthState(PKCE_KEY);
   dropOAuthState(OAUTH_META_KEY);
   
-  // Clear any potential leftover auth cookies
+  // Clear any potential leftover auth cookies and portal states
   clearCookie("insforge-auth-token");
   clearCookie("sb-access-token");
   clearCookie("sb-refresh-token");
+  
+  try {
+    localStorage.removeItem("scoobix_active_portal_v1");
+    localStorage.removeItem("scoobix_role_v1");
+    localStorage.removeItem("scoobix_pending_role_v1");
+    sessionStorage.removeItem("scoobix_active_portal_v1");
+    sessionStorage.removeItem("scoobix_pending_role_v1");
+  } catch { /* ignore */ }
 }
 
 export async function ifGetSession(): Promise<InsForgeUser | null> {
