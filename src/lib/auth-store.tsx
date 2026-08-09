@@ -500,6 +500,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       memberships: next?.roles,
       portalIntent: getPortalIntent(window.location.pathname, window.location.search)
     });
+    
+    if (next) {
+      // Authority: Single Source of Truth for destination.
+      const intent = getPortalIntent(window.location.pathname, window.location.search);
+      const destination = resolveAuthenticatedDestination(next, intent);
+      
+      // If we are on Splash or Login, perform the authoritative redirect IMMEDIATELY.
+      const current = window.location.pathname;
+      if (current === "/" || current.startsWith("/auth")) {
+        console.log("[AUTH_FORENSIC] setUser: Triggering authoritative redirect to", destination);
+        // Using window.location to ensure a hard break from conflicting React effects.
+        if (typeof window !== "undefined") {
+          window.location.assign(destination);
+        }
+      }
+    }
+
     setUserState(next);
     setAuthStatus(next ? "AUTHENTICATED" : "UNAUTHENTICATED");
     

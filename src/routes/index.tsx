@@ -22,35 +22,20 @@ function Splash() {
 
 
   useEffect(() => {
-    // Safety exit for hangs: if user isn't loading but also isn't present, 
-    // we must redirect to login rather than staying on splash.
-    if (!loading && !user) {
-      const intent = getPortalIntent(window.location.pathname, window.location.search);
-      console.log("[auth] Splash: Redirecting to login. Intent:", intent);
-      navigate({ 
-        to: "/auth/login", 
-        search: { app: intent || undefined },
-        replace: true 
-      });
-      return;
-    }
-
+    // The Splash screen is a passive listener. 
+    // It should not trigger its own redirects if AuthProvider is booting.
     if (loading) return;
     
-    const intent = getPortalIntent(window.location.pathname, window.location.search);
-    
-    if (user) {
-      const target = resolveAuthenticatedDestination(user, intent);
-      console.log("[AUTH_FLOW] Splash: User authenticated. Intent:", intent, "Redirecting to:", target);
-      navigate({ to: target as any, replace: true });
-    } else {
-      console.log("[AUTH_FLOW] Splash: Anonymous redirect. Intent:", intent);
+    if (!user) {
+      const intent = getPortalIntent(window.location.pathname, window.location.search);
+      console.log("[AUTH_FORENSIC] Splash: No user. Redirecting to login. Intent:", intent);
       navigate({ 
         to: "/auth/login", 
         search: { app: intent || undefined },
         replace: true 
       });
     }
+    // If user exists, AuthProvider's setUser handles the authoritative redirect.
   }, [navigate, user, loading]);
 
 

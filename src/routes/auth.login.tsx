@@ -71,26 +71,10 @@ function LoginPage() {
   useEffect(() => {
     if (loading || !user) return;
     
-    // Authorization logic
-    const intent = getPortalIntent(window.location.pathname, window.location.search);
-    const target = resolveAuthenticatedDestination(user, intent);
-    
-    console.log("[AUTH_FLOW] Login: Auth verified. Intent:", intent, "Target:", target);
-
-    const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
-    if (!hasTokens) {
-      console.warn("[AUTH_FLOW] Login: Session present but tokens missing from storage - waiting");
-      return;
-    }
-
-    // If we have a redirect, and it's compatible with the target portal, use it.
-    const home = intent ? ROLE_HOME[intent] : "/app";
-    const canResume = !!redirect && intent && redirect.startsWith(home);
-    const finalDest = canResume ? redirect : target;
-    
-    console.log("[AUTH_FLOW] Login: Navigating to final destination:", finalDest);
-    navigate({ to: finalDest as any, replace: true });
-  }, [app, loading, navigate, redirect, user]);
+    // AuthProvider handles the initial landing redirect.
+    // This effect handles secondary "tokens just arrived" stabilization or re-auths.
+    console.log("[AUTH_FORENSIC] Login Page: User detected. Waiting for authoritative redirect...");
+  }, [loading, user]);
 
   const land = (user: User) => {
     toast.success(`Welcome back, ${user.name}`);

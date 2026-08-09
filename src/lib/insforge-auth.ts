@@ -197,12 +197,19 @@ export async function ifLogin(email: string, password: string): Promise<{
     
     // Normalise shape into a consistent session/user structure
     const sess = normalizeSession(data);
+    // CRITICAL: Force immediate storage sync before returning
     const accessToken = data?.accessToken || data?.data?.accessToken;
     const refreshToken = data?.refreshToken || data?.data?.refreshToken;
 
     if (accessToken) {
       console.log("[AUTH_FORENSIC] ifLogin: Tokens received. Persisting...");
       setTokens(accessToken, refreshToken ?? null);
+      
+      // Verification spin-wait (max 100ms)
+      for (let i = 0; i < 5; i++) {
+        if (localStorage.getItem(ACCESS_KEY)) break;
+        await new Promise(r => setTimeout(r, 20));
+      }
       
       const verify = localStorage.getItem(ACCESS_KEY);
       if (!verify) {
