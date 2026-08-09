@@ -84,10 +84,15 @@ export function getRefreshToken(): string | null {
 }
 export function setTokens(access: string | null, refresh: string | null) {
   console.log("[auth] Updating tokens in storage:", access ? "ACCESS_PRESENT" : "ACCESS_MISSING", refresh ? "REFRESH_PRESENT" : "REFRESH_MISSING");
+  if (!access) {
+    console.trace("[auth] setTokens called with null access token");
+  }
   try {
     if (access) localStorage.setItem(ACCESS_KEY, access); else localStorage.removeItem(ACCESS_KEY);
     if (refresh) localStorage.setItem(REFRESH_KEY, refresh); else localStorage.removeItem(REFRESH_KEY);
-  } catch { /* ignore */ }
+  } catch (e) {
+    console.error("[auth] localStorage write failed", e);
+  }
 }
 
 
