@@ -25,17 +25,12 @@ function Splash() {
     
     if (!user) {
       const intent = getRequestedPortal(window.location.pathname, window.location.search);
-      console.log("[AUTH_FORENSIC] Splash: No user. Redirecting to login. Intent:", intent);
       navigate({ 
         to: "/auth/login", 
         search: { app: intent || undefined },
         replace: true 
       });
-      return;
     }
-    
-    // AuthProvider handles navigation for authenticated users on boot if they are on "/"
-    console.log("[AUTH_FORENSIC] Splash: Authenticated user detected. Waiting for admission...");
   }, [navigate, user, loading]);
 
 
