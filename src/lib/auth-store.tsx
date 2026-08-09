@@ -96,13 +96,14 @@ export const ROLE_HOME: Record<Role, string> = {
  */
 export function resolvePortalFromPath(path: string): Role | null {
   const p = path.toLowerCase();
+  
   // Check for exact login patterns first to avoid ambiguity
-  if (p.includes("/partner/login")) return "partner";
+  if (p.includes("/partner/login") || p.includes("/merchant/login")) return "partner";
   if (p.includes("/rider/login")) return "rider";
   if (p.includes("/manager/login")) return "manager";
   if (p.includes("/admin/login")) return "admin";
 
-  if (p.startsWith("/partner")) return "partner";
+  if (p.startsWith("/partner") || p.startsWith("/merchant")) return "partner";
   if (p.startsWith("/rider")) return "rider";
   if (p.startsWith("/manager")) return "manager";
   if (p.startsWith("/admin")) return "admin";
@@ -211,19 +212,26 @@ type SyncInput = {
 async function resolveUserRoles(userId: string, email: string): Promise<Role[]> {
   const roles: Role[] = ["customer"]; // Everyone is a customer by default
 
-  const [isDriver, isManager, isAdmin, ownedRestaurants] = await Promise.all([
+  const [isDriver, isManager, isAdmin, ownedRestaurants, managedRestaurants] = await Promise.all([
     listTable<{ id: string }>("drivers", { user_id: `eq.${userId}`, select: "id", limit: 1 }).then(rows => !!rows[0]?.id).catch(() => false),
     userIsMerchantManager(userId),
     userIsPlatformAdmin(userId, email),
-    listTable<{ id: string }>("restaurants", { owner_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => [])
+    listTable<{ id: string }>("restaurants", { owner_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => []),
+    listTable<{ id: string }>("restaurants", { manager_id: `eq.${userId}`, select: "id", limit: 1 }).catch(() => [])
   ]);
 
-  console.log(`[auth] Resolving roles for ${userId}:`, { isDriver, isManager, isAdmin, ownedCount: ownedRestaurants.length });
+  console.log(`[auth] Resolving roles for ${userId}:`, { 
+    isDriver, isManager, isAdmin, 
+    ownedCount: ownedRestaurants.length,
+    managedCount: managedRestaurants.length 
+  });
 
   if (isDriver) roles.push("rider");
   if (isManager) roles.push("manager");
   if (isAdmin) roles.push("admin");
-  if (ownedRestaurants.length > 0) roles.push("partner");
+  // A 'partner' is either a restaurant owner OR a manager of a restaurant 
+  // (the partner app allows managing a restaurant you don't necessarily 'own' in the auth sense)
+  if (ownedRestaurants.length > 0 || managedRestaurants.length > 0) roles.push("partner");
 
   return roles;
 }
@@ -329,15 +337,22 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   };
 }
 
-/** True when this auth account owns an active merchant_managers record. */
+/** True when this auth account owns an active merchant_managers record or manages restaurants. */
 async function userIsMerchantManager(userId: string): Promise<boolean> {
   try {
-    const rows = await listTable<{ id: string }>("merchant_managers", {
-      user_id: `eq.${userId}`,
-      select: "id",
-      limit: 1,
-    });
-    return !!rows[0]?.id;
+    const [managerRows, restaurantRows] = await Promise.all([
+      listTable<{ id: string }>("merchant_managers", {
+        user_id: `eq.${userId}`,
+        select: "id",
+        limit: 1,
+      }),
+      listTable<{ id: string }>("restaurants", {
+        manager_id: `eq.${userId}`,
+        select: "id",
+        limit: 1,
+      })
+    ]);
+    return !!managerRows[0]?.id || !!restaurantRows[0]?.id;
   } catch {
     return false;
   }
@@ -585,11 +600,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
     const requestedPortal = resolvePortalFromPath(currentPath);
     
-    if (requestedPortal && next.role !== requestedPortal) {
+    if (requestedPortal && !next.roles.includes(requestedPortal)) {
        // We DO NOT block the session admission here, because the Login page 
-       // needs the 'user' object to show the "Wrong Account" UI.
+       // needs the 'user' object to show the "Access Restricted" UI.
        // However, we record it for security.
-       console.warn(`[auth] Portal mismatch: user is ${next.role}, requested ${requestedPortal}`);
+       console.warn(`[auth] Portal mismatch: user roles [${next.roles.join(",")}], requested ${requestedPortal}`);
     }
 
     void onLoginSuccess({ userId: next.id, email: next.email, role: next.role, provider });
