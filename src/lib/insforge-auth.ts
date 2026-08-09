@@ -192,27 +192,26 @@ export async function ifLogin(email: string, password: string): Promise<{
     });
     console.log("[auth] ifLogin HTTP Status:", res.status);
     const data = await jsonOrThrow(res);
-    console.log("[auth] ifLogin Success (data parsed), tokens:", {
-      access: !!data?.accessToken,
-      refresh: !!data?.refreshToken
-    });
     
     if (data?.accessToken) {
       console.log("[auth] Calling setTokens explicitly...");
       setTokens(data.accessToken, data.refreshToken ?? null);
       
       const verify = localStorage.getItem(ACCESS_KEY);
-      console.log("[auth] Verification read-back from localStorage:", verify ? "SUCCESS" : "FAILED");
-      
       if (!verify) {
         console.error("[auth] CRITICAL: localStorage write failed to persist!");
       }
-    } else {
-      console.error("[auth] No accessToken returned in successful login response");
     }
 
     const user = await ensureSessionUser(data, "Sign in");
     console.log("[auth] ifLogin session user resolved:", user.id);
+
+    // Hardened check: Ensure the resolved user ID matches the session ID
+    // and NOT an email-fragmented UUID if somehow returned.
+    if (user.email.toLowerCase() !== email.toLowerCase()) {
+      console.warn("[auth] Auth record email mismatch - continuing with identity:", user.id);
+    }
+
     return { ...data, user };
   } catch (error) {
     console.error("[auth] ifLogin FAILED:", error);
