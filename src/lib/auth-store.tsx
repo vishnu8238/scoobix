@@ -143,36 +143,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log(`[AUTH_ADMISSION] Starting admission for ${sess.id} with intent ${intent || "none"}`);
       console.log(`[AUTH_DEBUG] SESSION_UUID: ${sess.id}`);
       
-      // 1. Resolve Identity and Profile
+      // 1. Resolve the CANONICAL application identity for this Auth UUID.
+      //    Only an explicit auth_identity_links row can map this session onto a
+      //    different canonical identity. No email matching, ever.
+      const { canonicalUserId, linked } = await resolveCanonicalUserId(sess.id);
+      console.log(`[AUTH_DEBUG] CANONICAL_IDENTITY: ${canonicalUserId} (explicit link: ${linked})`);
+
+      // 2. Resolve Profile (keyed by canonical identity)
       console.log(`[AUTH_DEBUG] PROFILE_START`);
-      const profile = await fetchUserProfile(sess.id);
-      const email = sess.email || profile?.email || "";
+      const profile = await fetchUserProfile(canonicalUserId);
+      const email = profile?.email || sess.email || "";
       const name = profile?.name || sess.metadata?.name as string || email.split("@")[0] || "User";
 
       if (!profile) {
-        console.log(`[AUTH_ADMISSION] Creating missing profile for ${sess.id}`);
+        console.log(`[AUTH_ADMISSION] Creating missing profile for ${canonicalUserId}`);
         await upsertUserProfile({
-          id: sess.id,
+          id: canonicalUserId,
           email,
           name,
-          referral_code: referralCodeFor(sess.id, name)
+          referral_code: referralCodeFor(canonicalUserId, name)
         });
       }
       console.log(`[AUTH_DEBUG] PROFILE_SUCCESS`);
 
-      // 2. Resolve Memberships
-      console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
-      
-      // 2. Resolve Memberships
+      // 3. Resolve Memberships — canonical identity only
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
       const requestedPortal = intent || getRequestedPortal(window.location.pathname);
-      const memberships = await resolveUserMemberships(sess.id, email);
+      const memberships = await resolveUserMemberships(canonicalUserId);
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT:`, memberships);
       const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
-      
-      // 3. Update User State
+
+      // 4. Update User State
       setUser({
-        id: sess.id,
+        id: canonicalUserId,
         name,
         email,
         phone: profile?.phone || "",
