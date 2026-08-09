@@ -278,10 +278,14 @@ async function syncProfile(sess: InsForgeUser | null | undefined, input: SyncInp
   // 3. Highest existing role from allRoles
   // 4. 'customer'
   let sessionRole: Role = "customer";
+  
+  // Hardened Requested Portal Resolution
   const target = requestedPortal || input.role;
   
+  // PRIORITIZE the target (requested portal) if the user has that role
   if (target && allRoles.includes(target as Role)) {
-    sessionRole = target;
+    sessionRole = target as Role;
+    console.log(`[auth] Using explicitly requested portal: ${sessionRole}`);
   } else if (allRoles.includes("admin")) {
     sessionRole = "admin";
   } else if (allRoles.includes("manager")) {
@@ -419,10 +423,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       writeCachedRole(next.role);
       setCachedRole(next.role);
     } else {
+      // ONLY clear storage if we are explicitly signing out (setUser(null))
+      // and NOT during an initialization race.
       console.warn("[auth] setUser(null) called - clearing session state");
+      
+      // If we are booting and have tokens but no user yet, do NOT clear tokens
+      const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
+      if (loading && hasTokens) {
+        console.log("[auth] setUser(null) ignored during boot while tokens exist");
+        return;
+      }
+
       writeCachedRole(null);
       setCachedRole(null);
-      // HARDENED: Clear every portal-related preference on logout
       try {
         localStorage.removeItem("scoobix_active_portal_v1");
         localStorage.removeItem("scoobix_role_v1");
@@ -440,7 +453,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } catch { /* ignore */ }
     }
-  }, []);
+  }, [loading]);
 
 
 
