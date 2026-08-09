@@ -727,7 +727,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Profile creation is attempted for every signup; when verification is
       // pending there may be no session user yet — the row is then created on
       // the first successful login (self-healing).
-      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       const next = await syncProfile(sess, { 
         provider: "email", 
