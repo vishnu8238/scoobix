@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { LeafletMap } from "@/components/cravio/LeafletMap";
+import { GoogleMap as LeafletMap } from "@/components/maps/GoogleMap";
 import { 
   fetchZones, fetchSubzones, getZoneStats, fetchZoneOrderBreakdown, 
   fetchZoneDemandAnalytics, type DeliveryZone, type Subzone 
