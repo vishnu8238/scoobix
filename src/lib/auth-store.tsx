@@ -22,6 +22,7 @@ import {
   type UserProfileRow,
 } from "./insforge-auth";
 import { listTable } from "./insforge-crud";
+import { resolveCanonicalUserId } from "./identity-links";
 import { isPhoneOtpEnabled, sendPhoneOtp as ifSendPhoneOtp, verifyPhoneOtp as ifVerifyPhoneOtp } from "./phone-otp";
 import { recordLogin, endCurrentSession } from "./security-api";
 
