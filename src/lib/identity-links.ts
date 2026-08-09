@@ -21,6 +21,7 @@
 // one, so a link can never be forged to escalate privileges.
 
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { getAccessToken } from "./insforge-auth";
 
 export type IdentityProvider = "email" | "google" | "apple" | "phone" | "legacy";
 
@@ -35,9 +36,12 @@ export type IdentityLinkRow = {
 };
 
 function authHeaders(token?: string) {
+  // The link table is RLS-protected: reads require the caller's own session
+  // token, so a signed-out client can never enumerate identity links.
+  const bearer = token || getAccessToken() || INSFORGE_ANON_KEY;
   return {
     apikey: INSFORGE_ANON_KEY,
-    Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
+    Authorization: `Bearer ${bearer}`,
     "Content-Type": "application/json",
   };
 }
