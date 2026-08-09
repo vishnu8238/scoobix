@@ -78,6 +78,7 @@ type AuthCtx = {
   clearOAuthError: () => void;
   resetPassword: (email: string) => Promise<{ ok: boolean; message: string }>;
   setPortal: (portal: Role | null) => void;
+  authBootTimeout: boolean;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -404,8 +405,9 @@ async function userIsPlatformAdmin(userId: string, email: string): Promise<boole
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [cachedRole, setCachedRole] = useState<Role | null>(() => readCachedRole());
-  const [activePortal, setActivePortalState] = useState<Role | null>(null); // Start as null to avoid race
+  const [activePortal, setActivePortalState] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authBootTimeout, setAuthBootTimeout] = useState(false);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
   const setPortal = useCallback((portal: Role | null) => {
@@ -475,6 +477,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Auto-login + OAuth return handling.
   useEffect(() => {
     let cancelled = false;
+    
+    // Safety timeout to prevent infinite loading screens
+    const timeout = setTimeout(() => {
+      if (loading && !cancelled) {
+        console.error("[auth] BOOT: Auth resolution timed out after 8s");
+        setAuthBootTimeout(true);
+        setLoading(false);
+      }
+    }, 8000);
+
     (async () => {
       try {
         console.log("[auth] BOOT: Starting authentication flow. URL:", window.location.href);
@@ -487,7 +499,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const callback = readOAuthCallback();
         const currentPortal = resolvePortalFromPath(window.location.pathname);
-        console.log("[auth] BOOT: Portal resolved:", currentPortal);
+        console.log("[auth] BOOT: Portal resolved from path:", currentPortal);
 
         if (callback) {
           console.log("[auth] OAuth callback detected", callback.provider);
@@ -502,8 +514,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const next = await syncProfile(sess, {
               provider: String(callback.provider),
               role: targetPortal,
-              forceRole: !!targetPortal, // Force if any target portal specified
-            });
+              forceRole: !!targetPortal,
+            }, targetPortal);
             
             if (!cancelled && next) {
               console.log("[auth] Profile synced for OAuth user:", next.id, next.role);
@@ -531,44 +543,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Restore existing session
           const sess = await ifGetSession();
           console.log("[auth] INITIAL_SESSION check:", sess ? "FOUND" : "NONE", sess?.id);
+          
           if (!cancelled) {
             if (sess) {
-              // For session restoration, we respect the portal from the URL OR the persisted portal state.
               const portal = currentPortal || (typeof localStorage !== "undefined" ? localStorage.getItem("scoobix_active_portal_v1") as Role : null);
               const next = await syncProfile(sess, { 
                 role: portal && ALL_ROLES.includes(portal) ? portal : undefined, 
                 forceRole: !!portal 
               }, portal && ALL_ROLES.includes(portal) ? portal : undefined);
+              
               console.log("[auth] Profile restored for session user:", next?.id, next?.role);
               if (!cancelled && next) setUser(next);
             } else {
-              // ONLY clear session if we explicitly failed to get one and NO tokens exist
               const hasTokens = !!localStorage.getItem("scoobix_if_access_v1");
               console.log("[auth] No active session. Tokens in storage:", hasTokens);
               
               if (!cancelled) {
-                if (hasTokens) {
-                   // Tokens exist but session check failed. Likely expired.
-                   // we do NOT call setUser(null) here because ifRefresh might be running
-                   // or we might be in a temporary network failure.
-                   console.log("[auth] tokens exist but session check failed - preserving state for potential refresh/retry");
+                if (!hasTokens) {
+                  setUser(null);
                 } else {
-                   setUser(null);
+                  console.log("[auth] tokens exist but session check failed - preserving state for potential refresh/retry");
                 }
               }
             }
           }
         }
       } catch (err) {
-        console.error("[auth] Global BOOT error", err);
+        console.error("[auth] Global BOOT error:", err);
       } finally {
         if (!cancelled) {
           console.log("[auth] Auth boot complete, loading = false.");
+          clearTimeout(timeout);
           setLoading(false);
         }
       }
     })();
-    return () => { cancelled = true; };
+
+    return () => { 
+      cancelled = true; 
+      clearTimeout(timeout);
+    };
   }, [setUser]);
 
 
@@ -898,6 +912,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         resetPassword,
         setPortal,
+        authBootTimeout,
       }}
     >
       {children}

@@ -193,26 +193,27 @@ export async function ifLogin(email: string, password: string): Promise<{
     console.log("[auth] ifLogin HTTP Status:", res.status);
     const data = await jsonOrThrow(res);
     
-    if (data?.accessToken) {
-      console.log("[auth] Calling setTokens explicitly...");
-      setTokens(data.accessToken, data.refreshToken ?? null);
+    // Normalise shape into a consistent session/user structure
+    const sess = normalizeSession(data);
+    const accessToken = data?.accessToken || data?.data?.accessToken;
+    const refreshToken = data?.refreshToken || data?.data?.refreshToken;
+
+    if (accessToken) {
+      console.log("[auth] ifLogin: Persisting tokens for user:", sess?.id);
+      setTokens(accessToken, refreshToken ?? null);
       
       const verify = localStorage.getItem(ACCESS_KEY);
       if (!verify) {
-        console.error("[auth] CRITICAL: localStorage write failed to persist!");
+        console.error("[auth] CRITICAL: localStorage write failed to persist tokens during sign-in!");
       }
     }
 
-    const user = await ensureSessionUser(data, "Sign in");
-    console.log("[auth] ifLogin session user resolved:", user.id);
-
-    // Hardened check: Ensure the resolved user ID matches the session ID
-    // and NOT an email-fragmented UUID if somehow returned.
-    if (user.email.toLowerCase() !== email.toLowerCase()) {
-      console.warn("[auth] Auth record email mismatch - continuing with identity:", user.id);
+    if (!sess) {
+      throw new Error("Sign in response did not contain a valid user session");
     }
 
-    return { ...data, user };
+    console.log("[auth] ifLogin success. User Identity:", sess.id);
+    return { ...data, user: sess, accessToken, refreshToken };
   } catch (error) {
     console.error("[auth] ifLogin FAILED:", error);
     throw error;

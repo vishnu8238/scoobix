@@ -22,7 +22,19 @@ function Splash() {
 
 
   useEffect(() => {
-    // We only redirect once the authoritative session is resolved.
+    // Safety exit for hangs: if user isn't loading but also isn't present, 
+    // we must redirect to login rather than staying on splash.
+    if (!loading && !user) {
+      const portal = resolvePortalFromPath(window.location.pathname);
+      console.log("[auth] Splash: Not loading and no user. Redirecting to login. Context:", portal);
+      navigate({ 
+        to: "/auth/login", 
+        search: { app: portal || undefined },
+        replace: true 
+      });
+      return;
+    }
+
     if (loading) return;
     
     if (user) {
