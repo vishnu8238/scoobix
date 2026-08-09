@@ -691,10 +691,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // But we must ensure the storage is working for the AuthProvider.
       }
 
-      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       
-      console.log(`[auth] Resolving profile for target portal: ${targetPortal}`);
+      console.log(`[auth] signIn resolving profile for target portal: ${targetPortal}`);
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
