@@ -757,7 +757,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithProvider: AuthCtx["signInWithProvider"] = async (provider, role, claimRole = false, forceSelect = false) => {
     try {
       setOauthError(null);
-      const currentPortal = resolvePortalFromPath(window.location.pathname);
+      const currentPortal = getPortalIntent(window.location.pathname, window.location.search);
       const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       rememberPendingRole(targetPortal, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
