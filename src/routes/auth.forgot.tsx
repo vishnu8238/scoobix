@@ -15,14 +15,14 @@ export const Route = createFileRoute("/auth/forgot")({
 
 function ForgotPage() {
   const navigate = useNavigate();
-  const { resetPassword } = useAuth();
+  const auth = useAuth();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const res = await resetPassword(email);
+    const res = await auth.resetPassword(email);
     setBusy(false);
     if (!res.ok) { toast.error(res.message); return; }
     toast.success(res.message);
@@ -44,7 +44,7 @@ function ForgotPage() {
             <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Email</Label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@cravio.app" className="h-11 rounded-2xl bg-secondary/50 pl-9" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@scoobix.app" className="h-11 rounded-2xl bg-secondary/50 pl-9" />
             </div>
           </div>
         </div>
