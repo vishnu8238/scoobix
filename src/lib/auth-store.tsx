@@ -637,7 +637,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // pending there may be no session user yet — the row is then created on
       // the first successful login (self-healing).
       const currentPortal = resolvePortalFromPath(window.location.pathname);
-      const targetPortal = role || currentPortal || undefined;
+      const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       const next = await syncProfile(sess, { 
         provider: "email", 
         role: targetPortal, 
