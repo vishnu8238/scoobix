@@ -28,7 +28,7 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
       // 1. Check if user has membership for THIS portal
       if (!user.roles.includes(allow)) {
         const onboarding = ROLE_ONBOARDING[allow];
-        console.warn(`[AUTH_FLOW] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
+        console.warn(`[AUTH_ADMISSION] RoleGuard: User lacks membership for ${allow}. Redirecting to ${onboarding}`);
         navigate({ to: onboarding as any, replace: true });
         return;
       }
@@ -37,12 +37,13 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
       // If they are on a generic /auth path, move them to the portal home.
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/auth")) {
         const home = ROLE_HOME[allow];
+        console.log(`[AUTH_ADMISSION] RoleGuard: Authorized on auth path. Moving to ${home}`);
         navigate({ to: home as any, replace: true });
       }
     } else {
       // 3. Not authenticated.
       const safeRedirect = href.startsWith("/auth") || href.includes("login") ? undefined : href;
-      console.log(`[AUTH_FLOW] RoleGuard: Unauthenticated. Redirecting to login for portal ${allow}`);
+      console.log(`[AUTH_ADMISSION] RoleGuard: Unauthenticated. Redirecting to login for portal ${allow}`);
       navigate({
         to: "/auth/login",
         search: { app: allow, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
@@ -68,6 +69,19 @@ export function RoleGuard({ allow, children }: { allow: Role; children: React.Re
   // If loading is done but user is missing or unauthorized, we show nothing 
   // while the useEffect above handles the redirect.
   if (!user || !user.roles.includes(allow)) {
+    // If authenticated but not authorized, show a message while redirecting 
+    // to prevent the "Blank Page" symptom.
+    if (user) {
+      return (
+        <div className="flex min-h-svh w-full items-center justify-center bg-background p-6 text-center">
+          <div className="max-w-xs space-y-4">
+            <ScoobixMark size={48} className="mx-auto" />
+            <h2 className="font-display text-xl font-bold">Accessing {allow} portal...</h2>
+            <p className="text-sm text-muted-foreground">Please wait while we set up your account.</p>
+          </div>
+        </div>
+      );
+    }
     return null;
   }
 
