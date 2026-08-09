@@ -34,16 +34,16 @@ function Splash() {
       // If we have a detected portal from the URL and the user HAS that role, respect it.
       if (portal && hasRole(portal)) {
         target = ROLE_HOME[portal];
-      } else if (user.roles.length === 1) {
-        // If user only has ONE role, always go there regardless of generic defaults.
-        target = ROLE_HOME[user.roles[0]];
+      } else if (hasRole("admin")) {
+        target = ROLE_HOME.admin;
+      } else if (hasRole("manager")) {
+        target = ROLE_HOME.manager;
+      } else if (hasRole("partner")) {
+        target = ROLE_HOME.partner;
+      } else if (hasRole("rider")) {
+        target = ROLE_HOME.rider;
       } else {
-        // Fallback to highest privilege order
-        if (hasRole("admin")) target = ROLE_HOME.admin;
-        else if (hasRole("manager")) target = ROLE_HOME.manager;
-        else if (hasRole("partner")) target = ROLE_HOME.partner;
-        else if (hasRole("rider")) target = ROLE_HOME.rider;
-        else target = ROLE_HOME.customer;
+        target = ROLE_HOME.customer;
       }
 
       console.log("[auth] Root redirect to target:", target, "for roles:", user.roles, "active portal:", portal);
