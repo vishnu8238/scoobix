@@ -62,7 +62,7 @@ function buildDivIcon(L: any, kind: MarkerKind, pulse = false) {
   });
 }
 
-export function LeafletMap({
+export function GoogleMap({
   markers = [],
   route,
   polygons = [],
