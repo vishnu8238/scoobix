@@ -448,41 +448,6 @@ function Pill({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 function SponsoredRestaurantsRow() {
   return null;
 }
-      <SectionHeader title="Sponsored restaurants" />
-      <div className="no-scrollbar flex gap-4 overflow-x-auto px-5 pb-2">
-        {filtered.slice(0, 6).map(({ restaurant, ad }) => (
-          <Link
-            key={ad.id}
-            to="/restaurant/$id"
-            params={{ id: restaurant.id }}
-            className="group block w-[260px] shrink-0"
-          >
-            <div className="relative h-40 overflow-hidden rounded-[28px] shadow-card">
-              <img
-                src={restaurant.cover}
-                alt={restaurant.name}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                loading="lazy" decoding="async"
-              />
-              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
-              <SponsoredBadge className="absolute left-3 top-3" />
-              <span className="glass absolute right-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold shadow-soft">
-                ★ {restaurant.rating.toFixed(1)}
-              </span>
-              <span className="glass-dark absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest">
-                {restaurant.deliveryMins} min · {restaurant.distanceKm} km
-              </span>
-            </div>
-            <div className="mt-2.5 px-1">
-              <h4 className="truncate font-display text-[15px] font-bold tracking-tight">{restaurant.name}</h4>
-              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{restaurant.cuisine}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 /* ============================================================
    Scoobix feature extensions — Spotlight + Quick Access
