@@ -132,8 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
       console.log(`[AUTH_ADMISSION] Starting admission for ${sess.id} with intent ${intent || "none"}`);
+      console.log(`[AUTH_DEBUG] SESSION_UUID: ${sess.id}`);
       
       // 1. Resolve Identity and Profile
+      console.log(`[AUTH_DEBUG] PROFILE_START`);
       const profile = await fetchUserProfile(sess.id);
       const email = sess.email || profile?.email || "";
       const name = profile?.name || sess.metadata?.name as string || email.split("@")[0] || "User";
@@ -147,10 +149,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           referral_code: referralCodeFor(sess.id, name)
         });
       }
+      console.log(`[AUTH_DEBUG] PROFILE_SUCCESS`);
 
       // 2. Resolve Memberships
-      console.log(`[AUTH_ADMISSION] Resolving memberships for ${sess.id}`);
+      console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
+      
+      // TEMPORARY DIAGNOSTIC BYPASS for /auth/login?app=manager
+      const requestedPortal = intent || getRequestedPortal(window.location.pathname);
+      if (requestedPortal === "manager") {
+        console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT: BYPASSED`);
+        console.log(`[AUTH_DEBUG] ADMISSION_RESULT: BYPASS_SUCCESS`);
+        console.log(`[AUTH_DEBUG] DESTINATION: /manager/onboarding`);
+        console.log(`[AUTH_DEBUG] NAVIGATION_START`);
+        setAuthState("ADMITTED");
+        setLoading(false);
+        window.location.assign("/manager/onboarding");
+        return;
+      }
+
       const memberships = await resolveUserMemberships(sess.id);
+      console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT:`, memberships);
       const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
       
       // 3. Update User State
@@ -159,22 +177,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name,
         email,
         phone: profile?.phone || "",
-        role: intent || activeRoles[0] || "customer",
+        role: requestedPortal || activeRoles[0] || "customer",
         roles: activeRoles,
         avatar: profile?.avatar || undefined,
       });
 
       // 4. Determine Destination
-      const requestedPortal = intent || getRequestedPortal(window.location.pathname);
       const destination = resolveAuthenticatedDestination({ requestedPortal, memberships });
       
-      console.log(`[AUTH_ADMISSION] Admission complete. Redirecting to ${destination}`);
+      console.log(`[AUTH_DEBUG] ADMISSION_RESULT: SUCCESS`);
+      console.log(`[AUTH_DEBUG] DESTINATION: ${destination}`);
       
       // 5. Navigate exactly once
       setAuthState("ADMITTED");
       setLoading(false);
       
       if (window.location.pathname !== destination) {
+        console.log(`[AUTH_DEBUG] NAVIGATION_START`);
         window.location.assign(destination);
       }
     } catch (e: any) {
@@ -258,13 +277,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user, loading, authState, authError, oauthError,
     roles: user?.roles || [],
     signIn: async (email: string, password: string, intent?: Role) => {
+      console.log("[AUTH_DEBUG] LOGIN_BUTTON_CLICKED", { email, intent });
       setAuthState("AUTHENTICATING");
       try {
+        console.log("[AUTH_DEBUG] INSFORGE_LOGIN_REQUEST_SENT");
         const res = await ifLogin(email, password);
+        console.log("[AUTH_DEBUG] INSFORGE_LOGIN_RESPONSE: SUCCESS");
+        console.log("[AUTH_DEBUG] ACCESS_TOKEN_RECEIVED", res.accessToken ? "YES" : "NO");
+        console.log("[AUTH_DEBUG] REFRESH_TOKEN_RECEIVED", res.refreshToken ? "YES" : "NO");
+        
         recordLogin({ userId: res.user.id, event: "login", success: true });
         await admit(res.user, intent);
         return { ok: true };
       } catch (e: any) {
+        console.error("[AUTH_DEBUG] INSFORGE_LOGIN_RESPONSE: ERROR", e.message);
         setAuthState("ERROR");
         return { ok: false, message: e.message };
       }
