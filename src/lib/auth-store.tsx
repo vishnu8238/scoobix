@@ -667,7 +667,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setOauthError(null);
       const currentPortal = resolvePortalFromPath(window.location.pathname);
-      const targetPortal = role || currentPortal || undefined;
+      const targetPortal = (role && ALL_ROLES.includes(role)) ? role : (currentPortal && ALL_ROLES.includes(currentPortal)) ? currentPortal : undefined;
       rememberPendingRole(targetPortal, claimRole);
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
 
