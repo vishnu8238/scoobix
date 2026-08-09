@@ -9,7 +9,7 @@
  *  - users               (auto-created restaurant owner account)
  */
 import { useCallback, useEffect, useState } from "react";
-import { listTable, createRecord, patchRecord } from "./insforge-crud";
+import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { useAuth } from "./auth-store";
 import { queueNotification } from "./notifications-queue";
@@ -311,6 +311,23 @@ export async function listUnassignedRestaurants(): Promise<ManagedRestaurant[]> 
 
 export async function assignRestaurant(restaurantId: string, managerId: string | null) {
   await patchRecord("restaurants", restaurantId, { manager_id: managerId });
+}
+
+export async function deleteManagedRestaurant(id: string): Promise<boolean> {
+  try {
+    // Audit log before deletion
+    await createRecord("onboarding_events", {
+      restaurant_id: id,
+      status: "deleted",
+      note: "Restaurant record deleted by manager",
+      actor_role: "manager",
+    });
+    await deleteRecord("restaurants", id);
+    return true;
+  } catch (err) {
+    console.error("Delete failed:", err);
+    return false;
+  }
 }
 
 export async function saveOnboardingDraft(
