@@ -26,36 +26,31 @@ export function RoleGuard({
   const href = useRouterState({ select: (s) => s.location.href });
 
   useEffect(() => {
-    if (loading || authState === "RESOLVING") {
-      console.log(`[AUTH_DEBUG] RoleGuard stage: waiting | portal: ${allow} | authState: ${authState} | loading: ${loading}`);
-      return;
-    }
+    if (loading || authState === "RESOLVING") return;
     
     if (!user) {
-      console.log(`[AUTH_DEBUG] RoleGuard stage: no_user | redirecting_to_login | portal: ${allow}`);
-      const intent = getRequestedPortal(window.location.pathname, window.location.search) || allow;
-      const safeRedirect = href.startsWith("/auth") || href.includes("login") ? undefined : href;
+      const pathname = window.location.pathname;
+      const intent = getRequestedPortal(pathname) || allow;
+      const search: any = { app: intent };
+      if (pathname !== "/auth/login" && !pathname.includes("/auth")) {
+        search.redirect = pathname + window.location.search;
+      }
       navigate({
         to: "/auth/login",
-        search: { app: intent, ...(safeRedirect ? { redirect: safeRedirect } : {}) },
+        search,
         replace: true,
       } as any);
       return;
     }
 
     if (!user.roles.includes(allow)) {
-      console.log(`[AUTH_DEBUG] RoleGuard stage: forbidden | user_roles: ${user.roles.join(',')} | required: ${allow}`);
       const onboarding = ROLE_ONBOARDING[allow];
-      if (!onboarding) {
-         navigate({ to: "/app" as any, replace: true });
-         return;
-      }
-      if (typeof window !== "undefined" && window.location.pathname !== onboarding) {
+      if (onboarding && window.location.pathname !== onboarding) {
         window.location.assign(onboarding);
+      } else if (!onboarding) {
+        navigate({ to: ROLE_HOME.customer as any, replace: true });
       }
-      return;
     }
-    console.log(`[AUTH_DEBUG] RoleGuard stage: access_granted | portal: ${allow}`);
   }, [user, loading, authState, allow, navigate, href]);
 
 

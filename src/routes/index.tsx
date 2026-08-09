@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useRouterState } from "@tanstack/react-ro
 import { useEffect } from "react";
 import splashBg from "@/assets/splash-bg.jpg";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
-import { useAuth, ROLE_HOME, ROLE_ONBOARDING, getRequestedPortal, resolveAuthenticatedDestination, resolveUserMemberships } from "@/lib/auth-store";
+import { useAuth, getRequestedPortal } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
@@ -25,17 +25,12 @@ function Splash() {
     
     if (!user) {
       const intent = getRequestedPortal(window.location.pathname, window.location.search);
-      console.log("[AUTH_FORENSIC] Splash: No user. Redirecting to login. Intent:", intent);
       navigate({ 
         to: "/auth/login", 
         search: { app: intent || undefined },
         replace: true 
       });
-      return;
     }
-    
-    // AuthProvider handles navigation for authenticated users on boot if they are on "/"
-    console.log("[AUTH_FORENSIC] Splash: Authenticated user detected. Waiting for admission...");
   }, [navigate, user, loading]);
 
 

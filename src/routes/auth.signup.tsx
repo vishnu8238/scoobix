@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_HOME, useAuth } from "@/lib/auth-store";
+import { useAuth } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/format";
 
@@ -31,11 +31,8 @@ function SignupPage() {
   useEffect(() => {
     if (loading || !user) return;
     
-    // Determine if the current session matches the requested signup type.
-    // If they are already logged in as a Customer and open /auth/signup, go to /app.
-    // If they open /auth/signup but are a Rider, they should probably see the account switch
-    // but for signup we usually just redirect to their own home.
-    navigate({ to: ROLE_HOME[user.role] as never, replace: true });
+    // AuthProvider's admission logic will handle redirecting authenticated users 
+    // to their home portal based on the role intent and their memberships.
   }, [loading, navigate, user]);
 
   const submit = async (e: React.FormEvent) => {
@@ -46,8 +43,7 @@ function SignupPage() {
     if (!res.ok) { toast.error(res.message ?? "Sign up failed"); return; }
     if (res.needsVerification) { toast.success(res.message ?? "Verify your email to continue"); return; }
     toast.success("Account created");
-    const next = ROLES.find((r) => r.value === role)?.next ?? ROLE_HOME[role];
-    navigate({ to: next });
+    // The AuthProvider's admission will take care of the redirect after signup.
   };
 
   // OAuth sign-up and sign-in are the same call — the provider account is
