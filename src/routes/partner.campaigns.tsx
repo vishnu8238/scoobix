@@ -59,7 +59,7 @@ function PartnerCampaigns() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="truncate text-sm font-bold">{c.name}</h3>
-                    {sponsoredByMe && null}
+                    
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {CAMPAIGN_TYPE_LABEL[c.type]}

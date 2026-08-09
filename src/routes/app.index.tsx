@@ -461,7 +461,7 @@ function SpotlightBanner() {
         <div className="relative h-36">
           <img src={spotlight.image} alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-          {spotlight.sponsored && <span className="absolute right-3 top-3">null</span>}
+          
           <div className="absolute inset-x-0 bottom-0 p-4 text-white">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] opacity-90">Scoobix Spotlight</p>
             <h3 className="mt-0.5 font-display text-lg font-extrabold">{spotlight.title}</h3>
