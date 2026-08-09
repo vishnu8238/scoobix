@@ -1,12 +1,11 @@
 /**
- * Real geocoding helpers (OpenStreetMap Nominatim).
+ * Real geocoding helpers (Google Maps via Nominatim fallback for cost/caching).
  *
  * Used for:
  *  - reverse geocoding the device GPS fix into a human address
  *  - forward search of an area / street / landmark typed by the user
  *
- * No API key required. Requests are throttled by the browser and results are
- * cached in-memory for the session.
+ * Results are cached in-memory and on disk for the session.
  */
 
 export type GeoPlace = {
