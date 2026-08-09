@@ -31,6 +31,8 @@ export function RoleGuard({
     if (!user) {
       const pathname = window.location.pathname;
       const intent = getRequestedPortal(pathname) || allow;
+      console.log(`[AUTH_GUARD] Unauthenticated on ${pathname}. Intent: ${intent}`);
+      
       const search: any = { app: intent };
       if (pathname !== "/auth/login" && !pathname.includes("/auth")) {
         search.redirect = pathname + window.location.search;
@@ -44,6 +46,7 @@ export function RoleGuard({
     }
 
     if (!user.roles.includes(allow)) {
+      console.log(`[AUTH_GUARD] Unauthorized for ${allow}. Current roles:`, user.roles);
       const onboarding = ROLE_ONBOARDING[allow];
       if (onboarding && window.location.pathname !== onboarding) {
         window.location.assign(onboarding);
