@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_HOME, useAuth, resolvePortalFromPath } from "@/lib/auth-store";
+import { ROLE_HOME, ROLE_ONBOARDING, useAuth, resolvePortalFromPath } from "@/lib/auth-store";
 import { APPS, type AppId } from "@/lib/apps";
 import type { User } from "@/lib/types";
 import { OTP_LENGTH, OTP_RESEND_SECONDS } from "@/lib/phone-otp";
@@ -82,20 +82,23 @@ function LoginPage() {
       return;
     }
 
-    // If the authenticated user has the requested role, go home.
-    if (requestedPortal && user.roles.includes(requestedPortal)) {
-      const home = ROLE_HOME[requestedPortal];
-      const canResume = !!redirect && redirect.startsWith(home);
-      console.log("[auth] Authorized for portal, navigating to:", canResume ? redirect : home);
-      navigate({ to: (canResume ? redirect : home) as never, replace: true });
-    } else if (!requestedPortal) {
-      // If we're at /auth/login (Customer portal) and no app specified, default to user role home
-      console.log("[auth] No portal requested, navigating to default home:", ROLE_HOME[user.role]);
-      navigate({ to: ROLE_HOME[user.role] as never, replace: true });
+    if (requestedPortal) {
+      if (user.roles.includes(requestedPortal)) {
+        // Authorized for portal, go home.
+        const home = ROLE_HOME[requestedPortal];
+        const canResume = !!redirect && redirect.startsWith(home);
+        navigate({ to: (canResume ? redirect : home) as never, replace: true });
+      } else {
+        // Intentional Onboarding Flow: User wants this portal but lacks membership.
+        // Do NOT show "Restricted" for legitimate onboarding intents.
+        const onboarding = ROLE_ONBOARDING[requestedPortal];
+        console.log(`[auth] User lacks ${requestedPortal} membership, redirecting to onboarding: ${onboarding}`);
+        navigate({ to: onboarding as never, replace: true });
+      }
     } else {
-      // User is authenticated but role doesn't match the requested portal.
-      // We keep them on the login page to show "Wrong Account" / "Sign out" flow.
-      console.warn(`[auth] Portal mismatch: user roles [${user.roles.join(", ")}] lack ${requestedPortal}`);
+      // No portal requested, default to Customer.
+      console.log("[auth] No portal requested, navigating to Customer home");
+      navigate({ to: "/app" as never, replace: true });
     }
   }, [app, loading, navigate, redirect, user]);
 
@@ -111,23 +114,20 @@ function LoginPage() {
     const portal = app?.role || resolvePortalFromPath(window.location.pathname);
     console.log("[auth] landing for user:", user.id, "requested portal:", portal, "user roles:", user.roles);
     
-    if (portal && user.roles.includes(portal)) {
-      const home = ROLE_HOME[portal];
-      const canResume = !!redirect && redirect.startsWith(home);
-      console.log("[auth] redirecting to portal home:", canResume ? redirect : home);
-      navigate({ to: (canResume ? redirect : home) as never, replace: true });
+    if (portal) {
+      if (user.roles.includes(portal)) {
+        const home = ROLE_HOME[portal];
+        const canResume = !!redirect && redirect.startsWith(home);
+        navigate({ to: (canResume ? redirect : home) as never, replace: true });
+      } else {
+        const onboarding = ROLE_ONBOARDING[portal];
+        navigate({ to: onboarding as never, replace: true });
+      }
       return;
     }
 
-    if (!portal && user.role) {
-      const home = ROLE_HOME[user.role];
-      const canResume = !!redirect && redirect.startsWith(home);
-      console.log("[auth] no specific portal, redirecting to default home:", home);
-      navigate({ to: (canResume ? redirect : home) as never, replace: true });
-      return;
-    }
-
-    console.warn("[auth] Land logic could not determine destination. User stayed on login page.");
+    // Default to Customer if no specific portal intent
+    navigate({ to: "/app" as never, replace: true });
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -193,7 +193,10 @@ function LoginPage() {
   // 1. We have a user AND a requested app
   // 2. The user roles (resolved from DB) definitely do NOT include the app role
   // 3. We are NOT currently loading/syncing memberships (loading state from hook)
-  const isRestricted = !loading && user && app && !user.roles.includes(app.role);
+  // A portal is only "restricted" if the user has a different identity signed in and explicitly refuses to onboard.
+  // For standard flows, we send them to onboarding instead of showing this screen.
+  const isRestricted = false; 
+  // const isRestricted = !loading && user && app && !user.roles.includes(app.role);
 
   if (isRestricted) {
     return (
@@ -201,23 +204,23 @@ function LoginPage() {
         <div className="mx-auto flex max-w-md flex-col items-center">
           <ScoobixMark size={48} className="mb-6" />
           <h1 className="font-display text-2xl font-extrabold tracking-tight">Access Restricted</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your account does not have <span className="font-bold text-foreground capitalize">{app.role}</span> access.
-            Please sign in with an authorized account or complete onboarding.
-          </p>
-          
-          <div className="mt-8 flex w-full flex-col gap-3">
-            <Button 
-              onClick={() => {
-                const home = ROLE_HOME[user.role];
-                // If they have a redirect URL that belongs to their actual role, go there.
-                const canResume = !!redirect && redirect.startsWith(home);
-                navigate({ to: (canResume ? redirect : home) as never, replace: true });
-              }}
-              className="h-12 w-full rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
-            >
-              Continue as {user.name} ({user.role})
-            </Button>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your account does not have <span className="font-bold text-foreground capitalize">{app?.role}</span> access.
+              Please sign in with an authorized account or complete onboarding.
+            </p>
+            
+            <div className="mt-8 flex w-full flex-col gap-3">
+              <Button 
+                onClick={() => {
+                  const home = user ? ROLE_HOME[user.role] : "/app";
+                  // If they have a redirect URL that belongs to their actual role, go there.
+                  const canResume = !!redirect && redirect.startsWith(home);
+                  navigate({ to: (canResume ? redirect : home) as never, replace: true });
+                }}
+                className="h-12 w-full rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
+              >
+                Continue as {user?.name} ({user?.role})
+              </Button>
             
             <Button 
               disabled={busy}

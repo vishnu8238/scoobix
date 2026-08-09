@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useRouterState } from "@tanstack/react-ro
 import { useEffect } from "react";
 import splashBg from "@/assets/splash-bg.jpg";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
-import { useAuth, ROLE_HOME, resolvePortalFromPath } from "@/lib/auth-store";
+import { useAuth, ROLE_HOME, ROLE_ONBOARDING, resolvePortalFromPath } from "@/lib/auth-store";
 import type { Role } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
@@ -28,22 +28,17 @@ function Splash() {
     if (user) {
       const hasRole = (r: Role) => user.roles.includes(r);
       // AUTHORITATIVE: The URL path determines the portal we land in.
-      const portal = resolvePortalFromPath(window.location.pathname);
+      // If we are at root "/", we default to the Customer portal.
+      const portal = resolvePortalFromPath(window.location.pathname) || "customer";
       
       let target = "/app";
       
-      if (portal && hasRole(portal)) {
+      if (hasRole(portal)) {
         target = ROLE_HOME[portal];
-      } else if (hasRole("admin")) {
-        target = ROLE_HOME.admin;
-      } else if (hasRole("manager")) {
-        target = ROLE_HOME.manager;
-      } else if (hasRole("partner")) {
-        target = ROLE_HOME.partner;
-      } else if (hasRole("rider")) {
-        target = ROLE_HOME.rider;
       } else {
-        target = ROLE_HOME.customer;
+        // Explicit portal requested but user lacks membership -> Onboarding.
+        // If they are already in the portal path (e.g. /partner), send to that portal's onboarding.
+        target = ROLE_ONBOARDING[portal] || "/app";
       }
 
       console.log("[auth] Splash redirecting to target:", target, "requested portal:", portal);
