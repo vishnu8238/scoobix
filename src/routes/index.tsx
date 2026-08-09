@@ -27,7 +27,7 @@ function Splash() {
     
     if (user) {
       const hasRole = (r: Role) => user.roles.includes(r);
-      const portal = localStorage.getItem("scoobix_active_portal_v1") as Role | null;
+      const portal = resolvePortalFromPath(window.location.pathname);
       
       let target = "/app";
       
