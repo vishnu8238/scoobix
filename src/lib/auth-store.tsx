@@ -917,7 +917,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       console.log("[auth] Clearing local session tokens and state.");
       setTokens(null, null);
-      clearLastRoute();
       
       // Atomic storage removal for all portals and auth persistence
       if (typeof window !== "undefined") {

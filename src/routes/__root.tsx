@@ -81,7 +81,6 @@ function RootComponent() {
   const href = useRouterState({ select: (s) => s.location.href });
 
   // Remember the last app screen so refreshes resume exactly where you were.
-  useEffect(() => { writeLastRoute(href); }, [href]);
 
   // Offline-capable static asset cache + warm the manifest/icon the shell needs.
   useEffect(() => {
