@@ -763,6 +763,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch { /* */ }
       }
       
+      setActivePortalState(null);
       setCachedRole(null);
       setUser(null);
       void import("./realtime-bus").then((m) => m.disconnectRealtime()).catch(() => {});
