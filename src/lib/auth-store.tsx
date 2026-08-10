@@ -205,9 +205,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name,
         email,
         phone: profile?.phone || "",
-        role: requestedPortal || activeRoles[0] || "customer",
+        role: portalIntent || activeRoles[0] || "customer",
         roles: activeRoles,
         avatar: profile?.avatar || undefined,
+      });
       });
 
       // 4. Determine Destination
