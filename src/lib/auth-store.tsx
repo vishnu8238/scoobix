@@ -74,8 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // No profile row: resolution is definitive — there are no memberships.
         setUser({
           id: authId,
-          name: (session.user.profile as any)?.name || "New User",
-          email: session.user.email || "",
+          name: (currentSession.user.profile as any)?.name || "New User",
+          email: currentSession.user.email || "",
           phone: "",
           avatar: "",
           role: "customer",
