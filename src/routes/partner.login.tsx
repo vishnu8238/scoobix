@@ -22,9 +22,13 @@ function PartnerLogin() {
 
       <div className="mt-10 w-full space-y-4 max-w-[320px]">
         <Button 
-          onClick={() => {
+          onClick={(e) => {
             console.log("[GOOGLE_OAUTH] BUTTON_CLICKED - UI (Partner)");
-            login('google', 'partner');
+            e.preventDefault();
+            e.stopPropagation();
+            login('google', 'partner').catch(err => {
+              console.error("[GOOGLE_OAUTH] UI_ERROR:", err);
+            });
           }}
           className="h-14 w-full rounded-2xl bg-white text-black ring-1 ring-border shadow-soft hover:bg-zinc-50 font-bold"
         >

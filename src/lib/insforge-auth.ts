@@ -23,7 +23,9 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
   console.log(`[GOOGLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`);
   
   if (!insforge) {
-    console.error("[GOOGLE_OAUTH] CLIENT_NOT_INITIALIZED");
+    const err = "[GOOGLE_OAUTH] CLIENT_NOT_INITIALIZED";
+    console.error(err);
+    alert(err);
     throw new Error("Authentication service is not ready.");
   }
   
@@ -31,21 +33,31 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
   
   const callbackUrl = getOAuthCallbackUrl(portalIntent);
   console.log(`[GOOGLE_OAUTH] CALLBACK_URL ${callbackUrl}`);
-  console.log(`[GOOGLE_OAUTH] SDK_START - Callback: ${callbackUrl}`);
   
   try {
+    console.log("[GOOGLE_OAUTH] CALLING_SDK_SIGNIN");
     const { data, error } = await insforge.auth.signInWithOAuth("google", {
       redirectTo: callbackUrl,
     });
 
     if (error) {
       console.error("[GOOGLE_OAUTH] SDK_ERROR:", error.message);
+      alert(`SDK_ERROR: ${error.message}`);
       throw new Error(`Google sign-in failed: ${error.message}`);
     }
 
     console.log("[GOOGLE_OAUTH] SDK_RESULT", data);
+    
+    // If we're here, it means the browser didn't navigate immediately.
+    // Sometimes the SDK returns an URL to navigate to manually.
+    if ((data as any)?.url) {
+      console.log("[GOOGLE_OAUTH] MANUAL_NAVIGATION_REQUIRED", (data as any).url);
+      const target = window.top || window;
+      target.location.href = (data as any).url;
+    }
   } catch (err: any) {
     console.error("[GOOGLE_OAUTH] UNEXPECTED_ERROR:", err);
+    alert(`UNEXPECTED_ERROR: ${err.message || String(err)}`);
     throw err;
   }
 }

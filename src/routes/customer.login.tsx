@@ -22,9 +22,14 @@ function CustomerLogin() {
 
       <div className="mt-10 w-full space-y-4 max-w-[320px]">
         <Button 
-          onClick={() => {
-            console.log("[GOOGLE_OAUTH] BUTTON_CLICKED - UI");
-            login('google', 'customer');
+          onClick={(e) => {
+            console.log("[GOOGLE_OAUTH] BUTTON_CLICKED - UI (Customer)");
+            e.preventDefault();
+            e.stopPropagation();
+            // Fire and forget, don't await in the event handler to avoid any microtask blockers
+            login('google', 'customer').catch(err => {
+              console.error("[GOOGLE_OAUTH] UI_ERROR:", err);
+            });
           }}
           className="h-14 w-full rounded-2xl bg-white text-black ring-1 ring-border shadow-soft hover:bg-zinc-50 font-bold"
         >
