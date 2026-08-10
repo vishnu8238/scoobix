@@ -35,10 +35,13 @@ const MAX_ROWS = 200;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
+import { getAccessToken } from "./insforge-auth";
+
 const HEADERS = () => {
+  const token = getAccessToken() || INSFORGE_ANON_KEY;
   return {
     apikey: INSFORGE_ANON_KEY,
-    Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+    Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
     "Prefer": "return=representation"
   };
