@@ -139,7 +139,7 @@ async function offerToNext(order: Row) {
 }
 
 function evaluate() {
-  if (!acquireLease() && !window.localStorage.getItem("scoobix_test_bypass")) return;
+  if (!acquireLease()) return;
   const now = Date.now();
   for (const order of ordersSnap) {
     const status = String(order.status ?? "");
