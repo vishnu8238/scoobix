@@ -15,6 +15,7 @@ export function getOAuthCallbackUrl(): string {
 }
 
 const PORTAL_INTENT_KEY = "scoobix_oauth_portal_intent";
+const APPLE_PKCE_KEY = "scoobix_apple_oauth_pkce";
 
 /**
  * Persists the portal intent before starting OAuth.
@@ -24,6 +25,44 @@ export function setPortalIntent(portal: string) {
     localStorage.setItem(PORTAL_INTENT_KEY, portal);
   }
 }
+
+/**
+ * Persists the PKCE verifier for Apple OAuth specifically.
+ */
+export function setApplePkce(verifier: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(APPLE_PKCE_KEY, JSON.stringify({
+      verifier,
+      createdAt: new Date().toISOString(),
+      origin: window.location.origin
+    }));
+  }
+}
+
+/**
+ * Retrieves the PKCE verifier for Apple OAuth.
+ */
+export function getApplePkce(): string | null {
+  if (typeof window === "undefined") return null;
+  const data = localStorage.getItem(APPLE_PKCE_KEY);
+  if (!data) return null;
+  try {
+    const parsed = JSON.parse(data);
+    return parsed.verifier;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Clears the Apple PKCE verifier.
+ */
+export function clearApplePkce() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(APPLE_PKCE_KEY);
+  }
+}
+
 
 /**
  * Retrieves and clears the portal intent.
@@ -110,6 +149,15 @@ export async function loginWithApple(portalIntent: string = "customer"): Promise
   
   try {
     console.log("[APPLE_DEBUG] APPLE_OAUTH_STARTED");
+    
+    // Capture the SDK's generated PKCE verifier before navigation
+    // The SDK creates it and stores it in sessionStorage. We mirror it to localStorage.
+    const sdkVerifier = sessionStorage.getItem("insforge_pkce_verifier");
+    if (sdkVerifier) {
+      console.log("[APPLE_DEBUG] PERSISTING_PKCE_TO_LOCALSTORAGE");
+      setApplePkce(sdkVerifier);
+    }
+
     console.log("[APPLE_DEBUG] CALLING_SDK_SIGNIN");
     const { data, error } = await insforge.auth.signInWithOAuth("apple", {
       redirectTo: callbackUrl,

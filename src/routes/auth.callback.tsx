@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { insforge, INSFORGE_URL } from "@/lib/insforge";
-import { popPortalIntent, getOAuthCallbackUrl } from "@/lib/insforge-auth";
+import { popPortalIntent, getOAuthCallbackUrl, getApplePkce, clearApplePkce } from "@/lib/insforge-auth";
 
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
@@ -177,8 +177,19 @@ function AuthCallback() {
         updateValue("exchangeAttempts", 1);
         
         try {
-          const pkceVerifier = sessionStorage.getItem("insforge_pkce_verifier");
-          console.log(`[PKCE_DETECTED] ${timestamp()} - Present: ${!!pkceVerifier}`);
+          // Priority 1: sessionStorage (SDK default)
+          // Priority 2: localStorage (Scoobix fallback for iOS)
+          let pkceVerifier = sessionStorage.getItem("insforge_pkce_verifier");
+          const persistentVerifier = getApplePkce();
+          
+          if (!pkceVerifier && persistentVerifier) {
+            console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - RESTORING_PKCE_FROM_LOCALSTORAGE`);
+            pkceVerifier = persistentVerifier;
+            // Also restore it back to sessionStorage for SDK compatibility if needed
+            sessionStorage.setItem("insforge_pkce_verifier", persistentVerifier);
+          }
+
+          console.log(`[PKCE_DETECTED] ${timestamp()} - Present: ${!!pkceVerifier} (Persistent: ${!!persistentVerifier})`);
           updateValue("pkcePresent", !!pkceVerifier);
           updateValue("pkceLengthValid", !!pkceVerifier && pkceVerifier.length >= 43);
           
@@ -251,6 +262,9 @@ function AuthCallback() {
             return;
           }
 
+          // Clear persistent PKCE after successful exchange
+          clearApplePkce();
+
           // Clean the URL code param
           const newUrl = window.location.origin + window.location.pathname;
           window.history.replaceState({}, document.title, newUrl);
@@ -285,8 +299,8 @@ function AuthCallback() {
           // We wait a bit before final navigation to allow the user to see the diagnostic if it's super fast,
           // but for the hang issue we want to see it stay.
           setTimeout(() => {
-            // window.location.assign(dest); // Temporarily disabled to allow reading diagnostics
-          }, 3000);
+            window.location.assign(dest);
+          }, 2000);
         } else if (code || insforgeCode) {
            updateStage("currentUserLoaded", "FAIL");
            updateValue("safeError", "Session saved but getCurrentUser returned null");
