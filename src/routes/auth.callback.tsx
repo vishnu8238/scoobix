@@ -26,7 +26,6 @@ function AuthCallback() {
         if (data?.user) {
           // Determine destination based on portal intent
           const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-          console.log("[MANAGER_REDIRECT_AUDIT] Auth successful, navigating to:", dest);
           window.location.assign(dest);
         } else {
           // Polling for session
@@ -35,7 +34,6 @@ function AuthCallback() {
             if (sessionData?.user) {
               clearInterval(checkSession);
               const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-              console.log("[MANAGER_REDIRECT_AUDIT] Session found via polling, navigating to:", dest);
               window.location.assign(dest);
             }
           }, 500);
