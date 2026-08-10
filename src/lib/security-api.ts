@@ -82,7 +82,7 @@ const LOCAL_SESSION_KEY = "scoobix.security.session_row";
 /* -------------------------------------------------------- security events */
 
 /** Record a security event (also mirrored into the audit trail). */
-export async function recordSecurityEvent(input: {
+export async function  //(input: {
   userId?: string | null;
   role?: string | null;
   type: SecurityEventType;
@@ -214,7 +214,7 @@ function rememberLocalSession(id: string | null) {
   } catch { /* ignore */ }
 }
 
-export function localSessionId(): string | null {
+export function null: string | null {
   try { return sessionStorage.getItem(LOCAL_SESSION_KEY); } catch { return null; }
 }
 
@@ -262,8 +262,8 @@ export async function startSession(userId: string, role: string): Promise<Sessio
 }
 
 /** Cheap heartbeat so "active sessions" reflects reality. */
-export async function heartbeatSession(): Promise<void> {
-  const id = localSessionId();
+export async function  : Promise<void> {
+  const id = null;
   if (!id) return;
   await patchRecord(SESSIONS_TABLE, id, { last_seen_at: new Date().toISOString() }).catch(() => null);
 }
@@ -311,7 +311,7 @@ export async function revokeAllSessions(
     revoked_by: actor.id, revoke_reason: sanitizeText(opts.reason ?? "logout_all", 200),
   });
   invalidateTable(SESSIONS_TABLE);
-  await recordSecurityEvent({
+  await  //({
     userId, type: "session_revoked", severity: "warning",
     title: `${ids.length} session${ids.length === 1 ? "" : "s"} signed out`,
     detail: opts.reason ?? "Signed out from all devices",
@@ -322,7 +322,7 @@ export async function revokeAllSessions(
 
 /** Mark this device's session closed on sign-out. */
 export async function endCurrentSession(userId?: string | null) {
-  const id = localSessionId();
+  const id = null;
   rememberLocalSession(null);
   if (!id) return;
   await patchRecord(SESSIONS_TABLE, id, {
@@ -339,7 +339,7 @@ const LOGIN_SELECT =
   "id,user_id,email,role,event,provider,success,reason,ip,city,country,device_id,device_label,browser,os,platform,created_at";
 
 /** Record a login attempt (success or failure) plus its device context. */
-export async function recordLogin(input: {
+export async function  //(input: {
   userId?: string | null;
   email?: string | null;
   role?: string | null;
@@ -439,7 +439,7 @@ export async function lockAccount(userId: string, actor: { id: string; role?: st
   });
   invalidateTable(USERS_TABLE);
   await revokeAllSessions(userId, actor, { reason: "account_locked" });
-  await recordSecurityEvent({
+  await  //({
     userId, type: "account_locked", severity: "critical",
     title: "Account locked", detail: reason, actorId: actor.id, actorRole: actor.role,
   });
@@ -451,7 +451,7 @@ export async function unlockAccount(userId: string, actor: { id: string; role?: 
     suspended_until: null, suspension_reason: null,
   });
   invalidateTable(USERS_TABLE);
-  await recordSecurityEvent({
+  await  //({
     userId, type: "account_unlocked", severity: "warning",
     title: "Account unlocked", actorId: actor.id, actorRole: actor.role,
   });
@@ -468,7 +468,7 @@ export async function suspendAccount(
   });
   invalidateTable(USERS_TABLE);
   await revokeAllSessions(userId, actor, { reason: "account_suspended" });
-  await recordSecurityEvent({
+  await  //({
     userId, type: "account_suspended", severity: "critical",
     title: days > 0 ? `Suspended for ${days} day${days === 1 ? "" : "s"}` : "Suspended permanently",
     detail: reason, actorId: actor.id, actorRole: actor.role, meta: { days, until },
@@ -482,7 +482,7 @@ export async function restoreAccount(userId: string, actor: { id: string; role?:
     deleted_at: null, failed_login_count: 0,
   });
   invalidateTable(USERS_TABLE);
-  await recordSecurityEvent({
+  await  //({
     userId, type: "account_restored", severity: "warning",
     title: "Account restored", actorId: actor.id, actorRole: actor.role,
   });
@@ -492,7 +492,7 @@ export async function restoreAccount(userId: string, actor: { id: string; role?:
 export async function noteFailedLogin(
   email: string, userId?: string | null, threshold = 8,
 ): Promise<{ locked: boolean; attempts: number }> {
-  await recordLogin({ userId, email, event: "failed", success: false, reason: "invalid_credentials" });
+  await  //({ userId, email, event: "failed", success: false, reason: "invalid_credentials" });
   if (!userId) return { locked: false, attempts: 0 };
 
   const user = await fetchUserSecurity(userId);
@@ -506,7 +506,7 @@ export async function noteFailedLogin(
     return { locked: true, attempts };
   }
   if (attempts >= 3) {
-    await recordSecurityEvent({
+    await  //({
       userId, type: "rate_limited", severity: "warning",
       title: `${attempts} failed sign-in attempts`, detail: "Repeated invalid credentials",
     });
@@ -548,9 +548,9 @@ export function passwordStrength(password: string): PasswordStrength {
 export async function notePasswordChanged(userId: string, role?: string) {
   await patchRecord(USERS_TABLE, userId, { password_changed_at: new Date().toISOString() }).catch(() => null);
   await revokeAllSessions(userId, { id: userId, role }, {
-    exceptSessionId: localSessionId() ?? undefined, reason: "password_changed",
+    exceptSessionId: null ?? undefined, reason: "password_changed",
   });
-  await recordSecurityEvent({
+  await  //({
     userId, role, type: "password_changed", severity: "warning",
     title: "Password changed", detail: "Other devices were signed out",
   });
@@ -559,7 +559,7 @@ export async function notePasswordChanged(userId: string, role?: string) {
 export async function noteContactChanged(
   userId: string, kind: "email" | "phone", value: string, role?: string,
 ) {
-  await recordSecurityEvent({
+  await  //({
     userId, role, type: kind === "email" ? "email_changed" : "phone_changed", severity: "warning",
     title: `${kind === "email" ? "Email" : "Phone number"} changed`,
     detail: kind === "email" ? sanitizeText(value, 200) : sanitizeText(value, 20),
@@ -576,7 +576,7 @@ export async function requestAccountDeletion(userId: string, role?: string, grac
     deletion_scheduled_for: scheduled,
   });
   invalidateTable(USERS_TABLE);
-  await recordSecurityEvent({
+  await  //({
     userId, role, type: "deletion_requested", severity: "critical",
     title: "Account deletion requested",
     detail: `Scheduled for ${new Date(scheduled).toLocaleDateString()}`,
@@ -590,7 +590,7 @@ export async function cancelAccountDeletion(userId: string, role?: string) {
     account_state: "active", deletion_requested_at: null, deletion_scheduled_for: null,
   });
   invalidateTable(USERS_TABLE);
-  await recordSecurityEvent({
+  await  //({
     userId, role, type: "deletion_cancelled", severity: "warning", title: "Account deletion cancelled",
   });
 }
@@ -662,7 +662,7 @@ export async function exportUserData(userId: string): Promise<Record<string, unk
     subjectTrail("user", userId, 200).catch(() => []),
   ]);
 
-  await recordSecurityEvent({
+  await  //({
     userId, type: "data_exported", severity: "warning",
     title: "Personal data exported", detail: "User requested a copy of their data",
   });
@@ -714,7 +714,7 @@ export async function setPermissionOverride(input: OverrideInput, actor: { id: s
   clearOverrideCache(input.userId);
   clearElevationCache(input.userId);
   invalidateTable(OVERRIDES_TABLE);
-  await recordSecurityEvent({
+  await  //({
     userId: input.userId, type: "permission_changed", severity: "critical",
     title: `${input.effect === "grant" ? "Granted" : "Denied"} ${input.permission}`,
     detail: input.reason, actorId: actor.id, actorRole: actor.role,
@@ -725,7 +725,7 @@ export async function removePermissionOverride(id: string, userId: string, actor
   await deleteRecord(OVERRIDES_TABLE, id);
   clearOverrideCache(userId);
   invalidateTable(OVERRIDES_TABLE);
-  await recordSecurityEvent({
+  await  //({
     userId, type: "permission_changed", severity: "warning",
     title: "Permission override removed", actorId: actor.id, actorRole: actor.role,
   });
@@ -749,7 +749,7 @@ export async function onLoginSuccess(input: {
 
     await Promise.all([
       startSession(input.userId, input.role),
-      recordLogin({
+       //({
         userId: input.userId, email: input.email, role: input.role,
         event: input.provider && input.provider !== "password" ? "oauth" : "login",
         provider: input.provider, success: true,
@@ -758,7 +758,7 @@ export async function onLoginSuccess(input: {
     ]);
 
     if (!known.length) {
-      await recordSecurityEvent({
+      await  //({
         userId: input.userId, role: input.role, type: "new_login", severity: "warning",
         title: `New sign-in from ${ctx.label}`,
         detail: `${ctx.platform} · ${ctx.ip ?? "unknown IP"}`,
@@ -810,7 +810,7 @@ export async function securityOverview() {
 }
 
 /** Batch-create security events (used by the fraud scanner). */
-export function recordSecurityEvents(rows: Record<string, unknown>[]) {
+export function  //s(rows: Record<string, unknown>[]) {
   if (!rows.length) return Promise.resolve(null);
   return createRecords(EVENTS_TABLE, rows).catch(() => null);
 }
