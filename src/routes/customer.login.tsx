@@ -23,13 +23,9 @@ function CustomerLogin() {
       <div className="mt-10 w-full space-y-4 max-w-[320px]">
         <Button 
           onClick={(e) => {
-            console.log("[GOOGLE_OAUTH] BUTTON_CLICKED - UI (Customer)");
             e.preventDefault();
             e.stopPropagation();
-            // Fire and forget, don't await in the event handler to avoid any microtask blockers
-            login('google', 'customer').catch(err => {
-              console.error("[GOOGLE_OAUTH] UI_ERROR:", err);
-            });
+            login('google', 'customer');
           }}
           className="h-14 w-full rounded-2xl bg-white text-black ring-1 ring-border shadow-soft hover:bg-zinc-50 font-bold"
         >
@@ -37,20 +33,6 @@ function CustomerLogin() {
           Continue with Google
         </Button>
 
-        <Button 
-          onClick={(e) => {
-            console.log("[APPLE_OAUTH] BUTTON_CLICKED - UI (Customer)");
-            e.preventDefault();
-            e.stopPropagation();
-            login('apple', 'customer').catch(err => {
-              console.error("[APPLE_OAUTH] UI_ERROR:", err);
-            });
-          }}
-          className="h-14 w-full rounded-2xl bg-black text-white shadow-pop hover:bg-zinc-900 font-bold"
-        >
-          <img src="https://appleid.cdn-apple.com/appleauth/static/bin/cb126075202/images/favicon.ico" className="mr-3 h-5 w-5 invert" alt="" />
-          Continue with Apple
-        </Button>
       </div>
 
       <p className="mt-10 text-[11px] text-muted-foreground max-w-[280px]">

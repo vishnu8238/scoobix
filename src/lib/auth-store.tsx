@@ -1,12 +1,7 @@
 import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from "react";
-import { loginWithGoogle, loginWithApple, logout as ifLogout, getSession } from "./insforge-auth";
+import { loginWithGoogle, logout as ifLogout, getSession } from "./insforge-auth";
 import { insforge } from "./insforge";
 import { listTable } from "./insforge-crud";
-
-/**
- * SCOOBIX — PHASE 1 AUTH REBUILD
- * Canonical user identity and membership resolution.
- */
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager";
 
@@ -23,7 +18,7 @@ export type User = {
 type AuthCtx = {
   user: User | null;
   loading: boolean;
-  login: (provider: 'google' | 'apple', portal?: string) => Promise<void>;
+  login: (provider: 'google', portal?: string) => Promise<void>;
   logout: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -36,10 +31,6 @@ const AuthContext = createContext<AuthCtx>({
   signOut: async () => {},
 });
 
-/**
- * Resolves the portal intent from the URL.
- * Authoritative source for current portal context.
- */
 export const getRequestedPortal = () => {
   if (typeof window === "undefined") return "customer";
   const path = window.location.pathname;
@@ -58,23 +49,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const session = await getSession();
-      console.log("[APPLE_DEBUG] [AUTH] resolveUser - Session present:", !!session);
       
       if (!session || !session.user) {
-        console.log("[APPLE_DEBUG] [AUTH] resolveUser - No session user");
         setUser(null);
         return;
       }
 
       const authId = session.user.id;
-      console.log(`[APPLE_DEBUG] [AUTH] Resolving user for ${authId}`);
 
-      // 1. Get user profile from InsForge
+      // 1. Get user profile
       const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
       const profile = profiles[0];
 
       if (!profile) {
-        console.warn(`[AUTH] No profile found for ${authId}`);
         setUser({
           id: authId,
           name: (session.user.profile as any)?.name || "New User",
@@ -102,8 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (manager.length) roles.push("manager");
         if (profile.role === "admin") roles.push("admin");
       } catch (err) {
-        console.error("[AUTH] Failed to resolve memberships:", err);
-        // Fallback to customer if membership query fails
+        console.error("Failed to resolve memberships:", err);
       }
 
       const currentPortal = getRequestedPortal() as Role;
@@ -118,8 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
       });
     } catch (err: any) {
-      console.error("[AUTH] Failed to resolve user:", err);
-      // Surface error if needed, for now null signals unauth
+      console.error("Failed to resolve user:", err);
       setUser(null);
     } finally {
       setLoading(false);
@@ -129,9 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     resolveUser();
 
-    // The SDK uses lowercase event names in types
     const unsubscribe = insforge.auth.onAuthStateChange((event) => {
-      console.log(`[AUTH] Event: ${event}`);
       if (event === 'signedIn' || event === 'tokenRefreshed') {
         resolveUser();
       } else if (event === 'signedOut') {
@@ -145,14 +128,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [resolveUser]);
 
-  const login = async (provider: 'google' | 'apple', portal: string = "customer") => {
-    console.log(`[GOOGLE_OAUTH] AUTH_STORE_LOGIN - Provider: ${provider}, Portal: ${portal}`);
+  const login = async (provider: 'google', portal: string = "customer") => {
     try {
       if (provider === 'google') await loginWithGoogle(portal);
-      else await loginWithApple(portal);
     } catch (err) {
-      console.error("[GOOGLE_OAUTH] AUTH_STORE_ERROR:", err);
-      // Ensure error is surfaced if needed by UI
+      console.error("Login error:", err);
       throw err;
     }
   };

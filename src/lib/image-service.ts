@@ -2,16 +2,15 @@
  * Image service — InsForge Storage backed.
  */
 
-import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
-import { getAccessToken } from "./insforge-auth";
+import { INSFORGE_URL, INSFORGE_ANON_KEY, getAccessToken } from "./insforge";
 import { getUploadStrategy, confirmStorageUpload } from "./storage.functions";
 import { optimizeUpload, type OptimizationOptions } from "./file-optimizer";
 
 const BUCKET = "images";
 const DOC_BUCKET = "documents";
 
-const insforgeHeaders = () => {
-  const token = getAccessToken();
+const insforgeHeaders = async () => {
+  const token = await getAccessToken();
   return {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
@@ -106,7 +105,7 @@ async function putDirect(uploadUrl: string, blob: Blob): Promise<void> {
   fd.append("file", blob);
   const res = await fetch(toAbsolute(uploadUrl), {
     method: "PUT",
-    headers: { ...insforgeHeaders() },
+    headers: { ...await insforgeHeaders() },
     body: fd,
   });
   if (!res.ok) {
@@ -242,7 +241,7 @@ export async function deleteObject(key: string): Promise<void> {
     try {
       await fetch(`${INSFORGE_URL}/api/storage/buckets/${b}/objects/${encodeURI(key)}`, {
         method: "DELETE",
-        headers: { ...insforgeHeaders() },
+        headers: { ...await insforgeHeaders() },
       });
     } catch { /* ignore */ }
   }
