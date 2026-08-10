@@ -208,6 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: portalIntent || activeRoles[0] || "customer",
         roles: activeRoles,
         avatar: profile?.avatar || undefined,
+      });
+
       // 4. Determine Destination
       const destination = resolveAuthenticatedDestination({ 
         requestedPortal: portalIntent, 
