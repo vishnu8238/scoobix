@@ -9,6 +9,9 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  phone: string;
+  avatar: string;
+  role: Role;
   roles: Role[];
 };
 
@@ -17,22 +20,37 @@ type AuthCtx = {
   loading: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  signOut: () => Promise<void>;
+};
+
+export const getRequestedPortal = () => null;
+
+const GUEST_USER: User = {
+  id: "guest",
+  name: "Guest User",
+  email: "guest@example.com",
+  phone: "000-000-0000",
+  avatar: "",
+  role: "customer",
+  roles: ["customer", "partner", "rider", "admin", "manager"]
 };
 
 const AuthContext = createContext<AuthCtx>({
-  user: { id: "guest", name: "Guest User", email: "guest@example.com", roles: ["customer", "partner", "rider", "admin", "manager"] },
+  user: GUEST_USER,
   loading: false,
   login: async () => {},
   logout: async () => {},
+  signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
-      user: { id: "guest", name: "Guest User", email: "guest@example.com", roles: ["customer", "partner", "rider", "admin", "manager"] },
+      user: GUEST_USER,
       loading: false,
       login: async () => {},
       logout: async () => {},
+      signOut: async () => {},
     }}>
       {children}
     </AuthContext.Provider>
