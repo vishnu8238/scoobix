@@ -12,8 +12,7 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
   const callbackUrl = getCallbackUrl(portalIntent);
   console.log(`[AUTH] Starting Google OAuth. Callback: ${callbackUrl}`);
   
-  const { error } = await insforge.auth.signInWithOAuth({
-    provider: "google",
+  const { error } = await insforge.auth.signInWithOAuth("google", {
     redirectTo: callbackUrl,
   });
 
@@ -30,8 +29,7 @@ export async function loginWithApple(portalIntent: string = "customer"): Promise
   const callbackUrl = getCallbackUrl(portalIntent);
   console.log(`[AUTH] Starting Apple OAuth. Callback: ${callbackUrl}`);
 
-  const { error } = await insforge.auth.signInWithOAuth({
-    provider: "apple",
+  const { error } = await insforge.auth.signInWithOAuth("apple", {
     redirectTo: callbackUrl,
   });
 
@@ -46,12 +44,6 @@ export async function loginWithApple(portalIntent: string = "customer"): Promise
  */
 function getCallbackUrl(portalIntent: string): string {
   const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:8080";
-  
-  // Official callback URLs allowed in InsForge:
-  // https://scoobix.lovable.app/auth/callback
-  // https://id-preview--022038e5-5def-46ed-a7bd-9439cae1ea1d.lovable.app/auth/callback
-  // http://localhost:8080/auth/callback
-  
   return `${origin}/auth/callback?portal=${portalIntent}`;
 }
 
@@ -67,15 +59,13 @@ export async function logout(): Promise<void> {
  * Helper to get the current session from the SDK.
  */
 export async function getSession() {
-  const { data, error } = await insforge.auth.getSession();
+  const { data, error } = await insforge.auth.getCurrentUser();
   if (error) {
-    console.error("[AUTH] Failed to get session:", error.message);
     return null;
   }
-  return data.session;
+  return data.user ? { user: data.user } : null;
 }
 
-// Legacy helpers removed as the SDK manages persistence via cookies/localStorage automatically.
+// Legacy helpers removed as the SDK manages persistence automatically.
 export function getAccessToken(): string | null { return null; }
 export function setAccessToken(token: string | null): void {}
-

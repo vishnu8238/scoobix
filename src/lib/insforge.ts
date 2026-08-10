@@ -19,7 +19,10 @@ export const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";
 export const INSFORGE_ANON_KEY = "anon_f8c2fce9afe385f45eb6d00d434eb365833a70386175df3707743df3b751b102";
 
 import { createClient } from "@insforge/sdk";
-export const insforge = createClient(INSFORGE_URL, INSFORGE_ANON_KEY);
+export const insforge = createClient({
+  baseUrl: INSFORGE_URL,
+  anonKey: INSFORGE_ANON_KEY,
+});
 
 import { getAccessToken } from "./insforge-auth";
 

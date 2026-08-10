@@ -17,46 +17,34 @@ function AuthCallback() {
   const [errorMsg, setErrorMsg] = useState<string | null>(searchError ? error_description || searchError : null);
 
   useEffect(() => {
-    // If there's an error in the query params, stop here
     if (searchError) return;
 
-    // The InsForge SDK's createClient handles the PKCE/Token exchange 
-    // automatically by listening for hash params or query params if 
-    // onAuthStateChange is active. 
-    
     const checkAuth = async () => {
-      const { data, error } = await insforge.auth.getSession();
+      const { data, error } = await insforge.auth.getCurrentUser();
       
       if (error) {
-        console.error("[AUTH] Callback session error:", error);
+        console.error("[AUTH] Callback user error:", error);
         setErrorMsg(error.message);
         return;
       }
 
-      if (data.session) {
+      if (data.user) {
         console.log("[AUTH] Callback success, navigating to portal:", portal);
         const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-        
-        // Use a short delay or direct assignment to ensure state reflects
         window.location.assign(dest);
-      } else {
-        // If no session yet, we might still be in the middle of an exchange
-        // or the SDK hasn't picked it up yet. 
-        console.log("[AUTH] No session in callback yet...");
       }
     };
 
     checkAuth();
 
-    // Listen for the SIGNED_IN event which happens after the exchange
-    const { data: { subscription } } = insforge.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    const unsubscribe = insforge.auth.onAuthStateChange((event) => {
+      if (event === 'signedIn') {
         const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
         window.location.assign(dest);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [portal, searchError]);
 
   if (errorMsg) {

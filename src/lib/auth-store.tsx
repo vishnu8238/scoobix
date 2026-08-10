@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const session = await getSession();
-      if (!session) {
+      if (!session || !session.user) {
         setUser(null);
         return;
       }
@@ -72,13 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!profile) {
         console.warn(`[AUTH] No profile found for ${authId}`);
-        // Handle case where user is authenticated but has no profile row yet
         setUser({
           id: authId,
-          name: session.user.user_metadata?.full_name || "New User",
+          name: session.user.name || "New User",
           email: session.user.email || "",
           phone: "",
-          avatar: session.user.user_metadata?.avatar_url || "",
+          avatar: "",
           role: "customer",
           roles: ["customer"],
         });
@@ -119,22 +118,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Initial resolution
     resolveUser();
 
-    // Listen for auth state changes from the SDK
-    const { data: { subscription } } = insforge.auth.onAuthStateChange((event, session) => {
+    // The SDK uses lowercase event names in types
+    const unsubscribe = insforge.auth.onAuthStateChange((event) => {
       console.log(`[AUTH] Event: ${event}`);
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (event === 'signedIn' || event === 'tokenRefreshed') {
         resolveUser();
-      } else if (event === 'SIGNED_OUT') {
+      } else if (event === 'signedOut') {
         setUser(null);
         setLoading(false);
       }
     });
 
     return () => {
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, [resolveUser]);
 
