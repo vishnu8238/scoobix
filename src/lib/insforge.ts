@@ -479,13 +479,16 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
         restaurants.push(...rests.map((row) => toRestaurant(row, menuByRest.get(row.id) ?? [])));
 
         const backendDishes = restaurants.flatMap((r) => r.menu);
+        
+        // Populate trending and recommended from real backend data
         const popular = backendDishes.filter((d) => d.popular).map((d) => d.id);
-        const trending = (popular.length ? popular : backendDishes.map((d) => d.id)).slice(0, 8);
+        const trending = (popular.length ? popular : backendDishes.map((d) => d.id)).slice(0, 12);
         trendingDishIds.length = 0;
         trendingDishIds.push(...trending);
+
         const recommended = backendDishes.map((d) => d.id).filter((id) => !trending.includes(id));
         recommendedDishIds.length = 0;
-        recommendedDishIds.push(...(recommended.length ? recommended : trending).slice(0, 6));
+        recommendedDishIds.push(...(recommended.length ? recommended : trending).slice(0, 12));
       }
 
       if (cats.length) {
