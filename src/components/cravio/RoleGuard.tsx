@@ -40,12 +40,19 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       const hasAccess = allowedRoles.some(role => user.roles.includes(role));
       
       if (!hasAccess) {
+        // Only redirect to onboarding if we are SURE the membership is missing 
+        // and not just failing to load (which would have set hasAccess to false erroneously 
+        // if resolveUser encountered an error, though resolveUser currently defaults roles to ["customer"])
+        
         if (portal === "partner" && !user.roles.includes("partner")) {
           navigate({ to: "/partner/onboarding" as any });
         } else if (portal === "rider" && !user.roles.includes("rider")) {
           navigate({ to: "/rider/onboarding" as any });
         } else if (portal === "manager" && !user.roles.includes("manager")) {
           navigate({ to: "/manager/onboarding" as any });
+        } else if (portal === "admin" && !user.roles.includes("admin")) {
+          // Admins don't have an onboarding, they just get sent back to customer app
+          navigate({ to: "/app" as any });
         } else {
           navigate({ to: "/app" as any });
         }
