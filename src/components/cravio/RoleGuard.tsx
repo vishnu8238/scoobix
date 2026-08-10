@@ -46,8 +46,10 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
         } else if (portal === "rider" && !user.roles.includes("rider")) {
           navigate({ to: "/rider/onboarding" as any });
         } else if (portal === "manager" && !user.roles.includes("manager")) {
-          // Managers without membership go to onboarding
-          navigate({ to: "/manager/onboarding" as any });
+          // If the user is logged in but doesn't have the manager role, 
+          // we don't automatically send them to onboarding if we are in manager portal.
+          // We let the specific page handle onboarding triggers.
+          navigate({ to: "/app" as any });
         } else {
           // Default to customer app
           navigate({ to: "/app" as any });
@@ -56,19 +58,13 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     }
   }, [user, loading, portal, allow, navigate, pathname]);
 
-  // FIX 2: Stable mounting during auth loading.
-  // We MUST NOT return null, as that destroys the portal DOM tree.
-  // Instead, we render the children but keep a "resolving" state visually
-  // if needed, or simply let the shell stay stable.
-  
   if (loading) {
     // If we are already on a login page, just show it.
-    if (pathname.includes("/login") || pathname.includes("/onboarding")) {
+    if (pathname.includes("/login")) {
       return <>{children}</>;
     }
     
     // Otherwise, show the loading spinner but keep the layout space occupied
-    // to prevent jitter and event listener loss on remount.
     return (
       <div className="flex min-h-svh items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -82,7 +78,6 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   }
 
   // If not logged in and not on login/onboarding, we've triggered a redirect.
-  // We return a fragment to keep the component in the tree during transition.
   if (!user && !pathname.includes("/login") && !pathname.includes("/onboarding")) {
     return <div className="min-h-svh bg-background" />;
   }
