@@ -10,8 +10,9 @@ export const Route = createFileRoute("/admin/login")({
 
 function AdminLogin() {
   const { login } = useAuth();
-  const location = useRouterState({ select: (s) => s.location });
-  const isUnauthorized = new URLSearchParams(location.searchStr).get("error") === "unauthorized";
+  const search = Route.useSearch() as any;
+  const isUnauthorized = search.error === "unauthorized";
+
 
 
   return (
