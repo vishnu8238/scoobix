@@ -73,6 +73,17 @@ function AuthCallback() {
     firstTimeoutStage: null
   });
 
+  const [urlMeta, setUrlMeta] = useState({
+    origin: "-",
+    pathname: "-",
+    searchExists: false,
+    paramNames: [] as string[],
+    codeExists: false,
+    insforgeCodeExists: false,
+    errorExists: false,
+    errorDescriptionExists: false,
+  });
+
   const updateStage = (stage: keyof DiagnosticState, status: StageStatus) => {
     setDiag(prev => ({ ...prev, [stage]: status }));
   };
@@ -85,6 +96,21 @@ function AuthCallback() {
     const portal = popPortalIntent();
     const timestamp = () => new Date().toISOString();
     
+    // Capture URL metadata for iPhone verification
+    const search = new URLSearchParams(window.location.search);
+    const params = Array.from(search.keys());
+    
+    setUrlMeta({
+      origin: window.location.origin,
+      pathname: window.location.pathname,
+      searchExists: window.location.search.length > 0,
+      paramNames: params,
+      codeExists: search.has("code"),
+      insforgeCodeExists: search.has("insforge_code"),
+      errorExists: search.has("error"),
+      errorDescriptionExists: search.has("error_description"),
+    });
+
     console.log(`[APPLE_CALLBACK_START] ${timestamp()} - Portal Intent: ${portal}`);
     updateStage("callbackReached", "PASS");
     updateValue("portalIntent", portal || "none");
@@ -126,6 +152,13 @@ function AuthCallback() {
       const code = search.get("code");
       const insforgeCode = search.get("insforge_code");
 
+      // Check redirect URI matching immediately, even if no code is present
+      const redirectUri = getOAuthCallbackUrl();
+      const expectedRedirectUri = `${window.location.origin}/auth/callback`;
+      updateValue("authRedirectUri", redirectUri);
+      updateValue("exchangeRedirectUri", redirectUri);
+      updateValue("redirectUriMatch", redirectUri === expectedRedirectUri);
+
       if (insforgeCode) {
         console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - SDK_AUTO_CALLBACK_DETECTED (insforge_code)`);
         updateStage("appleCodeDetected", "PASS");
@@ -159,10 +192,6 @@ function AuthCallback() {
           updateStage("pkceDetected", "PASS");
 
           const redirectUri = getOAuthCallbackUrl();
-          const expectedRedirectUri = `${window.location.origin}/auth/callback`;
-          updateValue("authRedirectUri", redirectUri);
-          updateValue("exchangeRedirectUri", redirectUri);
-          updateValue("redirectUriMatch", redirectUri === expectedRedirectUri);
           
           updateStage("exchangeStarted", "PASS");
           updateStage("exchangeRequestSent", "PASS");
@@ -353,6 +382,20 @@ function AuthCallback() {
                   <p className="text-[10px] font-mono text-orange-500">{diag.firstTimeoutStage}</p>
                 </div>
               )}
+            </div>
+          </div>
+          
+          <div className="px-4 py-3 bg-muted/50 border-t border-border">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">URL Forensic Metadata</h3>
+            <div className="space-y-0.5">
+              <ValueRow label="Actual Origin" value={urlMeta.origin} />
+              <ValueRow label="Actual Path" value={urlMeta.pathname} />
+              <ValueRow label="Search Exists" value={urlMeta.searchExists} />
+              <ValueRow label="Param Names" value={urlMeta.paramNames.join(", ")} />
+              <ValueRow label="Code Param Exists" value={urlMeta.codeExists} />
+              <ValueRow label="InsForge Code Exists" value={urlMeta.insforgeCodeExists} />
+              <ValueRow label="Error Param Exists" value={urlMeta.errorExists} />
+              <ValueRow label="Error Desc Exists" value={urlMeta.errorDescriptionExists} />
             </div>
           </div>
         </div>
