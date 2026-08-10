@@ -47,9 +47,8 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
           navigate({ to: "/rider/onboarding" as any });
         } else if (portal === "manager" && !user.roles.includes("manager")) {
           // If the user is logged in but doesn't have the manager role, 
-          // we don't automatically send them to onboarding if we are in manager portal.
-          // We let the specific page handle onboarding triggers.
-          navigate({ to: "/app" as any });
+          // we DO NOT fall back to /app if they specifically requested /manager
+          // We stay on /manager and let the component handle the state
         } else {
           // Default to customer app
           navigate({ to: "/app" as any });

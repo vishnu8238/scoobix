@@ -23,7 +23,8 @@ function AuthCallback() {
           return;
         }
 
-        if (data?.user) {
+        const authUser = data?.user;
+        if (authUser) {
           // Determine destination based on portal intent
           const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
           window.location.assign(dest);
@@ -38,10 +39,12 @@ function AuthCallback() {
             }
           }, 500);
 
-          setTimeout(() => clearInterval(checkSession), 10000);
+          setTimeout(() => {
+            clearInterval(checkSession);
+            if (!errorMsg) setErrorMsg("Login timed out. Please try again.");
+          }, 10000);
         }
       } catch (err: any) {
-        console.error("Callback error:", err);
         setErrorMsg("An unexpected error occurred.");
       }
     };

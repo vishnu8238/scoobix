@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: profile.email || "",
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
-        role: roles.includes(currentPortal) ? currentPortal : roles[0],
+        role: roles.includes(currentPortal) ? currentPortal : (currentPortal !== "customer" ? currentPortal : roles[0]),
         roles,
       });
     } catch (err: any) {
