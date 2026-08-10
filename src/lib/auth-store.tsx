@@ -54,16 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const resolveUser = useCallback(async () => {
+    let currentSession = null;
     try {
       setLoading(true);
-      const session = await getSession();
+      currentSession = await getSession();
       
-      if (!session || !session.user) {
+      if (!currentSession || !currentSession.user) {
         setUser(null);
         return;
       }
 
-      const authId = session.user.id;
+      const authId = currentSession.user.id;
 
       // 1. Get user profile
       const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
@@ -73,8 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // No profile row: resolution is definitive — there are no memberships.
         setUser({
           id: authId,
-          name: (session.user.profile as any)?.name || "New User",
-          email: session.user.email || "",
+          name: (currentSession.user.profile as any)?.name || "New User",
+          email: currentSession.user.email || "",
           phone: "",
           avatar: "",
           role: "customer",
@@ -139,7 +140,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (err: any) {
       console.error("Failed to resolve user:", err);
-      setUser(null);
+      // Fallback: If we have a session but resolution failed (e.g. database error),
+      // treat them as a basic customer to prevent redirect loops.
+      if (currentSession?.user) {
+        setUser({
+          id: currentSession.user.id,
+          name: (currentSession.user.profile as any)?.name || "User",
+          email: currentSession.user.email || "",
+          phone: "",
+          avatar: "",
+          role: "customer",
+          roles: ["customer"],
+          membershipsResolved: false,
+        });
+      } else {
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -149,11 +165,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resolveUser();
 
     const unsubscribe = insforge.auth.onAuthStateChange((event) => {
-      if (event === 'signedIn' || event === 'tokenRefreshed') {
+      // Single source of truth: resolveUser() handles session checks definitively.
+      // This prevents the 'signedOut' event from prematurely ending the loading state
+      // during initial SDK boot.
+      if (event === 'signedIn' || event === 'tokenRefreshed' || event === 'signedOut') {
         resolveUser();
-      } else if (event === 'signedOut') {
-        setUser(null);
-        setLoading(false);
       }
     });
 
