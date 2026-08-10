@@ -37,8 +37,12 @@ export function popPortalIntent(): string {
 /**
  * Starts the Google OAuth flow using the official InsForge SDK.
  * @param portalIntent The portal the user wants to enter ('customer', 'partner', 'rider', 'manager', 'admin')
+ * @param options Additional options for the OAuth flow
  */
-export async function loginWithGoogle(portalIntent: string = "customer"): Promise<void> {
+export async function loginWithGoogle(
+  portalIntent: string = "customer",
+  options: { prompt?: 'select_account' | 'consent' | 'none' } = {}
+): Promise<void> {
   if (!insforge) {
     throw new Error("Authentication service is not ready.");
   }
@@ -50,8 +54,14 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
   const callbackUrl = getOAuthCallbackUrl();
   
   try {
+    const queryParams: Record<string, string> = {};
+    if (options.prompt) {
+      queryParams.prompt = options.prompt;
+    }
+
     const { data, error } = await insforge.auth.signInWithOAuth("google", {
       redirectTo: callbackUrl,
+      queryParams,
     });
 
     if (error) {

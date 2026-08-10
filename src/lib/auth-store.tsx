@@ -26,7 +26,7 @@ export type User = {
 type AuthCtx = {
   user: User | null;
   loading: boolean;
-  login: (provider: 'google', portal?: string) => Promise<void>;
+  login: (provider: 'google', portal?: string, options?: { prompt?: 'select_account' | 'consent' | 'none' }) => Promise<void>;
   logout: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -162,9 +162,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [resolveUser]);
 
-  const login = async (provider: 'google', portal: string = "customer") => {
+  const login = async (provider: 'google', portal: string = "customer", options: { prompt?: 'select_account' | 'consent' | 'none' } = {}) => {
     try {
-      if (provider === 'google') await loginWithGoogle(portal);
+      if (provider === 'google') await loginWithGoogle(portal, options);
     } catch (err) {
       console.error("Login error:", err);
       throw err;
