@@ -4,6 +4,8 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { checkAdminEmail } from "@/lib/admin.functions";
 import { ShieldCheck, Mail } from "lucide-react";
 import { insforge } from "@/lib/insforge";
+import { loginWithGoogle } from "@/lib/insforge-auth";
+
 
 
 interface AdminGuardProps {
@@ -86,12 +88,8 @@ export function AdminGuard({ children }: AdminGuardProps) {
         <div className="w-full max-w-[320px] space-y-4">
           <button
             onClick={() => {
-              // Trigger login with select_account to allow switching
-              insforge.auth.signInWithOAuth("google", {
-                redirectTo: window.location.origin + "/auth/callback",
-                queryParams: { prompt: 'select_account' }
-              }).then(({ data }) => {
-                if ((data as any)?.url) window.location.href = (data as any).url;
+              loginWithGoogle("admin", { prompt: "select_account" }).catch(err => {
+                console.error("Account switch failed:", err);
               });
             }}
             className="h-14 w-full rounded-2xl bg-white text-black shadow-lg hover:bg-zinc-200 font-bold transition-all active:scale-95"
