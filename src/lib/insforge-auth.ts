@@ -5,6 +5,17 @@
 import { insforge } from "./insforge";
 
 /**
+ * Generates the OAuth callback URL using the ACTUAL browser origin.
+ * Never hard-codes localhost for production or preview.
+ */
+export function getOAuthCallbackUrl(portal: string): string {
+  if (typeof window === "undefined") return `http://localhost:8080/auth/callback?portal=${portal}`;
+  
+  const origin = window.location.origin;
+  return `${origin}/auth/callback?portal=${portal}`;
+}
+
+/**
  * Starts the Google OAuth flow using the official InsForge SDK.
  * @param portalIntent The portal the user wants to enter ('customer', 'partner', 'rider', 'manager', 'admin')
  */
@@ -18,7 +29,8 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
   
   console.log("[GOOGLE_OAUTH] CLIENT_READY");
   
-  const callbackUrl = getCallbackUrl(portalIntent);
+  const callbackUrl = getOAuthCallbackUrl(portalIntent);
+  console.log(`[GOOGLE_OAUTH] CALLBACK_URL ${callbackUrl}`);
   console.log(`[GOOGLE_OAUTH] SDK_START - Callback: ${callbackUrl}`);
   
   try {
@@ -43,7 +55,8 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
  */
 export async function loginWithApple(portalIntent: string = "customer"): Promise<void> {
   console.log(`[APPLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`);
-  const callbackUrl = getCallbackUrl(portalIntent);
+  const callbackUrl = getOAuthCallbackUrl(portalIntent);
+  console.log(`[APPLE_OAUTH] CALLBACK_URL ${callbackUrl}`);
   
   const { error } = await insforge.auth.signInWithOAuth("apple", {
     redirectTo: callbackUrl,
@@ -57,10 +70,10 @@ export async function loginWithApple(portalIntent: string = "customer"): Promise
 
 /**
  * Selects the callback URL dynamically based on the current environment.
+ * @deprecated Use getOAuthCallbackUrl(portal)
  */
 function getCallbackUrl(portalIntent: string): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:8080";
-  return `${origin}/auth/callback?portal=${portalIntent}`;
+  return getOAuthCallbackUrl(portalIntent);
 }
 
 export async function logout(): Promise<void> {
@@ -85,3 +98,4 @@ export async function getSession() {
 // Legacy helpers removed as the SDK manages persistence automatically.
 export function getAccessToken(): string | null { return null; }
 export function setAccessToken(token: string | null): void {}
+
