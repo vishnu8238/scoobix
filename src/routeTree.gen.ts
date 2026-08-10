@@ -31,6 +31,7 @@ import { Route as RiderProfileRouteImport } from './routes/rider.profile'
 import { Route as RiderOnboardingRouteImport } from './routes/rider.onboarding'
 import { Route as RiderNotificationsRouteImport } from './routes/rider.notifications'
 import { Route as RiderMoreRouteImport } from './routes/rider.more'
+import { Route as RiderLoginRouteImport } from './routes/rider.login'
 import { Route as RiderIncentivesRouteImport } from './routes/rider.incentives'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
@@ -46,6 +47,7 @@ import { Route as PartnerNotificationsRouteImport } from './routes/partner.notif
 import { Route as PartnerMoreRouteImport } from './routes/partner.more'
 import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as PartnerMealsRouteImport } from './routes/partner.meals'
+import { Route as PartnerLoginRouteImport } from './routes/partner.login'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
 import { Route as PartnerCouponsRouteImport } from './routes/partner.coupons'
 import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
@@ -66,6 +68,8 @@ import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as ManagerAnalyticsRouteImport } from './routes/manager.analytics'
+import { Route as CustomerLoginRouteImport } from './routes/customer.login'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppWalletRouteImport } from './routes/app.wallet'
 import { Route as AppValueRouteImport } from './routes/app.value'
 import { Route as AppSwipeRouteImport } from './routes/app.swipe'
@@ -228,6 +232,11 @@ const RiderMoreRoute = RiderMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => RiderRoute,
 } as any)
+const RiderLoginRoute = RiderLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => RiderRoute,
+} as any)
 const RiderIncentivesRoute = RiderIncentivesRouteImport.update({
   id: '/incentives',
   path: '/incentives',
@@ -301,6 +310,11 @@ const PartnerMenuRoute = PartnerMenuRouteImport.update({
 const PartnerMealsRoute = PartnerMealsRouteImport.update({
   id: '/meals',
   path: '/meals',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerLoginRoute = PartnerLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerHoursRoute = PartnerHoursRouteImport.update({
@@ -402,6 +416,16 @@ const ManagerAnalyticsRoute = ManagerAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
   getParentRoute: () => ManagerRoute,
+} as any)
+const CustomerLoginRoute = CustomerLoginRouteImport.update({
+  id: '/customer/login',
+  path: '/customer/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppWalletRoute = AppWalletRouteImport.update({
   id: '/wallet',
@@ -717,6 +741,8 @@ export interface FileRoutesByFullPath {
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/customer/login': typeof CustomerLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -737,6 +763,7 @@ export interface FileRoutesByFullPath {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
+  '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/more': typeof PartnerMoreRoute
@@ -752,6 +779,7 @@ export interface FileRoutesByFullPath {
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
+  '/rider/login': typeof RiderLoginRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -822,6 +850,8 @@ export interface FileRoutesByTo {
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/customer/login': typeof CustomerLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -842,6 +872,7 @@ export interface FileRoutesByTo {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
+  '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/more': typeof PartnerMoreRoute
@@ -857,6 +888,7 @@ export interface FileRoutesByTo {
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
+  '/rider/login': typeof RiderLoginRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -933,6 +965,8 @@ export interface FileRoutesById {
   '/app/swipe': typeof AppSwipeRoute
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/customer/login': typeof CustomerLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -953,6 +987,7 @@ export interface FileRoutesById {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
+  '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/more': typeof PartnerMoreRoute
@@ -968,6 +1003,7 @@ export interface FileRoutesById {
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
+  '/rider/login': typeof RiderLoginRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -1045,6 +1081,8 @@ export interface FileRouteTypes {
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
+    | '/auth/callback'
+    | '/customer/login'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1065,6 +1103,7 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
+    | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
     | '/partner/more'
@@ -1080,6 +1119,7 @@ export interface FileRouteTypes {
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
+    | '/rider/login'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1150,6 +1190,8 @@ export interface FileRouteTypes {
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
+    | '/auth/callback'
+    | '/customer/login'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1170,6 +1212,7 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
+    | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
     | '/partner/more'
@@ -1185,6 +1228,7 @@ export interface FileRouteTypes {
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
+    | '/rider/login'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1260,6 +1304,8 @@ export interface FileRouteTypes {
     | '/app/swipe'
     | '/app/value'
     | '/app/wallet'
+    | '/auth/callback'
+    | '/customer/login'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1280,6 +1326,7 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
+    | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
     | '/partner/more'
@@ -1295,6 +1342,7 @@ export interface FileRouteTypes {
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
+    | '/rider/login'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1322,6 +1370,8 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RiderRoute: typeof RiderRouteWithChildren
   TermsRoute: typeof TermsRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  CustomerLoginRoute: typeof CustomerLoginRoute
   RestaurantIdRoute: typeof RestaurantIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
 }
@@ -1482,6 +1532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiderMoreRouteImport
       parentRoute: typeof RiderRoute
     }
+    '/rider/login': {
+      id: '/rider/login'
+      path: '/login'
+      fullPath: '/rider/login'
+      preLoaderRoute: typeof RiderLoginRouteImport
+      parentRoute: typeof RiderRoute
+    }
     '/rider/incentives': {
       id: '/rider/incentives'
       path: '/incentives'
@@ -1585,6 +1642,13 @@ declare module '@tanstack/react-router' {
       path: '/meals'
       fullPath: '/partner/meals'
       preLoaderRoute: typeof PartnerMealsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/login': {
+      id: '/partner/login'
+      path: '/login'
+      fullPath: '/partner/login'
+      preLoaderRoute: typeof PartnerLoginRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/hours': {
@@ -1726,6 +1790,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/manager/analytics'
       preLoaderRoute: typeof ManagerAnalyticsRouteImport
       parentRoute: typeof ManagerRoute
+    }
+    '/customer/login': {
+      id: '/customer/login'
+      path: '/customer/login'
+      fullPath: '/customer/login'
+      preLoaderRoute: typeof CustomerLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/app/wallet': {
       id: '/app/wallet'
@@ -2254,6 +2332,7 @@ interface PartnerRouteChildren {
   PartnerCollectionsRoute: typeof PartnerCollectionsRoute
   PartnerCouponsRoute: typeof PartnerCouponsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
+  PartnerLoginRoute: typeof PartnerLoginRoute
   PartnerMealsRoute: typeof PartnerMealsRoute
   PartnerMenuRoute: typeof PartnerMenuRoute
   PartnerMoreRoute: typeof PartnerMoreRoute
@@ -2274,6 +2353,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerCollectionsRoute: PartnerCollectionsRoute,
   PartnerCouponsRoute: PartnerCouponsRoute,
   PartnerHoursRoute: PartnerHoursRoute,
+  PartnerLoginRoute: PartnerLoginRoute,
   PartnerMealsRoute: PartnerMealsRoute,
   PartnerMenuRoute: PartnerMenuRoute,
   PartnerMoreRoute: PartnerMoreRoute,
@@ -2295,6 +2375,7 @@ interface RiderRouteChildren {
   RiderEarningsRoute: typeof RiderEarningsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
   RiderIncentivesRoute: typeof RiderIncentivesRoute
+  RiderLoginRoute: typeof RiderLoginRoute
   RiderMoreRoute: typeof RiderMoreRoute
   RiderNotificationsRoute: typeof RiderNotificationsRoute
   RiderOnboardingRoute: typeof RiderOnboardingRoute
@@ -2312,6 +2393,7 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderEarningsRoute: RiderEarningsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
   RiderIncentivesRoute: RiderIncentivesRoute,
+  RiderLoginRoute: RiderLoginRoute,
   RiderMoreRoute: RiderMoreRoute,
   RiderNotificationsRoute: RiderNotificationsRoute,
   RiderOnboardingRoute: RiderOnboardingRoute,
@@ -2334,6 +2416,8 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RiderRoute: RiderRouteWithChildren,
   TermsRoute: TermsRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
+  CustomerLoginRoute: CustomerLoginRoute,
   RestaurantIdRoute: RestaurantIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
 }
