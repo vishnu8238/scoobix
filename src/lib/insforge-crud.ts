@@ -35,10 +35,16 @@ const MAX_ROWS = 200;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
-import { getAccessToken } from "./insforge-auth";
+import { insforge } from "./insforge";
 
-const HEADERS = () => {
-  const token = getAccessToken() || INSFORGE_ANON_KEY;
+const HEADERS = async () => {
+  // Use getCurrentUser to trigger internal token management if needed,
+  // but we mostly rely on the fact that if we have a token, it's already in the headers
+  // if we used the SDK's from() method. Since we're using fetch here,
+  // we need the token. We'll use a safer way to get it or fallback.
+  const { data } = await insforge.auth.getCurrentUser();
+  const token = (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
+  
   return {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token}`,
@@ -61,9 +67,10 @@ function metricName(method: Method, url: string) {
 
 async function once(url: string, method: Method, body?: unknown) {
   const t0 = Date.now();
+  const headers = await HEADERS();
   const res = await fetch(url, {
     method,
-    headers: HEADERS(),
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   recordMetric({

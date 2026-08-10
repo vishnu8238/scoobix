@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from "react";
-import { getAccessToken, setAccessToken, logout as ifLogout } from "./insforge-auth";
+import { loginWithGoogle, loginWithApple, logout as ifLogout, getSession } from "./insforge-auth";
+import { insforge } from "./insforge";
 import { listTable } from "./insforge-crud";
 
 /**
@@ -53,21 +54,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const resolveUser = useCallback(async (token: string) => {
+  const resolveUser = useCallback(async () => {
     try {
-      // 1. Get user profile from InsForge
-      // Assuming 'users' table contains canonical profile linked to Auth UUID
-      // In InsForge, when authenticated, listTable uses the bearer token.
-      const profiles = await listTable<any>("users", { limit: 1 });
-      const profile = profiles[0];
-
-      if (!profile) {
-        setAccessToken(null);
+      setLoading(true);
+      const session = await getSession();
+      if (!session || !session.user) {
         setUser(null);
         return;
       }
 
-      // 2. Resolve Memberships (Customer is implicit for any auth user)
+      const authId = session.user.id;
+      console.log(`[AUTH] Resolving user for ${authId}`);
+
+      // 1. Get user profile from InsForge
+      const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
+      const profile = profiles[0];
+
+      if (!profile) {
+        console.warn(`[AUTH] No profile found for ${authId}`);
+        setUser({
+          id: authId,
+          name: (session.user.profile as any)?.name || "New User",
+          email: session.user.email || "",
+          phone: "",
+          avatar: "",
+          role: "customer",
+          roles: ["customer"],
+        });
+        return;
+      }
+
+      // 2. Resolve Memberships
       const roles: Role[] = ["customer"];
       
       const [partner, rider, manager] = await Promise.all([
@@ -81,13 +98,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (manager.length) roles.push("manager");
       if (profile.role === "admin") roles.push("admin");
 
+      const currentPortal = getRequestedPortal() as Role;
+      
       setUser({
         id: profile.id,
         name: profile.name || "User",
         email: profile.email || "",
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
-        role: roles.includes(getRequestedPortal() as Role) ? (getRequestedPortal() as Role) : roles[0],
+        role: roles.includes(currentPortal) ? currentPortal : roles[0],
         roles,
       });
     } catch (err) {
@@ -99,16 +118,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const token = getAccessToken();
-    if (token) {
-      resolveUser(token);
-    } else {
-      setLoading(false);
-    }
+    resolveUser();
+
+    // The SDK uses lowercase event names in types
+    const unsubscribe = insforge.auth.onAuthStateChange((event) => {
+      console.log(`[AUTH] Event: ${event}`);
+      if (event === 'signedIn' || event === 'tokenRefreshed') {
+        resolveUser();
+      } else if (event === 'signedOut') {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [resolveUser]);
 
   const login = async (provider: 'google' | 'apple', portal: string = "customer") => {
-    const { loginWithGoogle, loginWithApple } = await import("./insforge-auth");
     if (provider === 'google') await loginWithGoogle(portal);
     else await loginWithApple(portal);
   };
