@@ -63,7 +63,7 @@ const DEFAULT_ADV: AdvState = {
 };
 
 function Home() {
-  console.log("[AUTH_DEBUG] Home Mounting");
+  console.log("[AUTH_DEBUG] [CHECKPOINT: CUSTOMER_HOME_RENDERED] Mounting Home Component");
   const navigate = useNavigate();
   const { filters, sections, closedRestaurants, pureVegOverrides } = useCms();
   const { vegMode } = useAppUI();
