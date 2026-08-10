@@ -57,8 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let currentSession = null;
     try {
       setLoading(true);
+      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_LOADING] Loading: true");
       currentSession = await getSession();
-      console.log("[AUTH_DEBUG] resolveUser Session:", currentSession?.user?.id);
+      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_SESSION_RESTORED] Session ID:", currentSession?.user?.id);
       
       if (!currentSession || !currentSession.user) {
         setUser(null);
@@ -70,10 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 1. Get user profile
       const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
       const profile = profiles[0];
-      console.log("[AUTH_DEBUG] resolveUser Profile:", profile?.id);
+      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_USER_RESOLVED] Profile ID:", profile?.id);
 
       if (!profile) {
         // No profile row: resolution is definitive — there are no memberships.
+        console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Result: basic-customer (no profile)");
         setUser({
           id: authId,
           name: (currentSession.user.profile as any)?.name || "New User",
@@ -107,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Note: profile.role "MERCHANT_MANAGER" indicates a manager user
           if (profile.role === "admin" || profile.is_admin === true) roles.push("admin");
         }
-        console.log("[AUTH_DEBUG] resolveUser Resolved Roles:", roles);
+        console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
       } catch (err) {
         console.error("Failed to resolve memberships:", err);
         // Resolution FAILED — it is not authoritative. Publish the user with
@@ -128,6 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const currentPortal = getRequestedPortal() as Role;
+      const admissionResult = roles.includes(currentPortal);
+      console.log(`[AUTH_DEBUG] [CHECKPOINT: CUSTOMER_ADMISSION_RESULT] Portal: ${currentPortal}, Admitted: ${admissionResult}`);
 
       setUser({
         id: profile.id,

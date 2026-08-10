@@ -10,6 +10,7 @@ export const Route = createFileRoute("/customer/login")({
 });
 
 function CustomerLogin() {
+  console.log("[AUTH_DEBUG] [CHECKPOINT: CUSTOMER_LOGIN_START]");
   const { login, user, loading } = useAuth();
   const navigate = useNavigate();
 

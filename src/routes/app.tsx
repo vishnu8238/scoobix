@@ -9,6 +9,7 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppLayout() {
+  console.log("[AUTH_DEBUG] [CHECKPOINT: APP_ROUTE_MOUNTED] Mounting AppLayout");
   console.log("[AUTH_DEBUG] AppLayout Mounting");
   return (
     <RoleGuard allow="customer">
