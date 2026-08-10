@@ -24,10 +24,9 @@ export const insforge = createClient({
   anonKey: INSFORGE_ANON_KEY,
 });
 
-import { getAccessToken } from "./insforge-auth";
-
-const insforgeHeaders = () => {
-  const token = getAccessToken() || INSFORGE_ANON_KEY;
+const insforgeHeaders = async () => {
+  const { data } = await insforge.auth.getCurrentUser();
+  const token = (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
   return {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token}`,
