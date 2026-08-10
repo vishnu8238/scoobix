@@ -17,12 +17,8 @@ function AdminLogin() {
   const search = Route.useSearch();
   const isUnauthorized = search.error === "unauthorized";
 
-
-
-
-
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center animate-fade-up bg-zinc-950 text-white">
+    <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center animate-fade-up bg-zinc-950 text-white font-sans">
       <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-[2.5rem] bg-zinc-900 shadow-[0_0_50px_rgba(255,255,255,0.05)] ring-1 ring-zinc-800">
         <ShieldCheck className="h-10 w-10 text-white" strokeWidth={1.5} />
       </div>
@@ -67,4 +63,3 @@ function AdminLogin() {
     </div>
   );
 }
-
