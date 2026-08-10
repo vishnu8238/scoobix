@@ -29,6 +29,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       if (pathname.includes("/login") || pathname.includes("/onboarding")) return;
       
       const loginPath = portal === "customer" ? "/customer/login" : `/${portal}/login`;
+      console.log("[MANAGER_REDIRECT_AUDIT] Not logged in, redirecting to login:", loginPath);
       navigate({ to: loginPath as any });
       return;
     }
@@ -42,16 +43,20 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       if (!hasAccess) {
         // Redirect to portal-specific admission/onboarding if roles are missing
         if (portal === "partner" && !user.roles.includes("partner")) {
+          console.log("[MANAGER_REDIRECT_AUDIT] Missing partner role, redirecting to onboarding");
           navigate({ to: "/partner/onboarding" as any });
         } else if (portal === "rider" && !user.roles.includes("rider")) {
+          console.log("[MANAGER_REDIRECT_AUDIT] Missing rider role, redirecting to onboarding");
           navigate({ to: "/rider/onboarding" as any });
         } else if (portal === "manager" && !user.roles.includes("manager")) {
           // If the user is logged in but doesn't have the manager role, 
           // we don't automatically send them to onboarding if we are in manager portal.
           // We let the specific page handle onboarding triggers.
+          console.log("[MANAGER_REDIRECT_AUDIT] Missing manager role, redirecting to customer app");
           navigate({ to: "/app" as any });
         } else {
           // Default to customer app
+          console.log("[MANAGER_REDIRECT_AUDIT] Unauthorized portal access, redirecting to customer app");
           navigate({ to: "/app" as any });
         }
       }
