@@ -24,10 +24,13 @@ export const insforge = createClient({
   anonKey: INSFORGE_ANON_KEY,
 });
 
-const insforgeHeaders = async () => {
+export const getAccessToken = async () => {
   const { data } = await insforge.auth.getCurrentUser();
-  const token = (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
-  const refreshToken = (data.user as any)?.refreshToken;
+  return (data.user as any)?.accessToken || null;
+};
+
+const insforgeHeaders = async () => {
+  const token = await getAccessToken() || INSFORGE_ANON_KEY;
   
   return {
     apikey: INSFORGE_ANON_KEY,
