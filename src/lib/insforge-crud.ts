@@ -43,7 +43,7 @@ const HEADERS = async () => {
   // if we used the SDK's from() method. Since we're using fetch here,
   // we need the token. We'll use a safer way to get it or fallback.
   const { data } = await insforge.auth.getCurrentUser();
-  const token = (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
+  const token = (data.user as any)?.access_token || (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
   
   return {
     apikey: INSFORGE_ANON_KEY,
