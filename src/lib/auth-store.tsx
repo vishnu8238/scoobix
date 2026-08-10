@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.warn(`[AUTH] No profile found for ${authId}`);
         setUser({
           id: authId,
-          name: session.user.name || "New User",
+          name: (session.user.profile as any)?.name || "New User",
           email: session.user.email || "",
           phone: "",
           avatar: "",

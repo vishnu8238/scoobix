@@ -38,8 +38,8 @@ type Method = "GET" | "POST" | "PATCH" | "DELETE";
 import { insforge } from "./insforge";
 
 const HEADERS = async () => {
-  const { data } = await insforge.auth.getSession();
-  const token = data.session?.access_token || INSFORGE_ANON_KEY;
+  // Use the internal token manager if accessible, otherwise fallback to anon
+  const token = (insforge.http as any)?.tokenManager?.getAccessToken() || INSFORGE_ANON_KEY;
   return {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token}`,
