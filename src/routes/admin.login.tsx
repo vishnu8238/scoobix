@@ -1,4 +1,5 @@
-import { createFileRoute, useRouterState } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-store";
@@ -10,8 +11,15 @@ export const Route = createFileRoute("/admin/login")({
 
 function AdminLogin() {
   const { login } = useAuth();
-  const search = Route.useSearch() as any;
-  const isUnauthorized = search.error === "unauthorized";
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setIsUnauthorized(params.get("error") === "unauthorized");
+    }
+  }, []);
+
 
 
 
