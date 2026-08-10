@@ -31,7 +31,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     if (!user) {
       if (pathname.includes("/login") || pathname.includes("/onboarding")) return;
       
-      const loginPath = portal === "customer" ? "/customer/login" : `/${portal}/login`;
+      const loginPath = portal === "customer" ? "/customer/login" : (portal === "partner" ? "/partner/login" : `/${portal}/login`);
       navigate({ to: loginPath as any });
       return;
     }
