@@ -27,7 +27,7 @@ const PRIMARY = new Set(NAV.map((n) => n.to));
 function ManagerLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <RoleGuard allow="manager" transitionLabel="Accessing Manager Portal...">
+    <RoleGuard allow="manager">
       <ManagerShell pathname={pathname} />
     </RoleGuard>
   );
