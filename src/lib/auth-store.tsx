@@ -103,6 +103,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const currentPortal = getRequestedPortal() as Role;
       
+      console.log("[AUTH_RESOLVE] User resolved:", {
+        id: profile.id,
+        roles,
+        requestedPortal: currentPortal
+      });
+
       setUser({
         id: profile.id,
         name: profile.name || "User",

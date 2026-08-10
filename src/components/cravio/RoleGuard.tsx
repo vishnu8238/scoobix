@@ -24,11 +24,19 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   useEffect(() => {
     if (loading) return;
 
+    console.log("[ROLE_GUARD] Audit:", {
+      portal,
+      path: pathname,
+      userRoles: user?.roles || [],
+      isLoggedIn: !!user
+    });
+
     // 1. Not logged in? Redirect to portal-specific login
     if (!user) {
       if (pathname.includes("/login") || pathname.includes("/onboarding")) return;
       
       const loginPath = portal === "customer" ? "/customer/login" : `/${portal}/login`;
+      console.log("[ROLE_GUARD] Not logged in. Redirecting to:", loginPath);
       navigate({ to: loginPath as any });
       return;
     }
@@ -40,6 +48,12 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       const hasAccess = allowedRoles.some(role => user.roles.includes(role));
       
       if (!hasAccess) {
+        console.log("[ROLE_GUARD] Unauthorized access attempt:", {
+          required: allowedRoles,
+          actual: user.roles,
+          portal
+        });
+
         // Redirect to portal-specific admission/onboarding if roles are missing
         if (portal === "partner" && !user.roles.includes("partner")) {
           navigate({ to: "/partner/onboarding" as any });
@@ -47,11 +61,12 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
           navigate({ to: "/rider/onboarding" as any });
         } else if (portal === "manager" && !user.roles.includes("manager")) {
           // If the user is logged in but doesn't have the manager role, 
-          // we don't automatically send them to onboarding if we are in manager portal.
-          // We let the specific page handle onboarding triggers.
-          navigate({ to: "/app" as any });
+          // we DO NOT fall back to /app if they specifically requested /manager
+          console.log("[ROLE_GUARD] Manager unauthorized. Blocking.");
+          // We don't navigate to /app here if portal intent is manager
         } else {
           // Default to customer app
+          console.log("[ROLE_GUARD] General fallback to /app");
           navigate({ to: "/app" as any });
         }
       }
