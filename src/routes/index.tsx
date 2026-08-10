@@ -8,7 +8,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const navigate = useNavigate();
   useEffect(() => {
-    // SCOOBIX RESET: Redirect to the customer app home
+    // Redirect to the customer app home
     navigate({ to: "/app", replace: true });
   }, [navigate]);
 

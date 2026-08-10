@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { useState } from "react";
 import { ChevronRight, Bike, User, FileCheck2, Check, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,11 @@ import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/rider/onboarding")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Onboarding" }] }),
-  component: RiderOnboarding,
+  component: () => (
+    <RoleGuard>
+      <RiderOnboarding />
+    </RoleGuard>
+  ),
 });
 
 const STEPS = [

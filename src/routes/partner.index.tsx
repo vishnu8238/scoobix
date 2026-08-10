@@ -12,9 +12,15 @@ import { RestaurantIdBadge } from "@/components/cravio/RestaurantIdBadge";
 import { GoLiveCard, useGoLiveChecklist } from "@/components/cravio/GoLiveChecklist";
 import type { GoLiveRow } from "@/lib/go-live";
 
+import { RoleGuard } from "@/components/cravio/RoleGuard";
+
 export const Route = createFileRoute("/partner/")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Dashboard" }] }),
-  component: PartnerDashboard,
+  component: () => (
+    <RoleGuard allow="partner">
+      <PartnerDashboard />
+    </RoleGuard>
+  ),
 });
 
 function PartnerDashboard() {

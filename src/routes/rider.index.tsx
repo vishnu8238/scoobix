@@ -11,9 +11,15 @@ import { useTableVersion } from "@/lib/realtime-hooks";
 import { toast } from "sonner";
 
 
+import { RoleGuard } from "@/components/cravio/RoleGuard";
+
 export const Route = createFileRoute("/rider/")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Home" }] }),
-  component: RiderHome,
+  component: () => (
+    <RoleGuard allow="rider">
+      <RiderHome />
+    </RoleGuard>
+  ),
 });
 
 type OrderRow = {

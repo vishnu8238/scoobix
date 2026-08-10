@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { useState, useEffect } from "react";
 import { ChevronRight, Store, MapPin, Clock, Banknote, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,11 @@ import { saveOnboardingDraft, logOnboardingEvent } from "@/lib/manager-api";
 
 export const Route = createFileRoute("/partner/onboarding")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Onboarding" }] }),
-  component: PartnerOnboarding,
+  component: () => (
+    <RoleGuard>
+      <PartnerOnboarding />
+    </RoleGuard>
+  ),
 });
 
 const STEPS = [
