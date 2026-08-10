@@ -13,6 +13,7 @@ function AuthCallback() {
 
   useEffect(() => {
     const portal = popPortalIntent();
+    console.log("[AUTH_DEBUG] auth.callback.tsx Portal Intent:", portal);
     
     const checkAuth = async () => {
       try {

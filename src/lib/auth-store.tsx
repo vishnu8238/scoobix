@@ -165,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resolveUser();
 
     const unsubscribe = insforge.auth.onAuthStateChange((event) => {
+      console.log(`[AUTH_DEBUG] Auth State Change: ${event}`);
       // Single source of truth: resolveUser() handles session checks definitively.
       // This prevents the 'signedOut' event from prematurely ending the loading state
       // during initial SDK boot.
