@@ -49,7 +49,8 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       if (!hasAccess) {
         // Redirect to portal-specific admission/onboarding if roles are missing
         if (portal === "partner" && !user.roles.includes("partner")) {
-          navigate({ to: "/partner/onboarding" as any });
+          // Admission to /partner is granted to authenticated users; onboarding is a choice.
+          // We do NOT redirect to /partner/onboarding here.
         } else if (portal === "rider" && !user.roles.includes("rider")) {
           // Admission to /rider is granted to authenticated users; onboarding is a choice.
           // We do NOT redirect to /rider/onboarding here.
