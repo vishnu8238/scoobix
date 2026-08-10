@@ -33,7 +33,11 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       return;
     }
 
-    // 2. Membership Check
+    // 2. Wait for membership resolution before making any access decisions
+    // This prevents a temporary "customer" role from triggering a redirect to /app
+    if (!user.membershipsResolved) return;
+
+    // 3. Membership Check
     const allowedRoles = Array.isArray(allow) ? allow : allow ? [allow] : [];
     
     if (allowedRoles.length > 0) {
@@ -46,11 +50,11 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
         } else if (portal === "rider" && !user.roles.includes("rider")) {
           navigate({ to: "/rider/onboarding" as any });
         } else if (portal === "manager" && !user.roles.includes("manager")) {
-          // If the user is logged in but doesn't have the manager role, 
-          // we DO NOT fall back to /app if they specifically requested /manager
-          // We stay on /manager and let the component handle the state
+          // If the user is logged in and resolution finished, but they STILL don't have the manager role,
+          // we stay on /manager and let the component handle the unauthorized/loading state.
+          // This avoids the silent /app fallback.
         } else {
-          // Default to customer app
+          // Default to customer app only if authoritative resolution shows they are just a customer
           navigate({ to: "/app" as any });
         }
       }
