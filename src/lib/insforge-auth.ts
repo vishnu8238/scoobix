@@ -9,16 +9,32 @@ import { insforge } from "./insforge";
  * @param portalIntent The portal the user wants to enter ('customer', 'partner', 'rider', 'manager', 'admin')
  */
 export async function loginWithGoogle(portalIntent: string = "customer"): Promise<void> {
-  const callbackUrl = getCallbackUrl(portalIntent);
-  console.log(`[AUTH] Starting Google OAuth. Callback: ${callbackUrl}`);
+  console.log(`[GOOGLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`);
   
-  const { error } = await insforge.auth.signInWithOAuth("google", {
-    redirectTo: callbackUrl,
-  });
+  if (!insforge) {
+    console.error("[GOOGLE_OAUTH] CLIENT_NOT_INITIALIZED");
+    throw new Error("Authentication service is not ready.");
+  }
+  
+  console.log("[GOOGLE_OAUTH] CLIENT_READY");
+  
+  const callbackUrl = getCallbackUrl(portalIntent);
+  console.log(`[GOOGLE_OAUTH] SDK_START - Callback: ${callbackUrl}`);
+  
+  try {
+    const { data, error } = await insforge.auth.signInWithOAuth("google", {
+      redirectTo: callbackUrl,
+    });
 
-  if (error) {
-    console.error("[AUTH] Google sign-in failed:", error.message);
-    throw new Error(`Google sign-in failed: ${error.message}`);
+    if (error) {
+      console.error("[GOOGLE_OAUTH] SDK_ERROR:", error.message);
+      throw new Error(`Google sign-in failed: ${error.message}`);
+    }
+
+    console.log("[GOOGLE_OAUTH] SDK_RESULT", data);
+  } catch (err: any) {
+    console.error("[GOOGLE_OAUTH] UNEXPECTED_ERROR:", err);
+    throw err;
   }
 }
 
@@ -26,15 +42,15 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
  * Starts the Apple OAuth flow using the official InsForge SDK.
  */
 export async function loginWithApple(portalIntent: string = "customer"): Promise<void> {
+  console.log(`[APPLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`);
   const callbackUrl = getCallbackUrl(portalIntent);
-  console.log(`[AUTH] Starting Apple OAuth. Callback: ${callbackUrl}`);
-
+  
   const { error } = await insforge.auth.signInWithOAuth("apple", {
     redirectTo: callbackUrl,
   });
 
   if (error) {
-    console.error("[AUTH] Apple sign-in failed:", error.message);
+    console.error("[APPLE_OAUTH] SDK_ERROR:", error.message);
     throw new Error(`Apple sign-in failed: ${error.message}`);
   }
 }
