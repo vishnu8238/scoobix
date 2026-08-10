@@ -48,7 +48,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     verify();
   }, [user, authLoading, navigate, pathname]);
 
-  if (authLoading || (user && authorized === null)) {
+  if ((authLoading || (user && authorized === null)) && pathname !== "/admin/login") {
     return (
       <div className="flex min-h-svh items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-4">
