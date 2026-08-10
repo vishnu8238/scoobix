@@ -36,12 +36,15 @@ function AuthCallback() {
 
           // Determine destination based on portal intent
           const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
+          console.log("[AUTH_DEBUG] auth.callback.tsx Redirecting to:", dest);
           window.location.assign(dest);
         } else {
           // Polling for session
+          console.log("[AUTH_DEBUG] auth.callback.tsx No user, polling...");
           const checkSession = setInterval(async () => {
             const { data: sessionData } = await insforge.auth.getCurrentUser();
             if (sessionData?.user) {
+              console.log("[AUTH_DEBUG] auth.callback.tsx Polled session found:", sessionData.user.id);
               clearInterval(checkSession);
               const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
               window.location.assign(dest);
