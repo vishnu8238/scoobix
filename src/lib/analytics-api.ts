@@ -678,8 +678,8 @@ export async function buildAdminReport(range: Range): Promise<AdminReport> {
       scan<{ id: string; discount_amount?: number; coupon_code?: string; created_at?: string }>(
         "coupon_usage", { select: "id,discount_amount,coupon_code,created_at" }, 1000,
       ),
-      scan<{ total?: number; status?: string; created_at?: string }>(
-        "subscription_invoices", { select: "total,status,created_at" }, 600,
+      scan<{ total_price?: number; status?: string; created_at?: string }>(
+        "subscription_invoices", { select: "total_price,status,created_at" }, 600,
       ),
     ]);
 
@@ -733,7 +733,7 @@ export async function buildAdminReport(range: Range): Promise<AdminReport> {
     revenue: round(revenue),
     orders: rows.length,
     commissionRevenue: round(completed.reduce((s, o) => s + num(o.commission_amount, num(o.platform_earnings)), 0)),
-    subscriptionRevenue: round(invoices.filter((i) => (i.status ?? "paid") !== "void").reduce((s, i) => s + num(i.total), 0)),
+    subscriptionRevenue: round(invoices.filter((i) => (i.status ?? "paid") !== "void").reduce((s, i) => s + num(i.total_price), 0)),
     activeCustomers,
     activeRestaurants: restaurants.filter((r) => r.is_live || r.status === "approved" || r.status === "active").length,
     activeRiders: drivers.filter((d) => d.online_status || num(d.total_deliveries) > 0).length,
