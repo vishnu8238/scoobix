@@ -504,10 +504,16 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
      
     setLoading(true);
     const run = async () => {
+      if (!customerId) {
+        setOrders([]);
+        setLoading(false);
+        return;
+      }
       const { fetchCustomerOrders } = await import("./orders-api");
       const rows = await fetchCustomerOrders(customerId);
       if (!cancelled) { setOrders(rows); setLoading(false); }
     };
+
     void run();
     const iv = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
@@ -523,7 +529,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
      
     const { createOrder } = await import("./orders-api");
     const created = await createOrder({
-      customerId,
+      customerId: customerId!,
+
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
       restaurantImage: restaurant.cover,
