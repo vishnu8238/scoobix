@@ -24,17 +24,6 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   useEffect(() => {
     if (loading) return;
 
-    // [MANAGER_REDIRECT_AUDIT]
-    if (portal === "manager" && user?.roles.includes("manager")) {
-      console.log("[MANAGER_REDIRECT_AUDIT]", {
-        AUTH_USER: user?.id,
-        MANAGER_MEMBERSHIP: user?.roles.includes("manager"),
-        REQUESTED_PORTAL: portal,
-        CURRENT_PATH: pathname,
-        HAS_RESTAURANT: "unknown (membership exists)",
-      });
-    }
-
     // 1. Not logged in? Redirect to portal-specific login
     if (!user) {
       if (pathname.includes("/login") || pathname.includes("/onboarding")) return;
@@ -60,7 +49,6 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
           // If the user is logged in but doesn't have the manager role, 
           // we don't automatically send them to onboarding if we are in manager portal.
           // We let the specific page handle onboarding triggers.
-          // However, for Manager portal specifically, authorization is REQUIRED for /manager.
           navigate({ to: "/app" as any });
         } else {
           // Default to customer app
@@ -70,11 +58,6 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     }
   }, [user, loading, portal, allow, navigate, pathname]);
 
-  // FIX 2: Stable mounting during auth loading.
-  // We MUST NOT return null, as that destroys the portal DOM tree.
-  // Instead, we render the children but keep a "resolving" state visually
-  // if needed, or simply let the shell stay stable.
-  
   if (loading) {
     // If we are already on a login page, just show it.
     if (pathname.includes("/login")) {
@@ -82,7 +65,6 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     }
     
     // Otherwise, show the loading spinner but keep the layout space occupied
-    // to prevent jitter and event listener loss on remount.
     return (
       <div className="flex min-h-svh items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -96,7 +78,6 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   }
 
   // If not logged in and not on login/onboarding, we've triggered a redirect.
-  // We return a fragment to keep the component in the tree during transition.
   if (!user && !pathname.includes("/login") && !pathname.includes("/onboarding")) {
     return <div className="min-h-svh bg-background" />;
   }
