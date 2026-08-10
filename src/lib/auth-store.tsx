@@ -139,7 +139,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (err: any) {
       console.error("Failed to resolve user:", err);
-      setUser(null);
+      // Do NOT set user to null here if we might have a session.
+      // If session fetch itself failed, getSession() already handled it.
     } finally {
       setLoading(false);
     }
