@@ -30,8 +30,7 @@ export type PeriodSummary = {
 type OrderRow = {
   id?: string;
   status?: string;
-  total?: number;
-  grand_total?: number;
+  total_price?: number;
   restaurant_id?: string;
   user_id?: string;
   created_at?: string;
@@ -47,7 +46,7 @@ export const monthKey = (d = new Date()) => d.toISOString().slice(0, 7);
 const kvKey = (scope: "daily" | "monthly", period: string) => `analytics:${scope}:${period}`;
 
 function aggregate(period: string, rows: OrderRow[]): PeriodSummary {
-  const revenueOf = (r: OrderRow) => Number(r.grand_total ?? r.total ?? 0) || 0;
+  const revenueOf = (r: OrderRow) => Number(r.total_price ?? 0) || 0;
   const delivered = rows.filter((r) => (r.status ?? "").toUpperCase() === "DELIVERED");
   const cancelled = rows.filter((r) => (r.status ?? "").toUpperCase() === "CANCELLED");
   const revenue = delivered.reduce((s, r) => s + revenueOf(r), 0);
@@ -82,7 +81,7 @@ async function computeAndStore(scope: "daily" | "monthly", period: string): Prom
   const rows = await listTable<OrderRow>(
     "orders",
     {
-      select: "id,status,total,grand_total,restaurant_id,user_id,created_at",
+      select: "id,status,total_price,restaurant_id,user_id,created_at",
       created_at: `gte.${from}`,
       order: "created_at.desc",
       limit: 200,
