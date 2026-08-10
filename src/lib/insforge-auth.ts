@@ -5,14 +5,34 @@
 import { insforge } from "./insforge";
 
 /**
- * Generates the OAuth callback URL using the ACTUAL browser origin.
- * Never hard-codes localhost for production or preview.
+ * Generates the canonical OAuth callback URL using the ACTUAL browser origin.
+ * No query parameters are used here to ensure compatibility with whitelisted URLs.
  */
-export function getOAuthCallbackUrl(portal: string): string {
-  if (typeof window === "undefined") return `http://localhost:8080/auth/callback?portal=${portal}`;
-  
+export function getOAuthCallbackUrl(): string {
+  if (typeof window === "undefined") return "http://localhost:8080/auth/callback";
   const origin = window.location.origin;
-  return `${origin}/auth/callback?portal=${portal}`;
+  return `${origin}/auth/callback`;
+}
+
+const PORTAL_INTENT_KEY = "scoobix_oauth_portal_intent";
+
+/**
+ * Persists the portal intent before starting OAuth.
+ */
+export function setPortalIntent(portal: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(PORTAL_INTENT_KEY, portal);
+  }
+}
+
+/**
+ * Retrieves and clears the portal intent.
+ */
+export function popPortalIntent(): string {
+  if (typeof window === "undefined") return "customer";
+  const intent = localStorage.getItem(PORTAL_INTENT_KEY) || "customer";
+  localStorage.removeItem(PORTAL_INTENT_KEY);
+  return intent;
 }
 
 /**
@@ -31,7 +51,11 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
   
   console.log("[GOOGLE_OAUTH] CLIENT_READY");
   
-  const callbackUrl = getOAuthCallbackUrl(portalIntent);
+  // 1. Preserve Intent
+  setPortalIntent(portalIntent);
+  
+  // 2. Canonical Callback URL (No query params)
+  const callbackUrl = getOAuthCallbackUrl();
   console.log(`[GOOGLE_OAUTH] CALLBACK_URL ${callbackUrl}`);
   
   try {
@@ -67,7 +91,9 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
  */
 export async function loginWithApple(portalIntent: string = "customer"): Promise<void> {
   console.log(`[APPLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`);
-  const callbackUrl = getOAuthCallbackUrl(portalIntent);
+  
+  setPortalIntent(portalIntent);
+  const callbackUrl = getOAuthCallbackUrl();
   console.log(`[APPLE_OAUTH] CALLBACK_URL ${callbackUrl}`);
   
   const { error } = await insforge.auth.signInWithOAuth("apple", {
@@ -82,10 +108,10 @@ export async function loginWithApple(portalIntent: string = "customer"): Promise
 
 /**
  * Selects the callback URL dynamically based on the current environment.
- * @deprecated Use getOAuthCallbackUrl(portal)
+ * @deprecated Use getOAuthCallbackUrl()
  */
 function getCallbackUrl(portalIntent: string): string {
-  return getOAuthCallbackUrl(portalIntent);
+  return getOAuthCallbackUrl();
 }
 
 export async function logout(): Promise<void> {
@@ -108,6 +134,10 @@ export async function getSession() {
 }
 
 // Legacy helpers removed as the SDK manages persistence automatically.
-export function getAccessToken(): string | null { return null; }
+export function getAccessToken(): string | null { 
+  if (typeof window === "undefined") return null;
+  // The SDK might store it in a standard key or we might not need to manually expose it
+  return null; 
+}
 export function setAccessToken(token: string | null): void {}
 
