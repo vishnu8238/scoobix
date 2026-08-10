@@ -30,9 +30,7 @@ export const Route = createFileRoute("/app/")({
     ],
   }),
   component: () => (
-    <RoleGuard allow="customer">
-      <Home />
-    </RoleGuard>
+    <Home />
   ),
 });
 

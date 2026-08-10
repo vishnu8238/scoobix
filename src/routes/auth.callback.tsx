@@ -17,15 +17,18 @@ function AuthCallback() {
     
     const checkAuth = async () => {
       try {
+        console.log("[AUTH_DEBUG] auth.callback.tsx Starting checkAuth");
         const { data, error } = await insforge.auth.getCurrentUser();
         
         if (error) {
+          console.error("[AUTH_DEBUG] auth.callback.tsx SDK Error:", error);
           setErrorMsg(error.message || "Authentication failed.");
           return;
         }
 
         const authUser = data?.user;
         if (authUser) {
+          console.log("[AUTH_DEBUG] auth.callback.tsx Auth user found:", authUser.id);
           // SECURITY: For admin portal, we MUST verify the email before redirecting.
           if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
              // Unauthorized admin attempt - clear intent and send back to login with error
@@ -53,10 +56,14 @@ function AuthCallback() {
 
           setTimeout(() => {
             clearInterval(checkSession);
-            if (!errorMsg) setErrorMsg("Login timed out. Please try again.");
+            if (!errorMsg) {
+              console.warn("[AUTH_DEBUG] auth.callback.tsx Login timed out");
+              setErrorMsg("Login timed out. Please try again.");
+            }
           }, 10000);
         }
       } catch (err: any) {
+        console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
         setErrorMsg("An unexpected error occurred.");
       }
     };
