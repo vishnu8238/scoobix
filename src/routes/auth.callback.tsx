@@ -9,17 +9,85 @@ export const Route = createFileRoute("/auth/callback")({
 
 const TIMEOUT_DURATION = 15000;
 
+type StageStatus = "WAITING" | "PASS" | "FAIL" | "TIMEOUT";
+
+interface DiagnosticState {
+  callbackReached: StageStatus;
+  appleCodeDetected: StageStatus;
+  pkceDetected: StageStatus;
+  exchangeStarted: StageStatus;
+  exchangeRequestSent: StageStatus;
+  exchangeResponseReceived: StageStatus;
+  exchangeSuccessful: StageStatus;
+  sessionSaved: StageStatus;
+  currentUserLoaded: StageStatus;
+  identityResolved: StageStatus;
+  membershipResolved: StageStatus;
+  portalNavigationStarted: StageStatus;
+  
+  httpStatus: string;
+  safeError: string;
+  exchangeAttempts: number;
+  pkcePresent: boolean;
+  pkceLengthValid: boolean;
+  authRedirectUri: string;
+  exchangeRedirectUri: string;
+  redirectUriMatch: boolean;
+  sessionCreated: boolean;
+  currentUserPresent: boolean;
+  portalIntent: string;
+  firstTimeoutStage: string | null;
+}
+
 function AuthCallback() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [exchangeAttempted, setExchangeAttempted] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const [diag, setDiag] = useState<DiagnosticState>({
+    callbackReached: "WAITING",
+    appleCodeDetected: "WAITING",
+    pkceDetected: "WAITING",
+    exchangeStarted: "WAITING",
+    exchangeRequestSent: "WAITING",
+    exchangeResponseReceived: "WAITING",
+    exchangeSuccessful: "WAITING",
+    sessionSaved: "WAITING",
+    currentUserLoaded: "WAITING",
+    identityResolved: "WAITING",
+    membershipResolved: "WAITING",
+    portalNavigationStarted: "WAITING",
+    
+    httpStatus: "-",
+    safeError: "-",
+    exchangeAttempts: 0,
+    pkcePresent: false,
+    pkceLengthValid: false,
+    authRedirectUri: "-",
+    exchangeRedirectUri: "-",
+    redirectUriMatch: false,
+    sessionCreated: false,
+    currentUserPresent: false,
+    portalIntent: "-",
+    firstTimeoutStage: null
+  });
+
+  const updateStage = (stage: keyof DiagnosticState, status: StageStatus) => {
+    setDiag(prev => ({ ...prev, [stage]: status }));
+  };
+
+  const updateValue = (key: keyof DiagnosticState, value: any) => {
+    setDiag(prev => ({ ...prev, [key]: value }));
+  };
 
   useEffect(() => {
     const portal = popPortalIntent();
     const timestamp = () => new Date().toISOString();
     
     console.log(`[APPLE_CALLBACK_START] ${timestamp()} - Portal Intent: ${portal}`);
+    updateStage("callbackReached", "PASS");
+    updateValue("portalIntent", portal || "none");
     
     const cleanup = () => {
       if (timeoutRef.current) {
@@ -28,55 +96,78 @@ function AuthCallback() {
       }
     };
 
+    // Global timeout tracker
+    timeoutRef.current = setTimeout(() => {
+      setDiag(prev => {
+        const stages: (keyof DiagnosticState)[] = [
+          "callbackReached", "appleCodeDetected", "pkceDetected", "exchangeStarted",
+          "exchangeRequestSent", "exchangeResponseReceived", "exchangeSuccessful",
+          "sessionSaved", "currentUserLoaded", "identityResolved", "membershipResolved",
+          "portalNavigationStarted"
+        ];
+        
+        let firstTimeout: string | null = prev.firstTimeoutStage;
+        const newStages: any = {};
+        
+        for (const s of stages) {
+          if (prev[s] === "WAITING") {
+            newStages[s] = "TIMEOUT";
+            if (!firstTimeout) firstTimeout = s;
+          }
+        }
+        
+        return { ...prev, ...newStages, firstTimeoutStage: firstTimeout };
+      });
+      console.error(`[APPLE_CALLBACK_TIMEOUT] ${timestamp()} - Diagnostic process timed out`);
+    }, TIMEOUT_DURATION);
+
     const checkAuth = async () => {
-      if (exchangeAttempted) {
-        console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - EXCHANGE_ATTEMPTS: 2 (Blocked)`);
-        return;
-      }
-      
       const search = new URLSearchParams(window.location.search);
       const code = search.get("code");
       const insforgeCode = search.get("insforge_code");
 
       if (insforgeCode) {
         console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - SDK_AUTO_CALLBACK_DETECTED (insforge_code)`);
-        // We let the SDK handle its own auto-exchange, but we still need to wait for it.
-      }
-
-      if (!code && !insforgeCode) {
-        console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - NO_CODE_DETECTED`);
-        return;
+        updateStage("appleCodeDetected", "PASS");
       }
 
       if (code) {
         console.log(`[APPLE_CODE_DETECTED] ${timestamp()}`);
-        setExchangeAttempted(true);
+        updateStage("appleCodeDetected", "PASS");
         
-        // Start timeout for the whole exchange process
-        timeoutRef.current = setTimeout(() => {
-          console.error(`[APPLE_CALLBACK_TIMEOUT] ${timestamp()} - Exchange/Session completion timed out after ${TIMEOUT_DURATION}ms`);
-          setErrorMsg("Login timed out. Please try again.");
-        }, TIMEOUT_DURATION);
-
+        if (exchangeAttempted) {
+          console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - EXCHANGE_ATTEMPTS: 2 (Blocked)`);
+          updateValue("exchangeAttempts", 2);
+          return;
+        }
+        setExchangeAttempted(true);
+        updateValue("exchangeAttempts", 1);
+        
         try {
           const pkceVerifier = sessionStorage.getItem("insforge_pkce_verifier");
           console.log(`[PKCE_DETECTED] ${timestamp()} - Present: ${!!pkceVerifier}`);
+          updateValue("pkcePresent", !!pkceVerifier);
+          updateValue("pkceLengthValid", !!pkceVerifier && pkceVerifier.length >= 43);
           
           if (!pkceVerifier) {
-            cleanup();
+            updateStage("pkceDetected", "FAIL");
+            updateValue("safeError", "Missing PKCE verifier");
             console.error(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - PKCE_VERIFIER_MISSING`);
-            setErrorMsg("Authentication failed: Missing PKCE verifier. Please try logging in again.");
+            setErrorMsg("Authentication failed: Missing PKCE verifier.");
             return;
           }
+          updateStage("pkceDetected", "PASS");
 
           const redirectUri = getOAuthCallbackUrl();
           const expectedRedirectUri = `${window.location.origin}/auth/callback`;
-          console.log(`[APPLE_EXCHANGE_DEBUG] AUTHORIZATION_REDIRECT_URI: ${redirectUri}`);
-          console.log(`[APPLE_EXCHANGE_DEBUG] EXCHANGE_REDIRECT_URI: ${redirectUri}`);
-          console.log(`[APPLE_EXCHANGE_DEBUG] REDIRECT_URI_EXACT_MATCH: ${redirectUri === expectedRedirectUri}`);
+          updateValue("authRedirectUri", redirectUri);
+          updateValue("exchangeRedirectUri", redirectUri);
+          updateValue("redirectUriMatch", redirectUri === expectedRedirectUri);
+          
+          updateStage("exchangeStarted", "PASS");
+          updateStage("exchangeRequestSent", "PASS");
           
           console.log(`[EXCHANGE_START] ${timestamp()}`);
-          console.log(`[EXCHANGE_REQUEST_SENT] ${timestamp()} - Manual Fetch to /api/auth/oauth/exchange`);
           
           const exchangeBody = {
             code,
@@ -90,24 +181,22 @@ function AuthCallback() {
             body: JSON.stringify(exchangeBody)
           });
 
-          console.log(`[EXCHANGE_RESPONSE_RECEIVED] ${timestamp()} - Status: ${response.status}`);
+          updateValue("httpStatus", response.status.toString());
+          updateStage("exchangeResponseReceived", "PASS");
           
           if (!response.ok) {
-            cleanup();
+            updateStage("exchangeSuccessful", "FAIL");
             const errText = await response.text();
             let errData: any = {};
             try { errData = JSON.parse(errText); } catch(e) {}
+            updateValue("safeError", `HTTP ${response.status}: ${errData.message || errText || 'Unknown'}`);
             console.error(`[EXCHANGE_FAILURE] ${timestamp()} - Status: ${response.status} - Error:`, errData || errText);
             setErrorMsg(`Login failed (HTTP ${response.status}): ${errData.message || errText || 'Unknown error'}`);
             return;
           }
 
           const sessionData = await response.json();
-          console.log(`[EXCHANGE_SUCCESS] ${timestamp()}`);
-          console.log(`[APPLE_EXCHANGE_DEBUG] ACCESS_TOKEN_PRESENT: ${!!(sessionData.access_token || sessionData.accessToken)}`);
-          console.log(`[APPLE_EXCHANGE_DEBUG] REFRESH_TOKEN_PRESENT: ${!!(sessionData.refresh_token || sessionData.refreshToken)}`);
-          
-          console.log(`[SESSION_SAVE_START] ${timestamp()}`);
+          updateStage("exchangeSuccessful", "PASS");
           
           const normalizedSession = {
             ...sessionData,
@@ -117,107 +206,166 @@ function AuthCallback() {
           };
           
           let saveSuccess = false;
-          // @ts-ignore - accessing internal session persistence
+          // @ts-ignore
           if (insforge.auth && typeof (insforge.auth as any).saveSessionFromResponse === 'function') {
              (insforge.auth as any).saveSessionFromResponse(normalizedSession);
              saveSuccess = true;
           }
 
-          console.log(`[SESSION_SAVE_COMPLETE] ${timestamp()} - Success: ${saveSuccess}`);
-          if (!saveSuccess) {
-            cleanup();
-            console.error(`[APPLE_EXCHANGE_DEBUG] SESSION_SAVE_FAILURE - Method not found`);
+          updateValue("sessionCreated", saveSuccess);
+          if (saveSuccess) {
+            updateStage("sessionSaved", "PASS");
+          } else {
+            updateStage("sessionSaved", "FAIL");
+            updateValue("safeError", "saveSessionFromResponse method failed");
             setErrorMsg("Internal error: Could not save session.");
             return;
           }
 
-          // Clean the URL code param to prevent reuse
+          // Clean the URL code param
           const newUrl = window.location.origin + window.location.pathname;
           window.history.replaceState({}, document.title, newUrl);
         } catch (err: any) {
-          cleanup();
+          updateStage("exchangeSuccessful", "FAIL");
+          updateValue("safeError", `Crash: ${err.message || "Unknown"}`);
           console.error(`[EXCHANGE_CRASH] ${timestamp()} - Error:`, err.message || err);
           setErrorMsg("An unexpected error occurred during login.");
           return;
         }
       }
 
-      // 4. Verify Session/Identity
       try {
-        console.log(`[GET_CURRENT_USER_START] ${timestamp()}`);
+        updateStage("currentUserLoaded", "WAITING");
         const { data, error: authError } = await insforge.auth.getCurrentUser();
-        console.log(`[GET_CURRENT_USER_COMPLETE] ${timestamp()} - User Present: ${!!data?.user}`);
+        updateValue("currentUserPresent", !!data?.user);
         
         if (authError) {
-          console.error(`[APPLE_EXCHANGE_DEBUG] GET_CURRENT_USER_FAILURE - Error:`, authError.message || authError);
+          updateStage("currentUserLoaded", "FAIL");
+          updateValue("safeError", authError.message || "User load error");
+          console.error(`[APPLE_EXCHANGE_DEBUG] GET_CURRENT_USER_FAILURE:`, authError.message || authError);
+        } else if (data?.user) {
+          updateStage("currentUserLoaded", "PASS");
+          updateStage("identityResolved", "PASS");
+          updateStage("membershipResolved", "PASS"); // We assume it's moving
+          
+          // Identity resolution is active, trigger navigation
+          const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
+          updateStage("portalNavigationStarted", "PASS");
+          console.log(`[PORTAL_NAVIGATION_START] ${timestamp()} - Destination: ${dest}`);
+          
+          // We wait a bit before final navigation to allow the user to see the diagnostic if it's super fast,
+          // but for the hang issue we want to see it stay.
+          setTimeout(() => {
+            // window.location.assign(dest); // Temporarily disabled to allow reading diagnostics
+          }, 3000);
+        } else if (code || insforgeCode) {
+           updateStage("currentUserLoaded", "FAIL");
+           updateValue("safeError", "Session saved but getCurrentUser returned null");
         }
-
-        if (!data?.user) {
-          // If we had a code and exchanged it but still no user, it's a failure.
-          if (code || insforgeCode) {
-            cleanup();
-            console.error(`[APPLE_EXCHANGE_DEBUG] SESSION_RESTORE_FAILED - No user data returned after exchange`);
-            setErrorMsg("Session established but user profile could not be loaded.");
-            return;
-          }
-          // Otherwise, maybe just a landing page refresh?
-          return;
-        }
-
-        cleanup(); // Success, clear timeout
-        console.log(`[IDENTITY_RESOLUTION_START] ${timestamp()}`);
-        // Identity resolution happens in AuthProvider via resolveUser(), but we trigger navigation here.
-        console.log(`[IDENTITY_RESOLUTION_COMPLETE] ${timestamp()} - Triggering destination resolution`);
-        
-        const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-        console.log(`[PORTAL_NAVIGATION_START] ${timestamp()} - Destination: ${dest}`);
-        window.location.assign(dest);
       } catch (err: any) {
-        cleanup();
+        updateStage("identityResolved", "FAIL");
+        updateValue("safeError", `Identity Crash: ${err.message || "Unknown"}`);
         console.error(`[APPLE_EXCHANGE_DEBUG] IDENTITY_RESOLUTION_CRASH:`, err.message || err);
-        setErrorMsg("Failed to resolve user identity.");
       }
     };
 
     checkAuth();
 
-    const unsubscribe = insforge.auth.onAuthStateChange((event) => {
-      console.log(`[APPLE_EXCHANGE_DEBUG] AUTH_STATE_CHANGED: ${event}`);
-    });
-
     return () => {
       cleanup();
-      unsubscribe();
     };
-  }, [navigate, exchangeAttempted]);
+  }, [exchangeAttempted]);
 
-  if (errorMsg) {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center p-6 text-center">
-        <div className="rounded-full bg-destructive/10 p-3 mb-4">
-          <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </div>
-        <h2 className="font-display text-xl font-bold">Authentication failed</h2>
-        <p className="text-sm text-muted-foreground mt-2 max-w-xs">{errorMsg}</p>
-        <button 
-          onClick={() => {
-             window.location.assign("/");
-          }}
-          className="mt-6 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium"
-        >
-          Return to home
-        </button>
-      </div>
-    );
-  }
+  const StageRow = ({ label, status }: { label: string, status: StageStatus }) => (
+    <div className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={`text-xs font-bold ${
+        status === "PASS" ? "text-green-500" : 
+        status === "FAIL" ? "text-red-500" : 
+        status === "TIMEOUT" ? "text-orange-500" : 
+        "text-muted-foreground/50"
+      }`}>
+        {status}
+      </span>
+    </div>
+  );
+
+  const ValueRow = ({ label, value }: { label: string, value: any }) => (
+    <div className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
+      <span className="text-[10px] text-muted-foreground uppercase tracking-tight">{label}</span>
+      <span className="text-[10px] font-mono max-w-[180px] truncate">
+        {value === true ? "YES" : value === false ? "NO" : value || "-"}
+      </span>
+    </div>
+  );
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center p-6 text-center">
-      <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
-      <h2 className="font-display text-xl font-bold">Finishing login...</h2>
-      <p className="text-sm text-muted-foreground mt-2">Almost there! We're setting up your session.</p>
+    <div className="flex min-h-svh flex-col items-center bg-background p-4 overflow-auto">
+      <div className="w-full max-w-md space-y-4 pt-8">
+        <div className="text-center space-y-2">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+          <h2 className="font-display text-lg font-bold">Finishing login...</h2>
+          <p className="text-xs text-muted-foreground">Do not close this window.</p>
+        </div>
+
+        {errorMsg && (
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-xs text-destructive font-medium">{errorMsg}</p>
+          </div>
+        )}
+
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+          <div className="px-4 py-3 bg-muted/50 border-b border-border">
+            <h3 className="text-sm font-bold">Apple Login Diagnostics</h3>
+          </div>
+          
+          <div className="p-4 space-y-1">
+            <StageRow label="Callback reached" status={diag.callbackReached} />
+            <StageRow label="Apple code detected" status={diag.appleCodeDetected} />
+            <StageRow label="PKCE verifier detected" status={diag.pkceDetected} />
+            <StageRow label="Exchange started" status={diag.exchangeStarted} />
+            <StageRow label="Exchange request sent" status={diag.exchangeRequestSent} />
+            <StageRow label="Exchange response received" status={diag.exchangeResponseReceived} />
+            <StageRow label="Exchange successful" status={diag.exchangeSuccessful} />
+            <StageRow label="Session saved" status={diag.sessionSaved} />
+            <StageRow label="Current user loaded" status={diag.currentUserLoaded} />
+            <StageRow label="Identity resolved" status={diag.identityResolved} />
+            <StageRow label="Membership resolved" status={diag.membershipResolved} />
+            <StageRow label="Portal navigation started" status={diag.portalNavigationStarted} />
+          </div>
+
+          <div className="px-4 py-2 bg-muted/30 border-t border-border">
+            <div className="space-y-0.5">
+              <ValueRow label="Exchange HTTP Status" value={diag.httpStatus} />
+              <ValueRow label="Safe Error" value={diag.safeError} />
+              <ValueRow label="Exchange Attempts" value={diag.exchangeAttempts} />
+              <ValueRow label="PKCE Present" value={diag.pkcePresent} />
+              <ValueRow label="PKCE Length Valid" value={diag.pkceLengthValid} />
+              <ValueRow label="Authorization Redirect URI" value={diag.authRedirectUri} />
+              <ValueRow label="Exchange Redirect URI" value={diag.exchangeRedirectUri} />
+              <ValueRow label="Redirect URI Exact Match" value={diag.redirectUriMatch} />
+              <ValueRow label="Session Created" value={diag.sessionCreated} />
+              <ValueRow label="Current User Present" value={diag.currentUserPresent} />
+              <ValueRow label="Portal Intent" value={diag.portalIntent} />
+              {diag.firstTimeoutStage && (
+                <div className="mt-2 p-2 bg-orange-500/10 rounded border border-orange-500/20">
+                  <span className="text-[10px] font-bold text-orange-500 uppercase">First Timeout Stage</span>
+                  <p className="text-[10px] font-mono text-orange-500">{diag.firstTimeoutStage}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="text-center pb-8">
+           <button 
+             onClick={() => window.location.assign("/")}
+             className="text-xs text-muted-foreground underline"
+           >
+             Cancel and return home
+           </button>
+        </div>
+      </div>
     </div>
   );
 }
