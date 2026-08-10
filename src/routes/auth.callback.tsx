@@ -25,6 +25,14 @@ function AuthCallback() {
 
         const authUser = data?.user;
         if (authUser) {
+          // SECURITY: For admin portal, we MUST verify the email before redirecting.
+          if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
+             // Unauthorized admin attempt - clear intent and send back to login with error
+             console.error("Unauthorized admin login attempt:", authUser.email);
+             window.location.assign("/admin/login?error=unauthorized");
+             return;
+          }
+
           // Determine destination based on portal intent
           const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
           window.location.assign(dest);
