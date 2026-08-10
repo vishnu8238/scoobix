@@ -108,10 +108,10 @@ export async function loginWithApple(portalIntent: string = "customer"): Promise
 
 /**
  * Selects the callback URL dynamically based on the current environment.
- * @deprecated Use getOAuthCallbackUrl(portal)
+ * @deprecated Use getOAuthCallbackUrl()
  */
 function getCallbackUrl(portalIntent: string): string {
-  return getOAuthCallbackUrl(portalIntent);
+  return getOAuthCallbackUrl();
 }
 
 export async function logout(): Promise<void> {

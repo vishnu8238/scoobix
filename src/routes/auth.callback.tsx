@@ -41,7 +41,7 @@ function AuthCallback() {
     });
 
     return () => unsubscribe();
-  }, [portal, searchError]);
+  }, [navigate]);
 
   if (errorMsg) {
     return (
