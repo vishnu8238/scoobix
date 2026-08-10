@@ -106,22 +106,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Failed to resolve memberships:", err);
-        // If a query fails, we do NOT remove roles. 
-        // In a real failure, we might want to retry or show an error, 
-        // but we definitely don't want to send the user to onboarding.
-        return; 
+        // Resolution FAILED — it is not authoritative. Publish the user with
+        // membershipsResolved=false so guards keep waiting instead of denying
+        // access or bouncing the user to another portal.
+        setUser({
+          id: profile.id,
+          name: profile.name || "User",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          avatar: profile.avatar_url || "",
+          role: roles[0],
+          roles,
+          membershipsResolved: false,
+          pendingPortal: getRequestedPortal() as Role,
+        });
+        return;
       }
 
       const currentPortal = getRequestedPortal() as Role;
-      
+
       setUser({
         id: profile.id,
         name: profile.name || "User",
         email: profile.email || "",
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
-        role: roles.includes(currentPortal) ? currentPortal : (currentPortal !== "customer" ? currentPortal : roles[0]),
+        // Authoritative: only a real resolved membership can be the active role.
+        role: roles.includes(currentPortal) ? currentPortal : roles[0],
         roles,
+        membershipsResolved: true,
+        pendingPortal: currentPortal,
       });
     } catch (err: any) {
       console.error("Failed to resolve user:", err);
