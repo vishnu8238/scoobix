@@ -13,6 +13,14 @@ export type User = {
   avatar: string;
   role: Role;
   roles: Role[];
+  /**
+   * True only once real membership resolution has definitively completed.
+   * While false, `roles` is NOT authoritative and must never be used to deny
+   * access or redirect the user to a different portal.
+   */
+  membershipsResolved: boolean;
+  /** Navigation context only — never an authorization source. */
+  pendingPortal?: Role;
 };
 
 type AuthCtx = {
