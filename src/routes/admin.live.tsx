@@ -361,6 +361,7 @@ function ZoneDetailView({ zone, subzones, onBack }: { zone: DeliveryZone; subzon
                         color: "rgba(0,0,0,0.2)"
                       }))
                     ]}
+                    interactive
                   />
                 </section>
                 <div className="grid gap-4 sm:grid-cols-2">
