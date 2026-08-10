@@ -95,10 +95,9 @@ function AuthCallback() {
         }
       }
 
-      // Final verification
-      const { data, error } = await insforge.auth.getCurrentUser();
-      if (error) {
-        console.error("[APPLE_EXCHANGE_DEBUG] AUTH_ERROR_AFTER_EXCHANGE:", error.message);
+      const { data, error: authError } = await insforge.auth.getCurrentUser();
+      if (authError) {
+        console.error("[APPLE_EXCHANGE_DEBUG] AUTH_ERROR_AFTER_EXCHANGE:", (authError as any).message || authError);
       }
 
       console.log("[APPLE_EXCHANGE_DEBUG] AUTH_USER_PRESENT:", !!data.user);
