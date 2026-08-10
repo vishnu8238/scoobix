@@ -38,8 +38,13 @@ type Method = "GET" | "POST" | "PATCH" | "DELETE";
 import { insforge } from "./insforge";
 
 const HEADERS = async () => {
-  // Use the internal token manager if accessible, otherwise fallback to anon
-  const token = (insforge.http as any)?.tokenManager?.getAccessToken() || INSFORGE_ANON_KEY;
+  // Use getCurrentUser to trigger internal token management if needed,
+  // but we mostly rely on the fact that if we have a token, it's already in the headers
+  // if we used the SDK's from() method. Since we're using fetch here,
+  // we need the token. We'll use a safer way to get it or fallback.
+  const { data } = await insforge.auth.getCurrentUser();
+  const token = (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
+  
   return {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token}`,
