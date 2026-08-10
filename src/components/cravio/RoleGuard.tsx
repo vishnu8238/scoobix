@@ -22,6 +22,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
+    console.log(`[AUTH_DEBUG] RoleGuard Path: ${pathname}, User: ${user?.id}, Resolved: ${user?.membershipsResolved}, Portal: ${portal}, Loading: ${loading}, Roles: ${user?.roles?.join(",")}`);
     if (loading) return;
     
 
