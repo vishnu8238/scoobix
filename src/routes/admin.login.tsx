@@ -1,24 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-store";
+import { z } from "zod";
 
 export const Route = createFileRoute("/admin/login")({
+  validateSearch: (search) => z.object({
+    error: z.string().optional()
+  }).parse(search),
   head: () => ({ meta: [{ title: "Scoobix Admin · Login" }] }),
   component: AdminLogin,
 });
 
 function AdminLogin() {
   const { login } = useAuth();
-  const [isUnauthorized, setIsUnauthorized] = useState(false);
+  const search = Route.useSearch();
+  const isUnauthorized = search.error === "unauthorized";
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      setIsUnauthorized(params.get("error") === "unauthorized");
-    }
-  }, []);
 
 
 
