@@ -70,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = profiles[0];
 
       if (!profile) {
+        // No profile row: resolution is definitive — there are no memberships.
         setUser({
           id: authId,
           name: (session.user.profile as any)?.name || "New User",
@@ -78,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           avatar: "",
           role: "customer",
           roles: ["customer"],
+          membershipsResolved: true,
+          pendingPortal: getRequestedPortal() as Role,
         });
         return;
       }
