@@ -61,7 +61,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  if (user && authorized === false) {
+  if (user && authorized === false && pathname !== "/admin/login") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-zinc-950 px-6 text-center animate-fade-up">
         <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-[2.5rem] bg-zinc-900 shadow-[0_0_50px_rgba(255,255,255,0.05)] ring-1 ring-zinc-800">
