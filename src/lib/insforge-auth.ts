@@ -20,10 +20,14 @@ export function getOAuthCallbackUrl(portal: string): string {
  * @param portalIntent The portal the user wants to enter ('customer', 'partner', 'rider', 'manager', 'admin')
  */
 export async function loginWithGoogle(portalIntent: string = "customer"): Promise<void> {
-  console.log(`[GOOGLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`);
+  const msg = `[GOOGLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`;
+  console.log(msg);
+  alert(msg); // Hard signal to confirm button interaction is reaching the function
   
   if (!insforge) {
-    console.error("[GOOGLE_OAUTH] CLIENT_NOT_INITIALIZED");
+    const err = "[GOOGLE_OAUTH] CLIENT_NOT_INITIALIZED";
+    console.error(err);
+    alert(err);
     throw new Error("Authentication service is not ready.");
   }
   
@@ -31,7 +35,6 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
   
   const callbackUrl = getOAuthCallbackUrl(portalIntent);
   console.log(`[GOOGLE_OAUTH] CALLBACK_URL ${callbackUrl}`);
-  console.log(`[GOOGLE_OAUTH] SDK_START - Callback: ${callbackUrl}`);
   
   try {
     const { data, error } = await insforge.auth.signInWithOAuth("google", {
