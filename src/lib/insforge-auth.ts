@@ -52,7 +52,8 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
     // Sometimes the SDK returns an URL to navigate to manually.
     if ((data as any)?.url) {
       console.log("[GOOGLE_OAUTH] MANUAL_NAVIGATION_REQUIRED", (data as any).url);
-      window.top.location.href = (data as any).url;
+      const target = window.top || window;
+      target.location.href = (data as any).url;
     }
   } catch (err: any) {
     console.error("[GOOGLE_OAUTH] UNEXPECTED_ERROR:", err);
