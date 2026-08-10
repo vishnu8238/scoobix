@@ -35,15 +35,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png" },
       { name: "twitter:image", content: "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-      { name: "apple-mobile-web-app-title", content: "Scoobix" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "application-name", content: "Scoobix" },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png" },
-      { rel: "apple-touch-icon", href: "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png" },
+      
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },

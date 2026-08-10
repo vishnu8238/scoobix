@@ -48,16 +48,16 @@ export function useDriver() {
   useEffect(() => {
     let cancelled = false;
     if (!user?.id) {
-      console.log("[RIDER_FLOW] useDriver: No user id, clearing driver state");
+      
       setDriver(null);
       setLoading(authLoading);
       return;
     }
     setLoading(true);
-    console.log("[RIDER_FLOW] useDriver: Fetching driver for user", user.id);
+    
     void getDriverForUser(user.id).then((row) => {
       if (cancelled) return;
-      console.log("[RIDER_FLOW] useDriver: Resolved driver", row?.id);
+      
       setDriver(row);
       setLoading(false);
     });

@@ -125,7 +125,7 @@ export function appHead(app: ScoobixApp) {
     meta: [
       { title: app.name },
       { name: "application-name", content: app.shortName },
-      { name: "apple-mobile-web-app-title", content: app.shortName },
+      
       { name: "theme-color", content: app.themeColor },
     ],
     links: [{ rel: "manifest", href: app.manifest }],

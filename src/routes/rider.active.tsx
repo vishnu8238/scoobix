@@ -152,7 +152,7 @@ function RiderActive() {
   // ---- load the driver's active order -----------------------------------
   const load = useCallback(async () => {
     if (!driverId) { 
-      console.log("[RIDER_FLOW] load: No driverId yet");
+      
       setOrder(null); 
       setLoading(false); 
       return; 
