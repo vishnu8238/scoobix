@@ -246,6 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await admit(sess, intent || undefined);
           } else {
             // Already inside the app, just sync state silently
+            console.log(`[PORTAL_TRACE] session_restore: active_path_sync`);
             const { canonicalUserId } = await resolveCanonicalUserId(sess.id);
             const memberships = await resolveUserMemberships(canonicalUserId);
             const profile = await fetchUserProfile(canonicalUserId);
@@ -268,6 +269,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setLoading(false);
           setAuthState("IDLE");
+          // If we are authenticated but have no session, we stay IDLE.
+          // The RoleGuard or Splash will handle the redirect to login if necessary.
         }
       } catch (e) {
         console.error("[AUTH_BOOT] Boot failed:", e);
