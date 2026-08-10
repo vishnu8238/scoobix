@@ -92,17 +92,47 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
 export async function loginWithApple(portalIntent: string = "customer"): Promise<void> {
   console.log(`[APPLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`);
   
+  if (!insforge) {
+    const err = "[APPLE_OAUTH] CLIENT_NOT_INITIALIZED";
+    console.error(err);
+    alert(err);
+    throw new Error("Authentication service is not ready.");
+  }
+  
+  console.log("[APPLE_OAUTH] CLIENT_READY");
+  
+  // 1. Preserve Intent
   setPortalIntent(portalIntent);
+  
+  // 2. Canonical Callback URL (No query params)
   const callbackUrl = getOAuthCallbackUrl();
   console.log(`[APPLE_OAUTH] CALLBACK_URL ${callbackUrl}`);
   
-  const { error } = await insforge.auth.signInWithOAuth("apple", {
-    redirectTo: callbackUrl,
-  });
+  try {
+    console.log("[APPLE_OAUTH] CALLING_SDK_SIGNIN");
+    const { data, error } = await insforge.auth.signInWithOAuth("apple", {
+      redirectTo: callbackUrl,
+    });
 
-  if (error) {
-    console.error("[APPLE_OAUTH] SDK_ERROR:", error.message);
-    throw new Error(`Apple sign-in failed: ${error.message}`);
+    if (error) {
+      console.error("[APPLE_OAUTH] SDK_ERROR:", error.message);
+      alert(`SDK_ERROR: ${error.message}`);
+      throw new Error(`Apple sign-in failed: ${error.message}`);
+    }
+
+    console.log("[APPLE_OAUTH] SDK_RESULT", data);
+    
+    // If we're here, it means the browser didn't navigate immediately.
+    // Sometimes the SDK returns an URL to navigate to manually.
+    if ((data as any)?.url) {
+      console.log("[APPLE_OAUTH] MANUAL_NAVIGATION_REQUIRED", (data as any).url);
+      const target = window.top || window;
+      target.location.href = (data as any).url;
+    }
+  } catch (err: any) {
+    console.error("[APPLE_OAUTH] UNEXPECTED_ERROR:", err);
+    alert(`UNEXPECTED_ERROR: ${err.message || String(err)}`);
+    throw err;
   }
 }
 
