@@ -357,6 +357,28 @@ export let currentPlatformSettings: PlatformSettings = DEFAULT_SETTINGS;
 
 const CMS_KV_KEY = "cms_snapshot";
 
+/** Trigger a background hydration of the CMS snapshot from KV. */
+export async function hydrateFromKV(callback?: (s: Snapshot) => void) {
+  const [{ kvGet }, { listTable }] = await Promise.all([
+    import("./kv-store"),
+    import("./insforge-crud"),
+  ]);
+  const [snap, coupons] = await Promise.all([
+    kvGet<Partial<Snapshot>>(CMS_KV_KEY),
+    listTable<CmsCoupon>("coupons"),
+  ]);
+  
+  const merged = {
+    ...defaultSnapshot(),
+    ...(snap ?? {}),
+    settings: { ...DEFAULT_SETTINGS, ...(snap?.settings ?? {}) },
+    ...(coupons.length ? { coupons } : {}),
+  } as Snapshot;
+  
+  if (callback) callback(merged);
+  return merged;
+}
+
 export function CmsProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Snapshot>(() => defaultSnapshot());
   const hydrated = useRef(false);
@@ -364,26 +386,14 @@ export function CmsProvider({ children }: { children: ReactNode }) {
   // Hydrate the whole CMS snapshot from the backend (app_settings KV row).
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      const [{ kvGet }, { listTable }] = await Promise.all([
-        import("./kv-store"),
-        import("./insforge-crud"),
-      ]);
-      const [snap, coupons] = await Promise.all([
-        kvGet<Partial<Snapshot>>(CMS_KV_KEY),
-        listTable<CmsCoupon>("coupons"),
-      ]);
+    void hydrateFromKV((merged) => {
       if (cancelled) return;
-      setState((s) => ({
-        ...s,
-        ...(snap ?? {}),
-        settings: { ...DEFAULT_SETTINGS, ...(snap?.settings ?? {}) },
-        ...(coupons.length ? { coupons } : {}),
-      }));
+      setState(merged);
       hydrated.current = true;
-    })();
+    });
     return () => { cancelled = true; };
   }, []);
+
 
   // Persist changes back to the backend (debounced), never to localStorage.
   useEffect(() => {

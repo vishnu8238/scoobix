@@ -25,6 +25,7 @@ export type Category = {
   image: string;
 };
 
+// Categories are hydrated by bootstrapInsForge from the backend
 export const categories: Category[] = [];
 
 export type Dish = {
@@ -61,6 +62,7 @@ const mk = (
   partial: Omit<Dish, "id">,
 ): Dish => ({ id, ...partial });
 
+// Restaurants and their menus are hydrated by bootstrapInsForge from the backend
 export const restaurants: Restaurant[] = [];
 
 export const offers = [

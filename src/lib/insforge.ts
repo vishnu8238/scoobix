@@ -26,8 +26,10 @@ export const insforge = createClient({
 
 export const getAccessToken = async () => {
   const { data } = await insforge.auth.getCurrentUser();
-  return (data.user as any)?.accessToken || null;
+  return (data.user as any)?.access_token || (data.user as any)?.accessToken || null;
 };
+
+
 
 const insforgeHeaders = async () => {
   const token = await getAccessToken() || INSFORGE_ANON_KEY;
@@ -452,9 +454,17 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
 
       const totalRows = rests.length + cats.length + menu.length + addons.length;
       if (totalRows === 0) {
+        // Hydrate CMS snapshot if backend is empty
+        const { hydrateFromKV } = await import("./cms-store");
+        await hydrateFromKV();
         insforgeState.status = "empty";
         return { ok: true };
       }
+
+      // Hydrate CMS snapshot alongside real data
+      const { hydrateFromKV } = await import("./cms-store");
+      void hydrateFromKV().catch(() => {});
+
 
       const menuByRest = new Map<string, Dish[]>();
       for (const m of menu) {
@@ -479,13 +489,16 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
         restaurants.push(...rests.map((row) => toRestaurant(row, menuByRest.get(row.id) ?? [])));
 
         const backendDishes = restaurants.flatMap((r) => r.menu);
+        
+        // Populate trending and recommended from real backend data
         const popular = backendDishes.filter((d) => d.popular).map((d) => d.id);
-        const trending = (popular.length ? popular : backendDishes.map((d) => d.id)).slice(0, 8);
+        const trending = (popular.length ? popular : backendDishes.map((d) => d.id)).slice(0, 12);
         trendingDishIds.length = 0;
         trendingDishIds.push(...trending);
+
         const recommended = backendDishes.map((d) => d.id).filter((id) => !trending.includes(id));
         recommendedDishIds.length = 0;
-        recommendedDishIds.push(...(recommended.length ? recommended : trending).slice(0, 6));
+        recommendedDishIds.push(...(recommended.length ? recommended : trending).slice(0, 12));
       }
 
       if (cats.length) {

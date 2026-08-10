@@ -80,8 +80,10 @@ export async function logout(): Promise<void> {
  */
 export async function getSession() {
   const { data, error } = await insforge.auth.getCurrentUser();
-  if (error) {
+  if (error || !data.user) {
     return null;
   }
-  return data.user ? { user: data.user } : null;
+  return { user: data.user };
 }
+
+

@@ -87,7 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (partner.length) roles.push("partner");
         if (rider.length) roles.push("rider");
         if (manager.length) roles.push("manager");
-        if (profile.role === "admin") roles.push("admin");
+        
+        // Strict admin check from profile
+        if (profile.role === "admin" || profile.is_admin === true) {
+          roles.push("admin");
+        }
       } catch (err) {
         console.error("Failed to resolve memberships:", err);
       }
