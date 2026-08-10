@@ -15,6 +15,7 @@ function CustomerLogin() {
 
   useEffect(() => {
     if (!loading && user) {
+      console.log("[AUTH_DEBUG] CustomerLogin Authenticated, redirecting to /app");
       navigate({ to: "/app", replace: true });
     }
   }, [user, loading, navigate]);

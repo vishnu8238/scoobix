@@ -13,18 +13,22 @@ function AuthCallback() {
 
   useEffect(() => {
     const portal = popPortalIntent();
+    console.log("[AUTH_DEBUG] auth.callback.tsx Portal Intent:", portal);
     
     const checkAuth = async () => {
       try {
+        console.log("[AUTH_DEBUG] auth.callback.tsx Starting checkAuth");
         const { data, error } = await insforge.auth.getCurrentUser();
         
         if (error) {
+          console.error("[AUTH_DEBUG] auth.callback.tsx SDK Error:", error);
           setErrorMsg(error.message || "Authentication failed.");
           return;
         }
 
         const authUser = data?.user;
         if (authUser) {
+          console.log("[AUTH_DEBUG] auth.callback.tsx Auth user found:", authUser.id);
           // SECURITY: For admin portal, we MUST verify the email before redirecting.
           if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
              // Unauthorized admin attempt - clear intent and send back to login with error
@@ -35,12 +39,15 @@ function AuthCallback() {
 
           // Determine destination based on portal intent
           const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
+          console.log("[AUTH_DEBUG] auth.callback.tsx Redirecting to:", dest);
           window.location.assign(dest);
         } else {
           // Polling for session
+          console.log("[AUTH_DEBUG] auth.callback.tsx No user, polling...");
           const checkSession = setInterval(async () => {
             const { data: sessionData } = await insforge.auth.getCurrentUser();
             if (sessionData?.user) {
+              console.log("[AUTH_DEBUG] auth.callback.tsx Polled session found:", sessionData.user.id);
               clearInterval(checkSession);
               const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
               window.location.assign(dest);
@@ -49,10 +56,14 @@ function AuthCallback() {
 
           setTimeout(() => {
             clearInterval(checkSession);
-            if (!errorMsg) setErrorMsg("Login timed out. Please try again.");
+            if (!errorMsg) {
+              console.warn("[AUTH_DEBUG] auth.callback.tsx Login timed out");
+              setErrorMsg("Login timed out. Please try again.");
+            }
           }, 10000);
         }
       } catch (err: any) {
+        console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
         setErrorMsg("An unexpected error occurred.");
       }
     };

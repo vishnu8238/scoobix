@@ -20,6 +20,7 @@ const PORTAL_INTENT_KEY = "scoobix_oauth_portal_intent";
  */
 export function setPortalIntent(portal: string) {
   if (typeof window !== "undefined") {
+    console.log("[AUTH_DEBUG] Setting portal intent:", portal);
     localStorage.setItem(PORTAL_INTENT_KEY, portal);
   }
 }

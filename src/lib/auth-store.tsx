@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       currentSession = await getSession();
+      console.log("[AUTH_DEBUG] resolveUser Session:", currentSession?.user?.id);
       
       if (!currentSession || !currentSession.user) {
         setUser(null);
@@ -69,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 1. Get user profile
       const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
       const profile = profiles[0];
+      console.log("[AUTH_DEBUG] resolveUser Profile:", profile?.id);
 
       if (!profile) {
         // No profile row: resolution is definitive — there are no memberships.
@@ -105,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Note: profile.role "MERCHANT_MANAGER" indicates a manager user
           if (profile.role === "admin" || profile.is_admin === true) roles.push("admin");
         }
+        console.log("[AUTH_DEBUG] resolveUser Resolved Roles:", roles);
       } catch (err) {
         console.error("Failed to resolve memberships:", err);
         // Resolution FAILED — it is not authoritative. Publish the user with
@@ -165,11 +168,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resolveUser();
 
     const unsubscribe = insforge.auth.onAuthStateChange((event) => {
+      console.log(`[AUTH_DEBUG] Auth State Change: ${event}`);
       // Single source of truth: resolveUser() handles session checks definitively.
-      // This prevents the 'signedOut' event from prematurely ending the loading state
-      // during initial SDK boot.
-      if (event === 'signedIn' || event === 'tokenRefreshed' || event === 'signedOut') {
+      if (event === 'signedIn' || event === 'tokenRefreshed') {
         resolveUser();
+      } else if (event === 'signedOut') {
+        // Only clear state if we are truly signed out
+        setUser(null);
+        setLoading(false);
       }
     });
 
