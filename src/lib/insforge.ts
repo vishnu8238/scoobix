@@ -27,6 +27,14 @@ export const insforge = createClient({
 const insforgeHeaders = async () => {
   const { data } = await insforge.auth.getCurrentUser();
   const token = (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
+  const refreshToken = (data.user as any)?.refreshToken;
+  
+  if (data.user && !refreshToken) {
+    console.warn("[APPLE_DEBUG] [SDK] User present but NO REFRESH TOKEN provided");
+  } else if (data.user) {
+    console.log("[APPLE_DEBUG] [SDK] User present WITH refresh token");
+  }
+
   return {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token}`,

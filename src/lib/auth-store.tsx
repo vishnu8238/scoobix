@@ -58,13 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const session = await getSession();
+      console.log("[APPLE_DEBUG] [AUTH] resolveUser - Session present:", !!session);
+      
       if (!session || !session.user) {
+        console.log("[APPLE_DEBUG] [AUTH] resolveUser - No session user");
         setUser(null);
         return;
       }
 
       const authId = session.user.id;
-      console.log(`[AUTH] Resolving user for ${authId}`);
+      console.log(`[APPLE_DEBUG] [AUTH] Resolving user for ${authId}`);
 
       // 1. Get user profile from InsForge
       const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });

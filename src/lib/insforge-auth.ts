@@ -90,7 +90,7 @@ export async function loginWithGoogle(portalIntent: string = "customer"): Promis
  * Starts the Apple OAuth flow using the official InsForge SDK.
  */
 export async function loginWithApple(portalIntent: string = "customer"): Promise<void> {
-  console.log(`[APPLE_OAUTH] BUTTON_CLICKED - Portal: ${portalIntent}`);
+  console.log(`[APPLE_DEBUG] APPLE_BUTTON_CLICKED - Portal: ${portalIntent}`);
   
   if (!insforge) {
     const err = "[APPLE_OAUTH] CLIENT_NOT_INITIALIZED";
@@ -109,23 +109,24 @@ export async function loginWithApple(portalIntent: string = "customer"): Promise
   console.log(`[APPLE_OAUTH] CALLBACK_URL ${callbackUrl}`);
   
   try {
-    console.log("[APPLE_OAUTH] CALLING_SDK_SIGNIN");
+    console.log("[APPLE_DEBUG] APPLE_OAUTH_STARTED");
+    console.log("[APPLE_DEBUG] CALLING_SDK_SIGNIN");
     const { data, error } = await insforge.auth.signInWithOAuth("apple", {
       redirectTo: callbackUrl,
     });
 
     if (error) {
-      console.error("[APPLE_OAUTH] SDK_ERROR:", error.message);
+      console.error("[APPLE_DEBUG] SDK_ERROR:", error.message);
       alert(`SDK_ERROR: ${error.message}`);
       throw new Error(`Apple sign-in failed: ${error.message}`);
     }
 
-    console.log("[APPLE_OAUTH] SDK_RESULT", data);
+    console.log("[APPLE_DEBUG] SDK_RESULT_PRESENT:", !!data);
     
     // If we're here, it means the browser didn't navigate immediately.
     // Sometimes the SDK returns an URL to navigate to manually.
     if ((data as any)?.url) {
-      console.log("[APPLE_OAUTH] MANUAL_NAVIGATION_REQUIRED", (data as any).url);
+      console.log("[APPLE_DEBUG] MANUAL_NAVIGATION_REQUIRED", (data as any).url);
       const target = window.top || window;
       target.location.href = (data as any).url;
     }

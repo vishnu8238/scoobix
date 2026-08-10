@@ -13,29 +13,50 @@ function AuthCallback() {
 
   useEffect(() => {
     const portal = popPortalIntent();
-    console.log("[AUTH] Callback portal intent recovered:", portal);
+    console.log("[APPLE_DEBUG] [AUTH] Callback portal intent recovered:", portal);
 
     const checkAuth = async () => {
+      console.log("[APPLE_DEBUG] [AUTH] Starting session check...");
+      console.log("[APPLE_DEBUG] [AUTH] CALLBACK_URL:", window.location.href);
+      console.log("[APPLE_DEBUG] [AUTH] CALLBACK_SEARCH_PARAMS:", window.location.search);
+      console.log("[APPLE_DEBUG] [AUTH] CALLBACK_HASH_PARAMS:", window.location.hash);
+
+      // Forensic: Try to detect Apple's post-redirect tokens in URL if SDK didn't pick them up
+      const hash = window.location.hash;
+      const search = window.location.search;
+      console.log("[APPLE_DEBUG] [AUTH] AUTH_CODE_PRESENT:", search.includes("code=") || hash.includes("code="));
+      console.log("[APPLE_DEBUG] [AUTH] ACCESS_TOKEN_PRESENT:", hash.includes("access_token="));
+      console.log("[APPLE_DEBUG] [AUTH] REFRESH_TOKEN_PRESENT:", hash.includes("refresh_token="));
+
       const { data, error } = await insforge.auth.getCurrentUser();
       
       if (error) {
-        console.error("[AUTH] Callback user error:", error);
+        console.error("[APPLE_DEBUG] [AUTH] Callback user error:", error);
         setErrorMsg(error.message);
         return;
       }
 
+      console.log("[APPLE_DEBUG] [AUTH] USER_PRESENT:", !!data.user);
+      console.log("[APPLE_DEBUG] [AUTH] SESSION_USER_ID:", data.user?.id);
+
       if (data.user) {
-        console.log("[AUTH] Callback success, navigating to portal:", portal);
+        console.log("[APPLE_DEBUG] [AUTH] Callback success, navigating to portal:", portal);
         const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
+        console.log("[APPLE_DEBUG] [AUTH] FINAL_NAVIGATION:", dest);
         window.location.assign(dest);
+      } else {
+        // If SDK didn't auto-resolve but tokens are in URL, we may need a manual sync
+        console.log("[APPLE_DEBUG] [AUTH] No user found yet. Waiting for SDK to process URL tokens...");
       }
     };
 
     checkAuth();
 
     const unsubscribe = insforge.auth.onAuthStateChange((event) => {
+      console.log("[APPLE_DEBUG] [AUTH] AUTH_STATE_CHANGE:", event);
       if (event === 'signedIn') {
         const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
+        console.log("[APPLE_DEBUG] [AUTH] Event signedIn, navigating:", dest);
         window.location.assign(dest);
       }
     });
