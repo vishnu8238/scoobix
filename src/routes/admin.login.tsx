@@ -27,15 +27,15 @@ function AdminLogin() {
   if (loading) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-zinc-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-glow" />
       </div>
     );
   }
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center animate-fade-up bg-zinc-950 text-white font-sans">
-      <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-[2.5rem] bg-zinc-900 shadow-[0_0_50px_rgba(255,255,255,0.05)] ring-1 ring-zinc-800">
-        <ShieldCheck className="h-10 w-10 text-white" strokeWidth={1.5} />
+      <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-[2.5rem] bg-zinc-900 shadow-[0_0_50px_rgba(40,161,86,0.15)] ring-1 ring-zinc-800">
+        <ShieldCheck className="h-10 w-10 text-primary shadow-glow" strokeWidth={1.5} />
       </div>
       
       <div className="flex flex-col gap-1">
@@ -74,7 +74,7 @@ function AdminLogin() {
         {isAuthorizedAdmin ? (
           <Button 
             onClick={() => window.location.assign("/admin")}
-            className="h-14 w-full rounded-2xl bg-white text-black shadow-lg hover:bg-zinc-200 font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="h-14 w-full rounded-2xl bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
           >
             Enter Dashboard
             <ArrowRight className="h-4 w-4" />
