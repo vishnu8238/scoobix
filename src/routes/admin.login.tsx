@@ -16,6 +16,8 @@ function AdminLogin() {
   const { login } = useAuth();
   const search = Route.useSearch();
   const isUnauthorized = search.error === "unauthorized";
+  console.log("AdminLogin render, isUnauthorized:", isUnauthorized, "search:", search);
+
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center animate-fade-up bg-zinc-950 text-white font-sans">
