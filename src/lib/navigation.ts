@@ -4,7 +4,7 @@
  * Opens the device's native navigation app with the destination pre-filled:
  *   iOS      → Apple Maps (system default) with a Google Maps fallback
  *   Android  → Google Maps navigation intent
- *   Desktop  → Google Maps web, OpenStreetMap when coordinates are missing
+ *   Desktop  → Google Maps web
  *
  * The rider never copies an address — we always pass coordinates when we have
  * them and fall back to the address string otherwise.

@@ -1,26 +1,43 @@
-import { Bell, ChevronDown, MapPin, Navigation, Loader2, Leaf } from "lucide-react";
-import { useState } from "react";
+import { Bell, ChevronDown, MapPin, Navigation, Loader2, Leaf, Search, History } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { useAppUI } from "@/lib/stores";
 import { useNotifications } from "@/lib/notifications-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-
-const SUGGESTED_LOCATIONS = [
-  "Westside · Apt 4",
-  "Scoobix HQ · Innovation Park",
-  "Downtown Loft · 5th Ave",
-  "Sunset Marina · Pier 12",
-];
+import { searchPlaces, reverseGeocode } from "@/lib/geocode";
+import type { GeoPlace } from "@/lib/geocode";
 
 export function TopBar() {
   const { location, setLocation, detectLocation, detectingLocation, locationPermission } = useAppUI();
   const [locOpen, setLocOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [customLoc, setCustomLoc] = useState("");
+  const [suggestions, setSuggestions] = useState<GeoPlace[]>([]);
+  const [searching, setSearching] = useState(false);
   const { list: notifs } = useNotifications("customer");
   const hasUnread = notifs.some((n) => n.unread);
+
+  useEffect(() => {
+    const q = customLoc.trim();
+    if (q.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await searchPlaces(q);
+        setSuggestions(results);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(t);
+  }, [customLoc]);
 
   const handleDetect = async () => {
     const res = await detectLocation();
@@ -30,6 +47,12 @@ export function TopBar() {
     } else {
       toast.error(res.message);
     }
+  };
+
+  const handleSelect = (p: GeoPlace) => {
+    setLocation(p.label);
+    setLocOpen(false);
+    setCustomLoc("");
   };
 
   return (
@@ -45,58 +68,83 @@ export function TopBar() {
               </span>
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-[32px]">
+          <SheetContent side="bottom" className="rounded-t-[32px] max-h-[85vh] overflow-y-auto">
             <SheetHeader className="text-left">
               <SheetTitle className="font-display">Delivery location</SheetTitle>
-              <SheetDescription>Pick a saved address or type a new one.</SheetDescription>
+              <SheetDescription>Search for a new address or use current location.</SheetDescription>
             </SheetHeader>
-            <div className="mt-4 space-y-2">
-              <button
-                onClick={handleDetect}
-                disabled={detectingLocation || locationPermission === "unsupported"}
-                className="flex w-full items-center gap-3 rounded-2xl border-2 border-primary/40 bg-primary-soft/60 p-3.5 text-left transition active:scale-[0.99] disabled:opacity-60"
-              >
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-                  {detectingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
-                </span>
-                <span className="flex-1">
-                  <span className="block text-sm font-bold text-primary">
-                    {detectingLocation ? "Detecting your location…" : "Use current location"}
-                  </span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    {locationPermission === "denied"
-                      ? "Permission denied — enable in browser settings"
-                      : locationPermission === "unsupported"
-                      ? "Not available on this device"
-                      : "We'll ask your browser for permission"}
-                  </span>
-                </span>
-              </button>
-              {SUGGESTED_LOCATIONS.map((l) => (
-                <button
-                  key={l}
-                  onClick={() => { setLocation(l); setLocOpen(false); }}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left transition hover:border-primary/40 hover:bg-primary-soft/40 active:scale-[0.99]"
-                >
-                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary-soft text-primary">
-                    <MapPin className="h-4 w-4" />
-                  </span>
-                  <span className="text-sm font-semibold text-foreground">{l}</span>
-                </button>
-              ))}
-              <div className="flex gap-2 pt-2">
+            
+            <div className="mt-6 space-y-5">
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <Search className="h-4 w-4" />
+                </div>
                 <Input
-                  placeholder="Enter a new address"
+                  placeholder="Search for area, street, landmark..."
                   value={customLoc}
                   onChange={(e) => setCustomLoc(e.target.value)}
-                  className="rounded-2xl"
+                  className="rounded-2xl pl-11 py-6 bg-muted/50 border-0 focus-visible:ring-primary/40"
                 />
-                <Button
-                  onClick={() => {
-                    if (customLoc.trim()) { setLocation(customLoc.trim()); setCustomLoc(""); setLocOpen(false); }
-                  }}
-                  className="rounded-2xl"
-                >Save</Button>
+                {searching && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                {suggestions.length > 0 ? (
+                  suggestions.map((p) => (
+                    <button
+                      key={p.placeId || p.label}
+                      onClick={() => handleSelect(p)}
+                      className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-muted active:scale-[0.99]"
+                    >
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+                        <MapPin className="h-5 w-5" />
+                      </span>
+                      <span className="text-sm font-semibold text-foreground line-clamp-2">{p.label}</span>
+                    </button>
+                  ))
+                ) : customLoc.length >= 3 && !searching ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">No results found for "{customLoc}"</div>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleDetect}
+                      disabled={detectingLocation || locationPermission === "unsupported"}
+                      className="flex w-full items-center gap-3 rounded-2xl border-2 border-primary/20 bg-primary-soft/30 p-3.5 text-left transition active:scale-[0.99] disabled:opacity-60"
+                    >
+                      <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground">
+                        {detectingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-5 w-5" />}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-bold text-primary">
+                          {detectingLocation ? "Detecting location..." : "Current location"}
+                        </span>
+                        <span className="block text-[11px] text-muted-foreground">Using GPS</span>
+                      </span>
+                    </button>
+                    
+                    <div className="pt-4">
+                      <h4 className="px-1 mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <History className="h-3 w-3" /> Recent Locations
+                      </h4>
+                      {["Westside · Apt 4", "Scoobix HQ · Innovation Park"].map((l) => (
+                        <button
+                          key={l}
+                          onClick={() => { setLocation(l); setLocOpen(false); }}
+                          className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition hover:bg-muted active:scale-[0.99]"
+                        >
+                          <span className="grid h-9 w-9 place-items-center rounded-xl bg-muted text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                          </span>
+                          <span className="text-sm font-medium text-foreground">{l}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </SheetContent>
