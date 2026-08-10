@@ -64,6 +64,7 @@ import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
 import { Route as ManagerOnboardingRouteImport } from './routes/manager.onboarding'
 import { Route as ManagerNotificationsRouteImport } from './routes/manager.notifications'
 import { Route as ManagerMoreRouteImport } from './routes/manager.more'
+import { Route as ManagerLoginRouteImport } from './routes/manager.login'
 import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
@@ -113,6 +114,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminOperationsRouteImport } from './routes/admin.operations'
 import { Route as AdminManagersRouteImport } from './routes/admin.managers'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
@@ -400,6 +402,11 @@ const ManagerMoreRoute = ManagerMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => ManagerRoute,
 } as any)
+const ManagerLoginRoute = ManagerLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => ManagerRoute,
+} as any)
 const ManagerLeadsRoute = ManagerLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -645,6 +652,11 @@ const AdminManagersRoute = AdminManagersRouteImport.update({
   path: '/managers',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLiveRoute = AdminLiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -719,6 +731,7 @@ export interface FileRoutesByFullPath {
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -768,6 +781,7 @@ export interface FileRoutesByFullPath {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
+  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -831,6 +845,7 @@ export interface FileRoutesByTo {
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -880,6 +895,7 @@ export interface FileRoutesByTo {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
+  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -949,6 +965,7 @@ export interface FileRoutesById {
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -998,6 +1015,7 @@ export interface FileRoutesById {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
+  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -1068,6 +1086,7 @@ export interface FileRouteTypes {
     | '/admin/drivers'
     | '/admin/duplicates'
     | '/admin/live'
+    | '/admin/login'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -1117,6 +1136,7 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
+    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1180,6 +1200,7 @@ export interface FileRouteTypes {
     | '/admin/drivers'
     | '/admin/duplicates'
     | '/admin/live'
+    | '/admin/login'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -1229,6 +1250,7 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
+    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1297,6 +1319,7 @@ export interface FileRouteTypes {
     | '/admin/drivers'
     | '/admin/duplicates'
     | '/admin/live'
+    | '/admin/login'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -1346,6 +1369,7 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
+    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1799,6 +1823,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerMoreRouteImport
       parentRoute: typeof ManagerRoute
     }
+    '/manager/login': {
+      id: '/manager/login'
+      path: '/login'
+      fullPath: '/manager/login'
+      preLoaderRoute: typeof ManagerLoginRouteImport
+      parentRoute: typeof ManagerRoute
+    }
     '/manager/leads': {
       id: '/manager/leads'
       path: '/leads'
@@ -2142,6 +2173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminManagersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/live': {
       id: '/admin/live'
       path: '/live'
@@ -2232,6 +2270,7 @@ interface AdminRouteChildren {
   AdminDriversRoute: typeof AdminDriversRoute
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
   AdminLiveRoute: typeof AdminLiveRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   AdminManagersRoute: typeof AdminManagersRoute
   AdminOperationsRoute: typeof AdminOperationsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
@@ -2265,6 +2304,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDriversRoute: AdminDriversRoute,
   AdminDuplicatesRoute: AdminDuplicatesRoute,
   AdminLiveRoute: AdminLiveRoute,
+  AdminLoginRoute: AdminLoginRoute,
   AdminManagersRoute: AdminManagersRoute,
   AdminOperationsRoute: AdminOperationsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
@@ -2353,6 +2393,7 @@ interface ManagerRouteChildren {
   ManagerCalendarRoute: typeof ManagerCalendarRoute
   ManagerHistoryRoute: typeof ManagerHistoryRoute
   ManagerLeadsRoute: typeof ManagerLeadsRoute
+  ManagerLoginRoute: typeof ManagerLoginRoute
   ManagerMoreRoute: typeof ManagerMoreRoute
   ManagerNotificationsRoute: typeof ManagerNotificationsRoute
   ManagerOnboardingRoute: typeof ManagerOnboardingRoute
@@ -2371,6 +2412,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerCalendarRoute: ManagerCalendarRoute,
   ManagerHistoryRoute: ManagerHistoryRoute,
   ManagerLeadsRoute: ManagerLeadsRoute,
+  ManagerLoginRoute: ManagerLoginRoute,
   ManagerMoreRoute: ManagerMoreRoute,
   ManagerNotificationsRoute: ManagerNotificationsRoute,
   ManagerOnboardingRoute: ManagerOnboardingRoute,
@@ -2487,3 +2529,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
