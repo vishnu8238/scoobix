@@ -33,41 +33,48 @@ export async function searchPlaces(query: string, near?: LatLng): Promise<GeoPla
     `google:places:${q}:${near?.lat.toFixed(2)},${near?.lng.toFixed(2)}`,
     GEO_TTL,
     async () => {
-      if (!window.google?.maps?.places) {
+      const g = (window as any).google;
+      if (!g?.maps?.places) {
         console.warn("Google Maps Places library not loaded");
         return [];
       }
 
-      const service = new google.maps.places.AutocompleteService();
-      const predictions = await service.getPlacePredictions({
-        input: q,
-        locationBias: near ? { center: near, radius: 5000 } : undefined,
-      });
+      const service = new g.maps.places.AutocompleteService();
+      try {
+        const predictionsRes = await service.getPlacePredictions({
+          input: q,
+          locationBias: near ? { center: near, radius: 5000 } : undefined,
+        });
 
-      if (!predictions?.predictions) return [];
+        const predictions = predictionsRes.predictions;
+        if (!predictions || predictions.length === 0) return [];
 
-      const placesService = new google.maps.places.PlacesService(document.createElement("div"));
-      
-      const details = await Promise.all(
-        predictions.predictions.slice(0, 6).map(async (p) => {
-          return new Promise<GeoPlace | null>((resolve) => {
-            placesService.getDetails({ placeId: p.place_id, fields: ["geometry", "formatted_address"] }, (place, status) => {
-              if (status === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
-                resolve({
-                  label: place.formatted_address || p.description,
-                  lat: place.geometry.location.lat(),
-                  lng: place.geometry.location.lng(),
-                  placeId: p.place_id,
-                });
-              } else {
-                resolve(null);
-              }
+        const placesService = new g.maps.places.PlacesService(document.createElement("div"));
+        
+        const details = await Promise.all(
+          predictions.slice(0, 6).map(async (p: any) => {
+            return new Promise<GeoPlace | null>((resolve) => {
+              placesService.getDetails({ placeId: p.place_id, fields: ["geometry", "formatted_address"] }, (place: any, status: any) => {
+                if (status === g.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+                  resolve({
+                    label: place.formatted_address || p.description,
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng(),
+                    placeId: p.place_id,
+                  });
+                } else {
+                  resolve(null);
+                }
+              });
             });
-          });
-        })
-      );
+          })
+        );
 
-      return details.filter((d): d is GeoPlace => d !== null);
+        return details.filter((d): d is GeoPlace => d !== null);
+      } catch (err) {
+        console.error("Google Places error:", err);
+        return [];
+      }
     }
   );
 }
@@ -81,17 +88,20 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
     `google:rev:${key}`,
     GEO_TTL,
     async () => {
-      if (!window.google?.maps?.Geocoder) {
+      const g = (window as any).google;
+      if (!g?.maps?.Geocoder) {
         return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       }
 
-      const geocoder = new google.maps.Geocoder();
-      const response = await geocoder.geocode({ location: { lat, lng } });
+      const geocoder = new g.maps.Geocoder();
+      try {
+        const response = await geocoder.geocode({ location: { lat, lng } });
 
-      if (response.results && response.results[0]) {
-        // Return a shorter version of the address if possible
-        const result = response.results[0];
-        return result.formatted_address;
+        if (response.results && response.results[0]) {
+          return response.results[0].formatted_address;
+        }
+      } catch (err) {
+        console.error("Google Geocoding error:", err);
       }
 
       return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
@@ -109,16 +119,17 @@ export async function routeBetween(from: LatLng, to: LatLng): Promise<GeoRoute |
     `google:route:${key}`,
     ROUTE_TTL,
     async () => {
-      if (!window.google?.maps?.DirectionsService) {
+      const g = (window as any).google;
+      if (!g?.maps?.DirectionsService) {
         return null;
       }
 
-      const service = new google.maps.DirectionsService();
+      const service = new g.maps.DirectionsService();
       try {
         const result = await service.route({
           origin: from,
           destination: to,
-          travelMode: google.maps.TravelMode.DRIVING,
+          travelMode: g.maps.TravelMode.DRIVING,
         });
 
         const route = result.routes[0];
@@ -127,7 +138,7 @@ export async function routeBetween(from: LatLng, to: LatLng): Promise<GeoRoute |
         if (!route || !leg) return null;
 
         return {
-          coords: route.overview_path.map(p => ({ lat: p.lat(), lng: p.lng() })),
+          coords: route.overview_path.map((p: any) => ({ lat: p.lat(), lng: p.lng() })),
           distanceKm: Math.round((leg.distance?.value || 0) / 100) / 10,
           durationMins: Math.round((leg.duration?.value || 0) / 60),
         };
@@ -138,3 +149,4 @@ export async function routeBetween(from: LatLng, to: LatLng): Promise<GeoRoute |
     }
   );
 }
+
