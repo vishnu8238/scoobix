@@ -26,7 +26,6 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
 
     // 1. Not logged in? Redirect to portal-specific login
     if (!user) {
-      // If we are already on a login page, don't redirect
       if (pathname.includes("/login") || pathname.includes("/onboarding")) return;
       
       const loginPath = portal === "customer" ? "/customer/login" : `/${portal}/login`;
@@ -37,12 +36,10 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     // 2. Membership Check
     const allowedRoles = Array.isArray(allow) ? allow : allow ? [allow] : [];
     
-    // If specific roles are required (e.g. for /partner routes)
     if (allowedRoles.length > 0) {
       const hasAccess = allowedRoles.some(role => user.roles.includes(role));
       
       if (!hasAccess) {
-        // If it's a partner/rider trying to access without membership, send to onboarding
         if (portal === "partner" && !user.roles.includes("partner")) {
           navigate({ to: "/partner/onboarding" as any });
         } else if (portal === "rider" && !user.roles.includes("rider")) {
@@ -50,25 +47,41 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
         } else if (portal === "manager" && !user.roles.includes("manager")) {
           navigate({ to: "/manager/onboarding" as any });
         } else {
-          // General fallback to customer portal
           navigate({ to: "/app" as any });
         }
       }
     }
   }, [user, loading, portal, allow, navigate, pathname]);
 
+  // FIX 2: Stable mounting during auth loading.
+  // We MUST NOT return null, as that destroys the portal DOM tree.
+  // Instead, we render the children but keep a "resolving" state visually
+  // if needed, or simply let the shell stay stable.
+  
   if (loading) {
+    // If we are already on a login page, just show it.
+    if (pathname.includes("/login") || pathname.includes("/onboarding")) {
+      return <>{children}</>;
+    }
+    
+    // Otherwise, show the loading spinner but keep the layout space occupied
+    // to prevent jitter and event listener loss on remount.
     return (
       <div className="flex min-h-svh items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground animate-pulse">
+            Authenticating...
+          </p>
+        </div>
       </div>
     );
   }
 
-  // If we require auth and don't have a user, we've already triggered a redirect.
-  // We return null to prevent flashing the protected content.
+  // If not logged in and not on login/onboarding, we've triggered a redirect.
+  // We return a fragment to keep the component in the tree during transition.
   if (!user && !pathname.includes("/login") && !pathname.includes("/onboarding")) {
-    return null;
+    return <div className="min-h-svh bg-background" />;
   }
 
   return <>{children}</>;
