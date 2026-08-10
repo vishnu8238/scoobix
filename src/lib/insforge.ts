@@ -15,16 +15,13 @@ import {
 } from "./mock-data";
 import { Map as MapIcon } from "lucide-react";
 
-import { getAccessToken } from "./insforge-auth";
-
 export const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";
 export const INSFORGE_ANON_KEY = "anon_f8c2fce9afe385f45eb6d00d434eb365833a70386175df3707743df3b751b102";
 
 const insforgeHeaders = () => {
-  const token = getAccessToken();
   return {
     apikey: INSFORGE_ANON_KEY,
-    Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
+    Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
   };
 };
 
