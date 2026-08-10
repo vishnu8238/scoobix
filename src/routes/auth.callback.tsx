@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { insforge } from "@/lib/insforge";
-import { popPortalIntent } from "@/lib/insforge-auth";
+import { insforge, INSFORGE_URL } from "@/lib/insforge";
+import { popPortalIntent, getOAuthCallbackUrl } from "@/lib/insforge-auth";
 
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
@@ -14,81 +14,105 @@ function AuthCallback() {
 
   useEffect(() => {
     const portal = popPortalIntent();
-    console.log("[APPLE_DEBUG] [AUTH] Callback portal intent recovered:", portal);
+    console.log("[APPLE_EXCHANGE_DEBUG] APPLE_CALLBACK_REACHED");
+    console.log("[APPLE_EXCHANGE_DEBUG] PORTAL_INTENT:", portal);
 
     const checkAuth = async () => {
       if (exchangeAttempted) return;
       
-      console.log("[APPLE_DEBUG] [AUTH] Starting session check...");
       const search = new URLSearchParams(window.location.search);
       const code = search.get("code");
+      console.log("[APPLE_EXCHANGE_DEBUG] APPLE_CODE_PRESENT:", !!code);
 
-      // APPLE OAUTH FIX: The SDK looks for 'insforge_code', but Apple returns 'code'.
-      // We manually perform the exchange if 'code' is present.
       if (code) {
-        console.log("[APPLE_DEBUG] [AUTH] Found standard OAuth 'code' parameter, attempting manual exchange.");
         setExchangeAttempted(true);
+        console.log("[APPLE_EXCHANGE_DEBUG] EXCHANGE_STARTED");
         
         try {
           const pkceVerifier = sessionStorage.getItem("insforge_pkce_verifier");
+          console.log("[APPLE_EXCHANGE_DEBUG] PKCE_VERIFIER_PRESENT:", !!pkceVerifier);
+          if (pkceVerifier) {
+            console.log("[APPLE_EXCHANGE_DEBUG] PKCE_VERIFIER_LENGTH_VALID:", pkceVerifier.length >= 43);
+          }
+
           if (!pkceVerifier) {
-            console.error("[APPLE_DEBUG] [AUTH] Missing PKCE verifier in sessionStorage");
+            console.error("[APPLE_EXCHANGE_DEBUG] PKCE_VERIFIER_MISSING");
             setErrorMsg("Authentication failed: Missing PKCE verifier. Please try logging in again.");
             return;
           }
 
-          // Use the internal exchange method.
-          console.log("[APPLE_DEBUG] [AUTH] Calling exchangeOAuthCode with verifier...");
+          const redirectUri = getOAuthCallbackUrl();
+          console.log("[APPLE_EXCHANGE_DEBUG] AUTH_REDIRECT_URI:", redirectUri);
+          console.log("[APPLE_EXCHANGE_DEBUG] EXCHANGE_REDIRECT_URI:", redirectUri);
           
-          // @ts-ignore - accessing public exchange method
-          const { error: exchangeError } = await (insforge.auth as any).exchangeOAuthCode(code, pkceVerifier);
+          // SDK v1.4.2 exchangeOAuthCode(code, codeVerifier) signature verified.
+          // However, forensic trace shows the SDK omits redirect_uri in the POST body.
+          // We manually perform the exchange to ensure redirect_uri parity.
+          console.log("[APPLE_EXCHANGE_DEBUG] EXCHANGE_REQUEST_SENT (Manual Fetch)");
+          const response = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code,
+              code_verifier: pkceVerifier,
+              redirect_uri: redirectUri
+            })
+          });
 
-          if (exchangeError) {
-            console.error("[APPLE_DEBUG] [AUTH] Exchange error:", exchangeError.message);
-            setErrorMsg(`Login failed: ${exchangeError.message}`);
+          console.log("[APPLE_EXCHANGE_DEBUG] EXCHANGE_HTTP_STATUS:", response.status);
+          
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            console.error("[APPLE_EXCHANGE_DEBUG] EXCHANGE_RESPONSE_FAILURE:", errData);
+            setErrorMsg(`Login failed (HTTP ${response.status}): ${errData.message || 'Unknown error'}`);
             return;
           }
 
-          console.log("[APPLE_DEBUG] [AUTH] Exchange successful.");
-          // Clean the URL code param to prevent reuse on refresh
+          const sessionData = await response.json();
+          console.log("[APPLE_EXCHANGE_DEBUG] EXCHANGE_RESPONSE_SUCCESS: true");
+          
+          // Manually persist session into SDK
+          // @ts-ignore - accessing internal session persistence
+          if (typeof (insforge.auth as any).saveSessionFromResponse === 'function') {
+             (insforge.auth as any).saveSessionFromResponse(sessionData);
+          }
+
+          console.log("[APPLE_EXCHANGE_DEBUG] SESSION_PRESENT_AFTER_EXCHANGE:", !!sessionData.access_token);
+          console.log("[APPLE_EXCHANGE_DEBUG] ACCESS_TOKEN_PRESENT:", !!sessionData.access_token);
+          console.log("[APPLE_EXCHANGE_DEBUG] REFRESH_TOKEN_PRESENT:", !!sessionData.refresh_token);
+
+          // Clean the URL code param
           const newUrl = window.location.origin + window.location.pathname;
           window.history.replaceState({}, document.title, newUrl);
         } catch (err: any) {
-          console.error("[APPLE_DEBUG] [AUTH] Unexpected exchange crash:", err);
+          console.error("[APPLE_EXCHANGE_DEBUG] EXCHANGE_CRASH:", err);
           setErrorMsg("An unexpected error occurred during login.");
           return;
         }
       }
 
-      // Proceed to verify session
+      // Final verification
       const { data, error } = await insforge.auth.getCurrentUser();
-      
       if (error) {
-        console.error("[APPLE_DEBUG] [AUTH] Callback user check error:", error);
-        if (!code) setErrorMsg(error.message);
-        return;
+        console.error("[APPLE_EXCHANGE_DEBUG] AUTH_ERROR_AFTER_EXCHANGE:", error.message);
       }
 
+      console.log("[APPLE_EXCHANGE_DEBUG] AUTH_USER_PRESENT:", !!data.user);
+      
       if (data.user) {
-        console.log("[APPLE_DEBUG] [AUTH] User verified, admitted to portal:", portal);
         const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
+        console.log("[APPLE_EXCHANGE_DEBUG] FINAL_NAVIGATION:", dest);
         window.location.assign(dest);
-      } else {
-        console.log("[APPLE_DEBUG] [AUTH] No user session found after check.");
-        if (code) {
-          setErrorMsg("We couldn't establish a secure session. Please try again.");
-        }
+      } else if (code) {
+        console.error("[APPLE_EXCHANGE_DEBUG] SESSION_RESTORE_FAILED");
+        setErrorMsg("Session established but user profile could not be loaded.");
       }
     };
 
     checkAuth();
 
     const unsubscribe = insforge.auth.onAuthStateChange((event) => {
-      console.log("[APPLE_DEBUG] [AUTH] AUTH_STATE_CHANGE:", event);
-      if (event === 'signedIn') {
-        const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-        window.location.assign(dest);
-      }
+      console.log("[APPLE_EXCHANGE_DEBUG] AUTH_STATE_CHANGED:", event);
     });
 
     return () => unsubscribe();
