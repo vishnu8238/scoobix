@@ -10,7 +10,7 @@ function AppProfile() {
   const { user } = useAuth();
   return (
     <div className="pb-20">
-      <PageHeader title="Profile" backHref="/app" />
+      <PageHeader title="Profile" back />
       <div className="p-4 space-y-6">
         <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100">
           <div className="h-16 w-16 rounded-full bg-gray-200" />
