@@ -2,6 +2,9 @@ import { ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-store";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { checkAdminEmail } from "@/lib/admin.functions";
+import { ShieldCheck, Mail } from "lucide-react";
+import { insforge } from "@/lib/insforge";
+
 
 interface AdminGuardProps {
   children: ReactNode;

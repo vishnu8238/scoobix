@@ -54,14 +54,8 @@ export async function loginWithGoogle(
   const callbackUrl = getOAuthCallbackUrl();
   
   try {
-    const queryParams: Record<string, string> = {};
-    if (options.prompt) {
-      queryParams.prompt = options.prompt;
-    }
-
     const { data, error } = await insforge.auth.signInWithOAuth("google", {
       redirectTo: callbackUrl,
-      queryParams,
     });
 
     if (error) {
@@ -69,8 +63,15 @@ export async function loginWithGoogle(
     }
 
     if ((data as any)?.url) {
+      let url = (data as any).url;
+      if (options.prompt) {
+        const urlObj = new URL(url);
+        urlObj.searchParams.set("prompt", options.prompt);
+        url = urlObj.toString();
+      }
+      
       const target = window.top || window;
-      target.location.href = (data as any).url;
+      target.location.href = url;
     }
   } catch (err: any) {
     console.error("Google login error:", err);
