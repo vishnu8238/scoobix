@@ -54,16 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const resolveUser = useCallback(async () => {
+    let currentSession = null;
     try {
       setLoading(true);
-      const session = await getSession();
+      currentSession = await getSession();
       
-      if (!session || !session.user) {
+      if (!currentSession || !currentSession.user) {
         setUser(null);
         return;
       }
 
-      const authId = session.user.id;
+      const authId = currentSession.user.id;
 
       // 1. Get user profile
       const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
