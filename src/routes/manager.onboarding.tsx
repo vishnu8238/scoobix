@@ -25,6 +25,7 @@ import {
 import { logDuplicateCheck, nextBranchCode } from "@/lib/duplicate-api";
 import { requestOwnershipTransfer } from "@/lib/transfers-api";
 import { DuplicateDialog, useDuplicateCheck, type DuplicateChoice } from "@/components/cravio/DuplicateCheck";
+import { RoleGuard } from "@/components/cravio/RoleGuard";
 
 type Search = { id?: string };
 
@@ -38,7 +39,11 @@ export const Route = createFileRoute("/manager/onboarding")({
       { name: "description", content: "Collect restaurant, owner, location, document and payout details." },
     ],
   }),
-  component: OnboardingFlow,
+  component: () => (
+    <RoleGuard allow="manager">
+      <OnboardingFlow />
+    </RoleGuard>
+  ),
 });
 
 const STEPS = [
