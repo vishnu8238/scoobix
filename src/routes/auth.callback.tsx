@@ -21,6 +21,13 @@ function AuthCallback() {
       console.log("[APPLE_DEBUG] [AUTH] CALLBACK_SEARCH_PARAMS:", window.location.search);
       console.log("[APPLE_DEBUG] [AUTH] CALLBACK_HASH_PARAMS:", window.location.hash);
 
+      // Forensic: Try to detect Apple's post-redirect tokens in URL if SDK didn't pick them up
+      const hash = window.location.hash;
+      const search = window.location.search;
+      console.log("[APPLE_DEBUG] [AUTH] AUTH_CODE_PRESENT:", search.includes("code=") || hash.includes("code="));
+      console.log("[APPLE_DEBUG] [AUTH] ACCESS_TOKEN_PRESENT:", hash.includes("access_token="));
+      console.log("[APPLE_DEBUG] [AUTH] REFRESH_TOKEN_PRESENT:", hash.includes("refresh_token="));
+
       const { data, error } = await insforge.auth.getCurrentUser();
       
       if (error) {
@@ -37,6 +44,9 @@ function AuthCallback() {
         const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
         console.log("[APPLE_DEBUG] [AUTH] FINAL_NAVIGATION:", dest);
         window.location.assign(dest);
+      } else {
+        // If SDK didn't auto-resolve but tokens are in URL, we may need a manual sync
+        console.log("[APPLE_DEBUG] [AUTH] No user found yet. Waiting for SDK to process URL tokens...");
       }
     };
 
