@@ -54,6 +54,7 @@ type AuthCtx = {
   authState: AuthState;
   authError: string | null;
   roles: Role[];
+  requestedPortal: Role | null;
   signIn: (email: string, password: string, intent?: Role) => Promise<{ ok: boolean; message?: string; needsVerification?: boolean }>;
   signUp: (input: { name: string; email: string; phone: string; password: string; role: Role }) => Promise<{ ok: boolean; message?: string; needsVerification?: boolean }>;
   signInWithProvider: (provider: OAuthProvider, intent?: Role) => Promise<{ ok: boolean; message?: string }>;
@@ -113,12 +114,23 @@ export async function resolveUserMemberships(canonicalUserId: string) {
 
 export function resolveAuthenticatedDestination({ 
   requestedPortal, 
-  memberships 
+  memberships,
+  currentPath = "/"
 }: { 
   requestedPortal: Role | null; 
   memberships: Record<Role, boolean>;
+  currentPath?: string;
 }): string {
   const portal = requestedPortal || "customer";
+  
+  // If the user is already on a valid portal path (e.g. /manager/onboarding), 
+  // and we are NOT on a login page, preserve that path.
+  const path = currentPath.toLowerCase();
+  if (portal === "manager" && path.startsWith("/manager")) return currentPath;
+  if (portal === "partner" && path.startsWith("/partner")) return currentPath;
+  if (portal === "rider" && path.startsWith("/rider")) return currentPath;
+  if (portal === "admin" && path.startsWith("/admin")) return currentPath;
+
   if (portal === "admin") return memberships.admin ? ROLE_HOME.admin : "/auth/login?app=admin";
   if (portal === "manager") return memberships.manager ? ROLE_HOME.manager : ROLE_ONBOARDING.manager;
   if (portal === "partner") return memberships.partner ? ROLE_HOME.partner : ROLE_ONBOARDING.partner;
@@ -134,15 +146,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>("IDLE");
   const [authError, setAuthError] = useState<string | null>(null);
   const [oauthError, setOauthError] = useState<string | null>(null);
+  const [requestedPortal, setRequestedPortalState] = useState<Role | null>(null);
 
   const admit = useCallback(async (sess: InsForgeUser, intent?: Role) => {
     setAuthState("RESOLVING");
     setLoading(true);
     setAuthError(null);
+    const portalIntent = intent || getRequestedPortal(window.location.pathname);
+    setRequestedPortalState(portalIntent);
     
     try {
-      console.log(`[AUTH_ADMISSION] Starting admission for ${sess.id} with intent ${intent || "none"}`);
-      console.log(`[AUTH_DEBUG] SESSION_UUID: ${sess.id}`);
+      console.log(`[PORTAL_TRACE] admission_start: ${sess.id} intent: ${portalIntent || "none"}`);
+      console.log(`[PORTAL_TRACE] session_uuid: ${sess.id}`);
       
       // 1. Resolve the CANONICAL application identity for this Auth UUID.
       //    Only an explicit auth_identity_links row can map this session onto a
@@ -186,17 +201,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       // 4. Determine Destination
-      const destination = resolveAuthenticatedDestination({ requestedPortal, memberships });
+      const destination = resolveAuthenticatedDestination({ 
+        requestedPortal, 
+        memberships,
+        currentPath: window.location.pathname 
+      });
       
-      console.log(`[AUTH_DEBUG] ADMISSION_RESULT: SUCCESS`);
-      console.log(`[AUTH_DEBUG] DESTINATION: ${destination}`);
+      console.log(`[PORTAL_TRACE] admission_result: SUCCESS`);
+      console.log(`[PORTAL_TRACE] destination: ${destination}`);
       
       // 5. Navigate exactly once
       setAuthState("ADMITTED");
       setLoading(false);
       
-      if (window.location.pathname !== destination) {
-        console.log(`[AUTH_DEBUG] NAVIGATION_START`);
+      const current = window.location.pathname;
+      const isLoginOrSplash = current === "/" || current.startsWith("/auth/login");
+
+      if (isLoginOrSplash || (current !== destination && !current.startsWith(destination))) {
+        console.log(`[PORTAL_TRACE] navigation_start: ${destination}`);
         window.location.assign(destination);
       }
     } catch (e: any) {
@@ -216,13 +238,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (sess) {
           const intent = getRequestedPortal(window.location.pathname);
+          setRequestedPortalState(intent);
           const isLoginPage = window.location.pathname === "/" || window.location.pathname.startsWith("/auth/login");
           
           if (isLoginPage) {
-            // Admission handles the redirect if we are on a login/splash page
+            console.log(`[PORTAL_TRACE] session_restore: on_login_page_with_session`);
             await admit(sess, intent || undefined);
           } else {
             // Already inside the app, just sync state silently
+            console.log(`[PORTAL_TRACE] session_restore: active_path_sync`);
             const { canonicalUserId } = await resolveCanonicalUserId(sess.id);
             const memberships = await resolveUserMemberships(canonicalUserId);
             const profile = await fetchUserProfile(canonicalUserId);
@@ -245,6 +269,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setLoading(false);
           setAuthState("IDLE");
+          // If we are authenticated but have no session, we stay IDLE.
+          // The RoleGuard or Splash will handle the redirect to login if necessary.
         }
       } catch (e) {
         console.error("[AUTH_BOOT] Boot failed:", e);
@@ -301,7 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [admit]);
 
   const value = {
-    user, loading, authState, authError, oauthError,
+    user, loading, authState, authError, oauthError, requestedPortal,
     roles: user?.roles || [],
     signIn: async (email: string, password: string, intent?: Role) => {
       console.log("[AUTH_DEBUG] LOGIN_BUTTON_CLICKED", { email, intent });

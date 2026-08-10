@@ -21,16 +21,16 @@ export function RoleGuard({
   children: React.ReactNode;
   transitionLabel?: string;
 }) {
-  const { user, loading, authState, authError } = useAuth();
+  const { user, loading, authState, authError, requestedPortal } = useAuth();
   const navigate = useNavigate();
   const href = useRouterState({ select: (s) => s.location.href });
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     if (loading || authState === "RESOLVING") return;
     
     if (!user) {
-      const pathname = window.location.pathname;
-      const intent = getRequestedPortal(pathname) || allow;
+      const intent = requestedPortal || getRequestedPortal(pathname) || allow;
       console.log(`[AUTH_GUARD] Unauthenticated on ${pathname}. Intent: ${intent}`);
       
       const search: any = { app: intent };
@@ -47,8 +47,20 @@ export function RoleGuard({
 
     if (!user.roles.includes(allow)) {
       console.log(`[AUTH_GUARD] Unauthorized for ${allow}. Current roles:`, user.roles);
+      
+      // EXCEPTION: A user with manager intent can access /manager/onboarding 
+      // even if they don't have manager membership yet.
+      const isManagerOnboarding = allow === "manager" && pathname.startsWith("/manager/onboarding");
+      const isPartnerOnboarding = allow === "partner" && pathname.startsWith("/partner/onboarding");
+      const isRiderOnboarding = allow === "rider" && pathname.startsWith("/rider/onboarding");
+
+      if (isManagerOnboarding || isPartnerOnboarding || isRiderOnboarding) {
+        console.log(`[AUTH_GUARD] Allowing onboarding access for ${allow} to ${pathname}`);
+        return;
+      }
+
       const onboarding = ROLE_ONBOARDING[allow];
-      if (onboarding && window.location.pathname !== onboarding) {
+      if (onboarding && pathname !== onboarding) {
         window.location.assign(onboarding);
       } else if (!onboarding) {
         navigate({ to: ROLE_HOME.customer as any, replace: true });
