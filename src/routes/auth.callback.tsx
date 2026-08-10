@@ -10,43 +10,74 @@ export const Route = createFileRoute("/auth/callback")({
 function AuthCallback() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [exchangeAttempted, setExchangeAttempted] = useState(false);
 
   useEffect(() => {
     const portal = popPortalIntent();
     console.log("[APPLE_DEBUG] [AUTH] Callback portal intent recovered:", portal);
 
     const checkAuth = async () => {
+      if (exchangeAttempted) return;
+      
       console.log("[APPLE_DEBUG] [AUTH] Starting session check...");
-      console.log("[APPLE_DEBUG] [AUTH] CALLBACK_URL:", window.location.href);
-      console.log("[APPLE_DEBUG] [AUTH] CALLBACK_SEARCH_PARAMS:", window.location.search);
-      console.log("[APPLE_DEBUG] [AUTH] CALLBACK_HASH_PARAMS:", window.location.hash);
+      const search = new URLSearchParams(window.location.search);
+      const code = search.get("code");
 
-      // Forensic: Try to detect Apple's post-redirect tokens in URL if SDK didn't pick them up
-      const hash = window.location.hash;
-      const search = window.location.search;
-      console.log("[APPLE_DEBUG] [AUTH] AUTH_CODE_PRESENT:", search.includes("code=") || hash.includes("code="));
-      console.log("[APPLE_DEBUG] [AUTH] ACCESS_TOKEN_PRESENT:", hash.includes("access_token="));
-      console.log("[APPLE_DEBUG] [AUTH] REFRESH_TOKEN_PRESENT:", hash.includes("refresh_token="));
+      // APPLE OAUTH FIX: The SDK looks for 'insforge_code', but Apple returns 'code'.
+      // We manually perform the exchange if 'code' is present.
+      if (code) {
+        console.log("[APPLE_DEBUG] [AUTH] Found standard OAuth 'code' parameter, attempting manual exchange.");
+        setExchangeAttempted(true);
+        
+        try {
+          const pkceVerifier = sessionStorage.getItem("insforge_pkce_verifier");
+          if (!pkceVerifier) {
+            console.error("[APPLE_DEBUG] [AUTH] Missing PKCE verifier in sessionStorage");
+            setErrorMsg("Authentication failed: Missing PKCE verifier. Please try logging in again.");
+            return;
+          }
 
+          // Use the internal exchange method.
+          console.log("[APPLE_DEBUG] [AUTH] Calling exchangeOAuthCode with verifier...");
+          
+          // @ts-ignore - accessing public exchange method
+          const { error: exchangeError } = await (insforge.auth as any).exchangeOAuthCode(code, pkceVerifier);
+
+          if (exchangeError) {
+            console.error("[APPLE_DEBUG] [AUTH] Exchange error:", exchangeError.message);
+            setErrorMsg(`Login failed: ${exchangeError.message}`);
+            return;
+          }
+
+          console.log("[APPLE_DEBUG] [AUTH] Exchange successful.");
+          // Clean the URL code param to prevent reuse on refresh
+          const newUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+        } catch (err: any) {
+          console.error("[APPLE_DEBUG] [AUTH] Unexpected exchange crash:", err);
+          setErrorMsg("An unexpected error occurred during login.");
+          return;
+        }
+      }
+
+      // Proceed to verify session
       const { data, error } = await insforge.auth.getCurrentUser();
       
       if (error) {
-        console.error("[APPLE_DEBUG] [AUTH] Callback user error:", error);
-        setErrorMsg(error.message);
+        console.error("[APPLE_DEBUG] [AUTH] Callback user check error:", error);
+        if (!code) setErrorMsg(error.message);
         return;
       }
 
-      console.log("[APPLE_DEBUG] [AUTH] USER_PRESENT:", !!data.user);
-      console.log("[APPLE_DEBUG] [AUTH] SESSION_USER_ID:", data.user?.id);
-
       if (data.user) {
-        console.log("[APPLE_DEBUG] [AUTH] Callback success, navigating to portal:", portal);
+        console.log("[APPLE_DEBUG] [AUTH] User verified, admitted to portal:", portal);
         const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-        console.log("[APPLE_DEBUG] [AUTH] FINAL_NAVIGATION:", dest);
         window.location.assign(dest);
       } else {
-        // If SDK didn't auto-resolve but tokens are in URL, we may need a manual sync
-        console.log("[APPLE_DEBUG] [AUTH] No user found yet. Waiting for SDK to process URL tokens...");
+        console.log("[APPLE_DEBUG] [AUTH] No user session found after check.");
+        if (code) {
+          setErrorMsg("We couldn't establish a secure session. Please try again.");
+        }
       }
     };
 
@@ -56,13 +87,12 @@ function AuthCallback() {
       console.log("[APPLE_DEBUG] [AUTH] AUTH_STATE_CHANGE:", event);
       if (event === 'signedIn') {
         const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-        console.log("[APPLE_DEBUG] [AUTH] Event signedIn, navigating:", dest);
         window.location.assign(dest);
       }
     });
 
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, exchangeAttempted]);
 
   if (errorMsg) {
     return (
