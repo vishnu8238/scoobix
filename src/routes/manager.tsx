@@ -1,12 +1,10 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Store, PlusCircle, Users, MoreHorizontal, LogIn } from "lucide-react";
+import { LayoutDashboard, Store, PlusCircle, Users, MoreHorizontal } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 import { useManager } from "@/lib/manager-api";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/manager")({
   head: () => appHead(APPS.manager),
@@ -21,11 +19,11 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/manager/more", label: "More", icon: MoreHorizontal },
 ];
 
-
 const PRIMARY = new Set(NAV.map((n) => n.to));
 
 function ManagerLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  
   return (
     <RoleGuard allow="manager">
       <ManagerShell pathname={pathname} />
@@ -36,6 +34,9 @@ function ManagerLayout() {
 function ManagerShell({ pathname }: { pathname: string }) {
   const { manager, loading } = useManager();
   const secondary = pathname.startsWith("/manager/") && !PRIMARY.has(pathname);
+  
+  // Admission is based solely on Manager membership (manager record existence and active status).
+  // Restaurant onboarding status is a feature, not a blocker.
 
   if (!loading && manager && manager.status !== "active") {
     return (
@@ -50,9 +51,6 @@ function ManagerShell({ pathname }: { pathname: string }) {
     );
   }
 
-  // Admission is based solely on Manager membership (manager record existence and active status).
-  // Restaurant onboarding status is a feature, not a blocker.
-  
   return (
     <div className="relative pb-24">
       <Outlet />
