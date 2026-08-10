@@ -10,13 +10,11 @@ export const Route = createFileRoute("/customer/login")({
 });
 
 function CustomerLogin() {
-  console.log("[AUTH_DEBUG] [CHECKPOINT: CUSTOMER_LOGIN_START]");
   const { login, user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading && user) {
-      console.log("[AUTH_DEBUG] CustomerLogin Authenticated, redirecting to /app");
       navigate({ to: "/app", replace: true });
     }
   }, [user, loading, navigate]);
@@ -42,7 +40,6 @@ function CustomerLogin() {
           <img src="https://www.google.com/favicon.ico" className="mr-3 h-5 w-5" alt="" />
           Continue with Google
         </Button>
-
       </div>
 
       <p className="mt-10 text-[11px] text-muted-foreground max-w-[280px]">
