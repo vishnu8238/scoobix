@@ -143,11 +143,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      // Unauthenticated reset: Load all relevant records for the session
+      const userId = user?.id;
+      // Scoped reads: only fetch usage records for the active user if signed in.
+      // If signed out, we show auto-applied campaigns but no user-specific stats.
       const [reds, couponUsage, orders] = await Promise.all([
-        listRedemptions({}),
-        listCouponUsage({}),
-        listTable<{ id: string }>("orders", { limit: 200 }),
+        userId ? listRedemptions({ user_id: userId }) : Promise.resolve([]),
+        userId ? listCouponUsage({ user_id: userId }) : Promise.resolve([]),
+        userId ? listTable<{ id: string }>("orders", { customer_id: `eq.${userId}`, limit: 200 }) : Promise.resolve([]),
       ]);
       if (cancelled) return;
       const map: Record<string, number> = {};
@@ -160,7 +162,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setOrderCount(orders.length);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [user?.id]);
+
 
   const insertItem = (item: Omit<CartItem, "lineId" | "qty">, qty: number) => {
     setRestaurantId(item.restaurantId);
@@ -478,17 +481,21 @@ const OrdersContext = createContext<OrdersCtx | null>(null);
  */
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const customerId = "guest-user";
+  const customerId = user?.id;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [refunds, setRefunds] = useState<Record<string, "none" | "pending" | "refunded">>({});
 
   const refresh = useCallback(async () => {
-     
+    if (!customerId) {
+      setOrders([]);
+      return;
+    }
     const { fetchCustomerOrders } = await import("./orders-api");
     const rows = await fetchCustomerOrders(customerId);
     setOrders(rows);
   }, [customerId]);
+
 
   // Initial load + light polling while the tab is visible (server is the
   // source of truth for live status; no websockets needed for MVP).
