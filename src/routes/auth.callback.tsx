@@ -152,6 +152,13 @@ function AuthCallback() {
       const code = search.get("code");
       const insforgeCode = search.get("insforge_code");
 
+      // Check redirect URI matching immediately, even if no code is present
+      const redirectUri = getOAuthCallbackUrl();
+      const expectedRedirectUri = `${window.location.origin}/auth/callback`;
+      updateValue("authRedirectUri", redirectUri);
+      updateValue("exchangeRedirectUri", redirectUri);
+      updateValue("redirectUriMatch", redirectUri === expectedRedirectUri);
+
       if (insforgeCode) {
         console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - SDK_AUTO_CALLBACK_DETECTED (insforge_code)`);
         updateStage("appleCodeDetected", "PASS");
