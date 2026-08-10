@@ -1,4 +1,4 @@
-// [AUTH_FORENSIC] PARTNER CONTEXT RESOLUTION AUDIT
+//  PARTNER CONTEXT RESOLUTION AUDIT
 /**
  * Authenticated partner identity.
  *
@@ -73,14 +73,14 @@ export function usePartnerRestaurant() {
       return;
     }
     setLoading(true);
-    console.log("[AUTH_FORENSIC] usePartnerRestaurant: Searching for restaurant belonging to owner:", user.id);
+    console.log(" usePartnerRestaurant: Searching for restaurant belonging to owner:", user.id);
     void getRestaurantForUser(user.id).then((row) => {
       if (cancelled) return;
       if (row?.id) {
-        console.log("[AUTH_FORENSIC] usePartnerRestaurant: Found restaurant:", row.id);
+        console.log(" usePartnerRestaurant: Found restaurant:", row.id);
         setActivePartnerRestaurantId(row.id);
       } else {
-        console.warn("[AUTH_FORENSIC] usePartnerRestaurant: No restaurant row found for owner. Onboarding may be required.");
+        console.warn(" usePartnerRestaurant: No restaurant row found for owner. Onboarding may be required.");
       }
       setRestaurant(row);
       setLoading(false);
