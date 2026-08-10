@@ -143,6 +143,7 @@ function GoogleMapInner({
   className = "",
   height = 260,
   interactive = true,
+  onPolygonEdit,
 }: Props) {
   const map = useMap();
   const [currentRiderPos, setCurrentRiderPos] = useState<LatLng | null>(null);
