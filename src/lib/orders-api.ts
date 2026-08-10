@@ -173,17 +173,37 @@ export type PlaceOrderInput = {
   notes?: string;
   couponCode?: string;
   etaMins?: number;
+  // Zone context
+  zoneId?: string;
+  subzoneId?: string;
 };
 
 /**
  * Creates orders → order_items → payments(PENDING). Returns the persisted
- * order or null when the backend rejected the write (caller shows an error;
- * nothing is stored locally).
+ * order or null when the backend rejected the write.
  */
 export async function createOrder(input: PlaceOrderInput): Promise<Order | null> {
   if (!isUuid(input.customerId) || !isUuid(input.restaurantId)) return null;
   const id = newUuid();
   const otp = String(Math.floor(1000 + Math.random() * 9000));
+
+  // If zoneId/subzoneId weren't passed (customer app might not have them yet),
+  // we attempt to resolve them from the restaurant row.
+  let zoneId = input.zoneId;
+  let subzoneId = input.subzoneId;
+
+  if (!zoneId) {
+    try {
+      const res = await fetch(`${rec("restaurants")}?id=eq.${input.restaurantId}&select=zone_id,subzone_id`, { headers: H });
+      const data = await res.json();
+      if (data?.[0]) {
+        zoneId = data[0].zone_id;
+        subzoneId = data[0].subzone_id;
+      }
+    } catch (e) {
+      console.error("[ORDERS_API] Failed to resolve zone context for order", e);
+    }
+  }
 
   const meta: Meta = {
     restaurantName: input.restaurantName,
@@ -202,6 +222,8 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     id,
     customer_id: input.customerId,
     restaurant_id: input.restaurantId,
+    zone_id: zoneId,
+    subzone_id: subzoneId,
     items: { lines: input.items, meta },
     status: "PLACED",
     subtotal: input.totals.subtotal,
@@ -212,6 +234,7 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     delivery_address: `${input.addressLabel} · ${input.addressLine}`,
     payment_method: input.paymentMethod,
     payment_status: "PENDING",
+    assignment_status: "SEARCHING",
     otp,
   };
 
@@ -222,7 +245,7 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     return null;
   }
 
-  // Child rows — best effort, the order itself is already durable.
+  // Child rows — best effort
   await Promise.all([
     ...input.items.map((it) =>
       fetch(rec("order_items"), {
@@ -251,7 +274,6 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     }).catch(() => null),
   ]);
 
-  // Realtime: partner dashboard + admin see the new order instantly.
   publishTableChange("orders", "insert", body as Record<string, unknown>);
 
   return rowToOrder({ ...body, created_at: new Date().toISOString() });

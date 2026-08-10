@@ -18,38 +18,63 @@ export const findEligibleRiders = createServerFn({ method: "POST" })
   .inputValidator(z.object({
     restaurantId: z.string(),
     zoneId: z.string(),
-    subzoneId: z.string().optional(),
+    subzoneId: z.string().optional().nullable(),
     pickupLat: z.number(),
     pickupLng: z.number(),
   }))
   .handler(async ({ data }) => {
     // 1. Fetch zone configuration
     const zoneRes = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones?id=eq.${data.zoneId}`, { headers: HEADERS });
-    const [zone] = await zoneRes.json();
+    const zones = await zoneRes.json();
+    const zone = zones?.[0];
     if (!zone || zone.status !== "ACTIVE") return [];
 
     // 2. Fetch Subzone status if provided
     if (data.subzoneId) {
       const szRes = await fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones?id=eq.${data.subzoneId}`, { headers: HEADERS });
-      const [subzone] = await szRes.json();
+      const subzones = await szRes.json();
+      const subzone = subzones?.[0];
       if (!subzone || subzone.status !== "ACTIVE") return [];
     }
 
-    // 3. Fetch ONLINE drivers assigned to this zone/subzone
-    // Filter by authorized zone/subzone assignment
-    let driverQuery = `online_status=eq.true&zone_id=eq.${data.zoneId}`;
-    if (data.subzoneId) {
-       // In production, we'd use a join or composite filter. 
-       // For now, we assume subzone assignment is part of the driver's metadata or assignment table
-    }
+    // 3. Fetch ONLINE eligible drivers
+    // Conditions: online, kyc approved, account active, assigned to zone, NO current order
+    let driverQuery = `online_status=eq.true&zone_id=eq.${data.zoneId}&kyc_approved=eq.true&account_active=eq.true&current_order_id=is.null`;
     
     const driversRes = await fetch(`${INSFORGE_URL}/api/database/records/drivers?${driverQuery}`, { headers: HEADERS });
     const drivers = await driversRes.json();
 
-    // 4. Calculate distances and filter by zone configuration (pickup_radius_km)
-    // Pickup distance logic...
-    return drivers; // Placeholder for ranked results
+    if (!Array.isArray(drivers)) return [];
+
+    // 4. Ranking
+    // - Subzone match
+    // - Distance
+    const pickupLoc = { lat: data.pickupLat, lng: data.pickupLng };
+    const radius = zone.pickup_radius_km ?? 1.0;
+
+    const ranked = drivers.map(d => {
+      // In a real environment we'd fetch latest tracking, here we assume it's on the driver row for the ranking
+      const dLoc = { lat: Number(d.current_lat), lng: Number(d.current_lng) };
+      const dist = (d.current_lat && d.current_lng) ? haversineKm(pickupLoc, dLoc) : 999;
+      
+      let score = dist;
+      if (data.subzoneId && d.subzone_id === data.subzoneId) score -= 10;
+      
+      return { ...d, dist, score };
+    }).filter(d => d.dist <= radius);
+
+    ranked.sort((a, b) => a.score - b.score);
+    return ranked;
   });
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
 
 export const processManualAssignment = createServerFn({ method: "POST" })
   .inputValidator(z.object({
