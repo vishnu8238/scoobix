@@ -222,7 +222,7 @@ function SecurityPage() {
               <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Acknowledge all
             </Button>
           </div>
-          {(overview?.events ?? []).map((e) => (
+          {(overview?.events ?? []).map((e: SecurityEventRow) => (
             <div key={e.id} className="flex items-start justify-between gap-3 rounded-xl border border-border bg-card p-3">
               <div className="min-w-0">
                 <p className="flex items-center gap-2 text-sm text-foreground">

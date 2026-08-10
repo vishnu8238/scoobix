@@ -1,5 +1,5 @@
 /**
- * [AUTH_FORENSIC] INSFORGE DATA ENGINE AUDIT
+ *  INSFORGE DATA ENGINE AUDIT
  * InsForge data layer for Scoobix.
  */
 

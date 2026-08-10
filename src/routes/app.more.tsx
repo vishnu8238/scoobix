@@ -51,7 +51,7 @@ function MoreHub() {
         <li>
           {user ? (
             <button
-              onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/auth/login" }); }}
+              onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/" }); }}
               className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-muted/40"
             >
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-100 text-rose-700"><LogOut className="h-5 w-5" strokeWidth={2.4} /></span>
@@ -62,7 +62,7 @@ function MoreHub() {
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           ) : (
-            <Link to="/auth/login" className="flex items-center gap-3 px-4 py-3.5 transition active:bg-muted/40">
+            <Link to="/" className="flex items-center gap-3 px-4 py-3.5 transition active:bg-muted/40">
               <span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-soft text-primary"><LogIn className="h-5 w-5" strokeWidth={2.4} /></span>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold">Sign in</div>

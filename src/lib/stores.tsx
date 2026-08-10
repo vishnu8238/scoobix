@@ -141,18 +141,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Per-customer eligibility inputs.
   useEffect(() => {
-    if (!user?.id) { setUserRedemptions({}); setOrderCount(0); return; }
     let cancelled = false;
     void (async () => {
+      // Unauthenticated reset: Load all relevant records for the session
       const [reds, couponUsage, orders] = await Promise.all([
-        listRedemptions({ user_id: user.id }),
-        listCouponUsage({ user_id: user.id }),
-        listTable<{ id: string }>("orders", { customer_id: `eq.${user.id}`, limit: 200 }),
+        listRedemptions({}),
+        listCouponUsage({}),
+        listTable<{ id: string }>("orders", { limit: 200 }),
       ]);
       if (cancelled) return;
       const map: Record<string, number> = {};
       reds.forEach((r) => { map[r.campaign_id] = (map[r.campaign_id] ?? 0) + 1; });
-      // Coupon-derived offers share the coupon id as their campaign id.
       couponUsage.forEach((u) => {
         if (!u.coupon_id) return;
         map[u.coupon_id] = (map[u.coupon_id] ?? 0) + 1;
@@ -161,7 +160,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setOrderCount(orders.length);
     })();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, []);
 
   const insertItem = (item: Omit<CartItem, "lineId" | "qty">, qty: number) => {
     setRestaurantId(item.restaurantId);
@@ -479,13 +478,13 @@ const OrdersContext = createContext<OrdersCtx | null>(null);
  */
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const customerId = user?.id ?? "";
+  const customerId = "guest-user";
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [refunds, setRefunds] = useState<Record<string, "none" | "pending" | "refunded">>({});
 
   const refresh = useCallback(async () => {
-    if (!customerId) { setOrders([]); return; }
+     
     const { fetchCustomerOrders } = await import("./orders-api");
     const rows = await fetchCustomerOrders(customerId);
     setOrders(rows);
@@ -495,7 +494,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   // source of truth for live status; no websockets needed for MVP).
   useEffect(() => {
     let cancelled = false;
-    if (!customerId) { setOrders([]); setLoading(false); return; }
+     
     setLoading(true);
     const run = async () => {
       const { fetchCustomerOrders } = await import("./orders-api");
@@ -514,7 +513,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     items, totals, restaurant, addressLabel, addressLine, paymentLabel, paymentMethod,
     deliveryInstructions, contactless, notes, couponCode,
   }) => {
-    if (!customerId) return { ok: false, message: "Please sign in to place an order" };
+     
     const { createOrder } = await import("./orders-api");
     const created = await createOrder({
       customerId,

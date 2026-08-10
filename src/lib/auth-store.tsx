@@ -1,7 +1,9 @@
 import { createContext, useContext, ReactNode } from "react";
 
-// The authentication system has been removed. 
-// This is a minimal stub to prevent build errors.
+/**
+ * SCOOBIX — APPLICATION AUTH RESET
+ * Minimal business-role provider for the current unauthenticated state.
+ */
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager";
 
@@ -26,10 +28,10 @@ type AuthCtx = {
 export const getRequestedPortal = () => null;
 
 const GUEST_USER: User = {
-  id: "guest",
-  name: "Guest User",
-  email: "guest@example.com",
-  phone: "000-000-0000",
+  id: "guest-user",
+  name: "Guest",
+  email: "guest@scoobix.app",
+  phone: "",
   avatar: "",
   role: "customer",
   roles: ["customer", "partner", "rider", "admin", "manager"]
