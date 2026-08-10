@@ -48,7 +48,8 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
         if (portal === "partner" && !user.roles.includes("partner")) {
           navigate({ to: "/partner/onboarding" as any });
         } else if (portal === "rider" && !user.roles.includes("rider")) {
-          navigate({ to: "/rider/onboarding" as any });
+          // Admission to /rider is granted to authenticated users; onboarding is a choice.
+          // We do NOT redirect to /rider/onboarding here.
         } else if (portal === "manager" && !user.roles.includes("manager")) {
           // If the user is logged in and resolution finished, but they STILL don't have the manager role,
           // we stay on /manager and let the component handle the unauthorized/loading state.
