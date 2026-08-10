@@ -19,32 +19,22 @@ function AuthCallback() {
         const { data, error } = await insforge.auth.getCurrentUser();
         
         if (error) {
-          console.error("[AUTH_CALLBACK] GetUser error:", error.message);
           setErrorMsg(error.message || "Authentication failed.");
           return;
         }
 
         const authUser = data?.user;
         if (authUser) {
-          console.log("[AUTH_CALLBACK] Logged in:", {
-            id: authUser.id,
-            email: authUser.email,
-            portalIntent: portal
-          });
-          
           // Determine destination based on portal intent
           const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-          console.log("[AUTH_CALLBACK] Final redirect:", dest);
           window.location.assign(dest);
         } else {
           // Polling for session
-          console.log("[AUTH_CALLBACK] No user yet, polling...");
           const checkSession = setInterval(async () => {
             const { data: sessionData } = await insforge.auth.getCurrentUser();
             if (sessionData?.user) {
               clearInterval(checkSession);
               const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-              console.log("[AUTH_CALLBACK] Polled user success. Redirecting to:", dest);
               window.location.assign(dest);
             }
           }, 500);
@@ -55,7 +45,6 @@ function AuthCallback() {
           }, 10000);
         }
       } catch (err: any) {
-        console.error("[AUTH_CALLBACK] Catch block error:", err);
         setErrorMsg("An unexpected error occurred.");
       }
     };
