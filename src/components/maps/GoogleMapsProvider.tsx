@@ -12,11 +12,9 @@ export function GoogleMapsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("[MAPS_DEBUG] GoogleMapsProvider checking for key...");
     // Check if it's already in the env (e.g. if configured via build settings)
     const envKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     if (envKey) {
-      console.log("[MAPS_DEBUG] Found key in import.meta.env");
       setApiKey(envKey);
       setLoading(false);
       return;
@@ -25,11 +23,10 @@ export function GoogleMapsProvider({ children }: { children: ReactNode }) {
     // Otherwise fetch from server
     getGoogleMapsApiKey()
       .then((key) => {
-        console.log("[MAPS_DEBUG] Fetched key from server:", key ? "YES" : "NO");
         setApiKey(key);
       })
-      .catch(err => {
-        console.error("[MAPS_DEBUG] Error fetching key:", err);
+      .catch(() => {
+        // Silently fail, the UI will handle the missing apiKey
       })
       .finally(() => {
         setLoading(false);
@@ -45,8 +42,6 @@ export function GoogleMapsProvider({ children }: { children: ReactNode }) {
   }
 
   if (!apiKey) {
-    console.warn("[MAPS_DEBUG] Google Maps API Key is missing. Maps will not load.");
-
     return (
       <div className="flex h-full w-full flex-col items-center justify-center bg-muted/20 p-6 text-center text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[200px]">
         <p className="font-medium text-destructive">Google Maps API Key Missing</p>
