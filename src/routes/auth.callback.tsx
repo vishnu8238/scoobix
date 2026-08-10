@@ -24,12 +24,11 @@ function AuthCallback() {
         }
 
         if (data?.user) {
+          // Determine destination based on portal intent
           const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
           window.location.assign(dest);
         } else {
-          // If no user yet, the SDK might still be processing.
-          // In a standard flow, the SDK's onAuthStateChange handles admission,
-          // but we can also poll or wait for a session.
+          // Polling for session
           const checkSession = setInterval(async () => {
             const { data: sessionData } = await insforge.auth.getCurrentUser();
             if (sessionData?.user) {
@@ -39,7 +38,6 @@ function AuthCallback() {
             }
           }, 500);
 
-          // Timeout after 10s
           setTimeout(() => clearInterval(checkSession), 10000);
         }
       } catch (err: any) {
