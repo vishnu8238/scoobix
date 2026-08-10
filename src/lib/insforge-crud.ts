@@ -35,10 +35,11 @@ const MAX_ROWS = 200;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
-import { getAccessToken } from "./insforge-auth";
+import { insforge } from "./insforge";
 
-const HEADERS = () => {
-  const token = getAccessToken() || INSFORGE_ANON_KEY;
+const HEADERS = async () => {
+  const { data } = await insforge.auth.getSession();
+  const token = data.session?.access_token || INSFORGE_ANON_KEY;
   return {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token}`,
@@ -61,9 +62,10 @@ function metricName(method: Method, url: string) {
 
 async function once(url: string, method: Method, body?: unknown) {
   const t0 = Date.now();
+  const headers = await HEADERS();
   const res = await fetch(url, {
     method,
-    headers: HEADERS(),
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   recordMetric({

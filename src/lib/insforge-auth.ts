@@ -2,50 +2,80 @@
  * SCOOBIX — INSFORGE AUTH
  * Official InsForge authentication mechanism for Google and Apple OAuth.
  */
-import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { insforge } from "./insforge";
 
-const ACCESS_KEY = "scoobix_if_access_v1";
+/**
+ * Starts the Google OAuth flow using the official InsForge SDK.
+ * @param portalIntent The portal the user wants to enter ('customer', 'partner', 'rider', 'manager', 'admin')
+ */
+export async function loginWithGoogle(portalIntent: string = "customer"): Promise<void> {
+  const callbackUrl = getCallbackUrl(portalIntent);
+  console.log(`[AUTH] Starting Google OAuth. Callback: ${callbackUrl}`);
+  
+  const { error } = await insforge.auth.signInWithOAuth({
+    provider: "google",
+    redirectTo: callbackUrl,
+  });
 
-export function getAccessToken(): string | null {
-  if (typeof localStorage === "undefined") return null;
-  return localStorage.getItem(ACCESS_KEY);
-}
-
-export function setAccessToken(token: string | null): void {
-  if (typeof localStorage === "undefined") return;
-  if (token) {
-    localStorage.setItem(ACCESS_KEY, token);
-  } else {
-    localStorage.removeItem(ACCESS_KEY);
+  if (error) {
+    console.error("[AUTH] Google sign-in failed:", error.message);
+    throw new Error(`Google sign-in failed: ${error.message}`);
   }
 }
 
 /**
- * Starts the Google OAuth flow.
- * @param portalIntent The portal the user wants to enter ('customer', 'partner', 'rider', 'manager')
+ * Starts the Apple OAuth flow using the official InsForge SDK.
  */
-export async function loginWithGoogle(portalIntent: string = "customer"): Promise<void> {
-  const callbackUrl = `${window.location.origin}/auth/callback?portal=${portalIntent}`;
-  const url = `${INSFORGE_URL}/api/auth/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}`;
-  window.location.assign(url);
+export async function loginWithApple(portalIntent: string = "customer"): Promise<void> {
+  const callbackUrl = getCallbackUrl(portalIntent);
+  console.log(`[AUTH] Starting Apple OAuth. Callback: ${callbackUrl}`);
+
+  const { error } = await insforge.auth.signInWithOAuth({
+    provider: "apple",
+    redirectTo: callbackUrl,
+  });
+
+  if (error) {
+    console.error("[AUTH] Apple sign-in failed:", error.message);
+    throw new Error(`Apple sign-in failed: ${error.message}`);
+  }
 }
 
 /**
- * Starts the Apple OAuth flow.
+ * Selects the callback URL dynamically based on the current environment.
  */
-export async function loginWithApple(portalIntent: string = "customer"): Promise<void> {
-  const callbackUrl = `${window.location.origin}/auth/callback?portal=${portalIntent}`;
-  const url = `${INSFORGE_URL}/api/auth/authorize?provider=apple&redirect_to=${encodeURIComponent(callbackUrl)}`;
-  window.location.assign(url);
+function getCallbackUrl(portalIntent: string): string {
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:8080";
+  
+  // Official callback URLs allowed in InsForge:
+  // https://scoobix.lovable.app/auth/callback
+  // https://id-preview--022038e5-5def-46ed-a7bd-9439cae1ea1d.lovable.app/auth/callback
+  // http://localhost:8080/auth/callback
+  
+  return `${origin}/auth/callback?portal=${portalIntent}`;
 }
 
 export async function logout(): Promise<void> {
-  setAccessToken(null);
-  // Clear other auth-related local state if any
-  console.log("Logout triggered - access token cleared");
+  console.log("[AUTH] Logging out...");
+  const { error } = await insforge.auth.signOut();
+  if (error) {
+    console.error("[AUTH] Logout error:", error.message);
+  }
 }
 
-export async function ifChangePassword(old: string, newP: string): Promise<{ ok: boolean }> {
-  // Not implemented in Phase 1 (Email/Password disabled)
-  return { ok: false };
+/**
+ * Helper to get the current session from the SDK.
+ */
+export async function getSession() {
+  const { data, error } = await insforge.auth.getSession();
+  if (error) {
+    console.error("[AUTH] Failed to get session:", error.message);
+    return null;
+  }
+  return data.session;
 }
+
+// Legacy helpers removed as the SDK manages persistence via cookies/localStorage automatically.
+export function getAccessToken(): string | null { return null; }
+export function setAccessToken(token: string | null): void {}
+
