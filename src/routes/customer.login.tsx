@@ -38,7 +38,14 @@ function CustomerLogin() {
         </Button>
 
         <Button 
-          onClick={() => login('apple', 'customer')}
+          onClick={(e) => {
+            console.log("[APPLE_OAUTH] BUTTON_CLICKED - UI (Customer)");
+            e.preventDefault();
+            e.stopPropagation();
+            login('apple', 'customer').catch(err => {
+              console.error("[APPLE_OAUTH] UI_ERROR:", err);
+            });
+          }}
           className="h-14 w-full rounded-2xl bg-black text-white shadow-pop hover:bg-zinc-900 font-bold"
         >
           <img src="https://appleid.cdn-apple.com/appleauth/static/bin/cb126075202/images/favicon.ico" className="mr-3 h-5 w-5 invert" alt="" />
