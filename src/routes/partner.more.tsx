@@ -97,7 +97,7 @@ function PartnerMore() {
       ))}
 
       <button
-        onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/auth/login" }); }}
+        onClick={() => { signOut(); toast.success("Signed out"); navigate({ to: "/" }); }}
         className="mx-4 mt-5 flex w-[calc(100%-2rem)] items-center gap-3 rounded-3xl bg-card px-4 py-3.5 text-left shadow-soft ring-1 ring-border/60 transition active:bg-muted/40"
       >
         <span className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-100 text-rose-700"><LogOut className="h-5 w-5" strokeWidth={2.4} /></span>

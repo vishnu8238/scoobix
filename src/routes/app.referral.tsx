@@ -20,7 +20,7 @@ function ReferralPage() {
   const { config, codeFor, statsFor } = useReferral();
   const cid = user?.id ?? "guest";
   const code = codeFor(cid);
-  const link = typeof window !== "undefined" ? `${window.location.origin}/auth/signup?ref=${code}` : `https://scoobix.app/?ref=${code}`;
+  const link = typeof window !== "undefined" ? `${window.location.origin}/?ref=${code}` : `https://scoobix.app/?ref=${code}`;
   const stats = statsFor(cid);
   const qr = useMemo(() => qrUrl(link, 220), [link]);
 

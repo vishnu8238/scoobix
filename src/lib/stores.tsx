@@ -478,13 +478,13 @@ const OrdersContext = createContext<OrdersCtx | null>(null);
  */
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const customerId = user?.id ?? "";
+  const customerId = "guest-user";
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [refunds, setRefunds] = useState<Record<string, "none" | "pending" | "refunded">>({});
 
   const refresh = useCallback(async () => {
-    if (!customerId) { setOrders([]); return; }
+     
     const { fetchCustomerOrders } = await import("./orders-api");
     const rows = await fetchCustomerOrders(customerId);
     setOrders(rows);
@@ -494,7 +494,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   // source of truth for live status; no websockets needed for MVP).
   useEffect(() => {
     let cancelled = false;
-    if (!customerId) { setOrders([]); setLoading(false); return; }
+     
     setLoading(true);
     const run = async () => {
       const { fetchCustomerOrders } = await import("./orders-api");
@@ -513,7 +513,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     items, totals, restaurant, addressLabel, addressLine, paymentLabel, paymentMethod,
     deliveryInstructions, contactless, notes, couponCode,
   }) => {
-    if (!customerId) return { ok: false, message: "Please sign in to place an order" };
+     
     const { createOrder } = await import("./orders-api");
     const created = await createOrder({
       customerId,
