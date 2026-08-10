@@ -28,38 +28,66 @@ export function setPortalIntent(portal: string) {
 
 /**
  * Persists the PKCE verifier for Apple OAuth specifically.
+ * Stored in localStorage AND a SameSite=Lax cookie to survive iOS context transitions.
  */
 export function setApplePkce(verifier: string) {
   if (typeof window !== "undefined") {
+    // 1. LocalStorage mirror
     localStorage.setItem(APPLE_PKCE_KEY, JSON.stringify({
       verifier,
       createdAt: new Date().toISOString(),
       origin: window.location.origin
     }));
+
+    // 2. Cookie bridge (SameSite=Lax)
+    // Secure=true in HTTPS environments, Path=/, expires in 15 mins
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    const expires = new Date(Date.now() + 15 * 60 * 1000).toUTCString();
+    document.cookie = `${APPLE_PKCE_KEY}=${verifier}; Path=/; Expires=${expires}; SameSite=Lax${secure}`;
   }
 }
 
 /**
  * Retrieves the PKCE verifier for Apple OAuth.
+ * Checks localStorage first, then the cookie.
  */
 export function getApplePkce(): string | null {
   if (typeof window === "undefined") return null;
+
+  // 1. Try LocalStorage
   const data = localStorage.getItem(APPLE_PKCE_KEY);
-  if (!data) return null;
-  try {
-    const parsed = JSON.parse(data);
-    return parsed.verifier;
-  } catch (e) {
-    return null;
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed.verifier) return parsed.verifier;
+    } catch (e) {}
   }
+
+  // 2. Try Cookie bridge
+  const name = APPLE_PKCE_KEY + "=";
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const ca = decodedCookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) === 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+
+  return null;
 }
 
 /**
- * Clears the Apple PKCE verifier.
+ * Clears the Apple PKCE verifier from all storage.
  */
 export function clearApplePkce() {
   if (typeof window !== "undefined") {
     localStorage.removeItem(APPLE_PKCE_KEY);
+    // Delete cookie by setting expiry in the past
+    document.cookie = `${APPLE_PKCE_KEY}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
   }
 }
 
