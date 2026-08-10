@@ -140,8 +140,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (err: any) {
       console.error("Failed to resolve user:", err);
-      // Do NOT set user to null here if we might have a session.
-      // If session fetch itself failed, getSession() already handled it.
+      // Fallback: If we have a session but resolution failed (e.g. database error),
+      // treat them as a basic customer to prevent redirect loops.
+      if (currentSession?.user) {
+        setUser({
+          id: currentSession.user.id,
+          name: (currentSession.user.profile as any)?.name || "User",
+          email: currentSession.user.email || "",
+          phone: "",
+          avatar: "",
+          role: "customer",
+          roles: ["customer"],
+          membershipsResolved: false,
+        });
+      } else {
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
