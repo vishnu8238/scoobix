@@ -50,9 +50,11 @@ export async function loginWithGoogle(
   
   // 1. Preserve Intent
   setPortalIntent(portalIntent);
+  console.log("[AUTH_DEBUG] [CHECKPOINT: OAUTH_INTENT_STORED] Intent:", portalIntent);
   
   // 2. Canonical Callback URL
   const callbackUrl = getOAuthCallbackUrl();
+  console.log("[AUTH_DEBUG] [CHECKPOINT: GOOGLE_REDIRECT_STARTED] Redirect URL:", callbackUrl);
   
   try {
     const { data, error } = await insforge.auth.signInWithOAuth("google", {
