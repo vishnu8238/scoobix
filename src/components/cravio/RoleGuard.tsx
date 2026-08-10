@@ -1,7 +1,9 @@
 import React, { ReactNode } from "react";
 
-// The RoleGuard has been removed.
-// This is a minimal stub that renders children directly.
+/**
+ * SCOOBIX — ROLE GUARD RESET
+ * Temporary pass-through during the authentication reset phase.
+ */
 
 interface RoleGuardProps {
   allow?: any;

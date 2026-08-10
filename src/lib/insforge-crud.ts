@@ -1,4 +1,4 @@
-// [AUTH_FORENSIC] DATABASE ACCESS LAYER AUDIT
+//  DATABASE ACCESS LAYER AUDIT
 /**
  * Generic InsForge CRUD helper.
  *
@@ -73,7 +73,7 @@ async function once(url: string, method: Method, body?: unknown) {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const message = body?.message || body?.error || `${method} ${url} → ${res.status}`;
-    console.error("[AUTH_FORENSIC] listTable: HTTP Error from server:", { status: res.status, url, method, message });
+    console.error(" listTable: HTTP Error from server:", { status: res.status, url, method, message });
     throw new HttpError(res.status, message);
   }
 
@@ -94,7 +94,7 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     const retryable = status === 0 || status === 429 || status >= 500;
     if (!retryable) throw err;
     
-    console.warn(`[AUTH_FORENSIC] listTable: Retrying request after ${status || "network"} error`);
+    console.warn(` listTable: Retrying request after ${status || "network"} error`);
     await new Promise((r) => setTimeout(r, 500));
     return await fn();
   }
