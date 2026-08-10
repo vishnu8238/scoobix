@@ -65,7 +65,26 @@ export const CONSENT_TABLE = "consent_records";
 export const OVERRIDES_TABLE = "permission_overrides";
 export const USERS_TABLE = "users";
 
-const LOCAL_SESSION_KEY = "scoobix.security.session_row";
+export function securityOverview(): Promise<any> {
+  return Promise.resolve({
+    openAlerts: 0, criticalAlerts: 0, failedLogins24h: 0,
+    activeSessions: 0, lockedAccounts: 0, deviceCount: 0,
+    blockedDevices: 0, pendingDeletions: 0,
+    events: [], sessionList: [], deviceList: [], lockedUsers: [], deletionRequests: []
+  });
+}
+
+export async function suspendAccount(id: string, actor: any, reason: string, days: number) {
+  return;
+}
+
+export async function unlockAccount(id: string, actor: any) {
+  return;
+}
+
+export async function restoreAccount(id: string, actor: any) {
+  return;
+}
 
 /* -------------------------------------------------------- security events */
 
@@ -86,6 +105,7 @@ export async function acknowledgeSecurityEvents(ids: string[], adminId: string) 
 export async function touchDevice(userId: string, opts: any = {}): Promise<DeviceRow | null> {
   return null;
 }
+
 
 export function listDevices(userId?: string, limit = 100) {
   return Promise.resolve([]);
