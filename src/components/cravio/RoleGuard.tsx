@@ -4,10 +4,11 @@ import React, { ReactNode } from "react";
 // This is a minimal stub that renders children directly.
 
 interface RoleGuardProps {
-  allow: any;
+  allow?: any;
   children: ReactNode;
   loading?: ReactNode;
   fallback?: ReactNode;
+  transitionLabel?: string;
 }
 
 export function RoleGuard({ children }: RoleGuardProps) {
