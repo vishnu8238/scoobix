@@ -2,22 +2,25 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-store";
-import { z } from "zod";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/admin/login")({
-  validateSearch: (search) => z.object({
-    error: z.string().optional()
-  }).parse(search),
   head: () => ({ meta: [{ title: "Scoobix Admin · Login" }] }),
   component: AdminLogin,
 });
 
 function AdminLogin() {
   const { login } = useAuth();
-  const search = Route.useSearch();
-  const isUnauthorized = search.error === "unauthorized";
-  console.log("AdminLogin render, isUnauthorized:", isUnauthorized, "search:", search);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
 
+  useEffect(() => {
+    // TanStack Router search params can be inconsistent during hydration
+    // Use standard Web API for robust check of the error state
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "unauthorized") {
+      setIsUnauthorized(true);
+    }
+  }, []);
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center animate-fade-up bg-zinc-950 text-white font-sans">
