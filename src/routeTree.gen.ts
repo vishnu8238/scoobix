@@ -93,15 +93,18 @@ import { Route as AppCouponsRouteImport } from './routes/app.coupons'
 import { Route as AppCheckoutRouteImport } from './routes/app.checkout'
 import { Route as AppCartRouteImport } from './routes/app.cart'
 import { Route as AppBulkRouteImport } from './routes/app.bulk'
+import { Route as AdminZonesRouteImport } from './routes/admin.zones'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
 import { Route as AdminVerificationRouteImport } from './routes/admin.verification'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTrendingRouteImport } from './routes/admin.trending'
 import { Route as AdminSupportRouteImport } from './routes/admin.support'
+import { Route as AdminSubzonesRouteImport } from './routes/admin.subzones'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSpotlightRouteImport } from './routes/admin.spotlight'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
+import { Route as AdminScratchCardsRouteImport } from './routes/admin.scratch-cards'
 import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminReferralsRouteImport } from './routes/admin.referrals'
@@ -542,6 +545,11 @@ const AppBulkRoute = AppBulkRouteImport.update({
   path: '/bulk',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminZonesRoute = AdminZonesRouteImport.update({
+  id: '/zones',
+  path: '/zones',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminWalletRoute = AdminWalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -567,6 +575,11 @@ const AdminSupportRoute = AdminSupportRouteImport.update({
   path: '/support',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSubzonesRoute = AdminSubzonesRouteImport.update({
+  id: '/subzones',
+  path: '/subzones',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
@@ -585,6 +598,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
 const AdminSecurityRoute = AdminSecurityRouteImport.update({
   id: '/security',
   path: '/security',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminScratchCardsRoute = AdminScratchCardsRouteImport.update({
+  id: '/scratch-cards',
+  path: '/scratch-cards',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminRestaurantsRoute = AdminRestaurantsRouteImport.update({
@@ -709,15 +727,18 @@ export interface FileRoutesByFullPath {
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
+  '/admin/scratch-cards': typeof AdminScratchCardsRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/subzones': typeof AdminSubzonesRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
+  '/admin/zones': typeof AdminZonesRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
@@ -818,15 +839,18 @@ export interface FileRoutesByTo {
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
+  '/admin/scratch-cards': typeof AdminScratchCardsRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/subzones': typeof AdminSubzonesRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
+  '/admin/zones': typeof AdminZonesRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
@@ -933,15 +957,18 @@ export interface FileRoutesById {
   '/admin/referrals': typeof AdminReferralsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/restaurants': typeof AdminRestaurantsRoute
+  '/admin/scratch-cards': typeof AdminScratchCardsRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/spotlight': typeof AdminSpotlightRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/subzones': typeof AdminSubzonesRoute
   '/admin/support': typeof AdminSupportRoute
   '/admin/trending': typeof AdminTrendingRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/verification': typeof AdminVerificationRoute
   '/admin/wallet': typeof AdminWalletRoute
+  '/admin/zones': typeof AdminZonesRoute
   '/app/bulk': typeof AppBulkRoute
   '/app/cart': typeof AppCartRoute
   '/app/checkout': typeof AppCheckoutRoute
@@ -1049,15 +1076,18 @@ export interface FileRouteTypes {
     | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
+    | '/admin/scratch-cards'
     | '/admin/security'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/subscriptions'
+    | '/admin/subzones'
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/verification'
     | '/admin/wallet'
+    | '/admin/zones'
     | '/app/bulk'
     | '/app/cart'
     | '/app/checkout'
@@ -1158,15 +1188,18 @@ export interface FileRouteTypes {
     | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
+    | '/admin/scratch-cards'
     | '/admin/security'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/subscriptions'
+    | '/admin/subzones'
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/verification'
     | '/admin/wallet'
+    | '/admin/zones'
     | '/app/bulk'
     | '/app/cart'
     | '/app/checkout'
@@ -1272,15 +1305,18 @@ export interface FileRouteTypes {
     | '/admin/referrals'
     | '/admin/reports'
     | '/admin/restaurants'
+    | '/admin/scratch-cards'
     | '/admin/security'
     | '/admin/settings'
     | '/admin/spotlight'
     | '/admin/subscriptions'
+    | '/admin/subzones'
     | '/admin/support'
     | '/admin/trending'
     | '/admin/users'
     | '/admin/verification'
     | '/admin/wallet'
+    | '/admin/zones'
     | '/app/bulk'
     | '/app/cart'
     | '/app/checkout'
@@ -1966,6 +2002,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBulkRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/zones': {
+      id: '/admin/zones'
+      path: '/zones'
+      fullPath: '/admin/zones'
+      preLoaderRoute: typeof AdminZonesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/wallet': {
       id: '/admin/wallet'
       path: '/wallet'
@@ -2001,6 +2044,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSupportRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/subzones': {
+      id: '/admin/subzones'
+      path: '/subzones'
+      fullPath: '/admin/subzones'
+      preLoaderRoute: typeof AdminSubzonesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/subscriptions': {
       id: '/admin/subscriptions'
       path: '/subscriptions'
@@ -2027,6 +2077,13 @@ declare module '@tanstack/react-router' {
       path: '/security'
       fullPath: '/admin/security'
       preLoaderRoute: typeof AdminSecurityRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/scratch-cards': {
+      id: '/admin/scratch-cards'
+      path: '/scratch-cards'
+      fullPath: '/admin/scratch-cards'
+      preLoaderRoute: typeof AdminScratchCardsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/restaurants': {
@@ -2183,15 +2240,18 @@ interface AdminRouteChildren {
   AdminReferralsRoute: typeof AdminReferralsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRestaurantsRoute: typeof AdminRestaurantsRoute
+  AdminScratchCardsRoute: typeof AdminScratchCardsRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSpotlightRoute: typeof AdminSpotlightRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
+  AdminSubzonesRoute: typeof AdminSubzonesRoute
   AdminSupportRoute: typeof AdminSupportRoute
   AdminTrendingRoute: typeof AdminTrendingRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminVerificationRoute: typeof AdminVerificationRoute
   AdminWalletRoute: typeof AdminWalletRoute
+  AdminZonesRoute: typeof AdminZonesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -2213,15 +2273,18 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReferralsRoute: AdminReferralsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRestaurantsRoute: AdminRestaurantsRoute,
+  AdminScratchCardsRoute: AdminScratchCardsRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSpotlightRoute: AdminSpotlightRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
+  AdminSubzonesRoute: AdminSubzonesRoute,
   AdminSupportRoute: AdminSupportRoute,
   AdminTrendingRoute: AdminTrendingRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminVerificationRoute: AdminVerificationRoute,
   AdminWalletRoute: AdminWalletRoute,
+  AdminZonesRoute: AdminZonesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

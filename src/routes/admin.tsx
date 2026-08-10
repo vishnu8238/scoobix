@@ -26,6 +26,9 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/duplicates", label: "Duplicates & Transfers", icon: Copy },
   { to: "/admin/drivers", label: "Drivers", icon: Bike },
   { to: "/admin/orders", label: "Orders", icon: ClipboardList },
+  { to: "/admin/zones", label: "Zones & Delivery", icon: MapIcon },
+  { to: "/admin/subzones", label: "Subzones", icon: MapIcon },
+  { to: "/admin/scratch-cards", label: "Scratch Cards", icon: Gift },
 
   { to: "/admin/campaigns", label: "Marketing Campaigns", icon: Megaphone },
   { to: "/admin/coupons", label: "Coupons & Promotions", icon: Tag },

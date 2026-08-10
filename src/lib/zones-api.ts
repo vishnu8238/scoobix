@@ -80,12 +80,36 @@ export async function removeRiderFromZone(zoneId: string, riderId: string) {
 }
 
 export async function fetchZoneRiders(zoneId: string) {
-  return listTable<ZoneRider>("zone_riders", { zone_id: `eq.${zoneId}` });
+  return listTable<any>("drivers", { zone_id: `eq.${zoneId}` });
 }
 
 export async function fetchSubzoneRiders(subzoneId: string) {
-  return listTable<SubzoneRider>("subzone_riders", { subzone_id: `eq.${subzoneId}` });
+  return listTable<any>("drivers", { subzone_id: `eq.${subzoneId}` });
 }
+
+export async function assignRiderToSubzone(subzoneId: string, riderId: string) {
+  return patchRecord("drivers", riderId, { subzone_id: subzoneId });
+}
+
+export async function removeRiderFromSubzone(riderId: string) {
+  return patchRecord("drivers", riderId, { subzone_id: null });
+}
+
+export async function logAudit(entry: {
+  entity: "zone" | "subzone" | "assignment" | "campaign";
+  entity_id: string;
+  action: string;
+  previous_value?: any;
+  new_value?: any;
+  reason?: string;
+  admin_id: string;
+}) {
+  return createRecord("loyalty_audit_logs", {
+    ...entry,
+    timestamp: new Date().toISOString()
+  });
+}
+
 
 // Stats & Metrics
 export async function getZoneStats(zoneId?: string) {
