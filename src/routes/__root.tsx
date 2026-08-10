@@ -92,10 +92,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ScoobixProviders>
         {isDesktop ? (
-          <Outlet key={catalogVersion} />
+          <Outlet />
         ) : (
           <PhoneShell>
-            <Outlet key={catalogVersion} />
+            <Outlet />
           </PhoneShell>
         )}
 
