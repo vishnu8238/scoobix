@@ -32,7 +32,7 @@ type OrderRow = {
   status?: string;
   total_price?: number;
   restaurant_id?: string;
-  user_id?: string;
+  customer_id?: string;
   created_at?: string;
 };
 
@@ -67,7 +67,7 @@ function aggregate(period: string, rows: OrderRow[]): PeriodSummary {
     cancelled: cancelled.length,
     revenue: Math.round(revenue),
     aov: delivered.length ? Math.round(revenue / delivered.length) : 0,
-    newCustomers: new Set(rows.map((r) => r.user_id).filter(Boolean)).size,
+    newCustomers: new Set(rows.map((r) => r.customer_id).filter(Boolean)).size,
     topRestaurants: [...byRestaurant.entries()]
       .map(([id, e]) => ({ id, orders: e.orders, revenue: Math.round(e.revenue) }))
       .sort((a, b) => b.revenue - a.revenue)
@@ -81,7 +81,7 @@ async function computeAndStore(scope: "daily" | "monthly", period: string): Prom
   const rows = await listTable<OrderRow>(
     "orders",
     {
-      select: "id,status,total_price,restaurant_id,user_id,created_at",
+      select: "id,status,total_price,restaurant_id,customer_id,created_at",
       created_at: `gte.${from}`,
       order: "created_at.desc",
       limit: 200,
