@@ -192,10 +192,6 @@ function AuthCallback() {
           updateStage("pkceDetected", "PASS");
 
           const redirectUri = getOAuthCallbackUrl();
-          const expectedRedirectUri = `${window.location.origin}/auth/callback`;
-          updateValue("authRedirectUri", redirectUri);
-          updateValue("exchangeRedirectUri", redirectUri);
-          updateValue("redirectUriMatch", redirectUri === expectedRedirectUri);
           
           updateStage("exchangeStarted", "PASS");
           updateStage("exchangeRequestSent", "PASS");
