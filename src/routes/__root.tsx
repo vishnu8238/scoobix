@@ -71,13 +71,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isDesktop = pathname.startsWith("/admin");
-  // Re-mount the routed tree once live catalog data replaces the seed arrays.
-  const catalogVersion = useSyncExternalStore(subscribeCatalog, getCatalogVersion, () => 0);
-  const href = useRouterState({ select: (s) => s.location.href });
-
-  // Remember the last app screen so refreshes resume exactly where you were.
 
   // Offline-capable static asset cache + warm the manifest/icon the shell needs.
   useEffect(() => {
@@ -88,14 +81,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ScoobixProviders>
-        {isDesktop ? (
-          <Outlet />
-        ) : (
-          <PhoneShell>
-            <Outlet />
-          </PhoneShell>
-        )}
-
+        <AppShellContent />
         <Toaster position="top-center" richColors closeButton={false} />
         <CartConflictDialog />
         <NetworkBanner />
@@ -103,5 +89,28 @@ function RootComponent() {
         <InsForgeBootstrap />
       </ScoobixProviders>
     </QueryClientProvider>
+  );
+}
+
+/**
+ * AppShellContent separates the routing logic from the providers to ensure
+ * providers remain stable even if the layout needs to adapt.
+ */
+function AppShellContent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isDesktop = pathname.startsWith("/admin");
+  
+  // catalogVersion is used for reactive data updates, but we NO LONGER
+  // use it as a key for the Outlet. This prevents destructive remounts.
+  useSyncExternalStore(subscribeCatalog, getCatalogVersion, () => 0);
+
+  if (isDesktop) {
+    return <Outlet />;
+  }
+
+  return (
+    <PhoneShell>
+      <Outlet />
+    </PhoneShell>
   );
 }
