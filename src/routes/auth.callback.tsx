@@ -3,6 +3,13 @@ import { useEffect, useState, useRef } from "react";
 import { insforge, INSFORGE_URL } from "@/lib/insforge";
 import { popPortalIntent, getOAuthCallbackUrl, getApplePkce, clearApplePkce } from "@/lib/insforge-auth";
 
+/**
+ * Duplicate exchange protection map (module-level to survive React remounts).
+ * Key: authorization code, Value: promise of the exchange
+ */
+const inflightExchanges = new Map<string, Promise<any>>();
+
+
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
 });
@@ -168,13 +175,16 @@ function AuthCallback() {
         console.log(`[APPLE_CODE_DETECTED] ${timestamp()}`);
         updateStage("appleCodeDetected", "PASS");
         
-        if (exchangeAttempted) {
-          console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - EXCHANGE_ATTEMPTS: 2 (Blocked)`);
+        if (inflightExchanges.has(code)) {
+          console.log(`[APPLE_EXCHANGE_DEBUG] ${timestamp()} - DUPLICATE_EXCHANGE_PREVENTED (Code in flight)`);
           updateValue("exchangeAttempts", 2);
           return;
         }
-        setExchangeAttempted(true);
-        updateValue("exchangeAttempts", 1);
+        
+        // Wrap the exchange logic in a promise and store it
+        const exchangePromise = (async () => {
+          updateValue("exchangeAttempts", 1);
+
         
         try {
           // Priority 1: sessionStorage (SDK default)
@@ -273,8 +283,16 @@ function AuthCallback() {
           updateValue("safeError", `Crash: ${err.message || "Unknown"}`);
           console.error(`[EXCHANGE_CRASH] ${timestamp()} - Error:`, err.message || err);
           setErrorMsg("An unexpected error occurred during login.");
-          return;
+        } finally {
+          // Remove from inflight map if it failed, but we generally want to avoid 
+          // re-exchanging same code (as it's single use). 
+          // However, for debugging we might keep it there.
         }
+        })();
+
+        inflightExchanges.set(code, exchangePromise);
+        await exchangePromise;
+
       }
 
       try {
