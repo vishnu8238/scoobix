@@ -1,23 +1,19 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { insforge } from "@/lib/insforge";
+import { popPortalIntent } from "@/lib/insforge-auth";
 
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
-  validateSearch: (search: Record<string, unknown>) => ({
-    portal: (search.portal as string) || "customer",
-    error: search.error as string | undefined,
-    error_description: search.error_description as string | undefined,
-  }),
 });
 
 function AuthCallback() {
-  const { portal, error: searchError, error_description } = useSearch({ from: "/auth/callback" });
   const navigate = useNavigate();
-  const [errorMsg, setErrorMsg] = useState<string | null>(searchError ? error_description || searchError : null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (searchError) return;
+    const portal = popPortalIntent();
+    console.log("[AUTH] Callback portal intent recovered:", portal);
 
     const checkAuth = async () => {
       const { data, error } = await insforge.auth.getCurrentUser();

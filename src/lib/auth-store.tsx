@@ -87,16 +87,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2. Resolve Memberships
       const roles: Role[] = ["customer"];
       
-      const [partner, rider, manager] = await Promise.all([
-        listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }),
-        listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }),
-        listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }),
-      ]);
+      try {
+        const [partner, rider, manager] = await Promise.all([
+          listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }),
+          listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }),
+          listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }),
+        ]);
 
-      if (partner.length) roles.push("partner");
-      if (rider.length) roles.push("rider");
-      if (manager.length) roles.push("manager");
-      if (profile.role === "admin") roles.push("admin");
+        if (partner.length) roles.push("partner");
+        if (rider.length) roles.push("rider");
+        if (manager.length) roles.push("manager");
+        if (profile.role === "admin") roles.push("admin");
+      } catch (err) {
+        console.error("[AUTH] Failed to resolve memberships:", err);
+        // Fallback to customer if membership query fails
+      }
 
       const currentPortal = getRequestedPortal() as Role;
       
@@ -109,8 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: roles.includes(currentPortal) ? currentPortal : roles[0],
         roles,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("[AUTH] Failed to resolve user:", err);
+      // Surface error if needed, for now null signals unauth
       setUser(null);
     } finally {
       setLoading(false);
