@@ -20,6 +20,8 @@ import {
 } from "@/lib/restaurant-extras";
 import { cn } from "@/lib/format";
 
+import { RoleGuard } from "@/components/cravio/RoleGuard";
+
 export const Route = createFileRoute("/app/")({
   head: () => ({
     meta: [
@@ -27,7 +29,11 @@ export const Route = createFileRoute("/app/")({
       { name: "description", content: "Discover top restaurants and trending dishes near you." },
     ],
   }),
-  component: Home,
+  component: () => (
+    <RoleGuard allow="customer">
+      <Home />
+    </RoleGuard>
+  ),
 });
 
 /** Mock predicate for each home chip kind. */
