@@ -191,8 +191,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // 3. Resolve Memberships — canonical identity only
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_STARTED`);
-      const requestedPortal = intent || getRequestedPortal(window.location.pathname);
+      const membershipsTimer = setTimeout(() => {
+        console.error(`[AUTH_DEBUG_TIMEOUT] resolveUserMemberships stuck for 8s (Canonical: ${canonicalUserId})`);
+      }, 8000);
       const memberships = await resolveUserMemberships(canonicalUserId);
+      clearTimeout(membershipsTimer);
       console.log(`[AUTH_DEBUG] MEMBERSHIP_RESOLUTION_RESULT:`, memberships);
       const activeRoles = (Object.keys(memberships) as Role[]).filter(r => memberships[r]);
 
