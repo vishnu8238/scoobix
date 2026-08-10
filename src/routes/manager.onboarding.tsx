@@ -39,11 +39,7 @@ export const Route = createFileRoute("/manager/onboarding")({
       { name: "description", content: "Collect restaurant, owner, location, document and payout details." },
     ],
   }),
-  component: () => (
-    <RoleGuard allow="manager">
-      <OnboardingFlow />
-    </RoleGuard>
-  ),
+  component: OnboardingFlow,
 });
 
 const STEPS = [
