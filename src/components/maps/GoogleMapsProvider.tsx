@@ -19,7 +19,7 @@ export function GoogleMapsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <APIProvider apiKey={apiKey}>
+    <APIProvider apiKey={apiKey} libraries={["places", "marker", "geometry"]}>
       {children}
     </APIProvider>
   );
