@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, Map as MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-store";
+import { GoogleMap } from "@/components/maps/GoogleMap";
 
 export const Route = createFileRoute("/customer/login")({
   head: () => ({ meta: [{ title: "Scoobix · Customer Login" }] }),
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/customer/login")({
 });
 
 function CustomerLogin() {
+  console.log("[MAPS_DEBUG] CustomerLogin mounted");
   console.log("[AUTH_DEBUG] [CHECKPOINT: CUSTOMER_LOGIN_START]");
   const { login, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -43,6 +45,10 @@ function CustomerLogin() {
           Continue with Google
         </Button>
 
+      </div>
+
+      <div className="mt-8 opacity-0 pointer-events-none" aria-hidden="true">
+        <GoogleMap height={1} zoom={1} />
       </div>
 
       <p className="mt-10 text-[11px] text-muted-foreground max-w-[280px]">
