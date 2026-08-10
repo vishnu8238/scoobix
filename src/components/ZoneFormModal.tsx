@@ -287,8 +287,23 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
              <GoogleMap 
                className="h-full w-full" 
                interactive 
-               pickedAt={formData.boundary.coordinates?.[0]?.length ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : null}
+               polygons={formData.boundary.coordinates?.[0]?.length ? [{
+                 id: "editor",
+                 points: formData.boundary.coordinates[0].map((c: any) => ({ lat: c[1], lng: c[0] })),
+                 color: "var(--color-primary)"
+               }] : []}
+               onPolygonEdit={(_, points) => {
+                 const newCoords = points.map(p => [p.lng, p.lat]);
+                 if (newCoords.length > 0) {
+                    newCoords.push([...newCoords[0]]);
+                 }
+                 setFormData(prev => ({ 
+                   ...prev, 
+                   boundary: { type: "Polygon", coordinates: [newCoords] } 
+                 }));
+               }}
                onPick={(coords) => {
+                 if (formData.boundary.coordinates?.[0]?.length) return;
                  const lat = coords.lat;
                  const lng = coords.lng;
                  const offset = 0.005;

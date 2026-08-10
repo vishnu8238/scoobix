@@ -64,7 +64,7 @@ function CustomMarker({ kind, pulse, label, lat, lng }: { kind: MarkerKind; puls
   );
 }
 
-function Polyline({ points, color, dash }: { points: LatLng[]; color?: string; dash?: boolean }) {
+function Polyline({ points, color, weight, dash }: { points: LatLng[]; color?: string; weight?: number; dash?: boolean }) {
   const map = useMap();
   useEffect(() => {
     if (!map) return;
@@ -73,7 +73,7 @@ function Polyline({ points, color, dash }: { points: LatLng[]; color?: string; d
       geodesic: true,
       strokeColor: color || "#3B82F6",
       strokeOpacity: dash ? 0 : 0.9,
-      strokeWeight: 4,
+      strokeWeight: weight || 4,
       icons: dash ? [{
         icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 4 },
         offset: "0",
@@ -82,7 +82,7 @@ function Polyline({ points, color, dash }: { points: LatLng[]; color?: string; d
       map,
     });
     return () => poly.setMap(null);
-  }, [map, points, color, dash]);
+  }, [map, points, color, weight, dash]);
   return null;
 }
 
@@ -230,8 +230,8 @@ function GoogleMapInner({
             points={p.points} 
             color={p.color} 
             label={p.label} 
-            editable={!!props.onPolygonEdit} 
-            onEdit={props.onPolygonEdit}
+            editable={!!onPolygonEdit} 
+            onEdit={onPolygonEdit}
           />
         ))}
 
