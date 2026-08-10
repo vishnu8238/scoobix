@@ -23,6 +23,8 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
 
   useEffect(() => {
     if (loading) return;
+    
+
 
     // 1. Not logged in? Redirect to portal-specific login
     if (!user) {
