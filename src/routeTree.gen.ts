@@ -64,6 +64,7 @@ import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
 import { Route as ManagerOnboardingRouteImport } from './routes/manager.onboarding'
 import { Route as ManagerNotificationsRouteImport } from './routes/manager.notifications'
 import { Route as ManagerMoreRouteImport } from './routes/manager.more'
+import { Route as ManagerLoginRouteImport } from './routes/manager.login'
 import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
@@ -399,6 +400,11 @@ const ManagerNotificationsRoute = ManagerNotificationsRouteImport.update({
 const ManagerMoreRoute = ManagerMoreRouteImport.update({
   id: '/more',
   path: '/more',
+  getParentRoute: () => ManagerRoute,
+} as any)
+const ManagerLoginRoute = ManagerLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => ManagerRoute,
 } as any)
 const ManagerLeadsRoute = ManagerLeadsRouteImport.update({
@@ -775,6 +781,7 @@ export interface FileRoutesByFullPath {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
+  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -888,6 +895,7 @@ export interface FileRoutesByTo {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
+  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -1007,6 +1015,7 @@ export interface FileRoutesById {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
+  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -1127,6 +1136,7 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
+    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1240,6 +1250,7 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
+    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1358,6 +1369,7 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
+    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1809,6 +1821,13 @@ declare module '@tanstack/react-router' {
       path: '/more'
       fullPath: '/manager/more'
       preLoaderRoute: typeof ManagerMoreRouteImport
+      parentRoute: typeof ManagerRoute
+    }
+    '/manager/login': {
+      id: '/manager/login'
+      path: '/login'
+      fullPath: '/manager/login'
+      preLoaderRoute: typeof ManagerLoginRouteImport
       parentRoute: typeof ManagerRoute
     }
     '/manager/leads': {
@@ -2374,6 +2393,7 @@ interface ManagerRouteChildren {
   ManagerCalendarRoute: typeof ManagerCalendarRoute
   ManagerHistoryRoute: typeof ManagerHistoryRoute
   ManagerLeadsRoute: typeof ManagerLeadsRoute
+  ManagerLoginRoute: typeof ManagerLoginRoute
   ManagerMoreRoute: typeof ManagerMoreRoute
   ManagerNotificationsRoute: typeof ManagerNotificationsRoute
   ManagerOnboardingRoute: typeof ManagerOnboardingRoute
@@ -2392,6 +2412,7 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerCalendarRoute: ManagerCalendarRoute,
   ManagerHistoryRoute: ManagerHistoryRoute,
   ManagerLeadsRoute: ManagerLeadsRoute,
+  ManagerLoginRoute: ManagerLoginRoute,
   ManagerMoreRoute: ManagerMoreRoute,
   ManagerNotificationsRoute: ManagerNotificationsRoute,
   ManagerOnboardingRoute: ManagerOnboardingRoute,
