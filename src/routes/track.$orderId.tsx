@@ -36,8 +36,9 @@ function TrackPage() {
   }
 
   const delivered = order.status === "DELIVERED";
-  const pickup = restaurantCoords(order.restaurantId);
-  const drop = userCoords ?? addressCoords(order.addressLine || order.addressLabel);
+  const pickup = order.restaurantId ? restaurantCoords(order.restaurantId) : CITY_CENTER;
+  const drop = userCoords ?? addressCoords(order.addressLine || order.addressLabel || "Default");
+
 
   return (
     <div className="min-h-svh pb-8">

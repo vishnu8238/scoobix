@@ -25,9 +25,10 @@ export const insforge = createClient({
 });
 
 export const getAccessToken = async () => {
-  const { data } = await insforge.auth.getCurrentUser();
-  return (data.user as any)?.accessToken || null;
+  const { data } = await insforge.auth.getSession();
+  return data.session?.access_token || null;
 };
+
 
 const insforgeHeaders = async () => {
   const token = await getAccessToken() || INSFORGE_ANON_KEY;
