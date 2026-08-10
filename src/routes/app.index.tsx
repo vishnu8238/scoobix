@@ -65,6 +65,7 @@ const DEFAULT_ADV: AdvState = {
 };
 
 function Home() {
+  console.log("[AUTH_DEBUG] Home Mounting");
   const navigate = useNavigate();
   const { filters, sections, closedRestaurants, pureVegOverrides } = useCms();
   const { vegMode } = useAppUI();
