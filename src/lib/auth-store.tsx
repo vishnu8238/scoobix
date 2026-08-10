@@ -160,14 +160,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log(`[PORTAL_TRACE] session_uuid: ${sess.id}`);
       
       // 1. Resolve the CANONICAL application identity for this Auth UUID.
-      //    Only an explicit auth_identity_links row can map this session onto a
-      //    different canonical identity. No email matching, ever.
+      const timer = setTimeout(() => {
+        console.error(`[AUTH_DEBUG_TIMEOUT] resolveCanonicalUserId stuck for 8s (UUID: ${sess.id})`);
+        setAuthError("Account verification is taking longer than expected. Please try again.");
+      }, 8000);
+
       const { canonicalUserId, linked } = await resolveCanonicalUserId(sess.id);
+      clearTimeout(timer);
       console.log(`[AUTH_DEBUG] CANONICAL_IDENTITY: ${canonicalUserId} (explicit link: ${linked})`);
 
-      // 2. Resolve Profile (keyed by canonical identity)
+      // 2. Resolve Profile
       console.log(`[AUTH_DEBUG] PROFILE_START`);
-      const profile = await fetchUserProfile(canonicalUserId);
+      const profile = await fetchUserProfile(canonicalUserId).catch(err => {
+        console.error("[AUTH_DEBUG] Profile fetch failed:", err);
+        return null;
+      });
       const email = profile?.email || sess.email || "";
       const name = profile?.name || sess.metadata?.name as string || email.split("@")[0] || "User";
 
@@ -178,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           name,
           referral_code: referralCodeFor(canonicalUserId, name)
-        });
+        }).catch(err => console.error("[AUTH_DEBUG] Profile creation failed:", err));
       }
       console.log(`[AUTH_DEBUG] PROFILE_SUCCESS`);
 
