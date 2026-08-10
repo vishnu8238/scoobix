@@ -25,9 +25,10 @@ export const insforge = createClient({
 });
 
 export const getAccessToken = async () => {
-  const { data } = await insforge.auth.getSession();
-  return data.session?.access_token || null;
+  const { data } = await insforge.auth.getCurrentUser();
+  return (data.user as any)?.access_token || (data.user as any)?.accessToken || null;
 };
+
 
 
 const insforgeHeaders = async () => {

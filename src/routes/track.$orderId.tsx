@@ -5,7 +5,7 @@ import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
 import { TimelineStepper } from "@/components/cravio/TimelineStepper";
 import { Button } from "@/components/ui/button";
 import { currency } from "@/lib/format";
-import { addressCoords, restaurantCoords, statusToProgress } from "@/lib/geo";
+import { addressCoords, restaurantCoords, statusToProgress, CITY_CENTER } from "@/lib/geo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/track/$orderId")({
