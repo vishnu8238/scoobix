@@ -427,19 +427,19 @@ async function scanFakeRiders(): Promise<FraudFinding[]> {
 /** Users or riders cancelling far more often than the norm. */
 async function scanCancellations(): Promise<FraudFinding[]> {
   const rows = await listPage<Row>("orders", 0, 500, {
-    select: "id,user_id,driver_id,status,created_at", created_at: `gte.${since(24 * 14)}`, order: "created_at.desc",
+    select: "id,customer_id,driver_id,status,created_at", created_at: `gte.${since(24 * 14)}`, order: "created_at.desc",
   }, { ttl: 120 }).catch(() => []);
 
   const cancelled = rows.filter((r) => /cancel/i.test(str(r.status)));
   const out: FraudFinding[] = [];
-  for (const key of ["user_id", "driver_id"] as const) {
+  for (const key of ["customer_id", "driver_id"] as const) {
     for (const [id, list] of groupCount(cancelled, key)) {
       if (list.length < 5) continue;
       const total = rows.filter((r) => str(r[key]) === id).length || list.length;
       const rate = list.length / total;
       out.push({
         kind: "order_cancellations",
-        subjectType: key === "user_id" ? "user" : "driver",
+        subjectType: key === "customer_id" ? "user" : "driver",
         subjectId: id,
         subjectLabel: `${list.length}/${total} cancelled`,
         score: Math.min(100, Math.round(rate * 70) + list.length * 3),
