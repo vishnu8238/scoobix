@@ -13,6 +13,14 @@ export type User = {
   avatar: string;
   role: Role;
   roles: Role[];
+  /**
+   * True only once real membership resolution has definitively completed.
+   * While false, `roles` is NOT authoritative and must never be used to deny
+   * access or redirect the user to a different portal.
+   */
+  membershipsResolved: boolean;
+  /** Navigation context only — never an authorization source. */
+  pendingPortal?: Role;
 };
 
 type AuthCtx = {
@@ -62,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = profiles[0];
 
       if (!profile) {
+        // No profile row: resolution is definitive — there are no memberships.
         setUser({
           id: authId,
           name: (session.user.profile as any)?.name || "New User",
@@ -70,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           avatar: "",
           role: "customer",
           roles: ["customer"],
+          membershipsResolved: true,
+          pendingPortal: getRequestedPortal() as Role,
         });
         return;
       }
@@ -95,22 +106,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Failed to resolve memberships:", err);
-        // If a query fails, we do NOT remove roles. 
-        // In a real failure, we might want to retry or show an error, 
-        // but we definitely don't want to send the user to onboarding.
-        return; 
+        // Resolution FAILED — it is not authoritative. Publish the user with
+        // membershipsResolved=false so guards keep waiting instead of denying
+        // access or bouncing the user to another portal.
+        setUser({
+          id: profile.id,
+          name: profile.name || "User",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          avatar: profile.avatar_url || "",
+          role: roles[0],
+          roles,
+          membershipsResolved: false,
+          pendingPortal: getRequestedPortal() as Role,
+        });
+        return;
       }
 
       const currentPortal = getRequestedPortal() as Role;
-      
+
       setUser({
         id: profile.id,
         name: profile.name || "User",
         email: profile.email || "",
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
-        role: roles.includes(currentPortal) ? currentPortal : (currentPortal !== "customer" ? currentPortal : roles[0]),
+        // Authoritative: only a real resolved membership can be the active role.
+        role: roles.includes(currentPortal) ? currentPortal : roles[0],
         roles,
+        membershipsResolved: true,
+        pendingPortal: currentPortal,
       });
     } catch (err: any) {
       console.error("Failed to resolve user:", err);
