@@ -22,7 +22,10 @@ function RiderLogin() {
 
       <div className="mt-10 w-full space-y-4 max-w-[320px]">
         <Button 
-          onClick={() => login('google', 'rider')}
+          onClick={() => {
+            console.log("[GOOGLE_OAUTH] BUTTON_CLICKED - UI (Rider)");
+            login('google', 'rider');
+          }}
           className="h-14 w-full rounded-2xl bg-white text-black ring-1 ring-border shadow-soft hover:bg-zinc-50 font-bold"
         >
           <img src="https://www.google.com/favicon.ico" className="mr-3 h-5 w-5" alt="" />
