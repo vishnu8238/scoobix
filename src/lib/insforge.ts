@@ -24,10 +24,9 @@ export const insforge = createClient({
   anonKey: INSFORGE_ANON_KEY,
 });
 
-import { getAccessToken } from "./insforge-auth";
-
-const insforgeHeaders = () => {
-  const token = getAccessToken() || INSFORGE_ANON_KEY;
+const insforgeHeaders = async () => {
+  const { data } = await insforge.auth.getCurrentUser();
+  const token = (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
   return {
     apikey: INSFORGE_ANON_KEY,
     Authorization: `Bearer ${token}`,
@@ -82,10 +81,11 @@ export type AddonRow = {
 // ---------- fetch helper ----------
 
 async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit): Promise<T> {
+  const headers = await insforgeHeaders();
   const res = await fetch(`${INSFORGE_URL}${path}`, {
     ...init,
     headers: {
-      ...insforgeHeaders(),
+      ...headers,
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
@@ -99,10 +99,11 @@ async function ifFetch<T>(path: string, signal?: AbortSignal, init?: RequestInit
 
 async function ifWrite(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown, headers?: Record<string, string>): Promise<{ ok: boolean }> {
   try {
+    const headersBase = await insforgeHeaders();
     const res = await fetch(`${INSFORGE_URL}${path}`, {
       method,
       headers: {
-        ...insforgeHeaders(),
+        ...headersBase,
         "Content-Type": "application/json",
         ...headers,
       },

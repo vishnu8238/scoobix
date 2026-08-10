@@ -137,8 +137,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [resolveUser]);
 
   const login = async (provider: 'google' | 'apple', portal: string = "customer") => {
-    if (provider === 'google') await loginWithGoogle(portal);
-    else await loginWithApple(portal);
+    console.log(`[GOOGLE_OAUTH] AUTH_STORE_LOGIN - Provider: ${provider}, Portal: ${portal}`);
+    try {
+      if (provider === 'google') await loginWithGoogle(portal);
+      else await loginWithApple(portal);
+    } catch (err) {
+      console.error("[GOOGLE_OAUTH] AUTH_STORE_ERROR:", err);
+      // Ensure error is surfaced if needed by UI
+      throw err;
+    }
   };
 
   const logout = async () => {
