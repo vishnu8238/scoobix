@@ -25,9 +25,10 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
 const PRIMARY = new Set(NAV.map((n) => n.to));
 
 function ManagerLayout() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <RoleGuard allow="manager" transitionLabel="Accessing Manager Portal...">
-      <ManagerShell />
+      <ManagerShell pathname={pathname} />
     </RoleGuard>
   );
 }
