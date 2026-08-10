@@ -23,7 +23,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
 
   useEffect(() => {
     if (loading) return;
-    console.log(`[AUTH_DEBUG] RoleGuard Path: ${pathname}, Portal: ${portal}, User: ${user?.id}, MembershipsResolved: ${user?.membershipsResolved}, Roles: ${user?.roles.join(',')}`);
+    
 
 
     // 1. Not logged in? Redirect to portal-specific login
