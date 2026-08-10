@@ -452,9 +452,17 @@ export function bootstrapInsForge(): Promise<{ ok: boolean; error?: string }> {
 
       const totalRows = rests.length + cats.length + menu.length + addons.length;
       if (totalRows === 0) {
+        // Hydrate CMS snapshot if backend is empty
+        const { hydrateFromKV } = await import("./cms-store");
+        await hydrateFromKV();
         insforgeState.status = "empty";
         return { ok: true };
       }
+
+      // Hydrate CMS snapshot alongside real data
+      const { hydrateFromKV } = await import("./cms-store");
+      void hydrateFromKV().catch(() => {});
+
 
       const menuByRest = new Map<string, Dish[]>();
       for (const m of menu) {
