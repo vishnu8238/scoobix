@@ -46,25 +46,29 @@ function AuthCallback() {
           console.log("[APPLE_EXCHANGE_DEBUG] EXCHANGE_REDIRECT_URI:", redirectUri);
           
           // SDK v1.4.2 exchangeOAuthCode(code, codeVerifier) signature verified.
-          // However, forensic trace shows the SDK omits redirect_uri in the POST body.
-          // We manually perform the exchange to ensure redirect_uri parity.
+          // We manually perform the exchange to ensure redirect_uri parity and capture full response.
           console.log("[APPLE_EXCHANGE_DEBUG] EXCHANGE_REQUEST_SENT (Manual Fetch)");
+          
+          const exchangeBody = {
+            code,
+            code_verifier: pkceVerifier,
+            redirect_uri: redirectUri
+          };
+          
           const response = await fetch(`${INSFORGE_URL}/api/auth/oauth/exchange`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              code,
-              code_verifier: pkceVerifier,
-              redirect_uri: redirectUri
-            })
+            body: JSON.stringify(exchangeBody)
           });
 
           console.log("[APPLE_EXCHANGE_DEBUG] EXCHANGE_HTTP_STATUS:", response.status);
           
           if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            console.error("[APPLE_EXCHANGE_DEBUG] EXCHANGE_RESPONSE_FAILURE:", errData);
-            setErrorMsg(`Login failed (HTTP ${response.status}): ${errData.message || 'Unknown error'}`);
+            const errText = await response.text();
+            let errData = {};
+            try { errData = JSON.parse(errText); } catch(e) {}
+            console.error("[APPLE_EXCHANGE_DEBUG] EXCHANGE_RESPONSE_FAILURE:", errData || errText);
+            setErrorMsg(`Login failed (HTTP ${response.status}): ${errData.message || errText || 'Unknown error'}`);
             return;
           }
 
@@ -73,7 +77,7 @@ function AuthCallback() {
           
           // Manually persist session into SDK
           // @ts-ignore - accessing internal session persistence
-          if (typeof (insforge.auth as any).saveSessionFromResponse === 'function') {
+          if (insforge.auth && typeof (insforge.auth as any).saveSessionFromResponse === 'function') {
              (insforge.auth as any).saveSessionFromResponse(sessionData);
           }
 
@@ -81,7 +85,7 @@ function AuthCallback() {
           console.log("[APPLE_EXCHANGE_DEBUG] ACCESS_TOKEN_PRESENT:", !!sessionData.access_token);
           console.log("[APPLE_EXCHANGE_DEBUG] REFRESH_TOKEN_PRESENT:", !!sessionData.refresh_token);
 
-          // Clean the URL code param
+          // Clean the URL code param to prevent reuse
           const newUrl = window.location.origin + window.location.pathname;
           window.history.replaceState({}, document.title, newUrl);
         } catch (err: any) {
@@ -129,7 +133,10 @@ function AuthCallback() {
         <h2 className="font-display text-xl font-bold">Authentication failed</h2>
         <p className="text-sm text-muted-foreground mt-2 max-w-xs">{errorMsg}</p>
         <button 
-          onClick={() => navigate({ to: "/" as any })}
+          onClick={() => {
+             // Use window.location.assign for a clean reload/redirect
+             window.location.assign("/");
+          }}
           className="mt-6 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium"
         >
           Return to home
