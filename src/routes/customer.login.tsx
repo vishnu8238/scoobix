@@ -9,7 +9,14 @@ export const Route = createFileRoute("/customer/login")({
 });
 
 function CustomerLogin() {
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate({ to: "/app", replace: true });
+    }
+  }, [user, loading, navigate]);
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center px-6 text-center animate-fade-up">
