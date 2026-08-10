@@ -57,8 +57,11 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
         } else if (portal === "rider" && !user.roles.includes("rider")) {
           navigate({ to: "/rider/onboarding" as any });
         } else if (portal === "manager" && !user.roles.includes("manager")) {
-          // Managers without membership go to onboarding
-          navigate({ to: "/manager/onboarding" as any });
+          // If the user is logged in but doesn't have the manager role, 
+          // we don't automatically send them to onboarding if we are in manager portal.
+          // We let the specific page handle onboarding triggers.
+          // However, for Manager portal specifically, authorization is REQUIRED for /manager.
+          navigate({ to: "/app" as any });
         } else {
           // Default to customer app
           navigate({ to: "/app" as any });
@@ -74,7 +77,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   
   if (loading) {
     // If we are already on a login page, just show it.
-    if (pathname.includes("/login") || pathname.includes("/onboarding")) {
+    if (pathname.includes("/login")) {
       return <>{children}</>;
     }
     
