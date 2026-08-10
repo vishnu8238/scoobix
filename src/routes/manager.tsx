@@ -50,6 +50,9 @@ function ManagerShell({ pathname }: { pathname: string }) {
     );
   }
 
+  // Admission is based solely on Manager membership (manager record existence and active status).
+  // Restaurant onboarding status is a feature, not a blocker.
+  
   return (
     <div className="relative pb-24">
       <Outlet />
