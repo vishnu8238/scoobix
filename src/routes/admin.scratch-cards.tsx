@@ -7,7 +7,6 @@ import { Plus, Edit2, Trash2, Gift, Loader2, Save, X, Calendar, DollarSign, Targ
 import { format } from "date-fns";
 import type { RewardCampaignRow } from "@/lib/loyalty-engine";
 
-
 export const Route = createFileRoute("/admin/scratch-cards")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Scratch Cards" }] }),
   component: ScratchCardsPage,
@@ -69,11 +68,11 @@ function ScratchCardsPage() {
         <DataTable
           columns={["Name", "Reward", "Budget", "Spent", "Issued", "Status", "Actions"]}
           rows={campaigns.map(c => [
-            <div key={c.id} className="flex flex-col">
+            <div key={c.id} className="flex flex-col text-left">
               <span className="font-bold">{c.name}</span>
               <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{c.type}</span>
             </div>,
-            <div key={c.id + "r"} className="flex flex-col">
+            <div key={c.id + "r"} className="flex flex-col text-left">
               <span className="text-sm font-medium">{c.reward_kind}</span>
               <span className="text-[10px] text-muted-foreground">Range: ₹{c.reward_min} - ₹{c.reward_max}</span>
             </div>,
@@ -183,7 +182,7 @@ function CampaignModal({ isOpen, onClose, onSuccess, initialData }: {
             <X className="h-5 w-5" />
           </button>
         </header>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto text-left">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Campaign Name</label>
@@ -298,4 +297,3 @@ function CampaignModal({ isOpen, onClose, onSuccess, initialData }: {
     </div>
   );
 }
-
