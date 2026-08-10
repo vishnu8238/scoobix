@@ -24,6 +24,17 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   useEffect(() => {
     if (loading) return;
 
+    // [MANAGER_REDIRECT_AUDIT]
+    if (portal === "manager" && user?.roles.includes("manager")) {
+      console.log("[MANAGER_REDIRECT_AUDIT]", {
+        AUTH_USER: user?.id,
+        MANAGER_MEMBERSHIP: user?.roles.includes("manager"),
+        REQUESTED_PORTAL: portal,
+        CURRENT_PATH: pathname,
+        HAS_RESTAURANT: "unknown (membership exists)",
+      });
+    }
+
     // 1. Not logged in? Redirect to portal-specific login
     if (!user) {
       if (pathname.includes("/login") || pathname.includes("/onboarding")) return;
