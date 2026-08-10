@@ -79,21 +79,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       try {
         const [partner, rider, manager] = await Promise.all([
-          listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }),
-          listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }),
-          listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }),
+          listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+          listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+          listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
         ]);
 
-        if (partner.length) roles.push("partner");
-        if (rider.length) roles.push("rider");
-        if (manager.length) roles.push("manager");
+        if (partner.length > 0) roles.push("partner");
+        if (rider.length > 0) roles.push("rider");
+        if (manager.length > 0) roles.push("manager");
         
         // Strict admin check from profile
-        if (profile.role === "admin" || profile.is_admin === true) {
-          roles.push("admin");
+        if (profile.role === "admin" || profile.is_admin === true || profile.role === "MERCHANT_MANAGER") {
+          // Note: profile.role "MERCHANT_MANAGER" indicates a manager user
+          if (profile.role === "admin" || profile.is_admin === true) roles.push("admin");
         }
       } catch (err) {
         console.error("Failed to resolve memberships:", err);
+        // If a query fails, we do NOT remove roles. 
+        // In a real failure, we might want to retry or show an error, 
+        // but we definitely don't want to send the user to onboarding.
+        return; 
       }
 
       const currentPortal = getRequestedPortal() as Role;
