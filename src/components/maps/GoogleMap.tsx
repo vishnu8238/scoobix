@@ -23,6 +23,7 @@ type Props = {
   markers?: MapMarker[];
   route?: { from: LatLng; to: LatLng };
   polygons?: { id: string; points: LatLng[]; color?: string; label?: string }[];
+  polylines?: { id: string; points: LatLng[]; color?: string; weight?: number; dash?: boolean }[];
   riderProgress?: number;
   riderLabel?: string;
   center?: LatLng;
@@ -32,6 +33,7 @@ type Props = {
   className?: string;
   height?: number | string;
   interactive?: boolean;
+  onPolygonEdit?: (id: string, points: LatLng[]) => void;
 };
 
 const ICONS: Record<MarkerKind, { emoji: string; color: string }> = {
@@ -84,7 +86,7 @@ function Polyline({ points, color, dash }: { points: LatLng[]; color?: string; d
   return null;
 }
 
-function Polygon({ points, color, label }: { points: LatLng[]; color?: string; label?: string }) {
+function Polygon({ id, points, color, label, editable, onEdit }: { id: string; points: LatLng[]; color?: string; label?: string; editable?: boolean; onEdit?: (id: string, points: LatLng[]) => void }) {
   const map = useMap();
   useEffect(() => {
     if (!map || !points.length) return;
@@ -95,10 +97,35 @@ function Polygon({ points, color, label }: { points: LatLng[]; color?: string; l
       strokeWeight: 2,
       fillColor: color || "#3B82F6",
       fillOpacity: 0.15,
+      editable: editable || false,
       map,
     });
+
+    if (editable && onEdit) {
+      const update = () => {
+        const path = poly.getPath();
+        const newPoints: LatLng[] = [];
+        for (let i = 0; i < path.getLength(); i++) {
+          const p = path.getAt(i);
+          newPoints.push({ lat: p.lat(), lng: p.lng() });
+        }
+        onEdit(id, newPoints);
+      };
+      
+      const listeners = [
+        poly.getPath().addListener("set_at", update),
+        poly.getPath().addListener("insert_at", update),
+        poly.getPath().addListener("remove_at", update),
+      ];
+      
+      return () => {
+        listeners.forEach(l => (window as any).google.maps.event.removeListener(l));
+        poly.setMap(null);
+      };
+    }
+
     return () => poly.setMap(null);
-  }, [map, points, color, label]);
+  }, [map, points, color, label, editable, onEdit, id]);
   return null;
 }
 
@@ -106,6 +133,7 @@ function GoogleMapInner({
   markers = [],
   route,
   polygons = [],
+  polylines = [],
   riderProgress = 0,
   riderLabel,
   center,
@@ -154,6 +182,13 @@ function GoogleMapInner({
       });
     });
 
+    polylines.forEach(p => {
+      p.points.forEach(pt => {
+        bounds.extend(pt);
+        hasPoints = true;
+      });
+    });
+
     if (pickedAt) {
       bounds.extend(pickedAt);
       hasPoints = true;
@@ -189,7 +224,25 @@ function GoogleMapInner({
         ))}
 
         {polygons.map(p => (
-          <Polygon key={p.id} points={p.points} color={p.color} label={p.label} />
+          <Polygon 
+            key={p.id} 
+            id={p.id} 
+            points={p.points} 
+            color={p.color} 
+            label={p.label} 
+            editable={!!props.onPolygonEdit} 
+            onEdit={props.onPolygonEdit}
+          />
+        ))}
+
+        {polylines.map(p => (
+          <Polyline 
+            key={p.id} 
+            points={p.points} 
+            color={p.color} 
+            weight={p.weight} 
+            dash={p.dash} 
+          />
         ))}
 
         {route && (
