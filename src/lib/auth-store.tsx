@@ -3,7 +3,7 @@ import { loginWithGoogle, logout as ifLogout, getSession } from "./insforge-auth
 import { insforge } from "./insforge";
 import { listTable } from "./insforge-crud";
 
-export type Role = "customer" | "partner" | "rider" | "admin" | "manager";
+export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics";
 
 export type User = {
   id: string;
@@ -46,6 +46,7 @@ export const getRequestedPortal = () => {
   if (path.startsWith("/rider")) return "rider";
   if (path.startsWith("/manager")) return "manager";
   if (path.startsWith("/admin")) return "admin";
+  if (path.startsWith("/logistics")) return "logistics";
   return "customer";
 };
 
@@ -98,11 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
           listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
           listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+          listTable("logistics_staff", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
         ]);
 
         if (partner.length > 0) roles.push("partner");
         if (rider.length > 0) roles.push("rider");
         if (manager.length > 0) roles.push("manager");
+        if (logistics.length > 0) roles.push("logistics");
         
         // Strict admin check from profile
         if (profile.role === "admin" || profile.is_admin === true || profile.role === "MERCHANT_MANAGER") {
