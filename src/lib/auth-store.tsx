@@ -107,30 +107,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (manager.length > 0) roles.push("manager");
         if (logistics.length > 0) roles.push("logistics");
         
+        // Resolve logistics via email check (authoritative for admission)
+        const logisticsStaff = await listTable("logistics_staff", { email: `eq.${profile.email}`, limit: 1 }, { ttl: 0 });
+        if (logisticsStaff.length > 0) roles.push("logistics");
+
+        const [partner, rider, manager] = await Promise.all([
+          listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+          listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+          listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+        ]);
+
+        if (partner.length > 0) roles.push("partner");
+        if (rider.length > 0) roles.push("rider");
+        if (manager.length > 0) roles.push("manager");
+        
         // Strict admin check from profile
         if (profile.role === "admin" || profile.is_admin === true || profile.role === "MERCHANT_MANAGER") {
-          // Note: profile.role "MERCHANT_MANAGER" indicates a manager user
           if (profile.role === "admin" || profile.is_admin === true) roles.push("admin");
         }
         console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
-      } catch (err) {
-        console.error("Failed to resolve memberships:", err);
-        // Resolution FAILED — it is not authoritative. Publish the user with
-        // membershipsResolved=false so guards keep waiting instead of denying
-        // access or bouncing the user to another portal.
-        setUser({
-          id: profile.id,
-          name: profile.name || "User",
-          email: profile.email || "",
-          phone: profile.phone || "",
-          avatar: profile.avatar_url || "",
-          role: roles[0],
-          roles,
-          membershipsResolved: false,
-          pendingPortal: getRequestedPortal() as Role,
-        });
-        return;
-      }
 
       const currentPortal = getRequestedPortal() as Role;
       const admissionResult = roles.includes(currentPortal);

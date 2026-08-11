@@ -51,20 +51,20 @@ function AuthCallback() {
             if (portal === "logistics") {
               const { listTable } = await import("@/lib/insforge-crud");
               try {
+                // Determine admission based on email (authoritative staff list)
                 const rows = await listTable("logistics_staff", { 
-                  user_id: `eq.${authUser.id}`, 
+                  email: `eq.${authUser.email}`, 
                   limit: 1 
                 }, { ttl: 0 }); 
                 
                 if (!rows.length) {
-                  console.error("[AUTH_TRACE] Logistics unauthorized");
+                  console.error("[AUTH_TRACE] Logistics unauthorized (email check failed)");
                   window.location.assign("/logistics/login?error=unauthorized");
                   return true;
                 }
-                console.log("[AUTH_TRACE] Logistics authorized");
+                console.log("[AUTH_TRACE] Logistics authorized (email check passed)");
               } catch (e) {
                 console.error("[AUTH_TRACE] Logistics check failed:", e);
-                // Continue to RoleGuard if DB is down but user exists
               }
             }
 

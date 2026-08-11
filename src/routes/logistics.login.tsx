@@ -47,24 +47,17 @@ function LogisticsLogin() {
 
       {isUnauthorized && (
         <div className="mt-8 w-full max-w-[320px] overflow-hidden rounded-2xl bg-destructive/10 ring-1 ring-destructive/20 text-left">
-          <div className="p-4 border-b border-destructive/10">
+          <div className="p-4">
             <p className="text-xs font-bold text-destructive uppercase tracking-wider">Access Restricted</p>
             <p className="mt-1 text-[13px] font-medium text-destructive/90">
-              This account is not authorized for Logistics Operations.
+              This Google account is not authorized for Scoobix Logistics.
             </p>
+            {user && (
+               <p className="mt-2 text-[11px] text-destructive/70 truncate">
+                 Account: {user.email}
+               </p>
+            )}
           </div>
-          
-          {user && (
-            <div className="bg-slate-900/50 p-4 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center">
-                <Mail className="h-4 w-4 text-slate-500" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Current Account</span>
-                <span className="text-xs font-medium text-slate-300 truncate">{user.email}</span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
