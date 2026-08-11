@@ -2,31 +2,33 @@ import { APIProvider } from "@vis.gl/react-google-maps";
 import { ReactNode, useEffect, useState } from "react";
 import { getGoogleMapsApiKey } from "@/lib/maps-config.functions";
 
+/**
+ * Shared Google Maps provider wrapper.
+ * Fetches the API key from the server to bypass VITE_ prefix restrictions
+ * and ensure the key is always available from the environment.
+ */
 export function GoogleMapsProvider({ children }: { children: ReactNode }) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if it's already in the env (e.g. if configured via build settings)
     const envKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     if (envKey) {
-      console.log("[MAPS_DEBUG] Using build-time VITE_GOOGLE_MAPS_API_KEY:", envKey.slice(0, 6) + "...");
       setApiKey(envKey);
       setLoading(false);
       return;
     }
 
-    console.log("[MAPS_DEBUG] Fetching API key from server...");
+    // Otherwise fetch from server
     getGoogleMapsApiKey()
       .then((key) => {
         if (key) {
-          console.log("[MAPS_DEBUG] Server API key received:", key.slice(0, 6) + "...");
           setApiKey(key);
-        } else {
-          console.error("[MAPS_DEBUG] Server returned EMPTY API key.");
         }
       })
-      .catch((err) => {
-        console.error("[MAPS_DEBUG] Failed to fetch server API key:", err);
+      .catch(() => {
+        // Silently fail, the UI will handle the missing apiKey
       })
       .finally(() => {
         setLoading(false);
@@ -53,11 +55,7 @@ export function GoogleMapsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <APIProvider 
-      apiKey={apiKey} 
-      libraries={["places", "marker", "geometry"]}
-      onLoad={() => console.log("[MAPS_DEBUG] APIProvider script loaded successfully")}
-    >
+    <APIProvider apiKey={apiKey} libraries={["places", "marker", "geometry"]}>
       {children}
     </APIProvider>
   );
