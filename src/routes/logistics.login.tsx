@@ -12,6 +12,8 @@ export const Route = createFileRoute("/logistics/login")({
 function LogisticsLogin() {
   const { login, user, loading } = useAuth();
   const [isUnauthorized, setIsUnauthorized] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -20,7 +22,19 @@ function LogisticsLogin() {
     }
   }, []);
 
+  const handleGoogle = async () => {
+    setStatus("loading");
+    setErrorMsg(null);
+    try {
+      await login('google', 'logistics');
+    } catch (err: any) {
+      setStatus("error");
+      setErrorMsg(err?.message || "Unknown error");
+    }
+  };
+
   const hasLogisticsRole = user?.roles?.includes("logistics");
+
 
   if (loading) {
     return (
