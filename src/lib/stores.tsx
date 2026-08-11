@@ -628,7 +628,26 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(UI_KEY);
       if (raw) {
         const o = JSON.parse(raw);
-        if (o.location) setLocationState(o.location);
+        if (o.location) {
+          setLocationState(o.location);
+          // If the stored location is raw coordinates, trigger a resolution immediately
+          if (o.userCoords && /^-?\d+\.\d+, -?\d+\.\d+$/.test(o.location)) {
+            void (async () => {
+              try {
+                const resolved = await reverseGeocode(o.userCoords.lat, o.userCoords.lng);
+                const parts = resolved.split(',').map(s => s.trim());
+                if (parts.length > 1) {
+                  setLocationState(parts[0]);
+                  setSecondaryState(parts.slice(1).join(', '));
+                } else {
+                  setLocationState(resolved);
+                }
+              } catch (e) {
+                console.error("Failed to resolve stored coordinates:", e);
+              }
+            })();
+          }
+        }
         if (o.secondaryLocation) setSecondaryState(o.secondaryLocation);
         if (o.userCoords) setUserCoords(o.userCoords);
         if (Array.isArray(o.recentSearches)) setRecent(o.recentSearches);
