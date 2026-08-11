@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import type { Dish } from "@/lib/mock-data";
@@ -32,12 +32,16 @@ export function CustomizationSheet({
   const [qty, setQty] = useState(1);
 
   const sizeObj = SIZES.find((s) => s.id === size)!;
-  // Prefer InsForge add-ons for this dish; fall back to defaults when none exist.
-  const EXTRAS = useMemo(() => {
-    const fromBackend = addonsForDish(dish.id);
-    if (fromBackend.length === 0) return DEFAULT_EXTRAS;
-    return fromBackend.map((a) => ({ id: a.id, label: a.name, delta: a.price }));
+  const [EXTRAS, setEXTRAS] = useState(DEFAULT_EXTRAS);
+
+  useEffect(() => {
+    addonsForDish(dish.id).then((fromBackend) => {
+      if (fromBackend && fromBackend.length > 0) {
+        setEXTRAS(fromBackend.map((a: any) => ({ id: a.id, label: a.name, delta: a.price })));
+      }
+    });
   }, [dish.id]);
+
   const extrasObj = EXTRAS.filter((e) => extras.includes(e.id));
   const unit = useMemo(() => dish.price + sizeObj.delta + extrasObj.reduce((s, e) => s + e.delta, 0), [dish.price, sizeObj, extrasObj]);
 

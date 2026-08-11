@@ -44,7 +44,6 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     }
 
     // 2. Wait for membership resolution before making any access decisions
-    // This prevents a temporary "customer" role from triggering a redirect to /app
     if (!user.membershipsResolved) return;
 
     // 3. Membership Check
@@ -54,32 +53,16 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       const hasAccess = allowedRoles.some(role => user.roles.includes(role));
       
       if (!hasAccess) {
-        // Redirect to portal-specific admission/onboarding if roles are missing
-        if (portal === "partner" && !user.roles.includes("partner")) {
-          // Admission to /partner is granted to authenticated users; onboarding is a choice.
-          // We do NOT redirect to /partner/onboarding here.
-        } else if (portal === "rider" && !user.roles.includes("rider")) {
-          // Admission to /rider is granted to authenticated users; onboarding is a choice.
-          // We do NOT redirect to /rider/onboarding here.
-        } else if (portal === "manager" && !user.roles.includes("manager")) {
-          // If the user is logged in and resolution finished, but they STILL don't have the manager role,
-          // we stay on /manager and let the component handle the unauthorized/loading state.
-          // This avoids the silent /app fallback.
-        } else if (portal === "logistics" && !user.roles.includes("logistics")) {
-          // Admission to /logistics is granted ONLY to logistics staff.
-          // If authoritative resolution finished and they don't have it, redirect to login with error.
-          // CRITICAL: only redirect if we are NOT already on the login page to avoid loops.
+        if (portal === "logistics") {
+          // If authoritative resolution finished and they don't have it, stay on login page with error.
           if (!pathname.includes("/login")) {
             console.log("[AUTH_DEBUG] RoleGuard: Logistics unauthorized, redirecting to login.");
             window.location.assign("/logistics/login?error=unauthorized");
           }
-        } else {
-          // Default to customer app only if authoritative resolution shows they are just a customer
-          // and we are not on a portal-specific login page.
-          if (!pathname.includes("/login") && !pathname.includes("/onboarding")) {
-             console.log("[AUTH_DEBUG] RoleGuard: Defaulting to /app");
-             navigate({ to: "/app" as any });
-          }
+        } else if (!pathname.includes("/login") && !pathname.includes("/onboarding")) {
+           // Default fallback for other portals
+           console.log("[AUTH_DEBUG] RoleGuard: Defaulting to /app");
+           navigate({ to: "/app" as any });
         }
       }
     }

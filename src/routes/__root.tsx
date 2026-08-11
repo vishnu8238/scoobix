@@ -102,7 +102,7 @@ function AppShellContent() {
   
   // catalogVersion is used for reactive data updates, but we NO LONGER
   // use it as a key for the Outlet. This prevents destructive remounts.
-  useSyncExternalStore(subscribeCatalog, getCatalogVersion, () => 0);
+  useSyncExternalStore(subscribeCatalog, getCatalogVersion, () => "1.0.0");
 
   if (isDesktop) {
     return <Outlet />;

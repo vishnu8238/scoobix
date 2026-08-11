@@ -75,7 +75,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_USER_RESOLVED] Profile ID:", profile?.id);
 
       if (!profile) {
-        // No profile row: resolution is definitive — there are no memberships.
+        // No profile row: check for logistics authorization by email even without profile
+        const roles: Role[] = ["customer"];
+        const logisticsStaff = await listTable("logistics_staff", { email: `eq.${currentSession.user.email}`, limit: 1 }, { ttl: 0 });
+        if (logisticsStaff.length > 0) roles.push("logistics");
+
         console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Result: basic-customer (no profile)");
         setUser({
           id: authId,
@@ -83,8 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: currentSession.user.email || "",
           phone: "",
           avatar: "",
-          role: "customer",
-          roles: ["customer"],
+          role: roles.includes("logistics") ? "logistics" : "customer",
+          roles,
           membershipsResolved: true,
           pendingPortal: getRequestedPortal() as Role,
         });
@@ -94,43 +98,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2. Resolve Memberships
       const roles: Role[] = ["customer"];
       
-      try {
-        const [partner, rider, manager, logistics] = await Promise.all([
-          listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
-          listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
-          listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
-          listTable("logistics_staff", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
-        ]);
+      // Authoritative logistics check by email
+      const logisticsStaff = await listTable("logistics_staff", { email: `eq.${profile.email}`, limit: 1 }, { ttl: 0 });
+      if (logisticsStaff.length > 0) roles.push("logistics");
 
-        if (partner.length > 0) roles.push("partner");
-        if (rider.length > 0) roles.push("rider");
-        if (manager.length > 0) roles.push("manager");
-        if (logistics.length > 0) roles.push("logistics");
-        
-        // Strict admin check from profile
-        if (profile.role === "admin" || profile.is_admin === true || profile.role === "MERCHANT_MANAGER") {
-          // Note: profile.role "MERCHANT_MANAGER" indicates a manager user
-          if (profile.role === "admin" || profile.is_admin === true) roles.push("admin");
-        }
-        console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
-      } catch (err) {
-        console.error("Failed to resolve memberships:", err);
-        // Resolution FAILED — it is not authoritative. Publish the user with
-        // membershipsResolved=false so guards keep waiting instead of denying
-        // access or bouncing the user to another portal.
-        setUser({
-          id: profile.id,
-          name: profile.name || "User",
-          email: profile.email || "",
-          phone: profile.phone || "",
-          avatar: profile.avatar_url || "",
-          role: roles[0],
-          roles,
-          membershipsResolved: false,
-          pendingPortal: getRequestedPortal() as Role,
-        });
-        return;
+      const [partner, rider, manager] = await Promise.all([
+        listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+        listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+        listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+      ]);
+
+      if (partner.length > 0) roles.push("partner");
+      if (rider.length > 0) roles.push("rider");
+      if (manager.length > 0) roles.push("manager");
+      
+      // Strict admin check from profile
+      if (profile.role === "admin" || profile.is_admin === true || profile.role === "MERCHANT_MANAGER") {
+        if (profile.role === "admin" || profile.is_admin === true) roles.push("admin");
       }
+      console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
 
       const currentPortal = getRequestedPortal() as Role;
       const admissionResult = roles.includes(currentPortal);
@@ -142,7 +128,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: profile.email || "",
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
-        // Authoritative: only a real resolved membership can be the active role.
         role: roles.includes(currentPortal) ? currentPortal : (currentPortal === "logistics" && roles.includes("logistics") ? "logistics" : roles[0]),
         roles,
         membershipsResolved: true,
@@ -150,8 +135,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (err: any) {
       console.error("Failed to resolve user:", err);
-      // Fallback: If we have a session but resolution failed (e.g. database error),
-      // treat them as a basic customer to prevent redirect loops.
       if (currentSession?.user) {
         setUser({
           id: currentSession.user.id,
@@ -175,9 +158,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_MOUNT] Initializing auth listener");
     resolveUser();
 
-    const unsubscribe = insforge.auth.onAuthStateChange((event) => {
+    const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
       console.log(`[AUTH_DEBUG] Auth State Change: ${event}`);
-      // Single source of truth: resolveUser() handles session checks definitively.
       if (event === 'signedIn' || event === 'tokenRefreshed') {
         console.log("[AUTH_TRACE] Auth State Event: SIGNED_IN/TOKEN_REFRESHED -> Resolving User");
         resolveUser();
