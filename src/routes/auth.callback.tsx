@@ -40,15 +40,21 @@ function AuthCallback() {
 
           if (portal === "logistics") {
             const { listTable } = await import("@/lib/insforge-crud");
-            const rows = await listTable("logistics_staff", { 
-              user_id: `eq.${authUser.id}`, 
-              limit: 1 
-            }).catch(() => []);
-            
-            if (!rows.length) {
-              console.error("Unauthorized logistics login attempt:", authUser.email);
-              window.location.assign("/logistics/login?error=unauthorized");
-              return;
+            try {
+              const rows = await listTable("logistics_staff", { 
+                user_id: `eq.${authUser.id}`, 
+                limit: 1 
+              }, { ttl: 0 }); // Skip cache for security verification
+              
+              if (!rows.length) {
+                console.error("Unauthorized logistics login attempt:", authUser.email);
+                window.location.assign("/logistics/login?error=unauthorized");
+                return;
+              }
+            } catch (e) {
+              console.error("Failed to verify logistics membership during callback:", e);
+              // Fallback: resolution will happen again in AuthProvider.
+              // We proceed but RoleGuard will catch them if resolution fails there too.
             }
           }
 
