@@ -490,32 +490,7 @@ function OnboardingFlow() {
                     />
                   </div>
                 </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Latitude</Label>
-                    <Input 
-                      type="number" 
-                      value={form.latitude ?? ""} 
-                      onChange={(e) => set({ latitude: e.target.value === "" ? null : Number(e.target.value) })}
-                      placeholder="e.g. 22.3072"
-                      className="h-9 text-[13px] rounded-xl"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Longitude</Label>
-                    <Input 
-                      type="number" 
-                      value={form.longitude ?? ""} 
-                      onChange={(e) => set({ longitude: e.target.value === "" ? null : Number(e.target.value) })}
-                      placeholder="e.g. 73.1812"
-                      className="h-9 text-[13px] rounded-xl"
-                    />
-                  </div>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {form.latitude && form.longitude
-                    ? `Pinned at ${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
-                    : "Tap the map to drop the restaurant pin or enter coordinates manually."}
-                </p>
+              </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Opens at" value={form.opening_time} onChange={(v) => set({ opening_time: v })} placeholder="10:00" />
