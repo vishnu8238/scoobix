@@ -292,9 +292,9 @@ function RiderActive() {
   const navigateNow = () => {
     // Use the order-level pickup coordinates if available, otherwise fallback to restaurant row
     if (phase === "TO_PICKUP" || phase === "AT_PICKUP") {
-      const lat = order?.pickup_latitude ?? restaurant?.latitude ?? null;
-      const lng = order?.pickup_longitude ?? restaurant?.longitude ?? null;
-      const address = order?.pickup_address ?? restaurant?.address ?? restaurantName;
+      const lat = (order?.pickup_latitude as number | null) ?? (restaurant?.latitude as number | null) ?? null;
+      const lng = (order?.pickup_longitude as number | null) ?? (restaurant?.longitude as number | null) ?? null;
+      const address = (order?.pickup_address as string) ?? (restaurant?.address as string) ?? restaurantName;
       
       if (!startNavigation({ lat, lng, address })) {
         toast.error("No destination available for this trip");
