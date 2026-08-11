@@ -10,6 +10,7 @@ import { cn } from "@/lib/format";
 import { useAuth } from "@/lib/auth-store";
 import { saveOnboardingDraft, logOnboardingEvent } from "@/lib/manager-api";
 import { ImageUploader } from "@/components/cravio/ImageUploader";
+import { LocationPicker } from "@/components/maps/LocationPicker";
 
 export const Route = createFileRoute("/partner/onboarding")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Onboarding" }] }),
@@ -40,6 +41,8 @@ function PartnerOnboarding() {
     phone: "",
     address: "",
     city: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
     opening_time: "10:00",
     closing_time: "23:00",
     bank_account: "",
@@ -54,7 +57,7 @@ function PartnerOnboarding() {
     }
   }, [user]);
 
-  const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
+  const update = (field: string, value: any) => setForm(f => ({ ...f, [field]: value }));
 
   const handleFinish = async () => {
     if (!user?.id) return;
@@ -121,7 +124,16 @@ function PartnerOnboarding() {
           <ImageUploader type="logo" onChange={(r) => update("logo_url", r?.image_url ?? "")} />
         </>}
         {step === 1 && <>
-          <Field label="Street address" placeholder="12 Hearth Lane" value={form.address} onChange={v => update("address", v)} />
+          <LocationPicker 
+            latitude={form.latitude} 
+            longitude={form.longitude} 
+            address={form.address}
+            onChange={(lat, lng, addr) => {
+              update("latitude", lat);
+              update("longitude", lng);
+              update("address", addr);
+            }} 
+          />
           <Field label="City" placeholder="Mumbai" value={form.city} onChange={v => update("city", v)} />
           <div className="grid grid-cols-2 gap-3">
             <Field label="Opens at" placeholder="10:00" value={form.opening_time} onChange={v => update("opening_time", v)} />
