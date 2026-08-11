@@ -18,75 +18,82 @@ function AuthCallback() {
     const checkAuth = async () => {
       try {
         console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: AUTH_CALLBACK_REACHED] Portal Intent:", portal);
-        const { data, error } = await insforge.auth.getCurrentUser();
         
-        if (error) {
-          console.error("[AUTH_DEBUG] auth.callback.tsx SDK Error:", error);
-          setErrorMsg(error.message || "Authentication failed.");
-          return;
-        }
-
-        const authUser = data?.user;
-        if (authUser) {
-          console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_SESSION_PRESENT] User ID:", authUser.id);
-          console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_CURRENT_USER_PRESENT] Email:", authUser.email);
+        // Use a longer polling duration and more frequent checks for the initial session exchange
+        let attempts = 0;
+        const maxAttempts = 30; // 15 seconds total with 500ms intervals
+        
+        const checkSession = async () => {
+          attempts++;
+          console.log(`[AUTH_DEBUG] auth.callback.tsx Polling for session (attempt ${attempts})...`);
           
-          // SECURITY: For admin and logistics portals, we MUST verify permissions before redirecting.
-          if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
-             console.error("Unauthorized admin login attempt:", authUser.email);
-             window.location.assign("/admin/login?error=unauthorized");
-             return;
+          const { data, error } = await insforge.auth.getCurrentUser();
+          
+          if (error) {
+            // "No refresh token provided" is common during the exchange window, so we don't treat it as a terminal error immediately
+            console.log("[AUTH_DEBUG] auth.callback.tsx SDK reported error (might be transient):", error.message);
           }
 
-          if (portal === "logistics") {
-            const { listTable } = await import("@/lib/insforge-crud");
-            try {
-              const rows = await listTable("logistics_staff", { 
-                user_id: `eq.${authUser.id}`, 
-                limit: 1 
-              }, { ttl: 0 }); // Skip cache for security verification
-              
-              if (!rows.length) {
-                console.error("Unauthorized logistics login attempt:", authUser.email);
-                window.location.assign("/logistics/login?error=unauthorized");
-                return;
+          const authUser = data?.user;
+          if (authUser) {
+            console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_SESSION_PRESENT] User ID:", authUser.id);
+            console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_CURRENT_USER_PRESENT] Email:", authUser.email);
+            
+            // SECURITY: For admin and logistics portals, we MUST verify permissions before redirecting.
+            if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
+               console.error("Unauthorized admin login attempt:", authUser.email);
+               window.location.assign("/admin/login?error=unauthorized");
+               return true; // Stop polling
+            }
+
+            if (portal === "logistics") {
+              const { listTable } = await import("@/lib/insforge-crud");
+              try {
+                const rows = await listTable("logistics_staff", { 
+                  user_id: `eq.${authUser.id}`, 
+                  limit: 1 
+                }, { ttl: 0 }); 
+                
+                if (!rows.length) {
+                  console.error("Unauthorized logistics login attempt:", authUser.email);
+                  window.location.assign("/logistics/login?error=unauthorized");
+                  return true;
+                }
+              } catch (e) {
+                console.error("Failed to verify logistics membership during callback:", e);
+                // If the check fails (e.g. network flake), we allow redirect but RoleGuard will re-verify
               }
-            } catch (e) {
-              console.error("Failed to verify logistics membership during callback:", e);
-              // Fallback: resolution will happen again in AuthProvider.
-              // We proceed but RoleGuard will catch them if resolution fails there too.
             }
+
+            // Determine destination based on portal intent
+            const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
+            console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: NAVIGATION_TARGET] Redirecting to:", dest);
+            window.location.assign(dest);
+            return true;
           }
 
-          // Determine destination based on portal intent
-          const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
-          console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: NAVIGATION_TARGET] Redirecting to:", dest);
-          window.location.assign(dest);
-        } else {
-          // Polling for session
-          console.log("[AUTH_DEBUG] auth.callback.tsx No user, polling...");
-          const checkSession = setInterval(async () => {
-            const { data: sessionData } = await insforge.auth.getCurrentUser();
-            if (sessionData?.user) {
-              console.log("[AUTH_DEBUG] auth.callback.tsx Polled session found:", sessionData.user.id);
-              clearInterval(checkSession);
-              const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
-              console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: NAVIGATION_TARGET] Polled redirect to:", dest);
-              window.location.assign(dest);
-            }
-          }, 500);
+          if (attempts >= maxAttempts) {
+            console.warn("[AUTH_DEBUG] auth.callback.tsx Login timed out after", attempts, "attempts");
+            setErrorMsg("Login timed out. If you were just redirected from Google, please wait a moment and try refreshing.");
+            return true;
+          }
+          
+          return false;
+        };
 
-          setTimeout(() => {
-            clearInterval(checkSession);
-            if (!errorMsg) {
-              console.warn("[AUTH_DEBUG] auth.callback.tsx Login timed out");
-              setErrorMsg("Login timed out. Please try again.");
-            }
-          }, 10000);
-        }
+        // Start polling immediately
+        const intervalId = setInterval(async () => {
+          const shouldStop = await checkSession();
+          if (shouldStop) clearInterval(intervalId);
+        }, 500);
+
+        // Run the first check immediately
+        const firstCheck = await checkSession();
+        if (firstCheck) clearInterval(intervalId);
+
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
-        setErrorMsg("An unexpected error occurred.");
+        setErrorMsg("An unexpected error occurred during the login callback.");
       }
     };
 
