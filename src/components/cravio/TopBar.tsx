@@ -76,7 +76,7 @@ export function TopBar() {
               <span className="eyebrow">Delivering to</span>
               <span className="mt-0.5 flex min-w-0 items-center gap-1">
                 <span className="truncate font-display text-[15px] font-bold tracking-tight text-foreground">
-                  {location}
+                  {/^-?\d+\.\d+, -?\d+\.\d+$/.test(location) ? "📍 Locating..." : location}
                   {secondaryLocation && (
                     <span className="ml-1.5 font-sans text-[13px] font-normal text-muted-foreground hidden xs:inline">
                       · {secondaryLocation}

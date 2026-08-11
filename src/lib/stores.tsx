@@ -628,7 +628,26 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(UI_KEY);
       if (raw) {
         const o = JSON.parse(raw);
-        if (o.location) setLocationState(o.location);
+        if (o.location) {
+          setLocationState(o.location);
+          // If the stored location is raw coordinates, trigger a resolution immediately
+          if (o.userCoords && /^-?\d+\.\d+, -?\d+\.\d+$/.test(o.location)) {
+            void (async () => {
+              try {
+                const resolved = await reverseGeocode(o.userCoords.lat, o.userCoords.lng);
+                const parts = resolved.split(',').map(s => s.trim());
+                if (parts.length > 1) {
+                  setLocationState(parts[0]);
+                  setSecondaryState(parts.slice(1).join(', '));
+                } else {
+                  setLocationState(resolved);
+                }
+              } catch (e) {
+                console.error("Failed to resolve stored coordinates:", e);
+              }
+            })();
+          }
+        }
         if (o.secondaryLocation) setSecondaryState(o.secondaryLocation);
         if (o.userCoords) setUserCoords(o.userCoords);
         if (Array.isArray(o.recentSearches)) setRecent(o.recentSearches);
@@ -646,9 +665,27 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
 
   const setVegMode = (on: boolean) => setVegModeState(on);
 
-  const setLocation: AppUICtx["setLocation"] = (l, coords, secondary) => {
-    setLocationState(l);
-    setSecondaryState(secondary);
+  const setLocation: AppUICtx["setLocation"] = async (l, coords, secondary) => {
+    // If we receive raw coordinates as the label and have coords, resolve it
+    if (coords && /^-?\d+\.\d+, -?\d+\.\d+$/.test(l)) {
+      setLocationState("📍 Locating...");
+      try {
+        const resolved = await reverseGeocode(coords.lat, coords.lng);
+        const parts = resolved.split(',').map(s => s.trim());
+        if (parts.length > 1) {
+          setLocationState(parts[0]);
+          setSecondaryState(parts.slice(1).join(', '));
+        } else {
+          setLocationState(resolved);
+          setSecondaryState(undefined);
+        }
+      } catch (e) {
+        setLocationState("📍 Select delivery location");
+      }
+    } else {
+      setLocationState(l);
+      setSecondaryState(secondary);
+    }
     if (coords) setUserCoords(coords);
   };
   const pushRecent = (s: string) => {
