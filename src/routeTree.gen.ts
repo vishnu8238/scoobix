@@ -14,12 +14,14 @@ import { Route as RiderRouteImport } from './routes/rider'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as ManagerRouteImport } from './routes/manager'
+import { Route as LogisticsRouteImport } from './routes/logistics'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RiderIndexRouteImport } from './routes/rider.index'
 import { Route as PartnerIndexRouteImport } from './routes/partner.index'
 import { Route as ManagerIndexRouteImport } from './routes/manager.index'
+import { Route as LogisticsIndexRouteImport } from './routes/logistics.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
@@ -70,6 +72,8 @@ import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as ManagerAnalyticsRouteImport } from './routes/manager.analytics'
+import { Route as LogisticsLoginRouteImport } from './routes/logistics.login'
+import { Route as LogisticsLiveRouteImport } from './routes/logistics.live'
 import { Route as CustomerLoginRouteImport } from './routes/customer.login'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppWalletRouteImport } from './routes/app.wallet'
@@ -153,6 +157,11 @@ const ManagerRoute = ManagerRouteImport.update({
   path: '/manager',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogisticsRoute = LogisticsRouteImport.update({
+  id: '/logistics',
+  path: '/logistics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -182,6 +191,11 @@ const ManagerIndexRoute = ManagerIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ManagerRoute,
+} as any)
+const LogisticsIndexRoute = LogisticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LogisticsRoute,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
@@ -432,6 +446,16 @@ const ManagerAnalyticsRoute = ManagerAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
   getParentRoute: () => ManagerRoute,
+} as any)
+const LogisticsLoginRoute = LogisticsLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => LogisticsRoute,
+} as any)
+const LogisticsLiveRoute = LogisticsLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => LogisticsRoute,
 } as any)
 const CustomerLoginRoute = CustomerLoginRouteImport.update({
   id: '/customer/login',
@@ -723,6 +747,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/logistics': typeof LogisticsRouteWithChildren
   '/manager': typeof ManagerRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/privacy': typeof PrivacyRoute
@@ -783,6 +808,8 @@ export interface FileRoutesByFullPath {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/customer/login': typeof CustomerLoginRoute
+  '/logistics/live': typeof LogisticsLiveRoute
+  '/logistics/login': typeof LogisticsLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -833,6 +860,7 @@ export interface FileRoutesByFullPath {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/logistics/': typeof LogisticsIndexRoute
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
@@ -898,6 +926,8 @@ export interface FileRoutesByTo {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/customer/login': typeof CustomerLoginRoute
+  '/logistics/live': typeof LogisticsLiveRoute
+  '/logistics/login': typeof LogisticsLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -948,6 +978,7 @@ export interface FileRoutesByTo {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
+  '/logistics': typeof LogisticsIndexRoute
   '/manager': typeof ManagerIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
@@ -959,6 +990,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/logistics': typeof LogisticsRouteWithChildren
   '/manager': typeof ManagerRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
   '/privacy': typeof PrivacyRoute
@@ -1019,6 +1051,8 @@ export interface FileRoutesById {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/customer/login': typeof CustomerLoginRoute
+  '/logistics/live': typeof LogisticsLiveRoute
+  '/logistics/login': typeof LogisticsLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -1069,6 +1103,7 @@ export interface FileRoutesById {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
+  '/logistics/': typeof LogisticsIndexRoute
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
@@ -1081,6 +1116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/logistics'
     | '/manager'
     | '/partner'
     | '/privacy'
@@ -1141,6 +1177,8 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/customer/login'
+    | '/logistics/live'
+    | '/logistics/login'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1191,6 +1229,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
+    | '/logistics/'
     | '/manager/'
     | '/partner/'
     | '/rider/'
@@ -1256,6 +1295,8 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/customer/login'
+    | '/logistics/live'
+    | '/logistics/login'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1306,6 +1347,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin'
     | '/app'
+    | '/logistics'
     | '/manager'
     | '/partner'
     | '/rider'
@@ -1316,6 +1358,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/logistics'
     | '/manager'
     | '/partner'
     | '/privacy'
@@ -1376,6 +1419,8 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/customer/login'
+    | '/logistics/live'
+    | '/logistics/login'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1426,6 +1471,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin/'
     | '/app/'
+    | '/logistics/'
     | '/manager/'
     | '/partner/'
     | '/rider/'
@@ -1437,6 +1483,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  LogisticsRoute: typeof LogisticsRouteWithChildren
   ManagerRoute: typeof ManagerRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
@@ -1485,6 +1532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/logistics': {
+      id: '/logistics'
+      path: '/logistics'
+      fullPath: '/logistics'
+      preLoaderRoute: typeof LogisticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
@@ -1526,6 +1580,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/manager/'
       preLoaderRoute: typeof ManagerIndexRouteImport
       parentRoute: typeof ManagerRoute
+    }
+    '/logistics/': {
+      id: '/logistics/'
+      path: '/'
+      fullPath: '/logistics/'
+      preLoaderRoute: typeof LogisticsIndexRouteImport
+      parentRoute: typeof LogisticsRoute
     }
     '/app/': {
       id: '/app/'
@@ -1876,6 +1937,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/manager/analytics'
       preLoaderRoute: typeof ManagerAnalyticsRouteImport
       parentRoute: typeof ManagerRoute
+    }
+    '/logistics/login': {
+      id: '/logistics/login'
+      path: '/login'
+      fullPath: '/logistics/login'
+      preLoaderRoute: typeof LogisticsLoginRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/live': {
+      id: '/logistics/live'
+      path: '/live'
+      fullPath: '/logistics/live'
+      preLoaderRoute: typeof LogisticsLiveRouteImport
+      parentRoute: typeof LogisticsRoute
     }
     '/customer/login': {
       id: '/customer/login'
@@ -2407,6 +2482,22 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface LogisticsRouteChildren {
+  LogisticsLiveRoute: typeof LogisticsLiveRoute
+  LogisticsLoginRoute: typeof LogisticsLoginRoute
+  LogisticsIndexRoute: typeof LogisticsIndexRoute
+}
+
+const LogisticsRouteChildren: LogisticsRouteChildren = {
+  LogisticsLiveRoute: LogisticsLiveRoute,
+  LogisticsLoginRoute: LogisticsLoginRoute,
+  LogisticsIndexRoute: LogisticsIndexRoute,
+}
+
+const LogisticsRouteWithChildren = LogisticsRoute._addFileChildren(
+  LogisticsRouteChildren,
+)
+
 interface ManagerRouteChildren {
   ManagerAnalyticsRoute: typeof ManagerAnalyticsRoute
   ManagerCalendarRoute: typeof ManagerCalendarRoute
@@ -2537,6 +2628,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  LogisticsRoute: LogisticsRouteWithChildren,
   ManagerRoute: ManagerRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
