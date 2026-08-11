@@ -611,7 +611,7 @@ type AppUICtx = {
 const AppUIContext = createContext<AppUICtx | null>(null);
 const UI_KEY = "cravio_ui_v1";
 
-// Reverse geocoding is handled by src/lib/geocode.ts (OpenStreetMap Google Maps Geocoding).
+// Reverse geocoding is handled by src/lib/geocode.ts (Google Maps Geocoding).
 
 
 export function AppUIProvider({ children }: { children: ReactNode }) {
