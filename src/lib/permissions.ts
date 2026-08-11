@@ -14,7 +14,7 @@
 import { listTable } from "./insforge-crud";
 import type { Role } from "./types";
 
-export type SecurityRole = "customer" | "partner" | "rider" | "manager" | "support" | "admin" | "super_admin";
+export type SecurityRole = "customer" | "partner" | "rider" | "manager" | "support" | "admin" | "super_admin" | "logistics_admin" | "dispatcher" | "zone_manager";
 
 export type Permission =
   // customer
@@ -38,7 +38,9 @@ export type Permission =
   | "user.ban" | "user.restore" | "settings.manage" | "analytics.platform"
   | "audit.view" | "security.view" | "fraud.manage" | "session.revoke.any"
   // super admin only
-  | "permission.override" | "admin.manage" | "db.maintenance" | "audit.archive";
+  | "permission.override" | "admin.manage" | "db.maintenance" | "audit.archive"
+  // logistics
+  | "logistics.view" | "logistics.dispatch" | "logistics.settings" | "logistics.zones.manage" | "logistics.riders.manage" | "logistics.audit.view";
 
 const CUSTOMER: Permission[] = [
   "order.create", "order.cancel", "order.rate", "wallet.use", "coupon.redeem",
@@ -86,6 +88,21 @@ const SUPER_ADMIN: Permission[] = [
   "permission.override", "admin.manage", "db.maintenance", "audit.archive",
 ];
 
+const DISPATCHER: Permission[] = [
+  "profile.manage", "support.create", "privacy.export",
+  "logistics.view", "logistics.dispatch", "logistics.riders.manage",
+];
+
+const ZONE_MANAGER: Permission[] = [
+  "profile.manage", "support.create", "privacy.export",
+  "logistics.view", "logistics.dispatch", "logistics.zones.manage", "logistics.riders.manage",
+];
+
+const LOGISTICS_ADMIN: Permission[] = [
+  ...ZONE_MANAGER,
+  "logistics.settings", "logistics.audit.view",
+];
+
 export const PERMISSION_MATRIX: Record<SecurityRole, Permission[]> = {
   customer: CUSTOMER,
   partner: PARTNER,
@@ -94,6 +111,9 @@ export const PERMISSION_MATRIX: Record<SecurityRole, Permission[]> = {
   support: SUPPORT,
   admin: ADMIN,
   super_admin: SUPER_ADMIN,
+  logistics_admin: LOGISTICS_ADMIN,
+  dispatcher: DISPATCHER,
+  zone_manager: ZONE_MANAGER,
 };
 
 export const ROLE_LABEL: Record<SecurityRole, string> = {
@@ -104,6 +124,9 @@ export const ROLE_LABEL: Record<SecurityRole, string> = {
   support: "Support agent",
   admin: "Admin",
   super_admin: "Super admin",
+  logistics_admin: "Logistics admin",
+  dispatcher: "Dispatcher",
+  zone_manager: "Zone manager",
 };
 
 /** Every permission, grouped for the admin matrix screen. */
@@ -117,6 +140,7 @@ export const PERMISSION_GROUPS: { label: string; permissions: Permission[] }[] =
   { label: "Platform", permissions: ["settings.manage", "subscription.manage", "manager.assign", "analytics.platform", "user.ban", "user.restore"] },
   { label: "Security", permissions: ["audit.view", "security.view", "fraud.manage", "session.revoke.any", "permission.override", "admin.manage", "db.maintenance", "audit.archive"] },
   { label: "Privacy", permissions: ["privacy.export", "privacy.delete", "profile.manage", "address.manage", "membership.manage"] },
+  { label: "Logistics", permissions: ["logistics.view", "logistics.dispatch", "logistics.settings", "logistics.zones.manage", "logistics.riders.manage", "logistics.audit.view"] },
 ];
 
 /* -------------------------------------------------- elevation resolution */
@@ -136,21 +160,30 @@ export async function resolveSecurityRole(
   uiRole: Role | null | undefined,
 ): Promise<Elevation> {
   if (!uiRole) return { role: "customer", level: null };
-  if (uiRole !== "admin") return { role: uiRole as SecurityRole, level: null };
-  if (!userId) return { role: "support", level: "support" };
+  if (uiRole !== "admin" && uiRole !== "logistics") return { role: uiRole as SecurityRole, level: null };
+  if (!userId) {
+    if (uiRole === "logistics") return { role: "dispatcher", level: "dispatcher" };
+    return { role: "support", level: "support" };
+  }
 
   const hit = elevationCache.get(userId);
   if (hit && Date.now() - hit.at < ELEVATION_TTL) return hit.value;
 
+  const table = uiRole === "logistics" ? "logistics_staff" : "platform_admins";
   const rows = await listTable<{ level?: string; status?: string; is_super_admin?: boolean }>(
-    "platform_admins",
+    table,
     { select: "user_id,email,level,status", user_id: `eq.${userId}`, limit: 1 },
     { ttl: 120 },
   ).catch(() => []);
 
-  const level = String(rows[0]?.level ?? "admin").toLowerCase();
-  const role: SecurityRole =
-    level === "super_admin" ? "super_admin" : level === "support" ? "support" : "admin";
+  const level = String(rows[0]?.level ?? (uiRole === "logistics" ? "dispatcher" : "admin")).toLowerCase();
+  let role: SecurityRole;
+  
+  if (uiRole === "logistics") {
+    role = level === "logistics_admin" ? "logistics_admin" : level === "zone_manager" ? "zone_manager" : "dispatcher";
+  } else {
+    role = level === "super_admin" ? "super_admin" : level === "support" ? "support" : "admin";
+  }
   const value = { role, level };
   elevationCache.set(userId, { at: Date.now(), value });
   return value;
