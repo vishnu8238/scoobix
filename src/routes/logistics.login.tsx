@@ -83,7 +83,7 @@ function LogisticsLogin() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                login('google', 'logistics', { prompt: 'select_account' });
+                login('google', 'logistics');
               }}
               className="h-14 w-full rounded-2xl bg-white text-black shadow-lg hover:bg-slate-200 font-bold transition-all active:scale-95"
             >
