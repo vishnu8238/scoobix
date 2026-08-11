@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
         // Authoritative: only a real resolved membership can be the active role.
-        role: roles.includes(currentPortal) ? currentPortal : roles[0],
+        role: roles.includes(currentPortal) ? currentPortal : (currentPortal === "logistics" ? "logistics" : roles[0]),
         roles,
         membershipsResolved: true,
         pendingPortal: currentPortal,

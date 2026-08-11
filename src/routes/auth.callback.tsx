@@ -64,7 +64,7 @@ function AuthCallback() {
             if (sessionData?.user) {
               console.log("[AUTH_DEBUG] auth.callback.tsx Polled session found:", sessionData.user.id);
               clearInterval(checkSession);
-              const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
+              const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
               console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: NAVIGATION_TARGET] Polled redirect to:", dest);
               window.location.assign(dest);
             }
