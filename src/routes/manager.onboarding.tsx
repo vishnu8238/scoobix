@@ -491,7 +491,6 @@ function OnboardingFlow() {
                   </div>
                 </div>
               </div>
-              </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Opens at" value={form.opening_time} onChange={(v) => set({ opening_time: v })} placeholder="10:00" />
                 <Field label="Closes at" value={form.closing_time} onChange={(v) => set({ closing_time: v })} placeholder="23:00" />
