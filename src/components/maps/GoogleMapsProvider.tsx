@@ -23,7 +23,9 @@ export function GoogleMapsProvider({ children }: { children: ReactNode }) {
     // Otherwise fetch from server
     getGoogleMapsApiKey()
       .then((key) => {
-        setApiKey(key);
+        if (key) {
+          setApiKey(key);
+        }
       })
       .catch(() => {
         // Silently fail, the UI will handle the missing apiKey
