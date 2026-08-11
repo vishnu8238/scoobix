@@ -7,11 +7,11 @@ export function DataTable({
   onSelectionChange
 }: { 
   columns: string[]; 
-  rows: ReactNode[][];
+  rows: { id: string; cells: ReactNode[] }[];
   selection?: Set<string>;
   onSelectionChange?: (selection: Set<string>) => void;
 }) {
-  const allIds = rows.map(r => String(r[0]?.key || "")).filter(Boolean);
+  const allIds = rows.map(r => r.id).filter(Boolean);
   const allSelected = allIds.length > 0 && selection?.size === allIds.length;
 
   const toggleAll = () => {
@@ -53,13 +53,12 @@ export function DataTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => {
-            const id = String(r[0]?.key || "");
-            const isSelected = selection?.has(id);
+          {rows.map((row, i) => {
+            const isSelected = selection?.has(row.id);
             
             return (
               <tr 
-                key={i} 
+                key={row.id || i} 
                 className={`border-b border-border/30 last:border-0 transition hover:bg-muted/30 ${isSelected ? "bg-primary/5" : ""}`}
               >
                 {onSelectionChange && (
@@ -67,12 +66,12 @@ export function DataTable({
                     <input 
                       type="checkbox" 
                       checked={isSelected}
-                      onChange={() => toggleOne(id)}
+                      onChange={() => toggleOne(row.id)}
                       className="h-4 w-4 rounded border-border/60 bg-muted/30 accent-primary outline-none ring-1 ring-border/60 focus:ring-primary/40"
                     />
                   </td>
                 )}
-                {r.map((cell, j) => <td key={j} className="py-3.5 pr-4">{cell}</td>)}
+                {row.cells.map((cell, j) => <td key={j} className="py-3.5 pr-4">{cell}</td>)}
               </tr>
             );
           })}
