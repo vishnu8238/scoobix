@@ -1,20 +1,81 @@
 import type { ReactNode } from "react";
 
-export function DataTable({ columns, rows }: { columns: string[]; rows: ReactNode[][] }) {
+export function DataTable({ 
+  columns, 
+  rows, 
+  selection,
+  onSelectionChange
+}: { 
+  columns: string[]; 
+  rows: ReactNode[][];
+  selection?: Set<string>;
+  onSelectionChange?: (selection: Set<string>) => void;
+}) {
+  const allIds = rows.map(r => String(r[0]?.key || "")).filter(Boolean);
+  const allSelected = allIds.length > 0 && selection?.size === allIds.length;
+
+  const toggleAll = () => {
+    if (!onSelectionChange) return;
+    if (allSelected) {
+      onSelectionChange(new Set());
+    } else {
+      onSelectionChange(new Set(allIds));
+    }
+  };
+
+  const toggleOne = (id: string) => {
+    if (!onSelectionChange || !selection) return;
+    const next = new Set(selection);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    onSelectionChange(next);
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-border/60 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            {onSelectionChange && (
+              <th className="w-10 py-3 pr-4">
+                <input 
+                  type="checkbox" 
+                  checked={allSelected} 
+                  onChange={toggleAll}
+                  className="h-4 w-4 rounded border-border/60 bg-muted/30 accent-primary outline-none ring-1 ring-border/60 focus:ring-primary/40"
+                />
+              </th>
+            )}
             {columns.map((c) => <th key={c} className="py-3 pr-4">{c}</th>)}
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className="border-b border-border/30 last:border-0 transition hover:bg-muted/30">
-              {r.map((cell, j) => <td key={j} className="py-3.5 pr-4">{cell}</td>)}
-            </tr>
-          ))}
+          {rows.map((r, i) => {
+            const id = String(r[0]?.key || "");
+            const isSelected = selection?.has(id);
+            
+            return (
+              <tr 
+                key={i} 
+                className={`border-b border-border/30 last:border-0 transition hover:bg-muted/30 ${isSelected ? "bg-primary/5" : ""}`}
+              >
+                {onSelectionChange && (
+                  <td className="w-10 py-3.5 pr-4">
+                    <input 
+                      type="checkbox" 
+                      checked={isSelected}
+                      onChange={() => toggleOne(id)}
+                      className="h-4 w-4 rounded border-border/60 bg-muted/30 accent-primary outline-none ring-1 ring-border/60 focus:ring-primary/40"
+                    />
+                  </td>
+                )}
+                {r.map((cell, j) => <td key={j} className="py-3.5 pr-4">{cell}</td>)}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
