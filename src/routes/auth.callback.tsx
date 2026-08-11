@@ -96,7 +96,7 @@ function AuthCallback() {
 
           if (!admission.ok) {
             console.error("[AUTH_TRACE] Logistics staff record: NOT FOUND");
-            window.location.assign("/logistics/login?error=unauthorized");
+            window.location.assign("/logistics/login?denied=logistics");
             return;
           }
           console.log("[AUTH_TRACE] Logistics authorized (email identity match), level:", admission.level);
