@@ -27,11 +27,16 @@ function AuthCallback() {
       try {
         console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: AUTH_CALLBACK_REACHED] Portal Intent:", portal);
         
-        // 2. Extract OAuth code from URL
+        // 1. Diagnostics only: check for insforge_code
         const params = new URLSearchParams(window.location.search);
-        const code = params.get("code");
+        const insforgeCode = params.get("insforge_code");
         const error = params.get("error");
         const errorDescription = params.get("error_description");
+
+        console.log("[AUTH_TRACE] Callback params detected:", { 
+          hasInsforgeCode: !!insforgeCode, 
+          error: error || "none" 
+        });
 
         if (error || errorDescription) {
           console.error("[AUTH_DEBUG] OAuth Error:", error, errorDescription);
@@ -39,37 +44,34 @@ function AuthCallback() {
           return;
         }
 
-        if (!code) {
-          console.error("[AUTH_DEBUG] No code found in URL search params");
-          setErrorMsg("Google authentication callback did not contain an authorization code.");
-          return;
-        }
+        // 2. Wait for the SDK to process the callback and emit a user
+        // We use a simple loop to wait for the user session to be established by the SDK automatically
+        let retryCount = 0;
+        const maxRetries = 20; // ~10 seconds total
+        
+        const waitForUser = async (): Promise<any> => {
+          const { data: userData, error: userError } = await insforge.auth.getCurrentUser();
+          const authUser = userData?.user;
+          
+          if (authUser && authUser.id && authUser.email) {
+            return authUser;
+          }
+          
+          if (retryCount < maxRetries) {
+            retryCount++;
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return waitForUser();
+          }
+          
+          throw new Error(userError?.message || "Authentication timed out. No session established.");
+        };
 
-        // 3. Perform OAuth exchange
-        console.log("[AUTH_TRACE] Exchanging OAuth code for session...");
-        try {
-          // @ts-ignore - Assuming exact method from SDK signature verification
-          await insforge.auth.exchangeOAuthCode(code);
-          console.log("[AUTH_TRACE] OAuth exchange successful");
-        } catch (exchangeErr: any) {
-          console.error("[AUTH_DEBUG] OAuth exchange failed:", exchangeErr);
-          setErrorMsg("Unable to establish the Scoobix authentication session. Please try Google sign-in again.");
-          return;
-        }
-
-        // 4. Verify the session and resolve the user
-        const { data: userData, error: userError } = await insforge.auth.getCurrentUser();
-        const authUser = userData?.user;
-
-        if (userError || !authUser || !authUser.id || !authUser.email) {
-          console.error("[AUTH_DEBUG] Session verification failed:", userError || "No user record returned");
-          setErrorMsg("Unable to verify your authentication session. Please try again.");
-          return;
-        }
+        console.log("[AUTH_TRACE] Waiting for InsForge SDK to establish session...");
+        const authUser = await waitForUser();
 
         console.log("[AUTH_TRACE] [SESSION_VERIFIED] ID:", authUser.id, "Email:", authUser.email);
         
-        // 5. Authorization Check
+        // 3. Authorization Check
         if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
           console.error("[AUTH_TRACE] Admin unauthorized");
           window.location.assign("/admin/login?error=unauthorized");
@@ -105,7 +107,7 @@ function AuthCallback() {
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
-        setErrorMsg("An unexpected error occurred during the login callback.");
+        setErrorMsg(err.message || "An unexpected error occurred during the login callback.");
       }
     };
 
