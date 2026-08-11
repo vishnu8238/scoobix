@@ -23,6 +23,9 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
 
   useEffect(() => {
     console.log(`[AUTH_DEBUG] RoleGuard Path: ${pathname}, User: ${user?.id}, Resolved: ${user?.membershipsResolved}, Portal: ${portal}, Loading: ${loading}, Roles: ${user?.roles?.join(",")}`);
+    
+    // AUTH HYDRATION PROTECTION: 
+    // Do NOT trigger any redirects if auth is still initializing.
     if (loading) return;
     
 
