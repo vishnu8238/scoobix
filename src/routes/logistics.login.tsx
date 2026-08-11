@@ -87,16 +87,27 @@ function LogisticsLogin() {
         ) : (
           <>
             <Button 
+              disabled={status === "loading"}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                login('google', 'logistics');
+                handleGoogle();
               }}
-              className="h-14 w-full rounded-2xl bg-white text-black shadow-lg hover:bg-slate-200 font-bold transition-all active:scale-95"
+              className="h-14 w-full rounded-2xl bg-white text-black shadow-lg hover:bg-slate-200 font-bold transition-all active:scale-95 disabled:opacity-60"
             >
               <img src="https://www.google.com/favicon.ico" className="mr-3 h-5 w-5" alt="" />
-              {user ? "Sign in with another account" : "Continue with Google"}
+              {status === "loading"
+                ? "Connecting to Google…"
+                : user ? "Sign in with another account" : "Continue with Google"}
             </Button>
+
+            {status === "error" && (
+              <div className="rounded-2xl bg-destructive/10 ring-1 ring-destructive/20 p-4 text-left">
+                <p className="text-xs font-bold uppercase tracking-wider text-destructive">Google sign-in failed.</p>
+                <p className="mt-1 text-[13px] font-medium text-destructive/90 break-words">{errorMsg}</p>
+              </div>
+            )}
+
 
             {isUnauthorized && (
                <button
