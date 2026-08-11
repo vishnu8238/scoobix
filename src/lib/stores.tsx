@@ -591,6 +591,7 @@ type LocationPermission = "unknown" | "prompt" | "granted" | "denied" | "unsuppo
 
 type AppUICtx = {
   location: string;
+  secondaryLocation?: string;
   setLocation: (l: string, coords?: { lat: number; lng: number }) => void;
   userCoords: { lat: number; lng: number } | null;
   recentSearches: string[];
