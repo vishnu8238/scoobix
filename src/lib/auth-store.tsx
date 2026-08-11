@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
         // Authoritative: only a real resolved membership can be the active role.
-        role: roles.includes(currentPortal) ? currentPortal : (currentPortal === "logistics" ? "logistics" : roles[0]),
+        role: roles.includes(currentPortal) ? currentPortal : (currentPortal === "logistics" && roles.includes("logistics") ? "logistics" : roles[0]),
         roles,
         membershipsResolved: true,
         pendingPortal: currentPortal,
@@ -172,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_MOUNT] Initializing auth listener");
     resolveUser();
 
     const unsubscribe = insforge.auth.onAuthStateChange((event) => {
@@ -187,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_UNMOUNT]");
       unsubscribe();
     };
   }, [resolveUser]);
