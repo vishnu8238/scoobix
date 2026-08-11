@@ -5,11 +5,20 @@ export const INSFORGE_ANON_KEY = (import.meta as any).env.VITE_INSFORGE_ANON_KEY
 export const INSFORGE_PROJECT_ID = (import.meta as any).env.VITE_INSFORGE_PROJECT_ID || "";
 export const INSFORGE_API_KEY = (import.meta as any).env.VITE_INSFORGE_API_KEY || "";
 
+// Fail clearly if required configuration is missing
+if (!INSFORGE_URL || !INSFORGE_ANON_KEY) {
+  console.error(
+    "[INSFORGE_ERROR] CRITICAL: VITE_INSFORGE_URL or VITE_INSFORGE_ANON_KEY is missing from the environment. " +
+    "Check your .env file or deployment settings. SDK will fail if continued."
+  );
+}
+
 // Maintain singleton instance
 if (!(globalThis as any).__INSFORGE_CLIENT__) {
-  (globalThis as any).__INSFORGE_CLIENT__ = createClient(
-    INSFORGE_PROJECT_ID || INSFORGE_URL
-  );
+  (globalThis as any).__INSFORGE_CLIENT__ = createClient({
+    baseUrl: INSFORGE_URL,
+    anonKey: INSFORGE_ANON_KEY,
+  });
 }
 
 export const insforge = (globalThis as any).__INSFORGE_CLIENT__;
