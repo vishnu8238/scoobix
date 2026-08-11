@@ -59,6 +59,10 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
           // If the user is logged in and resolution finished, but they STILL don't have the manager role,
           // we stay on /manager and let the component handle the unauthorized/loading state.
           // This avoids the silent /app fallback.
+        } else if (portal === "logistics" && !user.roles.includes("logistics")) {
+          // Admission to /logistics is granted ONLY to logistics staff.
+          // If authoritative resolution finished and they don't have it, redirect to login with error.
+          window.location.assign("/logistics/login?error=unauthorized");
         } else {
           // Default to customer app only if authoritative resolution shows they are just a customer
           navigate({ to: "/app" as any });
