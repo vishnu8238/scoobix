@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-store";
+import { GoogleMap } from "@/components/maps/GoogleMap";
 
 export const Route = createFileRoute("/customer/login")({
   head: () => ({ meta: [{ title: "Scoobix · Customer Login" }] }),
@@ -27,6 +28,11 @@ function CustomerLogin() {
       
       <h1 className="font-display text-3xl font-extrabold tracking-tight">Welcome back</h1>
       <p className="mt-2 text-muted-foreground">Sign in to continue your food journey</p>
+
+      {/* AUDIT MAP: Hidden but mounts script */}
+      <div className="hidden">
+        <GoogleMap center={{ lat: 22.3072, lng: 73.1812 }} zoom={12} />
+      </div>
 
       <div className="mt-10 w-full space-y-4 max-w-[320px]">
         <Button 
