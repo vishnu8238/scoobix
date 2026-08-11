@@ -155,7 +155,9 @@ function GoogleMapInner({
   }, [route, riderProgress]);
 
   const handleMapClick = (e: MapMouseEvent) => {
-    if (onPick && e.detail.latLng) {
+    // Manual map pinning is disabled for restaurant forms. 
+    // This handler only triggers if interactive is true.
+    if (interactive && onPick && e.detail.latLng) {
       onPick(e.detail.latLng);
     }
   };

@@ -26,6 +26,7 @@ import { logDuplicateCheck, nextBranchCode } from "@/lib/duplicate-api";
 import { requestOwnershipTransfer } from "@/lib/transfers-api";
 import { DuplicateDialog, useDuplicateCheck, type DuplicateChoice } from "@/components/cravio/DuplicateCheck";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
+import { LocationPicker } from "@/components/maps/LocationPicker";
 
 type Search = { id?: string };
 
@@ -444,47 +445,12 @@ function OnboardingFlow() {
                 <Field label="City" value={form.city} onChange={(v) => set({ city: v })} placeholder="Mumbai" />
                 <Field label="Pincode" value={form.pincode} onChange={(v) => set({ pincode: v })} placeholder="400001" />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Pin the exact location
-                </Label>
-                <div className="overflow-hidden rounded-2xl ring-1 ring-border/60">
-                  <GoogleMap
-                    height={220}
-                    zoom={form.latitude ? 16 : 11}
-                    center={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : undefined}
-                    pickedAt={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : null}
-                    onPick={(c) => set({ latitude: c.lat, longitude: c.lng })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Latitude</Label>
-                    <Input 
-                      type="number" 
-                      value={form.latitude ?? ""} 
-                      onChange={(e) => set({ latitude: e.target.value === "" ? null : Number(e.target.value) })}
-                      placeholder="e.g. 22.3072"
-                      className="h-9 text-[13px] rounded-xl"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Longitude</Label>
-                    <Input 
-                      type="number" 
-                      value={form.longitude ?? ""} 
-                      onChange={(e) => set({ longitude: e.target.value === "" ? null : Number(e.target.value) })}
-                      placeholder="e.g. 73.1812"
-                      className="h-9 text-[13px] rounded-xl"
-                    />
-                  </div>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {form.latitude && form.longitude
-                    ? `Pinned at ${form.latitude.toFixed(5)}, ${form.longitude.toFixed(5)}`
-                    : "Tap the map to drop the restaurant pin or enter coordinates manually."}
-                </p>
-              </div>
+                <LocationPicker
+                  latitude={form.latitude}
+                  longitude={form.longitude}
+                  address={form.address}
+                  onChange={(lat: number, lng: number, addr: string) => set({ latitude: lat, longitude: lng, address: addr })}
+                />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Opens at" value={form.opening_time} onChange={(v) => set({ opening_time: v })} placeholder="10:00" />
                 <Field label="Closes at" value={form.closing_time} onChange={(v) => set({ closing_time: v })} placeholder="23:00" />
