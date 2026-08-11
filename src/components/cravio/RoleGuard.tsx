@@ -62,10 +62,18 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
         } else if (portal === "logistics" && !user.roles.includes("logistics")) {
           // Admission to /logistics is granted ONLY to logistics staff.
           // If authoritative resolution finished and they don't have it, redirect to login with error.
-          window.location.assign("/logistics/login?error=unauthorized");
+          // CRITICAL: only redirect if we are NOT already on the login page to avoid loops.
+          if (!pathname.includes("/login")) {
+            console.log("[AUTH_DEBUG] RoleGuard: Logistics unauthorized, redirecting to login.");
+            window.location.assign("/logistics/login?error=unauthorized");
+          }
         } else {
           // Default to customer app only if authoritative resolution shows they are just a customer
-          navigate({ to: "/app" as any });
+          // and we are not on a portal-specific login page.
+          if (!pathname.includes("/login") && !pathname.includes("/onboarding")) {
+             console.log("[AUTH_DEBUG] RoleGuard: Defaulting to /app");
+             navigate({ to: "/app" as any });
+          }
         }
       }
     }
