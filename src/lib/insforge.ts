@@ -32,7 +32,7 @@ export const setRestaurantCommission = async (...args: any[]) => {};
 export const updateRestaurantStatus = async (...args: any[]) => {};
 export const deleteRestaurantComplete = async (...args: any[]): Promise<any> => ({ ok: true });
 export const scheduleOrder = async (...args: any[]) => {};
-export const upsertMenuItem = async (...args: any[]) => {};
+export const upsertMenuItem = async (...args: any[]): Promise<any> => ({ ok: true });
 export const deleteMenuItem = async (...args: any[]) => {};
 export const upsertAddon = async (...args: any[]) => {};
 export const deleteAddon = async (...args: any[]) => {};
