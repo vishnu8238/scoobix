@@ -74,6 +74,7 @@ import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as ManagerAnalyticsRouteImport } from './routes/manager.analytics'
 import { Route as LogisticsLoginRouteImport } from './routes/logistics.login'
 import { Route as LogisticsLiveRouteImport } from './routes/logistics.live'
+import { Route as LogisticsDispatchRouteImport } from './routes/logistics.dispatch'
 import { Route as CustomerLoginRouteImport } from './routes/customer.login'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppWalletRouteImport } from './routes/app.wallet'
@@ -457,6 +458,11 @@ const LogisticsLiveRoute = LogisticsLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => LogisticsRoute,
 } as any)
+const LogisticsDispatchRoute = LogisticsDispatchRouteImport.update({
+  id: '/dispatch',
+  path: '/dispatch',
+  getParentRoute: () => LogisticsRoute,
+} as any)
 const CustomerLoginRoute = CustomerLoginRouteImport.update({
   id: '/customer/login',
   path: '/customer/login',
@@ -808,6 +814,7 @@ export interface FileRoutesByFullPath {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/customer/login': typeof CustomerLoginRoute
+  '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/login': typeof LogisticsLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -926,6 +933,7 @@ export interface FileRoutesByTo {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/customer/login': typeof CustomerLoginRoute
+  '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/login': typeof LogisticsLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -1051,6 +1059,7 @@ export interface FileRoutesById {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/customer/login': typeof CustomerLoginRoute
+  '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/login': typeof LogisticsLoginRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -1177,6 +1186,7 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/customer/login'
+    | '/logistics/dispatch'
     | '/logistics/live'
     | '/logistics/login'
     | '/manager/analytics'
@@ -1295,6 +1305,7 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/customer/login'
+    | '/logistics/dispatch'
     | '/logistics/live'
     | '/logistics/login'
     | '/manager/analytics'
@@ -1419,6 +1430,7 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/customer/login'
+    | '/logistics/dispatch'
     | '/logistics/live'
     | '/logistics/login'
     | '/manager/analytics'
@@ -1952,6 +1964,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsLiveRouteImport
       parentRoute: typeof LogisticsRoute
     }
+    '/logistics/dispatch': {
+      id: '/logistics/dispatch'
+      path: '/dispatch'
+      fullPath: '/logistics/dispatch'
+      preLoaderRoute: typeof LogisticsDispatchRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
     '/customer/login': {
       id: '/customer/login'
       path: '/customer/login'
@@ -2483,12 +2502,14 @@ const AppRouteChildren: AppRouteChildren = {
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface LogisticsRouteChildren {
+  LogisticsDispatchRoute: typeof LogisticsDispatchRoute
   LogisticsLiveRoute: typeof LogisticsLiveRoute
   LogisticsLoginRoute: typeof LogisticsLoginRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
 }
 
 const LogisticsRouteChildren: LogisticsRouteChildren = {
+  LogisticsDispatchRoute: LogisticsDispatchRoute,
   LogisticsLiveRoute: LogisticsLiveRoute,
   LogisticsLoginRoute: LogisticsLoginRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
