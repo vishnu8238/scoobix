@@ -39,7 +39,7 @@ const NAV = [
   { to: "/logistics/dispatch", label: "Dispatch", icon: Navigation },
   { to: "/logistics/orders", label: "Orders", icon: ClipboardList },
   { to: "/logistics/riders", label: "Riders", icon: Bike },
-  { to: "/logistics/zones", label: "Zones", icon: MapIcon },
+  { to: "/logistics/zones", label: "Zones", icon: Navigation },
   { to: "/logistics/subzones", label: "Subzones", icon: MapIcon },
   { to: "/logistics/tracking", label: "Tracking", icon: Truck },
   { to: "/logistics/exceptions", label: "Exceptions", icon: AlertTriangle },
