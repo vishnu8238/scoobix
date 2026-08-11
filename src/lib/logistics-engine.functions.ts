@@ -26,6 +26,23 @@ export const acceptOrderOffer = createServerFn({ method: "POST" })
     const offer = offers[0];
     if (new Date(offer.expires_at) < new Date()) return { success: false, error: "OFFER_EXPIRED" };
 
+    // Fetch restaurant for pickup coordinates
+    const orderRes = await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${data.orderId}&select=restaurant_id`, { headers: HEADERS });
+    const orderData = await orderRes.json();
+    let pickupLat = null;
+    let pickupLng = null;
+    let pickupAddress = "";
+
+    if (orderData?.[0]?.restaurant_id) {
+      const restRes = await fetch(`${INSFORGE_URL}/api/database/records/restaurants?id=eq.${orderData[0].restaurant_id}&select=latitude,longitude,address`, { headers: HEADERS });
+      const restData = await restRes.json();
+      if (restData?.[0]) {
+        pickupLat = restData[0].latitude;
+        pickupLng = restData[0].longitude;
+        pickupAddress = restData[0].address;
+      }
+    }
+
     const updateRes = await fetch(
       `${INSFORGE_URL}/api/database/records/rider_offers?id=eq.${data.offerId}&status=eq.PENDING`,
       {
@@ -36,19 +53,24 @@ export const acceptOrderOffer = createServerFn({ method: "POST" })
     );
     if (!updateRes.ok) return { success: false, error: "LOCK_FAILED" };
 
+    const orderPatch = { 
+      driver_id: data.riderId, 
+      status: "ACCEPTED", 
+      assignment_status: "ACCEPTED",
+      pickup_latitude: pickupLat,
+      pickup_longitude: pickupLng,
+      pickup_address: pickupAddress,
+      updated_at: new Date().toISOString()
+    };
+
     await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${data.orderId}`, {
       method: "PATCH",
       headers: HEADERS,
-      body: JSON.stringify({ 
-        driver_id: data.riderId, 
-        status: "ACCEPTED", 
-        assignment_status: "ACCEPTED",
-        updated_at: new Date().toISOString()
-      })
+      body: JSON.stringify(orderPatch)
     });
 
     publishTableChange("rider_offers", "update", { id: data.offerId, status: "ACCEPTED" });
-    publishTableChange("orders", "update", { id: data.orderId, status: "ACCEPTED", driver_id: data.riderId });
+    publishTableChange("orders", "update", { id: data.orderId, ...orderPatch });
     return { success: true };
   });
 

@@ -121,6 +121,9 @@ export function rowToOrder(row: OrderRow): Order {
     driverId: row.driver_id ? String(row.driver_id) : undefined,
     otp: row.otp ? String(row.otp) : undefined,
     paymentStatus: row.payment_status ? String(row.payment_status) : undefined,
+    pickup_latitude: row.pickup_latitude ? num(row.pickup_latitude) : undefined,
+    pickup_longitude: row.pickup_longitude ? num(row.pickup_longitude) : undefined,
+    pickup_address: row.pickup_address ? String(row.pickup_address) : undefined,
   };
 }
 
