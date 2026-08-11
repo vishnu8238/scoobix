@@ -22,7 +22,10 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
-    console.log(`[AUTH_DEBUG] RoleGuard Path: ${pathname}, User: ${user?.id}, Resolved: ${user?.membershipsResolved}, Portal: ${portal}, Loading: ${loading}, Roles: ${user?.roles?.join(",")}`);
+    if (typeof window !== 'undefined') {
+      (window as any).__LAST_ROLE_GUARD_PATH__ = pathname;
+      console.log(`[AUTH_TRACE] RoleGuard Path: ${pathname}, User: ${user?.id}, Resolved: ${user?.membershipsResolved}, Portal: ${portal}, Loading: ${loading}, Roles: ${user?.roles?.join(",")}`);
+    }
     
     // AUTH HYDRATION PROTECTION: 
     // Do NOT trigger any redirects if auth is still initializing.
