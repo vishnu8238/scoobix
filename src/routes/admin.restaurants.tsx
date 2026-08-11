@@ -44,6 +44,9 @@ function AdminRestaurants() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [openDetail, setOpenDetail] = useState<string | null>(null);
+  const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -87,6 +90,37 @@ function AdminRestaurants() {
     toast.success("Relationship manager updated");
   };
 
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selection);
+    if (!ids.length) return;
+
+    setIsBulkDeleting(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of ids) {
+      try {
+        const res = await deleteRestaurantComplete(id);
+        if (res.ok) successCount++;
+        else failCount++;
+      } catch (err) {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} restaurant(s) deleted successfully`);
+      await refresh();
+      setSelection(new Set());
+    }
+    if (failCount > 0) {
+      toast.error(`${failCount} restaurant(s) could not be deleted.`);
+    }
+
+    setIsBulkDeleting(false);
+    setDeleteModalOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -94,14 +128,33 @@ function AdminRestaurants() {
           <p className="eyebrow">Restaurants</p>
           <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Partner restaurants</h1>
         </div>
-        <div className="flex min-w-[280px] items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-soft ring-1 ring-border/60">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search ID, name, owner or phone"
-            className="w-full bg-transparent text-sm outline-none"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          {selection.size > 0 && (
+            <div className="flex items-center gap-3 rounded-2xl bg-primary/5 px-4 py-2 ring-1 ring-primary/20">
+              <span className="text-sm font-bold text-primary">{selection.size} selected</span>
+              <button 
+                onClick={() => setDeleteModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow-soft transition active:scale-95"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+              </button>
+              <button 
+                onClick={() => setSelection(new Set())}
+                className="text-xs font-bold text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+          <div className="flex min-w-[280px] items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-soft ring-1 ring-border/60">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search ID, name, owner or phone"
+              className="w-full bg-transparent text-sm outline-none"
+            />
+          </div>
         </div>
       </header>
 
@@ -113,6 +166,8 @@ function AdminRestaurants() {
         ) : (
           <DataTable
             columns={["Restaurant ID", "Restaurant", "Owner", "Rating", "Commission %", "Manager", "Open", "Status", "Actions"]}
+            selection={selection}
+            onSelectionChange={setSelection}
             rows={filtered.map((r) => {
               const owner = r.owner_id ? owners[r.owner_id] : undefined;
               const status = STATUS_LABEL[(r.status ?? "").toLowerCase()] ?? (r.status ?? "Pending");
@@ -138,6 +193,37 @@ function AdminRestaurants() {
           />
         )}
       </section>
+
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 mb-4">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <DialogTitle className="text-xl font-bold">Delete {selection.size} restaurant{selection.size > 1 ? 's' : ''}?</DialogTitle>
+            <DialogDescription className="text-sm py-2">
+              This action will permanently delete the selected restaurants and their associated records (menu, categories, KYC).
+              Historical orders will be preserved.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              onClick={() => setDeleteModalOpen(false)}
+              className="rounded-xl px-4 py-2.5 text-sm font-bold text-muted-foreground hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              className="flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 transition active:scale-95 disabled:opacity-50"
+            >
+              {isBulkDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Delete {selection.size} Restaurant{selection.size > 1 ? 's' : ''}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {openDetail && (() => {
         const r = rows.find((x) => x.id === openDetail);
