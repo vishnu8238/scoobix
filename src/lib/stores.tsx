@@ -592,7 +592,7 @@ type LocationPermission = "unknown" | "prompt" | "granted" | "denied" | "unsuppo
 type AppUICtx = {
   location: string;
   secondaryLocation?: string;
-  setLocation: (l: string, coords?: { lat: number; lng: number }) => void;
+  setLocation: (l: string, coords?: { lat: number; lng: number }, secondary?: string) => void;
   userCoords: { lat: number; lng: number } | null;
   recentSearches: string[];
   pushRecent: (s: string) => void;
@@ -613,6 +613,7 @@ const UI_KEY = "cravio_ui_v1";
 
 export function AppUIProvider({ children }: { children: ReactNode }) {
   const [location, setLocationState] = useState("Westside · Apt 4");
+  const [secondaryLocation, setSecondaryState] = useState<string | undefined>();
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [recentSearches, setRecent] = useState<string[]>([]);
   const [locationPermission, setLocationPermission] = useState<LocationPermission>("unknown");
@@ -625,6 +626,7 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const o = JSON.parse(raw);
         if (o.location) setLocationState(o.location);
+        if (o.secondaryLocation) setSecondaryState(o.secondaryLocation);
         if (o.userCoords) setUserCoords(o.userCoords);
         if (Array.isArray(o.recentSearches)) setRecent(o.recentSearches);
         if (typeof o.vegMode === "boolean") setVegModeState(o.vegMode);
@@ -636,13 +638,14 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(UI_KEY, JSON.stringify({ location, userCoords, recentSearches, vegMode }));
-  }, [location, userCoords, recentSearches, vegMode]);
+    localStorage.setItem(UI_KEY, JSON.stringify({ location, secondaryLocation, userCoords, recentSearches, vegMode }));
+  }, [location, secondaryLocation, userCoords, recentSearches, vegMode]);
 
   const setVegMode = (on: boolean) => setVegModeState(on);
 
-  const setLocation: AppUICtx["setLocation"] = (l, coords) => {
+  const setLocation: AppUICtx["setLocation"] = (l, coords, secondary) => {
     setLocationState(l);
+    setSecondaryState(secondary);
     if (coords) setUserCoords(coords);
   };
   const pushRecent = (s: string) => {
@@ -666,7 +669,18 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
           setUserCoords({ lat, lng });
           setLocationPermission("granted");
           const label = await reverseGeocode(lat, lng);
-          setLocationState(label);
+          
+          // Basic logic to split label for secondary if it contains a comma
+          // The reverseGeocode now returns more specific labels
+          const parts = label.split(',').map(s => s.trim());
+          if (parts.length > 1) {
+            setLocationState(parts[0]);
+            setSecondaryState(parts.slice(1).join(', '));
+          } else {
+            setLocationState(label);
+            setSecondaryState(undefined);
+          }
+          
           setDetecting(false);
           resolve({ ok: true, message: label });
         },
@@ -686,7 +700,20 @@ export function AppUIProvider({ children }: { children: ReactNode }) {
     });
 
   return (
-    <AppUIContext.Provider value={{ location, setLocation, userCoords, recentSearches, pushRecent, clearRecent, locationPermission, detectingLocation, detectLocation, vegMode, setVegMode }}>
+    <AppUIContext.Provider value={{ 
+      location, 
+      secondaryLocation, 
+      setLocation, 
+      userCoords, 
+      recentSearches, 
+      pushRecent, 
+      clearRecent, 
+      locationPermission, 
+      detectingLocation, 
+      detectLocation, 
+      vegMode, 
+      setVegMode 
+    }}>
       {children}
     </AppUIContext.Provider>
   );
