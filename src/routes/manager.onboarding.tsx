@@ -26,6 +26,7 @@ import { logDuplicateCheck, nextBranchCode } from "@/lib/duplicate-api";
 import { requestOwnershipTransfer } from "@/lib/transfers-api";
 import { DuplicateDialog, useDuplicateCheck, type DuplicateChoice } from "@/components/cravio/DuplicateCheck";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
+import { LocationPicker } from "@/components/maps/LocationPicker";
 
 type Search = { id?: string };
 
