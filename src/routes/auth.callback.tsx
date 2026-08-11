@@ -31,12 +31,25 @@ function AuthCallback() {
           console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_SESSION_PRESENT] User ID:", authUser.id);
           console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_CURRENT_USER_PRESENT] Email:", authUser.email);
           
-          // SECURITY: For admin portal, we MUST verify the email before redirecting.
+          // SECURITY: For admin and logistics portals, we MUST verify permissions before redirecting.
           if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
-             // Unauthorized admin attempt - clear intent and send back to login with error
              console.error("Unauthorized admin login attempt:", authUser.email);
              window.location.assign("/admin/login?error=unauthorized");
              return;
+          }
+
+          if (portal === "logistics") {
+            const { listTable } = await import("@/lib/insforge-crud");
+            const rows = await listTable("logistics_staff", { 
+              user_id: `eq.${authUser.id}`, 
+              limit: 1 
+            }).catch(() => []);
+            
+            if (!rows.length) {
+              console.error("Unauthorized logistics login attempt:", authUser.email);
+              window.location.assign("/logistics/login?error=unauthorized");
+              return;
+            }
           }
 
           // Determine destination based on portal intent
