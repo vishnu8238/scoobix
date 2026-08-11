@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { useAuth } from "@/lib/auth-store";
 import { useEffect } from "react";
@@ -38,7 +38,7 @@ function LogisticsLayout() {
   }
 
   return (
-    <RoleGuard allowedRoles={["logistics"]} portal="logistics">
+    <RoleGuard allow={["logistics"]}>
       <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-sky-500/30">
         <Outlet />
         
