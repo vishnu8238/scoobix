@@ -37,13 +37,11 @@ function AuthCallback() {
           
           const { data, error } = await insforge.auth.getCurrentUser();
           
-          if (error) {
-            // "No refresh token provided" is common during the exchange window, so we don't treat it as a terminal error immediately
-            console.log("[AUTH_DEBUG] auth.callback.tsx SDK reported error (might be transient):", error.message);
-          }
-
+          // Determine if there is a REAL session
           const authUser = data?.user;
-          if (authUser) {
+          const hasSession = !!authUser;
+
+          if (hasSession) {
             console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_SESSION_PRESENT] User ID:", authUser.id);
             console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_CURRENT_USER_PRESENT] Email:", authUser.email);
             
@@ -76,8 +74,16 @@ function AuthCallback() {
             // Determine destination based on portal intent
             const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
             console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: NAVIGATION_TARGET] Redirecting to:", dest);
+            
+            // CLEAR THE PORTAL INTENT FROM LOCALSTORAGE ON SUCCESS
+            localStorage.removeItem("scoobix_oauth_portal_intent");
+            
             window.location.assign(dest);
             return true;
+          }
+
+          if (error) {
+            console.log("[AUTH_DEBUG] auth.callback.tsx SDK reported error:", error.message);
           }
 
           if (attempts >= maxAttempts) {
@@ -86,7 +92,7 @@ function AuthCallback() {
             return true;
           }
           
-          return false;
+          return False;
         };
 
         // Start polling immediately
