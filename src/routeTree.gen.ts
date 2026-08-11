@@ -72,6 +72,7 @@ import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as ManagerAnalyticsRouteImport } from './routes/manager.analytics'
+import { Route as LogisticsZonesRouteImport } from './routes/logistics.zones'
 import { Route as LogisticsRidersRouteImport } from './routes/logistics.riders'
 import { Route as LogisticsLoginRouteImport } from './routes/logistics.login'
 import { Route as LogisticsLiveRouteImport } from './routes/logistics.live'
@@ -449,6 +450,11 @@ const ManagerAnalyticsRoute = ManagerAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => ManagerRoute,
 } as any)
+const LogisticsZonesRoute = LogisticsZonesRouteImport.update({
+  id: '/zones',
+  path: '/zones',
+  getParentRoute: () => LogisticsRoute,
+} as any)
 const LogisticsRidersRoute = LogisticsRidersRouteImport.update({
   id: '/riders',
   path: '/riders',
@@ -824,6 +830,7 @@ export interface FileRoutesByFullPath {
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/login': typeof LogisticsLoginRoute
   '/logistics/riders': typeof LogisticsRidersRoute
+  '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -944,6 +951,7 @@ export interface FileRoutesByTo {
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/login': typeof LogisticsLoginRoute
   '/logistics/riders': typeof LogisticsRidersRoute
+  '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -1071,6 +1079,7 @@ export interface FileRoutesById {
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/login': typeof LogisticsLoginRoute
   '/logistics/riders': typeof LogisticsRidersRoute
+  '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
@@ -1199,6 +1208,7 @@ export interface FileRouteTypes {
     | '/logistics/live'
     | '/logistics/login'
     | '/logistics/riders'
+    | '/logistics/zones'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1319,6 +1329,7 @@ export interface FileRouteTypes {
     | '/logistics/live'
     | '/logistics/login'
     | '/logistics/riders'
+    | '/logistics/zones'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1445,6 +1456,7 @@ export interface FileRouteTypes {
     | '/logistics/live'
     | '/logistics/login'
     | '/logistics/riders'
+    | '/logistics/zones'
     | '/manager/analytics'
     | '/manager/calendar'
     | '/manager/history'
@@ -1961,6 +1973,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/manager/analytics'
       preLoaderRoute: typeof ManagerAnalyticsRouteImport
       parentRoute: typeof ManagerRoute
+    }
+    '/logistics/zones': {
+      id: '/logistics/zones'
+      path: '/zones'
+      fullPath: '/logistics/zones'
+      preLoaderRoute: typeof LogisticsZonesRouteImport
+      parentRoute: typeof LogisticsRoute
     }
     '/logistics/riders': {
       id: '/logistics/riders'
@@ -2525,6 +2544,7 @@ interface LogisticsRouteChildren {
   LogisticsLiveRoute: typeof LogisticsLiveRoute
   LogisticsLoginRoute: typeof LogisticsLoginRoute
   LogisticsRidersRoute: typeof LogisticsRidersRoute
+  LogisticsZonesRoute: typeof LogisticsZonesRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
 }
 
@@ -2533,6 +2553,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsLiveRoute: LogisticsLiveRoute,
   LogisticsLoginRoute: LogisticsLoginRoute,
   LogisticsRidersRoute: LogisticsRidersRoute,
+  LogisticsZonesRoute: LogisticsZonesRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
 }
 
