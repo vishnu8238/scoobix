@@ -79,36 +79,29 @@ function AuthCallback() {
         }
 
         if (portal === "logistics") {
-          const { listTable } = await import("@/lib/insforge-crud");
-          let staffRows: Array<{ email?: string | null; status?: string | null }> | null = null;
-          try {
-            // Authoritative staff list; case-insensitive exact email identity match.
-            staffRows = await listTable<{ email?: string | null; status?: string | null }>(
-              "logistics_staff",
-              { select: "email,status", limit: 200 },
-              { ttl: 0, fresh: true },
-            );
-          } catch (e) {
-            console.error("[AUTH_TRACE] logistics_staff lookup failed:", e);
+          const { checkLogisticsAdmission } = await import("@/lib/logistics-authorization");
+          console.log(
+            "[AUTH_TRACE] logistics authorization → user:",
+            authUser.id ? "PRESENT" : "MISSING",
+            "email:",
+            authUser.email ? "PRESENT" : "MISSING",
+          );
+          const admission = await checkLogisticsAdmission(authUser.email);
+
+          if (!admission.ok && admission.reason === "lookup_failed") {
+            console.error("[AUTH_TRACE] logistics_staff lookup failed:", admission.message);
             setErrorMsg("Unable to verify Logistics access. Please try again.");
             return;
           }
 
-          const authEmail = String(authUser.email || "").trim().toLowerCase();
-          const authorized = staffRows.some((r) => {
-            const staffEmail = String(r?.email || "").trim().toLowerCase();
-            const status = String(r?.status ?? "active").trim().toLowerCase();
-            return staffEmail !== "" && staffEmail === authEmail && status !== "inactive" && status !== "suspended";
-          });
-
-          if (!authorized) {
+          if (!admission.ok) {
             console.error("[AUTH_TRACE] Logistics staff record: NOT FOUND");
             window.location.assign("/logistics/login?error=unauthorized");
             return;
           }
-          console.log("[AUTH_TRACE] Logistics authorized (email identity match)");
-
+          console.log("[AUTH_TRACE] Logistics authorized (email identity match), level:", admission.level);
         }
+
 
         const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
         localStorage.removeItem("scoobix_oauth_portal_intent");
