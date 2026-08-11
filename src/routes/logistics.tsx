@@ -12,7 +12,8 @@ import {
   Settings, 
   LogOut,
   Bell,
-  Search
+  Search,
+  Layers
 } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { APPS, appHead } from "@/lib/apps";
