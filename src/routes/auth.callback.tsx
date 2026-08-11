@@ -92,7 +92,7 @@ function AuthCallback() {
             return true;
           }
           
-          return False;
+          return false;
         };
 
         // Start polling immediately
