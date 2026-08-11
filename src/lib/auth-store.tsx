@@ -179,9 +179,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log(`[AUTH_DEBUG] Auth State Change: ${event}`);
       // Single source of truth: resolveUser() handles session checks definitively.
       if (event === 'signedIn' || event === 'tokenRefreshed') {
+        console.log("[AUTH_TRACE] Auth State Event: SIGNED_IN/TOKEN_REFRESHED -> Resolving User");
         resolveUser();
       } else if (event === 'signedOut') {
-        // Only clear state if we are truly signed out
+        console.log("[AUTH_TRACE] Auth State Event: SIGNED_OUT");
         setUser(null);
         setLoading(false);
       }
