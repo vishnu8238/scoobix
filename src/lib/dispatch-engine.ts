@@ -67,13 +67,28 @@ function latestTrackingFor(driverId: string) {
 
 function rankDriversForOrder(order: Row, exclude: Set<string>): string[] {
   const restaurantId = String(order.restaurant_id ?? "");
-  const rest = restaurantsSnap.find((r) => String(r.id) === restaurantId);
-  const rLat = rest ? toNum(rest.latitude) : null;
-  const rLng = rest ? toNum(rest.longitude) : null;
-  const restCoords = rLat !== null && rLng !== null ? { lat: rLat, lng: rLng } : null;
+  
+  // 1. Prioritize snapshot coordinates from the order record
+  const oLat = order.pickup_latitude != null ? toNum(order.pickup_latitude) : null;
+  const oLng = order.pickup_longitude != null ? toNum(order.pickup_longitude) : null;
+  
+  let restCoords: { lat: number, lng: number } | null = null;
+  
+  if (oLat !== null && oLng !== null) {
+    restCoords = { lat: oLat, lng: oLng };
+  } else {
+    // 2. Fallback to restaurant table (historical lookup)
+    const rest = restaurantsSnap.find((r) => String(r.id) === restaurantId);
+    const rLat = rest ? toNum(rest.latitude) : null;
+    const rLng = rest ? toNum(rest.longitude) : null;
+    if (rLat !== null && rLng !== null) {
+      restCoords = { lat: rLat, lng: rLng };
+    }
+  }
 
-  const zoneId = order.zone_id ? String(order.zone_id) : (rest?.zone_id ? String(rest.zone_id) : null);
-  const subzoneId = order.subzone_id ? String(order.subzone_id) : (rest?.subzone_id ? String(rest.subzone_id) : null);
+  const restLookup = restaurantsSnap.find((r) => String(r.id) === restaurantId);
+  const zoneId = order.zone_id ? String(order.zone_id) : (restLookup?.zone_id ? String(restLookup.zone_id) : null);
+  const subzoneId = order.subzone_id ? String(order.subzone_id) : (restLookup?.subzone_id ? String(restLookup.subzone_id) : null);
 
   const eligible = driversSnap.filter((d) => {
     const id = String(d.id ?? "");

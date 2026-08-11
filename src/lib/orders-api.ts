@@ -121,6 +121,9 @@ export function rowToOrder(row: OrderRow): Order {
     driverId: row.driver_id ? String(row.driver_id) : undefined,
     otp: row.otp ? String(row.otp) : undefined,
     paymentStatus: row.payment_status ? String(row.payment_status) : undefined,
+    pickup_latitude: row.pickup_latitude ? num(row.pickup_latitude) : undefined,
+    pickup_longitude: row.pickup_longitude ? num(row.pickup_longitude) : undefined,
+    pickup_address: row.pickup_address ? String(row.pickup_address) : undefined,
   };
 }
 
@@ -192,17 +195,22 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
   let zoneId = input.zoneId;
   let subzoneId = input.subzoneId;
 
-  if (!zoneId) {
-    try {
-      const res = await fetch(`${rec("restaurants")}?id=eq.${input.restaurantId}&select=zone_id,subzone_id`, { headers: H });
-      const data = await res.json();
-      if (data?.[0]) {
-        zoneId = data[0].zone_id;
-        subzoneId = data[0].subzone_id;
-      }
-    } catch (e) {
-      console.error("[ORDERS_API] Failed to resolve zone context for order", e);
+  let pickupLat: number | null = null;
+  let pickupLng: number | null = null;
+  let pickupAddr: string | null = null;
+
+  try {
+    const res = await fetch(`${rec("restaurants")}?id=eq.${input.restaurantId}&select=zone_id,subzone_id,latitude,longitude,address`, { headers: H });
+    const data = await res.json();
+    if (data?.[0]) {
+      if (!zoneId) zoneId = data[0].zone_id;
+      if (!subzoneId) subzoneId = data[0].subzone_id;
+      pickupLat = data[0].latitude;
+      pickupLng = data[0].longitude;
+      pickupAddr = data[0].address;
     }
+  } catch (e) {
+    console.error("[ORDERS_API] Failed to resolve restaurant context for order", e);
   }
 
   const meta: Meta = {
@@ -232,6 +240,9 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     discount: input.totals.discount,
     total_price: input.totals.total,
     delivery_address: `${input.addressLabel} · ${input.addressLine}`,
+    pickup_latitude: pickupLat,
+    pickup_longitude: pickupLng,
+    pickup_address: pickupAddr,
     payment_method: input.paymentMethod,
     payment_status: "PENDING",
     assignment_status: "SEARCHING",

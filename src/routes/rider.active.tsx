@@ -290,11 +290,20 @@ function RiderActive() {
   };
 
   const navigateNow = () => {
-    // Before pickup → restaurant coordinates. After pickup → customer address.
-    const target = phase === "TO_PICKUP" || phase === "AT_PICKUP"
-      ? { lat: restaurant?.latitude, lng: restaurant?.longitude, address: restaurant?.address ?? restaurantName }
-      : { address: dropAddress };
-    if (!startNavigation(target)) toast.error("No destination available for this trip");
+    // Use the order-level pickup coordinates if available, otherwise fallback to restaurant row
+    if (phase === "TO_PICKUP" || phase === "AT_PICKUP") {
+      const lat = (order?.pickup_latitude as number | null) ?? (restaurant?.latitude as number | null) ?? null;
+      const lng = (order?.pickup_longitude as number | null) ?? (restaurant?.longitude as number | null) ?? null;
+      const address = (order?.pickup_address as string) ?? (restaurant?.address as string) ?? restaurantName;
+      
+      if (!startNavigation({ lat, lng, address })) {
+        toast.error("No destination available for this trip");
+      }
+    } else {
+      if (!startNavigation({ address: dropAddress })) {
+        toast.error("No destination available for this trip");
+      }
+    }
   };
 
   // ---- actions -----------------------------------------------------------

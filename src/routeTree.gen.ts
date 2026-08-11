@@ -41,6 +41,7 @@ import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
 import { Route as PartnerSupportRouteImport } from './routes/partner.support'
 import { Route as PartnerSubscriptionRouteImport } from './routes/partner.subscription'
 import { Route as PartnerSettingsRouteImport } from './routes/partner.settings'
+import { Route as PartnerProfileRouteImport } from './routes/partner.profile'
 import { Route as PartnerOrdersRouteImport } from './routes/partner.orders'
 import { Route as PartnerOnboardingRouteImport } from './routes/partner.onboarding'
 import { Route as PartnerNotificationsRouteImport } from './routes/partner.notifications'
@@ -285,6 +286,11 @@ const PartnerSubscriptionRoute = PartnerSubscriptionRouteImport.update({
 const PartnerSettingsRoute = PartnerSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => PartnerRoute,
+} as any)
+const PartnerProfileRoute = PartnerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerOrdersRoute = PartnerOrdersRouteImport.update({
@@ -805,6 +811,7 @@ export interface FileRoutesByFullPath {
   '/partner/notifications': typeof PartnerNotificationsRoute
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
+  '/partner/profile': typeof PartnerProfileRoute
   '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
@@ -919,6 +926,7 @@ export interface FileRoutesByTo {
   '/partner/notifications': typeof PartnerNotificationsRoute
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
+  '/partner/profile': typeof PartnerProfileRoute
   '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
@@ -1039,6 +1047,7 @@ export interface FileRoutesById {
   '/partner/notifications': typeof PartnerNotificationsRoute
   '/partner/onboarding': typeof PartnerOnboardingRoute
   '/partner/orders': typeof PartnerOrdersRoute
+  '/partner/profile': typeof PartnerProfileRoute
   '/partner/settings': typeof PartnerSettingsRoute
   '/partner/subscription': typeof PartnerSubscriptionRoute
   '/partner/support': typeof PartnerSupportRoute
@@ -1160,6 +1169,7 @@ export interface FileRouteTypes {
     | '/partner/notifications'
     | '/partner/onboarding'
     | '/partner/orders'
+    | '/partner/profile'
     | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
@@ -1274,6 +1284,7 @@ export interface FileRouteTypes {
     | '/partner/notifications'
     | '/partner/onboarding'
     | '/partner/orders'
+    | '/partner/profile'
     | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
@@ -1393,6 +1404,7 @@ export interface FileRouteTypes {
     | '/partner/notifications'
     | '/partner/onboarding'
     | '/partner/orders'
+    | '/partner/profile'
     | '/partner/settings'
     | '/partner/subscription'
     | '/partner/support'
@@ -1660,6 +1672,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/partner/settings'
       preLoaderRoute: typeof PartnerSettingsRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/profile': {
+      id: '/partner/profile'
+      path: '/profile'
+      fullPath: '/partner/profile'
+      preLoaderRoute: typeof PartnerProfileRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/orders': {
@@ -2444,6 +2463,7 @@ interface PartnerRouteChildren {
   PartnerNotificationsRoute: typeof PartnerNotificationsRoute
   PartnerOnboardingRoute: typeof PartnerOnboardingRoute
   PartnerOrdersRoute: typeof PartnerOrdersRoute
+  PartnerProfileRoute: typeof PartnerProfileRoute
   PartnerSettingsRoute: typeof PartnerSettingsRoute
   PartnerSubscriptionRoute: typeof PartnerSubscriptionRoute
   PartnerSupportRoute: typeof PartnerSupportRoute
@@ -2465,6 +2485,7 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerNotificationsRoute: PartnerNotificationsRoute,
   PartnerOnboardingRoute: PartnerOnboardingRoute,
   PartnerOrdersRoute: PartnerOrdersRoute,
+  PartnerProfileRoute: PartnerProfileRoute,
   PartnerSettingsRoute: PartnerSettingsRoute,
   PartnerSubscriptionRoute: PartnerSubscriptionRoute,
   PartnerSupportRoute: PartnerSupportRoute,
