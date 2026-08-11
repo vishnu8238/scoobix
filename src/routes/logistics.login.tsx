@@ -17,10 +17,12 @@ function LogisticsLogin() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("error") === "unauthorized") {
+    // `denied` survives the auth SDK's callback-param cleanup; `error` kept for older links.
+    if (params.get("denied") === "logistics" || params.get("error") === "unauthorized") {
       setIsUnauthorized(true);
     }
   }, []);
+
 
   const handleGoogle = async () => {
     setStatus("loading");
