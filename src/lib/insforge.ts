@@ -1,6 +1,6 @@
 import { createClient } from "@insforge/sdk";
 
-export const INSFORGE_URL = (import.meta as any).env.VITE_INSFORGE_URL || "";
+export const INSFORGE_URL = "https://awvs3seh.us-east.insforge.app";
 export const INSFORGE_ANON_KEY = (import.meta as any).env.VITE_INSFORGE_ANON_KEY || "";
 export const INSFORGE_PROJECT_ID = (import.meta as any).env.VITE_INSFORGE_PROJECT_ID || "";
 export const INSFORGE_API_KEY = (import.meta as any).env.VITE_INSFORGE_API_KEY || "";
