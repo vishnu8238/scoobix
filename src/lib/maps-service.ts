@@ -4,16 +4,14 @@ import type { LatLng } from "./geo";
 const GEO_TTL = 7 * 24 * 3600;
 const ROUTE_TTL = 3600;
 
-/**
- * Shared Google Maps client-side utilities.
- * These require the Google Maps JS SDK to be loaded.
- */
-
 export type GeoPlace = {
   label: string;
   lat: number;
   lng: number;
   placeId?: string;
+  locality?: string;
+  city?: string;
+  postalCode?: string;
 };
 
 export type GeoRoute = {
@@ -54,13 +52,22 @@ export async function searchPlaces(query: string, near?: LatLng): Promise<GeoPla
         const details = await Promise.all(
           predictions.slice(0, 6).map(async (p: any) => {
             return new Promise<GeoPlace | null>((resolve) => {
-              placesService.getDetails({ placeId: p.place_id, fields: ["geometry", "formatted_address"] }, (place: any, status: any) => {
+              placesService.getDetails({ 
+                placeId: p.place_id, 
+                fields: ["geometry", "formatted_address", "address_components"] 
+              }, (place: any, status: any) => {
                 if (status === g.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+                  const components = place.address_components || [];
+                  const getComp = (type: string) => components.find((c: any) => c.types.includes(type))?.long_name;
+                  
                   resolve({
                     label: place.formatted_address || p.description,
                     lat: place.geometry.location.lat(),
                     lng: place.geometry.location.lng(),
                     placeId: p.place_id,
+                    locality: getComp("sublocality") || getComp("locality"),
+                    city: getComp("administrative_area_level_2") || getComp("locality"),
+                    postalCode: getComp("postal_code"),
                   });
                 } else {
                   resolve(null);
@@ -77,6 +84,35 @@ export async function searchPlaces(query: string, near?: LatLng): Promise<GeoPla
       }
     }
   );
+}
+
+/**
+ * Extract a human-readable label from reverse geocoding results
+ */
+function extractReadableLabel(results: any[]): string {
+  if (!results || results.length === 0) return "";
+  
+  // Try to find the most specific result
+  // Prioritize premise, sublocality, locality
+  const bestResult = results.find(r => 
+    r.types.includes("premise") || 
+    r.types.includes("sublocality_level_1") ||
+    r.types.includes("sublocality")
+  ) || results[0];
+
+  const components = bestResult.address_components || [];
+  const getComp = (type: string) => components.find((c: any) => c.types.includes(type))?.long_name;
+  
+  const house = getComp("premise") || getComp("subpremise");
+  const neighborhood = getComp("sublocality_level_1") || getComp("sublocality") || getComp("neighborhood");
+  const locality = getComp("locality");
+  
+  if (house && neighborhood) return `${house}, ${neighborhood}`;
+  if (neighborhood) return neighborhood;
+  if (locality) return locality;
+  
+  // Fallback to formatted address but truncated
+  return bestResult.formatted_address.split(",")[0];
 }
 
 /**
@@ -97,8 +133,8 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
       try {
         const response = await geocoder.geocode({ location: { lat, lng } });
 
-        if (response.results && response.results[0]) {
-          return response.results[0].formatted_address;
+        if (response.results && response.results.length > 0) {
+          return extractReadableLabel(response.results);
         }
       } catch (err) {
         console.error("Google Geocoding error:", err);
@@ -149,4 +185,3 @@ export async function routeBetween(from: LatLng, to: LatLng): Promise<GeoRoute |
     }
   );
 }
-

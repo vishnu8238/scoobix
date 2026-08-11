@@ -10,7 +10,14 @@ import { searchPlaces, reverseGeocode } from "@/lib/geocode";
 import type { GeoPlace } from "@/lib/geocode";
 
 export function TopBar() {
-  const { location, setLocation, detectLocation, detectingLocation, locationPermission } = useAppUI();
+  const { 
+    location, 
+    secondaryLocation,
+    setLocation, 
+    detectLocation, 
+    detectingLocation, 
+    locationPermission 
+  } = useAppUI();
   const [locOpen, setLocOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [customLoc, setCustomLoc] = useState("");
@@ -50,7 +57,12 @@ export function TopBar() {
   };
 
   const handleSelect = (p: GeoPlace) => {
-    setLocation(p.label);
+    const parts = p.label.split(',').map(s => s.trim());
+    if (parts.length > 1) {
+      setLocation(parts[0], { lat: p.lat, lng: p.lng }, parts.slice(1).join(', '));
+    } else {
+      setLocation(p.label, { lat: p.lat, lng: p.lng });
+    }
     setLocOpen(false);
     setCustomLoc("");
   };
@@ -63,7 +75,14 @@ export function TopBar() {
             <button className="flex min-w-0 flex-col items-start text-left">
               <span className="eyebrow">Delivering to</span>
               <span className="mt-0.5 flex min-w-0 items-center gap-1">
-                <span className="truncate font-display text-[15px] font-bold tracking-tight text-foreground">{location}</span>
+                <span className="truncate font-display text-[15px] font-bold tracking-tight text-foreground">
+                  {location}
+                  {secondaryLocation && (
+                    <span className="ml-1.5 font-sans text-[13px] font-normal text-muted-foreground hidden xs:inline">
+                      · {secondaryLocation}
+                    </span>
+                  )}
+                </span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.5} />
               </span>
             </button>
