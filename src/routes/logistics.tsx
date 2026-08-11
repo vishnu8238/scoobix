@@ -31,7 +31,7 @@ function LogisticsLayout() {
     }
   }, [user, loading]);
 
-  const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/logistics/login';
+  const isLoginPage = typeof window !== 'undefined' && (window.location.pathname === '/logistics/login' || window.location.pathname === '/logistics/login/');
 
   if (isLoginPage) {
     return <Outlet />;
