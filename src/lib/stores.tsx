@@ -442,6 +442,9 @@ export type Order = {
   driverId?: string;
   otp?: string;
   paymentStatus?: string;
+  pickup_latitude?: number;
+  pickup_longitude?: number;
+  pickup_address?: string;
 };
 
 type OrdersCtx = {

@@ -291,14 +291,19 @@ function RiderActive() {
 
   const navigateNow = () => {
     // Use the order-level pickup coordinates if available, otherwise fallback to restaurant row
-    const target = phase === "TO_PICKUP" || phase === "AT_PICKUP"
-      ? { 
-          lat: order?.pickup_latitude ?? restaurant?.latitude, 
-          lng: order?.pickup_longitude ?? restaurant?.longitude, 
-          address: order?.pickup_address ?? restaurant?.address ?? restaurantName 
-        }
-      : { address: dropAddress };
-    if (!startNavigation(target)) toast.error("No destination available for this trip");
+    if (phase === "TO_PICKUP" || phase === "AT_PICKUP") {
+      const lat = order?.pickup_latitude ?? restaurant?.latitude ?? null;
+      const lng = order?.pickup_longitude ?? restaurant?.longitude ?? null;
+      const address = order?.pickup_address ?? restaurant?.address ?? restaurantName;
+      
+      if (!startNavigation({ lat, lng, address })) {
+        toast.error("No destination available for this trip");
+      }
+    } else {
+      if (!startNavigation({ address: dropAddress })) {
+        toast.error("No destination available for this trip");
+      }
+    }
   };
 
   // ---- actions -----------------------------------------------------------
