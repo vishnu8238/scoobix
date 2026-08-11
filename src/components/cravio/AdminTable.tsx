@@ -7,12 +7,21 @@ export function DataTable({
   onSelectionChange
 }: { 
   columns: string[]; 
-  rows: { id: string; cells: ReactNode[] }[];
+  rows: ReactNode[][];
   selection?: Set<string>;
   onSelectionChange?: (selection: Set<string>) => void;
 }) {
-  const allIds = rows.map(r => r.id).filter(Boolean);
+  const getRowId = (r: ReactNode[]): string => {
+    const first = r[0];
+    if (first && typeof first === 'object' && 'key' in first && first.key) {
+      return String(first.key).split('-')[0].replace('code', '').replace('name', ''); // heuristic to extract ID from existing keys
+    }
+    return '';
+  };
+
+  const allIds = rows.map(getRowId).filter(Boolean);
   const allSelected = allIds.length > 0 && selection?.size === allIds.length;
+
 
   const toggleAll = () => {
     if (!onSelectionChange) return;
