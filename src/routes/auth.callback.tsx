@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { insforge } from "@/lib/insforge";
-import { popPortalIntent } from "@/lib/insforge-auth";
+import { popPortalIntent, setPortalIntent } from "@/lib/insforge-auth";
 
 export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
@@ -10,10 +10,18 @@ export const Route = createFileRoute("/auth/callback")({
 function AuthCallback() {
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const portalRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const portal = popPortalIntent();
-    console.log("[AUTH_DEBUG] auth.callback.tsx Portal Intent:", portal);
+    // 1. Immediately extract and preserve the portal intent before any potential re-renders or navigation
+    if (!portalRef.current) {
+      portalRef.current = popPortalIntent();
+      // Put it back in storage immediately so it survives a page refresh/reload during the exchange
+      setPortalIntent(portalRef.current);
+    }
+    
+    const portal = portalRef.current;
+    console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_MOUNTED] Portal:", portal);
     
     const checkAuth = async () => {
       try {
@@ -74,7 +82,7 @@ function AuthCallback() {
 
           if (attempts >= maxAttempts) {
             console.warn("[AUTH_DEBUG] auth.callback.tsx Login timed out after", attempts, "attempts");
-            setErrorMsg("Login timed out. If you were just redirected from Google, please wait a moment and try refreshing.");
+            setErrorMsg("Login timed out. If you were just redirected from Google, please wait a moment and try refreshing this page.");
             return true;
           }
           
