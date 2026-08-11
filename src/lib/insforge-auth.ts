@@ -47,40 +47,48 @@ export async function loginWithGoogle(
   if (!insforge) {
     throw new Error("Authentication service is not ready.");
   }
-  
-  // 1. Preserve Intent
+
+  // 1. Preserve Intent (routing context only — never authorization)
   setPortalIntent(portalIntent);
-  console.log("[AUTH_DEBUG] [CHECKPOINT: OAUTH_INTENT_STORED] Intent:", portalIntent);
-  
-  // 2. Canonical Callback URL
+  console.log("[AUTH_DEBUG] GOOGLE_CLICK portal:", portalIntent);
+
+  // 2. Canonical Callback URL (real browser origin)
   const callbackUrl = getOAuthCallbackUrl();
-  console.log("[AUTH_DEBUG] [CHECKPOINT: GOOGLE_REDIRECT_STARTED] Redirect URL:", callbackUrl);
-  
-  try {
-    const { data, error } = await insforge.auth.signInWithOAuth("google", {
-      redirectTo: callbackUrl,
-    });
+  console.log("[AUTH_DEBUG] OAUTH_CALLBACK_URL", callbackUrl);
 
-    if (error) {
-      throw new Error(`Google sign-in failed: ${error.message}`);
-    }
+  // 3. Ask the SDK for the authorization URL instead of letting it navigate
+  //    internally, so we can surface failures instead of appearing inert.
+  //    The SDK still owns PKCE (verifier stored by signInWithOAuth).
+  const { data, error } = await insforge.auth.signInWithOAuth("google", {
+    redirectTo: callbackUrl,
+    skipBrowserRedirect: true,
+    ...(options.prompt ? { additionalParams: { prompt: options.prompt } } : {}),
+  });
 
-    if ((data as any)?.url) {
-      let url = (data as any).url;
-      if (options.prompt) {
-        const urlObj = new URL(url);
-        urlObj.searchParams.set("prompt", options.prompt);
-        url = urlObj.toString();
-      }
-      
-      const target = window.top || window;
-      target.location.href = url;
-    }
-  } catch (err: any) {
-    console.error("Google login error:", err);
-    throw err;
+  const url = (data as any)?.url as string | undefined;
+  console.log(
+    "[AUTH_DEBUG] OAUTH_RESULT result exists:",
+    data ? "YES" : "NO",
+    "| url exists:",
+    url ? "YES" : "NO",
+    "| error exists:",
+    error ? "YES" : "NO",
+  );
+
+  if (error) {
+    console.error("[AUTH_DEBUG] OAUTH_ERROR", error.message);
+    throw new Error(error.message || "Google sign-in failed.");
   }
+
+  if (!url) {
+    console.error("[AUTH_DEBUG] OAUTH_ERROR No authorization URL returned by provider.");
+    throw new Error("Google sign-in did not return an authorization URL.");
+  }
+
+  // 4. Normal top-level browser navigation (no window.top, no iframe tricks)
+  window.location.href = url;
 }
+
 
 export async function logout(): Promise<void> {
   const { error } = await insforge.auth.signOut();
