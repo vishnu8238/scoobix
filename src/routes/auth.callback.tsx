@@ -33,23 +33,19 @@ function AuthCallback() {
         
         const checkSession = async () => {
           attempts++;
-          console.log(`[AUTH_DEBUG] auth.callback.tsx Polling for session (attempt ${attempts})...`);
+          console.log(`[AUTH_TRACE] auth.callback.tsx Polling attempt ${attempts}...`);
           
           const { data, error } = await insforge.auth.getCurrentUser();
-          
-          // Determine if there is a REAL session
           const authUser = data?.user;
-          const hasSession = !!authUser;
 
-          if (hasSession) {
-            console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_SESSION_PRESENT] User ID:", authUser.id);
-            console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_CURRENT_USER_PRESENT] Email:", authUser.email);
+          if (authUser) {
+            console.log("[AUTH_TRACE] auth.callback.tsx [SESSION_FOUND] ID:", authUser.id);
             
-            // SECURITY: For admin and logistics portals, we MUST verify permissions before redirecting.
+            // Authorization Check
             if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
-               console.error("Unauthorized admin login attempt:", authUser.email);
+               console.error("[AUTH_TRACE] Admin unauthorized");
                window.location.assign("/admin/login?error=unauthorized");
-               return true; // Stop polling
+               return true;
             }
 
             if (portal === "logistics") {
@@ -61,34 +57,28 @@ function AuthCallback() {
                 }, { ttl: 0 }); 
                 
                 if (!rows.length) {
-                  console.error("Unauthorized logistics login attempt:", authUser.email);
+                  console.error("[AUTH_TRACE] Logistics unauthorized");
                   window.location.assign("/logistics/login?error=unauthorized");
                   return true;
                 }
+                console.log("[AUTH_TRACE] Logistics authorized");
               } catch (e) {
-                console.error("Failed to verify logistics membership during callback:", e);
-                // If the check fails (e.g. network flake), we allow redirect but RoleGuard will re-verify
+                console.error("[AUTH_TRACE] Logistics check failed:", e);
+                // Continue to RoleGuard if DB is down but user exists
               }
             }
 
-            // Determine destination based on portal intent
             const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
-            console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: NAVIGATION_TARGET] Redirecting to:", dest);
+            console.log("[AUTH_TRACE] Redirecting to final destination:", dest);
             
-            // CLEAR THE PORTAL INTENT FROM LOCALSTORAGE ON SUCCESS
             localStorage.removeItem("scoobix_oauth_portal_intent");
-            
             window.location.assign(dest);
             return true;
           }
 
-          if (error) {
-            console.log("[AUTH_DEBUG] auth.callback.tsx SDK reported error:", error.message);
-          }
-
           if (attempts >= maxAttempts) {
-            console.warn("[AUTH_DEBUG] auth.callback.tsx Login timed out after", attempts, "attempts");
-            setErrorMsg("Login timed out. If you were just redirected from Google, please wait a moment and try refreshing this page.");
+            console.warn("[AUTH_TRACE] Callback timed out");
+            setErrorMsg("Login timed out. Please try again.");
             return true;
           }
           
