@@ -35,18 +35,20 @@ function LogisticsLiveMap() {
     load();
   }, [load, version]);
 
-  const markers = [
+  const markers: any[] = [
     ...riders.map(r => ({
       id: `rider-${r.id}`,
-      position: { lat: r.lat || 12.9716, lng: r.lng || 77.5946 },
-      title: r.name,
-      icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+      lat: r.lat || 12.9716,
+      lng: r.lng || 77.5946,
+      kind: "rider",
+      label: r.name
     })),
     ...restaurants.map(r => ({
       id: `rest-${r.id}`,
-      position: { lat: r.location?.lat || 12.9716, lng: r.location?.lng || 77.5946 },
-      title: r.name,
-      icon: "https://maps.google.com/mapfiles/ms/icons/orange-dot.png"
+      lat: r.location?.lat || 12.9716,
+      lng: r.location?.lng || 77.5946,
+      kind: "restaurant",
+      label: r.name
     }))
   ];
 
