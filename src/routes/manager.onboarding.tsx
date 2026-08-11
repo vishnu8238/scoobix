@@ -449,7 +449,7 @@ function OnboardingFlow() {
                   latitude={form.latitude}
                   longitude={form.longitude}
                   address={form.address}
-                  onChange={(lat, lng, addr) => set({ latitude: lat, longitude: lng, address: addr })}
+                  onChange={(lat: number, lng: number, addr: string) => set({ latitude: lat, longitude: lng, address: addr })}
                 />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Opens at" value={form.opening_time} onChange={(v) => set({ opening_time: v })} placeholder="10:00" />
