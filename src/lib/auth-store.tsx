@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_MOUNT] Initializing auth listener");
     resolveUser();
 
-    const unsubscribe = insforge.auth.onAuthStateChange((event) => {
+    const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
       console.log(`[AUTH_DEBUG] Auth State Change: ${event}`);
       if (event === 'signedIn' || event === 'tokenRefreshed') {
         console.log("[AUTH_TRACE] Auth State Event: SIGNED_IN/TOKEN_REFRESHED -> Resolving User");

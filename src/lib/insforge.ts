@@ -22,7 +22,7 @@ export const getAccessToken = async () => {
 
 // Mock/Stub exports for missing members reported in build errors
 // In a real scenario, these should be restored from the original file
-export const addonsForDish = async (...args: any[]) => [];
+export const addonsForDish = async (...args: any[]): Promise<any[]> => [];
 export const bootstrapInsForge = async () => {};
 export const insforgeState = { loading: false, status: "idle" };
 export const subscribeCatalog = () => () => {};
