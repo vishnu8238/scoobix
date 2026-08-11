@@ -27,73 +27,81 @@ function AuthCallback() {
       try {
         console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: AUTH_CALLBACK_REACHED] Portal Intent:", portal);
         
-        // Use a longer polling duration and more frequent checks for the initial session exchange
-        let attempts = 0;
-        const maxAttempts = 30; // 15 seconds total with 500ms intervals
+        // 2. Extract OAuth code from URL
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        const error = params.get("error");
+        const errorDescription = params.get("error_description");
+
+        if (error || errorDescription) {
+          console.error("[AUTH_DEBUG] OAuth Error:", error, errorDescription);
+          setErrorMsg(errorDescription || `Authentication error: ${error}`);
+          return;
+        }
+
+        if (!code) {
+          console.error("[AUTH_DEBUG] No code found in URL search params");
+          setErrorMsg("Google authentication callback did not contain an authorization code.");
+          return;
+        }
+
+        // 3. Perform OAuth exchange
+        console.log("[AUTH_TRACE] Exchanging OAuth code for session...");
+        try {
+          // @ts-ignore - Assuming exact method from SDK signature verification
+          await insforge.auth.exchangeOAuthCode(code);
+          console.log("[AUTH_TRACE] OAuth exchange successful");
+        } catch (exchangeErr: any) {
+          console.error("[AUTH_DEBUG] OAuth exchange failed:", exchangeErr);
+          setErrorMsg("Unable to establish the Scoobix authentication session. Please try Google sign-in again.");
+          return;
+        }
+
+        // 4. Verify the session and resolve the user
+        const { data: userData, error: userError } = await insforge.auth.getCurrentUser();
+        const authUser = userData?.user;
+
+        if (userError || !authUser || !authUser.id || !authUser.email) {
+          console.error("[AUTH_DEBUG] Session verification failed:", userError || "No user record returned");
+          setErrorMsg("Unable to verify your authentication session. Please try again.");
+          return;
+        }
+
+        console.log("[AUTH_TRACE] [SESSION_VERIFIED] ID:", authUser.id, "Email:", authUser.email);
         
-        const checkSession = async () => {
-          attempts++;
-          console.log(`[AUTH_TRACE] auth.callback.tsx Polling attempt ${attempts}...`);
-          
-          const { data, error } = await insforge.auth.getCurrentUser();
-          const authUser = data?.user;
+        // 5. Authorization Check
+        if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
+          console.error("[AUTH_TRACE] Admin unauthorized");
+          window.location.assign("/admin/login?error=unauthorized");
+          return;
+        }
 
-          if (authUser) {
-            console.log("[AUTH_TRACE] auth.callback.tsx [SESSION_FOUND] ID:", authUser.id);
+        if (portal === "logistics") {
+          const { listTable } = await import("@/lib/insforge-crud");
+          try {
+            // Determine admission based on email (authoritative staff list)
+            const rows = await listTable("logistics_staff", { 
+              email: `eq.${authUser.email}`, 
+              limit: 1 
+            }, { ttl: 0 }); 
             
-            // Authorization Check
-            if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
-               console.error("[AUTH_TRACE] Admin unauthorized");
-               window.location.assign("/admin/login?error=unauthorized");
-               return true;
+            if (!rows.length) {
+              console.error("[AUTH_TRACE] Logistics unauthorized (email check failed)");
+              window.location.assign("/logistics/login?error=unauthorized");
+              return;
             }
-
-            if (portal === "logistics") {
-              const { listTable } = await import("@/lib/insforge-crud");
-              try {
-                // Determine admission based on email (authoritative staff list)
-                const rows = await listTable("logistics_staff", { 
-                  email: `eq.${authUser.email}`, 
-                  limit: 1 
-                }, { ttl: 0 }); 
-                
-                if (!rows.length) {
-                  console.error("[AUTH_TRACE] Logistics unauthorized (email check failed)");
-                  window.location.assign("/logistics/login?error=unauthorized");
-                  return true;
-                }
-                console.log("[AUTH_TRACE] Logistics authorized (email check passed)");
-              } catch (e) {
-                console.error("[AUTH_TRACE] Logistics check failed:", e);
-              }
-            }
-
-            const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
-            console.log("[AUTH_TRACE] Redirecting to final destination:", dest);
-            
-            localStorage.removeItem("scoobix_oauth_portal_intent");
-            window.location.assign(dest);
-            return true;
+            console.log("[AUTH_TRACE] Logistics authorized (email check passed)");
+          } catch (e) {
+            console.error("[AUTH_TRACE] Logistics check failed:", e);
+            setErrorMsg("Error verifying logistics authorization.");
+            return;
           }
+        }
 
-          if (attempts >= maxAttempts) {
-            console.warn("[AUTH_TRACE] Callback timed out");
-            setErrorMsg("Login timed out. Please try again.");
-            return true;
-          }
-          
-          return false;
-        };
-
-        // Start polling immediately
-        const intervalId = setInterval(async () => {
-          const shouldStop = await checkSession();
-          if (shouldStop) clearInterval(intervalId);
-        }, 500);
-
-        // Run the first check immediately
-        const firstCheck = await checkSession();
-        if (firstCheck) clearInterval(intervalId);
+        const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
+        localStorage.removeItem("scoobix_oauth_portal_intent");
+        console.log("[AUTH_TRACE] Redirecting to final destination:", dest);
+        window.location.assign(dest);
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
