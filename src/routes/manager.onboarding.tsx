@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/cravio/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
+
 import { ImageUploader } from "@/components/cravio/ImageUploader";
 import type { ImageRef } from "@/lib/image-service";
 import { listTable } from "@/lib/insforge-crud";

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { GoogleMap } from "./GoogleMap";
+
 import { reverseGeocode } from "@/lib/maps-service";
 import { LatLng } from "@/lib/geo";
 
@@ -48,13 +48,6 @@ export function LocationPicker({ latitude, longitude, onChange, address: initial
     onChange(lat, lng, address);
   };
 
-  const markers = latitude !== null && longitude !== null ? [{
-    id: "restaurant-loc",
-    lat: latitude,
-    lng: longitude,
-    kind: "restaurant" as const,
-    label: "Restaurant Location"
-  }] : [];
 
   return (
     <div className="space-y-4">
@@ -91,22 +84,7 @@ export function LocationPicker({ latitude, longitude, onChange, address: initial
 
       {error && <p className="text-[11px] font-bold text-rose-500">{error}</p>}
 
-      <div className="h-[240px] w-full overflow-hidden rounded-3xl ring-1 ring-border/60 shadow-soft pointer-events-none">
-        <GoogleMap 
-          markers={markers} 
-          center={latitude !== null && longitude !== null ? { lat: latitude, lng: longitude } : undefined}
-          zoom={15}
-          interactive={false}
-          height="100%"
-        />
-      </div>
 
-      {resolvedAddress && (
-        <div className="rounded-2xl bg-primary/5 p-3 ring-1 ring-primary/10">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Location found</p>
-          <p className="text-xs font-medium leading-relaxed">{resolvedAddress}</p>
-        </div>
-      )}
     </div>
   );
 }
