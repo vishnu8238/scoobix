@@ -446,18 +446,50 @@ function OnboardingFlow() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Pin the exact location
+                  Restaurant Location
                 </Label>
-                <div className="overflow-hidden rounded-2xl ring-1 ring-border/60">
-                  <GoogleMap
-                    height={220}
-                    zoom={form.latitude ? 16 : 11}
-                    center={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : undefined}
-                    pickedAt={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : null}
-                    onPick={(c) => set({ latitude: c.lat, longitude: c.lng })}
-                  />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Latitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="22.3072"
+                        value={form.latitude ?? ""}
+                        onChange={(e) => set({ latitude: parseFloat(e.target.value) || null })}
+                        className="h-11 rounded-2xl bg-secondary/50"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Longitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="73.1812"
+                        value={form.longitude ?? ""}
+                        onChange={(e) => set({ longitude: parseFloat(e.target.value) || null })}
+                        className="h-11 rounded-2xl bg-secondary/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-3xl ring-1 ring-border/60 shadow-soft">
+                    <GoogleMap
+                      height={240}
+                      zoom={form.latitude ? 16 : 11}
+                      center={form.latitude && form.longitude ? { lat: form.latitude, lng: form.longitude } : undefined}
+                      markers={form.latitude && form.longitude ? [{
+                        id: "restaurant-loc",
+                        lat: form.latitude,
+                        lng: form.longitude,
+                        kind: "restaurant",
+                        label: "Restaurant Location"
+                      }] : []}
+                      interactive={false}
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 mt-2">
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Latitude</Label>
                     <Input 

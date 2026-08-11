@@ -91,7 +91,7 @@ export function LocationPicker({ latitude, longitude, onChange, address: initial
 
       {error && <p className="text-[11px] font-bold text-rose-500">{error}</p>}
 
-      <div className="h-[240px] w-full overflow-hidden rounded-3xl ring-1 ring-border/60 shadow-soft">
+      <div className="h-[240px] w-full overflow-hidden rounded-3xl ring-1 ring-border/60 shadow-soft pointer-events-none">
         <GoogleMap 
           markers={markers} 
           center={latitude !== null && longitude !== null ? { lat: latitude, lng: longitude } : undefined}
