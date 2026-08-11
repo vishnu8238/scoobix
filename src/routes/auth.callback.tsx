@@ -80,24 +80,34 @@ function AuthCallback() {
 
         if (portal === "logistics") {
           const { listTable } = await import("@/lib/insforge-crud");
+          let staffRows: Array<{ email?: string | null; status?: string | null }> | null = null;
           try {
-            // Determine admission based on email (authoritative staff list)
-            const rows = await listTable("logistics_staff", { 
-              email: `eq.${authUser.email}`, 
-              limit: 1 
-            }, { ttl: 0 }); 
-            
-            if (!rows.length) {
-              console.error("[AUTH_TRACE] Logistics unauthorized (email check failed)");
-              window.location.assign("/logistics/login?error=unauthorized");
-              return;
-            }
-            console.log("[AUTH_TRACE] Logistics authorized (email check passed)");
+            // Authoritative staff list; case-insensitive exact email identity match.
+            staffRows = await listTable<{ email?: string | null; status?: string | null }>(
+              "logistics_staff",
+              { select: "email,status", limit: 200 },
+              { ttl: 0, fresh: true },
+            );
           } catch (e) {
-            console.error("[AUTH_TRACE] Logistics check failed:", e);
-            setErrorMsg("Error verifying logistics authorization.");
+            console.error("[AUTH_TRACE] logistics_staff lookup failed:", e);
+            setErrorMsg("Unable to verify Logistics access. Please try again.");
             return;
           }
+
+          const authEmail = String(authUser.email || "").trim().toLowerCase();
+          const authorized = staffRows.some((r) => {
+            const staffEmail = String(r?.email || "").trim().toLowerCase();
+            const status = String(r?.status ?? "active").trim().toLowerCase();
+            return staffEmail !== "" && staffEmail === authEmail && status !== "inactive" && status !== "suspended";
+          });
+
+          if (!authorized) {
+            console.error("[AUTH_TRACE] Logistics staff record: NOT FOUND");
+            window.location.assign("/logistics/login?error=unauthorized");
+            return;
+          }
+          console.log("[AUTH_TRACE] Logistics authorized (email identity match)");
+
         }
 
         const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
