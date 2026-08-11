@@ -53,7 +53,7 @@ function AuthCallback() {
           }
 
           // Determine destination based on portal intent
-          const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
+          const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
           console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: NAVIGATION_TARGET] Redirecting to:", dest);
           window.location.assign(dest);
         } else {
