@@ -85,12 +85,6 @@ export function LocationPicker({ latitude, longitude, onChange, address: initial
       {error && <p className="text-[11px] font-bold text-rose-500">{error}</p>}
 
 
-      {resolvedAddress && (
-        <div className="rounded-2xl bg-primary/5 p-3 ring-1 ring-primary/10">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Location found</p>
-          <p className="text-xs font-medium leading-relaxed">{resolvedAddress}</p>
-        </div>
-      )}
     </div>
   );
 }
