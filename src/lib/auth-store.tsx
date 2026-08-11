@@ -100,8 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const roles: Role[] = ["customer"];
       
       // Authoritative logistics check by email
-      const logisticsStaff = await listTable("logistics_staff", { email: `eq.${profile.email}`, limit: 1 }, { ttl: 0 });
-      if (logisticsStaff.length > 0) roles.push("logistics");
+      const { isLogisticsStaffEmail: isLogisticsStaff } = await import("./logistics-authorization");
+      if (await isLogisticsStaff(profile.email)) roles.push("logistics");
+
 
       const [partner, rider, manager] = await Promise.all([
         listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
