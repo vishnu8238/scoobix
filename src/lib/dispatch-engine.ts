@@ -86,8 +86,9 @@ function rankDriversForOrder(order: Row, exclude: Set<string>): string[] {
     }
   }
 
-  const zoneId = order.zone_id ? String(order.zone_id) : (rest?.zone_id ? String(rest.zone_id) : null);
-  const subzoneId = order.subzone_id ? String(order.subzone_id) : (rest?.subzone_id ? String(rest.subzone_id) : null);
+  const restLookup = restaurantsSnap.find((r) => String(r.id) === restaurantId);
+  const zoneId = order.zone_id ? String(order.zone_id) : (restLookup?.zone_id ? String(restLookup.zone_id) : null);
+  const subzoneId = order.subzone_id ? String(order.subzone_id) : (restLookup?.subzone_id ? String(restLookup.subzone_id) : null);
 
   const eligible = driversSnap.filter((d) => {
     const id = String(d.id ?? "");
