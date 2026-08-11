@@ -27,6 +27,13 @@ export const Route = createFileRoute("/logistics")({
 });
 
 function LogisticsLayoutGuard() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  
+  // Public login page should NOT be wrapped in a RoleGuard that enforces "logistics"
+  if (pathname === "/logistics/login") {
+    return <Outlet />;
+  }
+
   return (
     <RoleGuard allow="logistics">
       <LogisticsLayout />
