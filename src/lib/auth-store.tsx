@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const roles: Role[] = ["customer"];
       
       try {
-        const [partner, rider, manager] = await Promise.all([
+        const [partner, rider, manager, logistics] = await Promise.all([
           listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
           listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
           listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
