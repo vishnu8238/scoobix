@@ -16,6 +16,7 @@ type Entry = { at: number; ttl: number; value: unknown };
 
 const memory = new Map<string, Entry>();
 const inflight = new Map<string, Promise<unknown>>();
+let currentAuthUserId: string | null = null;
 
 const PREFIX = "sx:cache:";
 const MAX_MEMORY_ENTRIES = 600;
@@ -116,6 +117,18 @@ export async function cached<T>(
   const value = await dedupe(key, loader);
   cacheSet(key, value, ttl, opts);
   return value;
+}
+
+/** 
+ * Scopes the cache to the current user to prevent cross-account data leakage.
+ * Call this when auth state changes.
+ */
+export function setCacheAuthScope(userId: string | null) {
+  if (currentAuthUserId !== userId) {
+    console.log("[CACHE] Auth scope changed, clearing memory cache");
+    memory.clear();
+    currentAuthUserId = userId;
+  }
 }
 
 /** Collapse identical concurrent calls into one promise. */
