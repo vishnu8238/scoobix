@@ -39,8 +39,11 @@ export const ensureAuthHydrated = async () => {
       console.log("[INSFORGE_AUTH] Hydrating session from storage/cookies...");
       // getCurrentUser handles the refresh logic and hydrates the session internally
       await insforge.auth.getCurrentUser();
-      const session = insforge.auth.getSession();
-      cachedAccessToken = session?.accessToken || null;
+      
+      // Pull token from the SDK
+      const token = insforge.auth.getAccessToken?.() || insforge.auth.getSession?.()?.accessToken || null;
+      cachedAccessToken = token;
+      
       console.log("[INSFORGE_AUTH] Initial hydration complete. Token present:", !!cachedAccessToken);
     } catch (err) {
       console.warn("[INSFORGE_AUTH] Hydration failed:", err);
@@ -52,12 +55,10 @@ export const ensureAuthHydrated = async () => {
 
 // Subscribe to auth state changes at module level to keep cache in sync
 if (typeof window !== "undefined") {
-  // According to SDK inspection, callback is (event: string) => void
-  // The token must be pulled from the session getter after the event
   insforge.auth.onAuthStateChange((event: string) => {
-    const session = insforge.auth.getSession();
-    console.log(`[INSFORGE_AUTH] Auth event: ${event} | Token present: ${!!session?.accessToken}`);
-    cachedAccessToken = session?.accessToken || null;
+    const token = insforge.auth.getAccessToken?.() || insforge.auth.getSession?.()?.accessToken || null;
+    console.log(`[INSFORGE_AUTH] Auth event: ${event} | Token present: ${!!token}`);
+    cachedAccessToken = token;
   });
   
   // Start hydration immediately on load
@@ -75,6 +76,7 @@ export const getAccessToken = async () => {
   }
   return cachedAccessToken;
 };
+
 
 // Mock/Stub exports for missing members reported in build errors
 export const addonsForDish = async (...args: any[]): Promise<any[]> => [];
