@@ -325,6 +325,8 @@ export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   REJECTED: [],
 };
 
+export { STATUS_LABEL } from "./stores";
+
 export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
   return STATUS_TRANSITIONS[from]?.includes(to) || false;
 }

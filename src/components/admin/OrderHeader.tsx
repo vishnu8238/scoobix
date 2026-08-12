@@ -1,12 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { 
   RefreshCw, History, UserPlus, FileEdit, Map as MapIcon, 
-  CheckCircle2, Clock, AlertCircle, XCircle, ChevronDown 
+  CheckCircle2, Clock, AlertCircle, XCircle, ChevronDown, ChevronRight 
 } from "lucide-react";
-import { OrderStatus, STATUS_LABEL, STATUS_TRANSITIONS, isValidTransition } from "@/lib/orders-api";
 import { StatusBadge } from "@/components/cravio/AdminTable";
 import { cn } from "@/lib/format";
+import { OrderStatus, STATUS_LABEL, STATUS_TRANSITIONS } from "@/lib/orders-api";
 
 type OrderHeaderProps = {
   order: any;
@@ -26,7 +26,6 @@ export function OrderHeader({
   const availableTransitions = useMemo(() => {
     return STATUS_TRANSITIONS[status] || [];
   }, [status]);
-
   
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
@@ -69,6 +68,7 @@ export function OrderHeader({
           <UserPlus className="h-4 w-4" />
           Assign Rider
         </button>
+        
         <div className="relative">
           <button 
             onClick={() => setShowStatusMenu(!showStatusMenu)}
@@ -104,6 +104,7 @@ export function OrderHeader({
             </div>
           )}
         </div>
+
         <button 
           onClick={onTrack}
           className="flex h-10 items-center gap-2 rounded-xl bg-card px-4 text-xs font-bold ring-1 ring-border/60 hover:bg-muted transition"
