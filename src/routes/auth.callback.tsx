@@ -94,6 +94,9 @@ function AuthCallback() {
             return;
           }
           console.log(`[AUTH_TRACE] ${portal} authorized via portal_access`);
+          // Record login timestamp
+          const { recordPortalLogin } = await import("@/lib/portal-authorization");
+          void recordPortalLogin(authUser.email, portal as any);
         }
 
 
