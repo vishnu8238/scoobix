@@ -81,14 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // No profile row: check for logistics authorization by email even without profile
         const roles: Role[] = ["customer"];
         const { isLogisticsStaffEmail } = await import("./logistics-authorization");
-        if (await isLogisticsStaffEmail(currentSession.user.email)) roles.push("logistics");
-
+        if (await isLogisticsStaffEmail(session.user.email)) roles.push("logistics");
 
         console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Result: basic-customer (no profile)");
         setUser({
           id: authId,
-          name: (currentSession.user.profile as any)?.name || "New User",
-          email: currentSession.user.email || "",
+          name: session.user.name || "New User",
+          email: session.user.email || "",
           phone: "",
           avatar: "",
           role: roles.includes("logistics") ? "logistics" : "customer",
