@@ -145,6 +145,7 @@ import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAccessRouteImport } from './routes/admin.access'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
+import { Route as AdminOrdersOrderIdRouteImport } from './routes/admin.orders.$orderId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -826,6 +827,11 @@ const AppGroupSessionIdRoute = AppGroupSessionIdRouteImport.update({
   path: '/group/$sessionId',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminOrdersOrderIdRoute = AdminOrdersOrderIdRouteImport.update({
+  id: '/$orderId',
+  path: '/$orderId',
+  getParentRoute: () => AdminOrdersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -853,7 +859,7 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
-  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/orders': typeof AdminOrdersRouteWithChildren
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/performance': typeof AdminPerformanceRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -962,6 +968,7 @@ export interface FileRoutesByFullPath {
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
+  '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
@@ -985,7 +992,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
-  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/orders': typeof AdminOrdersRouteWithChildren
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/performance': typeof AdminPerformanceRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -1094,6 +1101,7 @@ export interface FileRoutesByTo {
   '/manager': typeof ManagerIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
+  '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
@@ -1124,7 +1132,7 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
-  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/orders': typeof AdminOrdersRouteWithChildren
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/performance': typeof AdminPerformanceRoute
   '/admin/referrals': typeof AdminReferralsRoute
@@ -1233,6 +1241,7 @@ export interface FileRoutesById {
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
+  '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
@@ -1373,6 +1382,7 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/partner/'
     | '/rider/'
+    | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -1505,6 +1515,7 @@ export interface FileRouteTypes {
     | '/manager'
     | '/partner'
     | '/rider'
+    | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
   id:
@@ -1643,6 +1654,7 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/partner/'
     | '/rider/'
+    | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
   fileRoutesById: FileRoutesById
@@ -2617,8 +2629,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGroupSessionIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/orders/$orderId': {
+      id: '/admin/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/admin/orders/$orderId'
+      preLoaderRoute: typeof AdminOrdersOrderIdRouteImport
+      parentRoute: typeof AdminOrdersRoute
+    }
   }
 }
+
+interface AdminOrdersRouteChildren {
+  AdminOrdersOrderIdRoute: typeof AdminOrdersOrderIdRoute
+}
+
+const AdminOrdersRouteChildren: AdminOrdersRouteChildren = {
+  AdminOrdersOrderIdRoute: AdminOrdersOrderIdRoute,
+}
+
+const AdminOrdersRouteWithChildren = AdminOrdersRoute._addFileChildren(
+  AdminOrdersRouteChildren,
+)
 
 interface AdminRouteChildren {
   AdminAccessRoute: typeof AdminAccessRoute
@@ -2637,7 +2668,7 @@ interface AdminRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   AdminManagersRoute: typeof AdminManagersRoute
   AdminOperationsRoute: typeof AdminOperationsRoute
-  AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminOrdersRoute: typeof AdminOrdersRouteWithChildren
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminPerformanceRoute: typeof AdminPerformanceRoute
   AdminReferralsRoute: typeof AdminReferralsRoute
@@ -2675,7 +2706,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   AdminManagersRoute: AdminManagersRoute,
   AdminOperationsRoute: AdminOperationsRoute,
-  AdminOrdersRoute: AdminOrdersRoute,
+  AdminOrdersRoute: AdminOrdersRouteWithChildren,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminPerformanceRoute: AdminPerformanceRoute,
   AdminReferralsRoute: AdminReferralsRoute,
