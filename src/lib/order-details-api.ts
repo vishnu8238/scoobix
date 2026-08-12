@@ -1,5 +1,5 @@
-import { listTable, fetchOrderRow } from "./insforge-crud";
-import { isUuid } from "./orders-api";
+import { listTable } from "./insforge-crud";
+import { isUuid, fetchOrderRow } from "./orders-api";
 import { subjectTrail } from "./audit-api";
 
 export type OrderDetails = {
