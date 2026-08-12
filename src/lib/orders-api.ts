@@ -306,6 +306,42 @@ export async function patchOrder(orderId: string, patch: Record<string, unknown>
   }
 }
 
+export type OrderStatus = "PLACED" | "ACCEPTED" | "PREPARING" | "READY" | "ASSIGNING" | "ASSIGNED" | "AT_PICKUP" | "PICKED_UP" | "ON_THE_WAY" | "ARRIVED" | "DELIVERED" | "CANCELLED" | "REJECTED";
+
+export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PLACED: ["ACCEPTED", "CANCELLED"],
+  ACCEPTED: ["PREPARING", "CANCELLED"],
+  PREPARING: ["READY", "CANCELLED"],
+  READY: ["ASSIGNING", "CANCELLED"],
+  ASSIGNING: ["ASSIGNED", "READY", "CANCELLED"],
+  ASSIGNED: ["AT_PICKUP", "ASSIGNING", "CANCELLED"],
+  AT_PICKUP: ["PICKED_UP", "CANCELLED"],
+  PICKED_UP: ["ON_THE_WAY", "CANCELLED"],
+  ON_THE_WAY: ["ARRIVED", "CANCELLED"],
+  ARRIVED: ["DELIVERED", "CANCELLED"],
+  DELIVERED: [],
+  CANCELLED: [],
+  REJECTED: [],
+};
+
+export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return STATUS_TRANSITIONS[from]?.includes(to) || false;
+}
+
+  if (!isUuid(orderId)) return false;
+  try {
+    const res = await fetch(`${rec("orders")}?id=eq.${orderId}`, {
+      method: "PATCH",
+      headers: H,
+      body: JSON.stringify(patch),
+    });
+    if (res.ok) publishTableChange("orders", "update", { id: orderId, ...patch });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** Mark the payment row for an order (used when payment status changes). */
 export async function patchPaymentByOrder(orderId: string, patch: Record<string, unknown>): Promise<void> {
   if (!isUuid(orderId)) return;
