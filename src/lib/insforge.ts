@@ -23,10 +23,10 @@ if (!(globalThis as any).__INSFORGE_CLIENT__) {
 
 export const insforge = (globalThis as any).__INSFORGE_CLIENT__;
 
-// Helper to get access token (placeholder - standard SDK behavior is internal)
-export const getAccessToken = async () => {
-  const { data } = await insforge.auth.getSession();
-  return data?.session?.access_token || null;
+// Helper to get access token (standardized SDK behavior)
+export const getAccessToken = () => {
+  const session = insforge.auth.getSession();
+  return session?.accessToken || null;
 };
 
 // Mock/Stub exports for missing members reported in build errors
