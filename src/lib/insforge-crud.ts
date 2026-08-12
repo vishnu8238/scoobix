@@ -169,10 +169,12 @@ export function listTable<T = Record<string, unknown>>(
 ): Promise<T[]> {
   const qs = buildQuery(params);
   const url = `${base(table)}${qs}`;
-  const load = () => withRetry(() => once(url, "GET", undefined, opts?.public)).catch(err => {
-    console.error(`[DB_ERROR] Table ${table} load failed:`, err);
-    return []; // Return empty array on error to prevent React 'use' property crash
-  });
+  const load = () => withRetry(() => once(url, "GET", undefined, opts?.public))
+    .then((v) => (Array.isArray(v) ? (v as T[]) : []))
+    .catch(err => {
+      console.warn(`[DB_ERROR] Table ${table} load failed (likely unauthenticated):`, err);
+      return [] as T[];
+    });
   
   if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
