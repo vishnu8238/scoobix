@@ -91,7 +91,12 @@ async function once(url: string, method: Method, body?: unknown, isPublic: boole
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const message = body?.message || body?.error || `${method} ${url} → ${res.status}`;
-    console.error(" listTable: HTTP Error from server:", { status: res.status, url, method, message });
+    // Swallow unauthenticated errors for GET requests to prevent console noise and hydration mismatches
+    if (method === "GET" && res.status === 401) {
+      console.warn(`[DB_AUTH_SILENT] Unauthenticated GET suppressed: ${url}`);
+    } else {
+      console.error(" listTable: HTTP Error from server:", { status: res.status, url, method, message });
+    }
     throw new HttpError(res.status, message);
   }
 
