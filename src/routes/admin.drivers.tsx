@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { Star, Plus, Check, X, Ban } from "lucide-react";
+import { Star, Plus, Check, X, Ban, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useLiveTable } from "@/lib/realtime-hooks";
 import { kvGet, kvSet } from "@/lib/kv-store";
 import { toast } from "sonner";
@@ -76,6 +77,9 @@ function AdminDrivers() {
                 <Act tone="primary" icon={Check} label="Approve" onClick={() => set(d.id, "Active",    `${name} approved`)} />
                 <Act tone="warn"    icon={Ban}   label="Suspend" onClick={() => set(d.id, "Suspended", `${name} suspended`)} />
                 <Act tone="danger"  icon={X}     label="Reject"  onClick={() => set(d.id, "Rejected",  `${name} rejected`)} />
+                <Link to="/admin/drivers/$driverId" params={{ driverId: d.id }} className="grid h-7 w-7 place-items-center rounded-full bg-indigo-100 text-indigo-700 transition active:scale-90" title="Manage Profile">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
               </div>,
             ];
           })}
