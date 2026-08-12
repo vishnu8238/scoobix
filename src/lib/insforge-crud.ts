@@ -174,9 +174,9 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
       if (method === "GET" && status === 401) {
         console.warn(`[DB_AUTH_SILENT] Unauthenticated GET suppressed: ${table}`);
       } else {
-        console.error(`[DB_ERROR] ${method} ${table} failed:`, error);
+        console.error(`[DB_ERROR] ${method} ${table} failed. Full error:`, JSON.stringify(error, null, 2), "status:", status, "statusText:", statusText);
       }
-      throw new HttpError(status, error.message || statusText);
+      throw new HttpError(status ?? 0, error.message || error.error || error.detail || statusText || JSON.stringify(error) || "Unknown database error");
     }
 
     return data as T;
@@ -253,7 +253,7 @@ export function createRecord<T = Record<string, unknown>>(
 ): Promise<T | null> {
   invalidateTable(table);
   return withRetry(() => {
-    const query = insforge.database.from(table).insert(record).select().single();
+    const query = insforge.database.from(table).insert([record]).select().single();
     return handleResponse<T>(query, "POST", table);
   }).then((res) => {
     announce(table, "insert", (res as Record<string, unknown>) || record);
