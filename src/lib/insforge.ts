@@ -41,7 +41,9 @@ export const ensureAuthHydrated = async () => {
       await insforge.auth.getCurrentUser();
       
       // Pull token from the SDK
-      const token = insforge.auth.getAccessToken?.() || insforge.auth.getSession?.()?.accessToken || null;
+      const auth = insforge.auth;
+      const tm = auth.tokenManager;
+      const token = tm?.getAccessToken?.() || tm?.getSession?.()?.accessToken || null;
       cachedAccessToken = token;
       
       console.log("[INSFORGE_AUTH] Initial hydration complete. Token present:", !!cachedAccessToken);
@@ -56,7 +58,8 @@ export const ensureAuthHydrated = async () => {
 // Subscribe to auth state changes at module level to keep cache in sync
 if (typeof window !== "undefined") {
   insforge.auth.onAuthStateChange((event: string) => {
-    const token = insforge.auth.getAccessToken?.() || insforge.auth.getSession?.()?.accessToken || null;
+    const tm = insforge.auth.tokenManager;
+    const token = tm?.getAccessToken?.() || tm?.getSession?.()?.accessToken || null;
     console.log(`[INSFORGE_AUTH] Auth event: ${event} | Token present: ${!!token}`);
     cachedAccessToken = token;
   });
