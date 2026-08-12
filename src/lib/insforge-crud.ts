@@ -76,6 +76,12 @@ function metricName(method: Method, url: string) {
 async function once(url: string, method: Method, body?: unknown, isPublic: boolean = false) {
   const t0 = Date.now();
   const headers = await HEADERS(isPublic);
+  
+  // Temporary log for verification - will remove after confirmation
+  if (!isPublic) {
+    console.log(`[DB_TRACE] ${method} ${url} | Token prefix: ${headers.Authorization?.substring(0, 20)}...`);
+  }
+
   const res = await fetch(url, {
     method,
     headers,
