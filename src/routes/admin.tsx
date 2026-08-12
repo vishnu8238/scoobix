@@ -28,6 +28,9 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin/live", label: "Logistics Map", icon: MapIcon },
   { to: "/admin/cms", label: "CMS Studio", icon: Sparkles },
   { to: "/admin/access", label: "Access Management", icon: ShieldCheck },
+  { to: "/admin/dispatch", label: "Manual Dispatch", icon: Navigation },
+  { to: "/admin/gigs", label: "Gig Management", icon: Sparkles },
+  { to: "/admin/audit", label: "Audit Logs", icon: History },
   { to: "/admin/users", label: "Users", icon: Users },
 
   { to: "/admin/restaurants", label: "Restaurants", icon: Store },
