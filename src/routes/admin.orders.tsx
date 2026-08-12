@@ -101,7 +101,7 @@ function AdminOrders() {
               <code key={`code${o.id}`} className="font-mono text-[10px] font-bold text-primary">#{o.id.slice(0, 8)}</code>,
               <span key={`name${o.id}`} className="font-bold">{userById[String(o.customer_id)] || "—"}</span>,
               <span key={`owner${o.id}`} className="text-muted-foreground">{nameById[String(o.restaurant_id)] || "—"}</span>,
-              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price)}</span>,
+              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price || 0)}</span>,
               <StatusBadge key={`status${o.id}`} label={String(o.status || "PLACED")} />,
               <span key={`mgr${o.id}`} className="text-[10px] font-medium text-muted-foreground">{(o.created_at ?? "").slice(11, 16)}</span>,
               <Link 
