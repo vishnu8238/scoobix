@@ -131,13 +131,16 @@ import { Route as AdminOperationsRouteImport } from './routes/admin.operations'
 import { Route as AdminManagersRouteImport } from './routes/admin.managers'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
+import { Route as AdminGigsRouteImport } from './routes/admin.gigs'
 import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
 import { Route as AdminDriversRouteImport } from './routes/admin.drivers'
+import { Route as AdminDispatchRouteImport } from './routes/admin.dispatch'
 import { Route as AdminDiscoverRouteImport } from './routes/admin.discover'
 import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
 import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAccessRouteImport } from './routes/admin.access'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
@@ -753,6 +756,11 @@ const AdminLiveRoute = AdminLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminGigsRoute = AdminGigsRouteImport.update({
+  id: '/gigs',
+  path: '/gigs',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDuplicatesRoute = AdminDuplicatesRouteImport.update({
   id: '/duplicates',
   path: '/duplicates',
@@ -761,6 +769,11 @@ const AdminDuplicatesRoute = AdminDuplicatesRouteImport.update({
 const AdminDriversRoute = AdminDriversRouteImport.update({
   id: '/drivers',
   path: '/drivers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDispatchRoute = AdminDispatchRouteImport.update({
+  id: '/dispatch',
+  path: '/dispatch',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminDiscoverRoute = AdminDiscoverRouteImport.update({
@@ -786,6 +799,11 @@ const AdminCampaignsRoute = AdminCampaignsRouteImport.update({
 const AdminBulkRoute = AdminBulkRouteImport.update({
   id: '/bulk',
   path: '/bulk',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
@@ -821,13 +839,16 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin/access': typeof AdminAccessRoute
   '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
+  '/admin/dispatch': typeof AdminDispatchRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
@@ -950,13 +971,16 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin/access': typeof AdminAccessRoute
   '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
+  '/admin/dispatch': typeof AdminDispatchRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
@@ -1086,13 +1110,16 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/admin/access': typeof AdminAccessRoute
   '/admin/approvals': typeof AdminApprovalsRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
+  '/admin/dispatch': typeof AdminDispatchRoute
   '/admin/drivers': typeof AdminDriversRoute
   '/admin/duplicates': typeof AdminDuplicatesRoute
+  '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
@@ -1223,13 +1250,16 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/access'
     | '/admin/approvals'
+    | '/admin/audit'
     | '/admin/bulk'
     | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/coupons'
     | '/admin/discover'
+    | '/admin/dispatch'
     | '/admin/drivers'
     | '/admin/duplicates'
+    | '/admin/gigs'
     | '/admin/live'
     | '/admin/login'
     | '/admin/managers'
@@ -1352,13 +1382,16 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/access'
     | '/admin/approvals'
+    | '/admin/audit'
     | '/admin/bulk'
     | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/coupons'
     | '/admin/discover'
+    | '/admin/dispatch'
     | '/admin/drivers'
     | '/admin/duplicates'
+    | '/admin/gigs'
     | '/admin/live'
     | '/admin/login'
     | '/admin/managers'
@@ -1487,13 +1520,16 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/access'
     | '/admin/approvals'
+    | '/admin/audit'
     | '/admin/bulk'
     | '/admin/campaigns'
     | '/admin/cms'
     | '/admin/coupons'
     | '/admin/discover'
+    | '/admin/dispatch'
     | '/admin/drivers'
     | '/admin/duplicates'
+    | '/admin/gigs'
     | '/admin/live'
     | '/admin/login'
     | '/admin/managers'
@@ -2483,6 +2519,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLiveRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/gigs': {
+      id: '/admin/gigs'
+      path: '/gigs'
+      fullPath: '/admin/gigs'
+      preLoaderRoute: typeof AdminGigsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/duplicates': {
       id: '/admin/duplicates'
       path: '/duplicates'
@@ -2495,6 +2538,13 @@ declare module '@tanstack/react-router' {
       path: '/drivers'
       fullPath: '/admin/drivers'
       preLoaderRoute: typeof AdminDriversRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/dispatch': {
+      id: '/admin/dispatch'
+      path: '/dispatch'
+      fullPath: '/admin/dispatch'
+      preLoaderRoute: typeof AdminDispatchRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/discover': {
@@ -2532,6 +2582,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBulkRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/approvals': {
       id: '/admin/approvals'
       path: '/approvals'
@@ -2566,13 +2623,16 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAccessRoute: typeof AdminAccessRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
+  AdminAuditRoute: typeof AdminAuditRoute
   AdminBulkRoute: typeof AdminBulkRoute
   AdminCampaignsRoute: typeof AdminCampaignsRoute
   AdminCmsRoute: typeof AdminCmsRoute
   AdminCouponsRoute: typeof AdminCouponsRoute
   AdminDiscoverRoute: typeof AdminDiscoverRoute
+  AdminDispatchRoute: typeof AdminDispatchRoute
   AdminDriversRoute: typeof AdminDriversRoute
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
+  AdminGigsRoute: typeof AdminGigsRoute
   AdminLiveRoute: typeof AdminLiveRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminManagersRoute: typeof AdminManagersRoute
@@ -2601,13 +2661,16 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAccessRoute: AdminAccessRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
+  AdminAuditRoute: AdminAuditRoute,
   AdminBulkRoute: AdminBulkRoute,
   AdminCampaignsRoute: AdminCampaignsRoute,
   AdminCmsRoute: AdminCmsRoute,
   AdminCouponsRoute: AdminCouponsRoute,
   AdminDiscoverRoute: AdminDiscoverRoute,
+  AdminDispatchRoute: AdminDispatchRoute,
   AdminDriversRoute: AdminDriversRoute,
   AdminDuplicatesRoute: AdminDuplicatesRoute,
+  AdminGigsRoute: AdminGigsRoute,
   AdminLiveRoute: AdminLiveRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminManagersRoute: AdminManagersRoute,
