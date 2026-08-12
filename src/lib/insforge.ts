@@ -23,29 +23,60 @@ if (!(globalThis as any).__INSFORGE_CLIENT__) {
 
 export const insforge = (globalThis as any).__INSFORGE_CLIENT__;
 
-// Helper to get access token (standardized SDK behavior)
-export const getAccessToken = async () => {
-  try {
-    // 1. Ensure hydration from cookies happens first
-    await insforge.auth.getCurrentUser();
-    
-    // 2. Read authoritative token from the synchronous session getter
-    const session = insforge.auth.getSession();
-    const token = session?.accessToken || null;
-    
-    if (token) {
-      console.log("[INSFORGE_AUTH] Resolved token length:", token.length);
+/**
+ * CACHED ACCESS TOKEN - Single source of truth to avoid async race conditions.
+ * Updated by the auth state listener and hydrated on startup.
+ */
+let cachedAccessToken: string | null = null;
+let initializationPromise: Promise<void> | null = null;
+
+// Initialize the cache by performing one authoritative check
+export const ensureAuthHydrated = async () => {
+  if (initializationPromise) return initializationPromise;
+  
+  initializationPromise = (async () => {
+    try {
+      console.log("[INSFORGE_AUTH] Hydrating session from storage/cookies...");
+      const { data } = await insforge.auth.getCurrentUser();
+      const session = insforge.auth.getSession();
+      cachedAccessToken = session?.accessToken || null;
+      console.log("[INSFORGE_AUTH] Initial hydration complete. Token present:", !!cachedAccessToken);
+    } catch (err) {
+      console.warn("[INSFORGE_AUTH] Hydration failed:", err);
     }
-    
-    return token;
-  } catch (err) {
-    console.warn("[INSFORGE_AUTH] Failed to resolve token:", err);
-    return null;
+  })();
+  
+  return initializationPromise;
+};
+
+// Subscribe to auth state changes at module level to keep cache in sync
+if (typeof window !== "undefined") {
+  insforge.auth.onAuthStateChange((event: any, session: any) => {
+    console.log(`[INSFORGE_AUTH] Auth event: ${event}`);
+    if (event === 'signedIn' || event === 'tokenRefreshed') {
+      cachedAccessToken = session?.accessToken || null;
+    } else if (event === 'signedOut') {
+      cachedAccessToken = null;
+    }
+  });
+  
+  // Start hydration immediately on load
+  ensureAuthHydrated();
+}
+
+/**
+ * Standardized getter for the current access token.
+ * Returns the cached value immediately if available.
+ */
+export const getAccessToken = async () => {
+  // If we don't have a token but we're in a browser, ensure we've at least tried to hydrate
+  if (!cachedAccessToken && typeof window !== "undefined") {
+    await ensureAuthHydrated();
   }
+  return cachedAccessToken;
 };
 
 // Mock/Stub exports for missing members reported in build errors
-// In a real scenario, these should be restored from the original file
 export const addonsForDish = async (...args: any[]): Promise<any[]> => [];
 export const bootstrapInsForge = async () => {};
 export const insforgeState: { loading: boolean; status: "idle" | "error" | "loading" | "success" } = { loading: false, status: "idle" };
