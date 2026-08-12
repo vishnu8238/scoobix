@@ -412,10 +412,15 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   ACCEPTED: "Accepted",
   PREPARING: "Preparing",
   READY: "Ready for pickup",
+  ASSIGNING: "Assigning rider",
+  ASSIGNED: "Rider assigned",
+  AT_PICKUP: "At pickup location",
   PICKED_UP: "Picked up",
   ON_THE_WAY: "On the way",
+  ARRIVED: "Arrived at delivery",
   DELIVERED: "Delivered",
   CANCELLED: "Cancelled",
+  REJECTED: "Rejected",
 };
 
 export const STATUS_FLOW: OrderStatus[] = ["PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "ON_THE_WAY", "DELIVERED"];

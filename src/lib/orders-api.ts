@@ -306,7 +306,7 @@ export async function patchOrder(orderId: string, patch: Record<string, unknown>
   }
 }
 
-export type OrderStatus = "PLACED" | "ACCEPTED" | "PREPARING" | "READY" | "ASSIGNING" | "ASSIGNED" | "AT_PICKUP" | "PICKED_UP" | "ON_THE_WAY" | "ARRIVED" | "DELIVERED" | "CANCELLED" | "REJECTED";
+// OrderStatus is now managed in stores.tsx to prevent duplication conflicts.
 
 export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   PLACED: ["ACCEPTED", "CANCELLED"],
