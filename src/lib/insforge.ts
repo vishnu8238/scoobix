@@ -24,16 +24,21 @@ if (!(globalThis as any).__INSFORGE_CLIENT__) {
 export const insforge = (globalThis as any).__INSFORGE_CLIENT__;
 
 // Helper to get access token (standardized SDK behavior)
-export const getAccessToken = () => {
-  const session = insforge.auth.getSession();
-  return session?.accessToken || null;
+export const getAccessToken = async () => {
+  try {
+    const { data } = await insforge.auth.getCurrentUser();
+    return data?.accessToken || null;
+  } catch (err) {
+    console.warn("[INSFORGE_AUTH] Failed to get current user:", err);
+    return null;
+  }
 };
 
 // Mock/Stub exports for missing members reported in build errors
 // In a real scenario, these should be restored from the original file
 export const addonsForDish = async (...args: any[]): Promise<any[]> => [];
 export const bootstrapInsForge = async () => {};
-export const insforgeState = { loading: false, status: "idle" };
+export const insforgeState: { loading: boolean; status: "idle" | "error" | "loading" | "success" } = { loading: false, status: "idle" };
 export const subscribeCatalog = () => () => {};
 export const getCatalogVersion = () => "1.0.0";
 export const setRestaurantApprovalStatus = async (...args: any[]) => {};

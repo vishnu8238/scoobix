@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode, useState, useEffect, useCallback, useRef } from "react";
-import { loginWithGoogle, logout as ifLogout, getSession } from "./insforge-auth";
-import { insforge } from "./insforge";
+import { loginWithGoogle, logout as ifLogout } from "./insforge-auth";
+import { insforge, getAccessToken } from "./insforge";
 import { listTable } from "./insforge-crud";
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics";
@@ -63,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_LOADING] Loading: true");
       }
       
-      // Fix #1: Use async getCurrentUser to hydrate from cookie on fresh mount
+      // Fix #1: Use async getAccessToken to hydrate from cookie on fresh mount
+      const token = await getAccessToken();
       const { data: userData } = await insforge.auth.getCurrentUser();
       session = userData;
       

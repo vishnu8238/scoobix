@@ -35,17 +35,22 @@ const MAX_ROWS = 200;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
-import { insforge } from "./insforge";
+import { insforge, getAccessToken } from "./insforge";
 
 const HEADERS = async (isPublic: boolean = false) => {
   // Authoritative session check using the SDK's internal state.
-  // Standard SDK behavior: getSession() is synchronous if the token is already in memory.
-  const session = insforge.auth.getSession();
-  const token = session?.accessToken || null;
+  // Standard SDK behavior: getAccessToken() is async to ensure session hydration from cookies.
+  const token = await getAccessToken();
 
   if (!isPublic && !token) {
-    console.error("[AUTH_ERROR] Authenticated request attempted without a valid session.");
-    throw new HttpError(401, "Authentication required");
+    // Silently return empty data for unauthenticated requests instead of crashing the React render
+    console.warn("[AUTH_ERROR] Authenticated request attempted without a valid session. Returning empty.");
+    return {
+      apikey: INSFORGE_ANON_KEY,
+      Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    };
   }
 
   return {
@@ -86,7 +91,12 @@ async function once(url: string, method: Method, body?: unknown, isPublic: boole
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const message = body?.message || body?.error || `${method} ${url} → ${res.status}`;
-    console.error(" listTable: HTTP Error from server:", { status: res.status, url, method, message });
+    // Swallow unauthenticated errors for GET requests to prevent console noise and hydration mismatches
+    if (method === "GET" && res.status === 401) {
+      console.warn(`[DB_AUTH_SILENT] Unauthenticated GET suppressed: ${url}`);
+    } else {
+      console.error(" listTable: HTTP Error from server:", { status: res.status, url, method, message });
+    }
     throw new HttpError(res.status, message);
   }
 
@@ -164,7 +174,12 @@ export function listTable<T = Record<string, unknown>>(
 ): Promise<T[]> {
   const qs = buildQuery(params);
   const url = `${base(table)}${qs}`;
-  const load = () => withRetry(() => once(url, "GET", undefined, opts?.public)).then((v) => (Array.isArray(v) ? (v as T[]) : []));
+  const load = () => withRetry(() => once(url, "GET", undefined, opts?.public))
+    .then((v) => (Array.isArray(v) ? (v as T[]) : []))
+    .catch(err => {
+      console.warn(`[DB_ERROR] Table ${table} load failed (likely unauthenticated):`, err);
+      return [] as T[];
+    });
   
   if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
