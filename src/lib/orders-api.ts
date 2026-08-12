@@ -328,19 +328,6 @@ export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
   return STATUS_TRANSITIONS[from]?.includes(to) || false;
 }
 
-  if (!isUuid(orderId)) return false;
-  try {
-    const res = await fetch(`${rec("orders")}?id=eq.${orderId}`, {
-      method: "PATCH",
-      headers: H,
-      body: JSON.stringify(patch),
-    });
-    if (res.ok) publishTableChange("orders", "update", { id: orderId, ...patch });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
 
 /** Mark the payment row for an order (used when payment status changes). */
 export async function patchPaymentByOrder(orderId: string, patch: Record<string, unknown>): Promise<void> {
