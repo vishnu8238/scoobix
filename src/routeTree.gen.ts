@@ -146,6 +146,7 @@ import { Route as AdminAccessRouteImport } from './routes/admin.access'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
 import { Route as AdminOrdersOrderIdRouteImport } from './routes/admin.orders.$orderId'
+import { Route as AdminDriversDriverIdRouteImport } from './routes/admin.drivers.$driverId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -832,6 +833,11 @@ const AdminOrdersOrderIdRoute = AdminOrdersOrderIdRouteImport.update({
   path: '/$orderId',
   getParentRoute: () => AdminOrdersRoute,
 } as any)
+const AdminDriversDriverIdRoute = AdminDriversDriverIdRouteImport.update({
+  id: '/$driverId',
+  path: '/$driverId',
+  getParentRoute: () => AdminDriversRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -852,7 +858,7 @@ export interface FileRoutesByFullPath {
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/dispatch': typeof AdminDispatchRoute
-  '/admin/drivers': typeof AdminDriversRoute
+  '/admin/drivers': typeof AdminDriversRouteWithChildren
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
@@ -968,6 +974,7 @@ export interface FileRoutesByFullPath {
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
+  '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
@@ -985,7 +992,7 @@ export interface FileRoutesByTo {
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/dispatch': typeof AdminDispatchRoute
-  '/admin/drivers': typeof AdminDriversRoute
+  '/admin/drivers': typeof AdminDriversRouteWithChildren
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
@@ -1101,6 +1108,7 @@ export interface FileRoutesByTo {
   '/manager': typeof ManagerIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
+  '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
@@ -1125,7 +1133,7 @@ export interface FileRoutesById {
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/discover': typeof AdminDiscoverRoute
   '/admin/dispatch': typeof AdminDispatchRoute
-  '/admin/drivers': typeof AdminDriversRoute
+  '/admin/drivers': typeof AdminDriversRouteWithChildren
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
@@ -1241,6 +1249,7 @@ export interface FileRoutesById {
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
+  '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
@@ -1382,6 +1391,7 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/partner/'
     | '/rider/'
+    | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
@@ -1515,6 +1525,7 @@ export interface FileRouteTypes {
     | '/manager'
     | '/partner'
     | '/rider'
+    | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
@@ -1654,6 +1665,7 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/partner/'
     | '/rider/'
+    | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/manager/lead/$id'
@@ -2636,8 +2648,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersOrderIdRouteImport
       parentRoute: typeof AdminOrdersRoute
     }
+    '/admin/drivers/$driverId': {
+      id: '/admin/drivers/$driverId'
+      path: '/$driverId'
+      fullPath: '/admin/drivers/$driverId'
+      preLoaderRoute: typeof AdminDriversDriverIdRouteImport
+      parentRoute: typeof AdminDriversRoute
+    }
   }
 }
+
+interface AdminDriversRouteChildren {
+  AdminDriversDriverIdRoute: typeof AdminDriversDriverIdRoute
+}
+
+const AdminDriversRouteChildren: AdminDriversRouteChildren = {
+  AdminDriversDriverIdRoute: AdminDriversDriverIdRoute,
+}
+
+const AdminDriversRouteWithChildren = AdminDriversRoute._addFileChildren(
+  AdminDriversRouteChildren,
+)
 
 interface AdminOrdersRouteChildren {
   AdminOrdersOrderIdRoute: typeof AdminOrdersOrderIdRoute
@@ -2661,7 +2692,7 @@ interface AdminRouteChildren {
   AdminCouponsRoute: typeof AdminCouponsRoute
   AdminDiscoverRoute: typeof AdminDiscoverRoute
   AdminDispatchRoute: typeof AdminDispatchRoute
-  AdminDriversRoute: typeof AdminDriversRoute
+  AdminDriversRoute: typeof AdminDriversRouteWithChildren
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
   AdminGigsRoute: typeof AdminGigsRoute
   AdminLiveRoute: typeof AdminLiveRoute
@@ -2699,7 +2730,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCouponsRoute: AdminCouponsRoute,
   AdminDiscoverRoute: AdminDiscoverRoute,
   AdminDispatchRoute: AdminDispatchRoute,
-  AdminDriversRoute: AdminDriversRoute,
+  AdminDriversRoute: AdminDriversRouteWithChildren,
   AdminDuplicatesRoute: AdminDuplicatesRoute,
   AdminGigsRoute: AdminGigsRoute,
   AdminLiveRoute: AdminLiveRoute,
