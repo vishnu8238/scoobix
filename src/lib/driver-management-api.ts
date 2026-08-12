@@ -34,7 +34,7 @@ export interface ExtendedDriver extends DriverRow {
 }
 
 export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriver | null> {
-  const [driver] = await listTable<ExtendedDriver>("drivers", { id: `eq.${driverId}`, limit: 1 });
+  const [driver] = await listTable<ExtendedDriver>("drivers", { id: `eq.${driverId}`, limit: 1 }, { fresh: true });
   if (!driver) return null;
 
   if (driver.user_id) {
