@@ -86,7 +86,7 @@ function OrderDetailsPage() {
         onRefresh={handleRefresh}
         onShowHistory={() => {}}
         onAssignRider={() => {}}
-        onUpdateStatus={() => {}} // TODO: Add Dropdown
+        onUpdateStatus={handleUpdateStatus}
         onTrack={() => {}}
       />
 
