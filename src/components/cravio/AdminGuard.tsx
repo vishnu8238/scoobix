@@ -30,8 +30,17 @@ export function AdminGuard({ children }: AdminGuardProps) {
     }
 
     const verify = async () => {
+      // Safety timeout: 10 seconds to verify admin email
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Verification timeout")), 10000)
+      );
+
       try {
-        const result = await checkAdminEmail({ data: user.email });
+        const result = await Promise.race([
+          checkAdminEmail({ data: user.email }),
+          timeoutPromise
+        ]) as any;
+
         if (result.authorized) {
           setAuthorized(true);
         } else {
@@ -41,7 +50,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
       } catch (err) {
         console.error("Admin verification failed:", err);
         setAuthorized(false);
-        setError("Security verification failed. Please try again.");
+        setError("Security verification failed. Please check your connection and try again.");
       }
     };
 

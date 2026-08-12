@@ -122,11 +122,11 @@ export function PersonalInfoSection({ driver }: { driver: ExtendedDriver }) {
   ];
 
   const addressFields = [
-    { label: "Address", value: driver.address || "Shiv Villa Residency 401" },
-    { label: "City", value: driver.city || "Vadodara" },
-    { label: "State", value: driver.state || "Gujarat" },
-    { label: "Country", value: driver.country || "India" },
-    { label: "Pincode", value: driver.pincode || "390048" },
+    { label: "Address", value: driver.address },
+    { label: "City", value: driver.city },
+    { label: "State", value: driver.state },
+    { label: "Country", value: driver.country },
+    { label: "Pincode", value: driver.pincode },
   ];
 
   return (
@@ -183,17 +183,21 @@ export function PersonalInfoSection({ driver }: { driver: ExtendedDriver }) {
                <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="rounded-2xl bg-background/50 p-3 ring-1 ring-border/40">
                     <p className="text-[9px] font-bold text-muted-foreground uppercase mb-0.5">Latitude</p>
-                    <p className="font-mono text-xs font-bold">{driver.current_lat || "22.2896243"}</p>
+                    <p className="font-mono text-xs font-bold">{driver.current_lat || "—"}</p>
                   </div>
                   <div className="rounded-2xl bg-background/50 p-3 ring-1 ring-border/40">
                     <p className="text-[9px] font-bold text-muted-foreground uppercase mb-0.5">Longitude</p>
-                    <p className="font-mono text-xs font-bold">{driver.current_lng || "73.2326738"}</p>
+                    <p className="font-mono text-xs font-bold">{driver.current_lng || "—"}</p>
                   </div>
                </div>
                
                {/* Location Preview Placeholder */}
                <div className="aspect-video w-full rounded-2xl bg-muted relative overflow-hidden ring-1 ring-border/40 group">
-                  <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=22.2896243,73.2326738&zoom=14&size=600x300&markers=color:blue%7Clabel:D%7C22.2896243,73.2326738&key=')] bg-cover bg-center grayscale opacity-60 group-hover:grayscale-0 transition-all duration-500" />
+                  {driver.current_lat && driver.current_lng ? (
+                    <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=' + driver.current_lat + ',' + driver.current_lng + '&zoom=14&size=600x300&markers=color:blue%7Clabel:D%7C' + driver.current_lat + ',' + driver.current_lng + '&key=')] bg-cover bg-center grayscale opacity-60 group-hover:grayscale-0 transition-all duration-500" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground font-bold uppercase tracking-widest">Location Unavailable</div>
+                  )}
                   <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
                     <button className="bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl shadow-glow">Open Google Maps</button>
                   </div>
