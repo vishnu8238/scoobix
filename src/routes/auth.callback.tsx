@@ -89,6 +89,7 @@ function AuthCallback() {
 
           if (!access.ok) {
             const errorParam = access.reason === "disabled" ? "disabled" : "denied";
+            // Do not redirect to Customer, keep them at the portal login with an error
             window.location.assign(`/${portal}/login?${errorParam}=${portal}`);
             return;
           }

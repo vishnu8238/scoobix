@@ -104,33 +104,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Authoritative access check from portal_access table
       const { checkPortalAccess } = await import("./portal-authorization");
-      if (currentPortal !== "customer" && currentPortal !== "admin") {
-        const access = await checkPortalAccess(profile.email, currentPortal as any);
-        if (access.ok) roles.push(currentPortal);
+      
+      // Admin check (preserve existing logic)
+      if (profile.role === "admin" || profile.is_admin === true || profile.email === "scoobix.info@gmail.com") {
+        roles.push("admin");
       }
 
-      // Legacy checks for existing portals (Restaurant, Rider, Manager)
+      // Check current portal access via portal_access table for privileged portals
+      if (["partner", "rider", "manager", "logistics"].includes(currentPortal)) {
+        const access = await checkPortalAccess(profile.email, currentPortal as any);
+        if (access.ok) {
+          roles.push(currentPortal);
+        } else {
+          console.log(`[AUTH_DEBUG] Access ${access.reason} for ${currentPortal}`);
+        }
+      }
+
+      // Legacy business data lookup - they continue to populate roles but do NOT grant portal admission on their own
       const [partner, rider, manager] = await Promise.all([
         listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
         listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
         listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
       ]);
 
-
       if (partner.length > 0) roles.push("partner");
       if (rider.length > 0) roles.push("rider");
       if (manager.length > 0) roles.push("manager");
       
-      // Strict admin check from profile
-      if (profile.role === "admin" || profile.is_admin === true || profile.role === "MERCHANT_MANAGER") {
-        if (profile.role === "admin" || profile.is_admin === true) roles.push("admin");
-      }
       console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
 
-      // Use existing currentPortal
-
       const admissionResult = roles.includes(currentPortal);
-      console.log(`[AUTH_DEBUG] [CHECKPOINT: CUSTOMER_ADMISSION_RESULT] Portal: ${currentPortal}, Admitted: ${admissionResult}`);
+      console.log(`[AUTH_DEBUG] [CHECKPOINT: PORTAL_ADMISSION_RESULT] Portal: ${currentPortal}, Admitted: ${admissionResult}`);
 
       setUser({
         id: profile.id,
