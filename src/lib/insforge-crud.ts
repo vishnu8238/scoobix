@@ -5,7 +5,7 @@
  * All operations are best-effort with a single retry on failure. Never throws
  * — stores stay usable when the backend is unreachable.
  */
-import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { insforge } from "./insforge";
 import { cached, cacheDrop, cacheGet } from "./request-cache";
 import { recordMetric } from "./perf-metrics";
 import { publishTableChange, onAnyChange } from "./realtime-bus";
@@ -25,42 +25,11 @@ function announce(
   try { publishTableChange(table, op, row ?? undefined); } catch { /* best-effort */ }
 }
 
-
-
 /** Default read TTL (seconds). Short enough to feel live, long enough to
  *  collapse the repeated reads a multi-panel dashboard fires on mount. */
 const READ_TTL = 20;
 /** Hard page size — never let a query pull an unbounded table. */
 const MAX_ROWS = 200;
-
-type Method = "GET" | "POST" | "PATCH" | "DELETE";
-
-import { insforge, getAccessToken } from "./insforge";
-
-const HEADERS = async (isPublic: boolean = false) => {
-  // Authoritative session check using the SDK's internal state.
-  // Standard SDK behavior: getAccessToken() is async to ensure session hydration from cookies.
-  const token = await getAccessToken();
-
-  if (!isPublic && !token) {
-    // Silently return empty data for unauthenticated requests instead of crashing the React render
-    console.warn("[AUTH_ERROR] Authenticated request attempted without a valid session. Returning empty.");
-    return {
-      apikey: INSFORGE_ANON_KEY,
-      Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation"
-    };
-  }
-
-  return {
-    apikey: INSFORGE_ANON_KEY,
-    Authorization: token ? `Bearer ${token}` : `Bearer ${INSFORGE_ANON_KEY}`,
-    "Content-Type": "application/json",
-    "Prefer": "return=representation"
-  };
-};
-
 
 class HttpError extends Error {
   constructor(public status: number, message: string) {
@@ -68,41 +37,8 @@ class HttpError extends Error {
   }
 }
 
-function metricName(method: Method, url: string) {
-  const table = url.split("/records/")[1]?.split("?")[0] ?? url;
+function metricName(method: string, table: string) {
   return `${method} ${table}`;
-}
-
-async function once(url: string, method: Method, body?: unknown, isPublic: boolean = false) {
-  const t0 = Date.now();
-  const headers = await HEADERS(isPublic);
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-  recordMetric({
-    kind: "api",
-    name: metricName(method, url),
-    ms: Date.now() - t0,
-    ok: res.ok,
-    status: res.status,
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const message = body?.message || body?.error || `${method} ${url} → ${res.status}`;
-    // Swallow unauthenticated errors for GET requests to prevent console noise and hydration mismatches
-    if (method === "GET" && res.status === 401) {
-      console.warn(`[DB_AUTH_SILENT] Unauthenticated GET suppressed: ${url}`);
-    } else {
-      console.error(" listTable: HTTP Error from server:", { status: res.status, url, method, message });
-    }
-    throw new HttpError(res.status, message);
-  }
-
-  // Some DELETE responses have no body.
-  const txt = await res.text();
-  return txt ? JSON.parse(txt) : null;
 }
 
 /**
@@ -112,76 +48,177 @@ async function once(url: string, method: Method, body?: unknown, isPublic: boole
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
-  } catch (err) {
-    const status = err instanceof HttpError ? err.status : 0;
+  } catch (err: any) {
+    const status = err instanceof HttpError ? err.status : (err?.status || 0);
     const retryable = status === 0 || status === 429 || status >= 500;
     if (!retryable) throw err;
     
-    console.warn(` listTable: Retrying request after ${status || "network"} error`);
+    console.warn(`[DB_RETRY] Retrying request after ${status || "network"} error`);
     await new Promise((r) => setTimeout(r, 500));
     return await fn();
   }
 }
 
+/**
+ * Translate legacy filter/order/limit params into SDK query builder calls.
+ */
+function applyParams(query: any, params?: Record<string, string | number | undefined>) {
+  if (!params) return query.limit(MAX_ROWS);
 
-const base = (table: string) => `${INSFORGE_URL}/api/database/records/${table}`;
+  let q = query;
+  let hasLimit = false;
 
-function normalizeParam(k: string, v: string | number): string {
-  // Translate leading "-" / "+" order shorthand into PostgREST `field.desc`/`.asc`.
-  if (k === "order" && typeof v === "string") {
-    return v
-      .split(",")
-      .map((s) => {
-        const t = s.trim();
-        if (!t) return t;
-        if (t.startsWith("-")) return `${t.slice(1)}.desc`;
-        if (t.startsWith("+")) return `${t.slice(1)}.asc`;
-        return t.includes(".") ? t : `${t}.asc`;
-      })
-      .join(",");
+  for (const [key, val] of Object.entries(params)) {
+    if (val === undefined || val === "") continue;
+
+    if (key === "select") {
+      // select is handled at .from(table).select(params.select)
+      continue;
+    }
+
+    if (key === "order") {
+      const orders = String(val).split(",");
+      for (const order of orders) {
+        const t = order.trim();
+        if (!t) continue;
+        
+        let column = t;
+        let ascending = true;
+        let nullsFirst = false;
+
+        if (t.startsWith("-")) {
+          column = t.slice(1);
+          ascending = false;
+        } else if (t.startsWith("+")) {
+          column = t.slice(1);
+          ascending = true;
+        }
+
+        if (column.endsWith(".desc")) {
+          column = column.slice(0, -5);
+          ascending = false;
+        } else if (column.endsWith(".asc")) {
+          column = column.slice(0, -4);
+          ascending = true;
+        }
+
+        if (column.endsWith(".nullsfirst")) {
+          column = column.slice(0, -11);
+          nullsFirst = true;
+        } else if (column.endsWith(".nullslast")) {
+          column = column.slice(0, -10);
+          nullsFirst = false;
+        }
+
+        q = q.order(column, { ascending, nullsFirst });
+      }
+      continue;
+    }
+
+    if (key === "limit") {
+      const limit = Math.min(Number(val) || MAX_ROWS, MAX_ROWS);
+      q = q.limit(limit);
+      hasLimit = true;
+      continue;
+    }
+
+    if (key === "offset") {
+      q = q.range(Number(val), Number(val) + (Number(params.limit) || MAX_ROWS) - 1);
+      hasLimit = true;
+      continue;
+    }
+
+    // Filter handling: "field": "op.value"
+    const sVal = String(val);
+    const dotIdx = sVal.indexOf(".");
+    if (dotIdx > 0) {
+      const op = sVal.slice(0, dotIdx);
+      const value = sVal.slice(dotIdx + 1);
+
+      if (op === "not") {
+        const innerDotIdx = value.indexOf(".");
+        if (innerDotIdx > 0) {
+          const innerOp = value.slice(0, innerDotIdx);
+          const innerValue = value.slice(innerDotIdx + 1);
+          q = q.not(key, innerOp, innerValue === "null" ? null : innerValue);
+        }
+      } else if (op === "or") {
+        q = q.or(value);
+      } else {
+        q = q.filter(key, op, value === "null" ? null : value);
+      }
+    } else {
+      // Default to equality
+      q = q.eq(key, val);
+    }
   }
-  return String(v);
+
+  if (!hasLimit) q = q.limit(MAX_ROWS);
+  return q;
 }
 
-function buildQuery(params?: Record<string, string | number | undefined>): string {
-  const entries = Object.entries(params ?? {}).filter(([, v]) => v !== undefined && v !== "");
-  // Always bound the result set — an unbounded read is the single biggest
-  // source of egress cost and slow screens.
-  if (!entries.some(([k]) => k === "limit")) entries.push(["limit", MAX_ROWS]);
-  const capped = entries.map(([k, v]) =>
-    k === "limit" ? [k, Math.min(Number(v) || MAX_ROWS, MAX_ROWS)] : [k, v],
-  ) as [string, string | number][];
-  return (
-    "?" +
-    capped
-      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(normalizeParam(k, v))}`)
-      .join("&")
-  );
+async function handleResponse<T>(promise: Promise<any>, method: string, table: string): Promise<T> {
+  const t0 = Date.now();
+  try {
+    const { data, error, status, statusText } = await promise;
+    
+    recordMetric({
+      kind: "api",
+      name: metricName(method, table),
+      ms: Date.now() - t0,
+      ok: !error,
+      status: status,
+    });
+
+    if (error) {
+      if (method === "GET" && status === 401) {
+        console.warn(`[DB_AUTH_SILENT] Unauthenticated GET suppressed: ${table}`);
+      } else {
+        console.error(`[DB_ERROR] ${method} ${table} failed:`, error);
+      }
+      throw new HttpError(status, error.message || statusText);
+    }
+
+    return data as T;
+  } catch (err: any) {
+    if (err instanceof HttpError) throw err;
+    
+    recordMetric({
+      kind: "api",
+      name: metricName(method, table),
+      ms: Date.now() - t0,
+      ok: false,
+      status: err.status || 0,
+    });
+    throw err;
+  }
 }
 
 /**
  * Read rows. Cached + de-duplicated: identical queries fired by several
  * panels in the same moment collapse into one request, and repeats inside
  * `ttl` seconds are served from memory.
- *
- * Pass `select` to limit returned fields, and `limit`/`offset` for
- * server-side pagination.
  */
 export function listTable<T = Record<string, unknown>>(
   table: string,
   params?: Record<string, string | number | undefined>,
   opts?: { ttl?: number; fresh?: boolean; public?: boolean },
 ): Promise<T[]> {
-  const qs = buildQuery(params);
-  const url = `${base(table)}${qs}`;
-  const load = () => withRetry(() => once(url, "GET", undefined, opts?.public))
-    .then((v) => (Array.isArray(v) ? (v as T[]) : []))
+  const select = String(params?.select ?? "*");
+  const qs = JSON.stringify(params || {});
+  const cacheKey = `db:${table}:${qs}`;
+
+  const load = () => withRetry(() => {
+    let query = insforge.database.from(table).select(select);
+    query = applyParams(query, params);
+    return handleResponse<T[]>(query, "GET", table);
+  }).then(v => Array.isArray(v) ? v : [])
     .catch(err => {
-      console.warn(`[DB_ERROR] Table ${table} load failed (likely unauthenticated):`, err);
+      console.warn(`[DB_ERROR] Table ${table} load failed:`, err);
       return [] as T[];
     });
   
-  if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
+  if (!opts?.fresh && cacheGet<T[]>(cacheKey) !== undefined) {
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
   }
   
@@ -190,7 +227,7 @@ export function listTable<T = Record<string, unknown>>(
     return load();
   }
   
-  return cached<T[]>(`db:${table}${qs}`, opts?.ttl ?? READ_TTL, load);
+  return cached<T[]>(cacheKey, opts?.ttl ?? READ_TTL, load);
 }
 
 /** Server-side pagination helper. */
@@ -207,12 +244,7 @@ export function listPage<T = Record<string, unknown>>(
 
 /** Drop cached reads for a table (called automatically after every write). */
 export function invalidateTable(table: string) {
-  cacheDrop(`db:${table}?`);
-}
-
-function firstRow(v: unknown): Record<string, unknown> | undefined {
-  if (Array.isArray(v)) return v[0] as Record<string, unknown> | undefined;
-  return (v ?? undefined) as Record<string, unknown> | undefined;
+  cacheDrop(`db:${table}:`); // Drop all variations starting with table
 }
 
 export function createRecord<T = Record<string, unknown>>(
@@ -220,9 +252,12 @@ export function createRecord<T = Record<string, unknown>>(
   record: Record<string, unknown>,
 ): Promise<T | null> {
   invalidateTable(table);
-  return (withRetry(() => once(base(table), "POST", record)) as Promise<T | null>).then((res) => {
-    announce(table, "insert", firstRow(res) ?? record);
-    return res;
+  return withRetry(() => {
+    const query = insforge.database.from(table).insert(record).select().single();
+    return handleResponse<T>(query, "POST", table);
+  }).then((res) => {
+    announce(table, "insert", (res as any) || record);
+    return res as T;
   });
 }
 
@@ -233,9 +268,12 @@ export function createRecords<T = Record<string, unknown>>(
 ): Promise<T[] | null> {
   if (!records.length) return Promise.resolve([]);
   invalidateTable(table);
-  return (withRetry(() => once(base(table), "POST", records)) as Promise<T[] | null>).then((res) => {
-    announce(table, "insert", firstRow(res) ?? records[0]);
-    return res;
+  return withRetry(() => {
+    const query = insforge.database.from(table).insert(records).select();
+    return handleResponse<T[]>(query, "POST", table);
+  }).then((res) => {
+    announce(table, "insert", Array.isArray(res) ? res[0] : records[0]);
+    return res as T[];
   });
 }
 
@@ -245,11 +283,12 @@ export function patchRecord<T = Record<string, unknown>>(
   patch: Record<string, unknown>,
 ): Promise<T | null> {
   invalidateTable(table);
-  return (
-    withRetry(() => once(`${base(table)}?id=eq.${id}`, "PATCH", patch)) as Promise<T | null>
-  ).then((res) => {
-    announce(table, "update", { id, ...patch, ...(firstRow(res) ?? {}) });
-    return res;
+  return withRetry(() => {
+    const query = insforge.database.from(table).update(patch).eq("id", id).select().single();
+    return handleResponse<T>(query, "PATCH", table);
+  }).then((res) => {
+    announce(table, "update", { id, ...patch, ...((res as any) || {}) });
+    return res as T;
   });
 }
 
@@ -261,21 +300,22 @@ export function patchWhereIn<T = Record<string, unknown>>(
 ): Promise<T | null> {
   if (!ids.length) return Promise.resolve(null);
   invalidateTable(table);
-  const filter = `id=in.(${ids.join(",")})`;
-  return (
-    withRetry(() => once(`${base(table)}?${filter}`, "PATCH", patch)) as Promise<T | null>
-  ).then((res) => {
+  return withRetry(() => {
+    const query = insforge.database.from(table).update(patch).in("id", ids).select();
+    return handleResponse<T[]>(query, "PATCH", table);
+  }).then((res) => {
     for (const id of ids.slice(0, 20)) announce(table, "update", { id, ...patch });
-    return res;
+    return res as any;
   });
 }
 
 export function deleteRecord(table: string, id: string): Promise<null> {
   invalidateTable(table);
-  return withRetry(() => once(`${base(table)}?id=eq.${id}`, "DELETE")).then(() => {
+  return withRetry(() => {
+    const query = insforge.database.from(table).delete().eq("id", id);
+    return handleResponse<null>(query, "DELETE", table);
+  }).then(() => {
     announce(table, "delete", { id });
     return null;
   });
 }
-
-
