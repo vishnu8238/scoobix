@@ -38,23 +38,52 @@ function AdminDashboard() {
   const version = useTableVersion(["orders", "users", "restaurants", "drivers", "support_tickets"]);
 
   const load = useCallback(async () => {
-    const [o, u, r, d, z, tickets, ratings] = await Promise.all([
-      listTable<OrderRow>("orders", { order: "created_at.desc", limit: 500 }),
-      listTable<NamedRow>("users", { limit: 1000 }),
-      listTable<NamedRow>("restaurants", { limit: 500 }),
-      listTable<any>("drivers", { limit: 500 }),
-      getZoneStats(),
-      listAllTickets(),
-      listTicketRatings()
-    ]);
-    
-    setOrders(o); 
-    setUsers(u); 
-    setRestaurants(r); 
-    setDrivers(d);
-    setZoneStats(z);
-    setSupportStats(computeSupportAnalytics(tickets, ratings));
-    setLoading(false);
+    setLoading(true);
+    try {
+      // 1. Core Platform Data (Essential for Dashboard)
+      const [o, u, r, d] = await Promise.all([
+        listTable<OrderRow>("orders", { order: "created_at.desc", limit: 500 }).catch(() => [] as OrderRow[]),
+        listTable<NamedRow>("users", { limit: 1000 }).catch(() => [] as NamedRow[]),
+        listTable<NamedRow>("restaurants", { limit: 500 }).catch(() => [] as NamedRow[]),
+        listTable<any>("drivers", { limit: 500 }).catch(() => [] as any[]),
+      ]);
+      
+      setOrders(o); 
+      setUsers(u); 
+      setRestaurants(r); 
+      setDrivers(d);
+
+      // 2. Optional Analytics (Isolated Failure)
+      try {
+        const [z, tickets, ratings] = await Promise.all([
+          getZoneStats().catch(err => {
+            console.warn("[ADMIN_DASHBOARD] Zone stats failed:", err);
+            return null;
+          }),
+          listAllTickets().catch(err => {
+            console.warn("[ADMIN_DASHBOARD] Tickets failed:", err);
+            return [] as any[];
+          }),
+          listTicketRatings().catch(err => {
+            console.warn("[ADMIN_DASHBOARD] Ratings failed:", err);
+            return [] as any[];
+          })
+        ]);
+        
+        setZoneStats(z);
+        if (tickets.length > 0 || ratings.length > 0) {
+          setSupportStats(computeSupportAnalytics(tickets, ratings));
+        } else {
+          setSupportStats(null);
+        }
+      } catch (analyticsErr) {
+        console.error("[ADMIN_DASHBOARD] Critical analytics failure:", analyticsErr);
+      }
+    } catch (err) {
+      console.error("[ADMIN_DASHBOARD] Fatal dashboard load error:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
