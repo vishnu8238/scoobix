@@ -51,15 +51,16 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
   driver.kyc_status = summary.complete ? "verified" : summary.blocked ? "rejected" : summary.underReview ? "under_review" : "pending";
   driver.docs_verified = summary.complete;
 
-  const [bank] = await listTable<any>("verification_api" as any, { 
+  const [bank] = await listTable<any>("restaurant_kyc", { 
     subject_id: `eq.${driverId}`, 
     doc_type: "eq.bank_account",
     limit: 1
-  } as any);
+  });
   if (bank) {
     driver.bank_verified = bank.status === "verified";
     driver.bank_account = bank.doc_number;
   }
+
 
 
   return driver;
