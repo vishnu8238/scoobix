@@ -35,13 +35,12 @@ const MAX_ROWS = 200;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
-import { insforge } from "./insforge";
+import { insforge, getAccessToken } from "./insforge";
 
 const HEADERS = async (isPublic: boolean = false) => {
   // Authoritative session check using the SDK's internal state.
-  // Standard SDK behavior: getSession() is synchronous if the token is already in memory.
-  const session = insforge.auth.getSession();
-  const token = session?.accessToken || null;
+  // Standard SDK behavior: getAccessToken() is async to ensure session hydration from cookies.
+  const token = await getAccessToken();
 
   if (!isPublic && !token) {
     console.error("[AUTH_ERROR] Authenticated request attempted without a valid session.");
