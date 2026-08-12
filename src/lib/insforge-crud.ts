@@ -272,7 +272,7 @@ export function createRecords<T = Record<string, unknown>>(
     const query = insforge.database.from(table).insert(records).select();
     return handleResponse<T[]>(query, "POST", table);
   }).then((res) => {
-    announce(table, "insert", Array.isArray(res) ? res[0] : records[0]);
+    announce(table, "insert", (Array.isArray(res) ? res[0] : records[0]) as Record<string, unknown>);
     return res as T[];
   });
 }
