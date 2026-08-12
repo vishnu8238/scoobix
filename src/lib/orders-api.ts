@@ -306,6 +306,7 @@ export async function patchOrder(orderId: string, patch: Record<string, unknown>
   }
 }
 
+export type { OrderStatus };
 // OrderStatus is now managed in stores.tsx to prevent duplication conflicts.
 
 export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {

@@ -65,10 +65,11 @@ function OrderDetailsPage() {
     const ok = await patchOrder(orderId, { status: newStatus });
     if (ok) {
       await logAudit({
-        subject_type: "order",
-        subject_id: orderId,
+        category: "admin",
+        subjectType: "order",
+        subjectId: orderId,
         action: "STATUS_CHANGE",
-        message: `Admin manually updated status from ${data.order.status} to ${newStatus}`,
+        summary: `Admin manually updated status from ${data.order.status} to ${newStatus}`,
       });
       toast.success(`Status updated to ${newStatus}`);
       await handleRefresh();
