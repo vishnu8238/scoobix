@@ -185,3 +185,27 @@ export async function routeBetween(from: LatLng, to: LatLng): Promise<GeoRoute |
     }
   );
 }
+
+/**
+ * Ensures Google Maps JS SDK is loaded and ready.
+ */
+export async function initGoogleMaps(): Promise<any> {
+  if (typeof window === "undefined") return null;
+  const g = (window as any).google;
+  if (g?.maps) return g;
+
+  // If already loading, wait for it
+  if ((window as any).googleMapsPromise) return (window as any).googleMapsPromise;
+
+  (window as any).googleMapsPromise = new Promise((resolve) => {
+    const check = setInterval(() => {
+      if ((window as any).google?.maps) {
+        clearInterval(check);
+        resolve((window as any).google);
+      }
+    }, 100);
+  });
+
+  return (window as any).googleMapsPromise;
+}
+

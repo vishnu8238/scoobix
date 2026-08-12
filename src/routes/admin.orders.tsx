@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/admin/orders")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Orders" }] }),
@@ -96,16 +96,22 @@ function AdminOrders() {
           <p className="py-10 text-center text-sm text-muted-foreground">No orders in this view.</p>
         ) : (
           <DataTable
-            columns={["Order", "Customer", "Restaurant", "Total", "Status", "Time"]}
+            columns={["Order", "Customer", "Restaurant", "Total", "Status", "Time", "Action"]}
             rows={visible.map((o) => [
-              <span className="font-bold text-primary">#{String(o.id).slice(-5).toUpperCase()}</span>,
-              userById[String(o.customer_id ?? "")] ?? "—",
-              nameById[String(o.restaurant_id ?? "")] ?? "—",
-              <span className="font-bold">{formatPrice(Number(o.total_price ?? 0))}</span>,
-              <StatusBadge label={status(o)} />,
-              <span className="text-muted-foreground">
-                {o.created_at ? new Date(o.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
-              </span>,
+              <code key={`code${o.id}`} className="font-mono text-[10px] font-bold text-primary">#{o.id.slice(0, 8)}</code>,
+              <span key={`name${o.id}`} className="font-bold">{userById[String(o.customer_id)] || "—"}</span>,
+              <span key={`owner${o.id}`} className="text-muted-foreground">{nameById[String(o.restaurant_id)] || "—"}</span>,
+              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price || 0)}</span>,
+              <StatusBadge key={`status${o.id}`} label={String(o.status || "PLACED")} />,
+              <span key={`mgr${o.id}`} className="text-[10px] font-medium text-muted-foreground">{(o.created_at ?? "").slice(11, 16)}</span>,
+              <Link 
+                key={`act${o.id}`} 
+                to="/admin/orders/$orderId" 
+                params={{ orderId: o.id }}
+                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+              >
+                Manage <ExternalLink className="h-3 w-3" />
+              </Link>
             ])}
           />
         )}

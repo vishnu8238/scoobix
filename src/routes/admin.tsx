@@ -1,9 +1,15 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Tag, LayoutDashboard, Users, Store, Bike, ClipboardList, CreditCard, BarChart3, Settings, Bell, Search, Sparkles, Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, LifeBuoy, Copy, Gauge, ShieldCheck, Crown, Map as MapIcon, Navigation, History } from "lucide-react";
+import { 
+  Tag, LayoutDashboard, Users, Store, Bike, ClipboardList, 
+  CreditCard, BarChart3, Settings, Bell, Search, Sparkles, 
+  Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, 
+  LifeBuoy, Copy, Gauge, ShieldCheck, Crown, Map as MapIcon, 
+  Navigation, History, LogOut 
+} from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { APPS, appHead } from "@/lib/apps";
 import { useAuth } from "@/lib/auth-store";
-import { LogOut } from "lucide-react";
+
 import { cn } from "@/lib/format";
 import { warmAnalytics } from "@/lib/analytics-jobs";
 import { useEffect } from "react";

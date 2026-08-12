@@ -306,6 +306,32 @@ export async function patchOrder(orderId: string, patch: Record<string, unknown>
   }
 }
 
+export type { OrderStatus };
+// OrderStatus is now managed in stores.tsx to prevent duplication conflicts.
+
+export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PLACED: ["ACCEPTED", "CANCELLED"],
+  ACCEPTED: ["PREPARING", "CANCELLED"],
+  PREPARING: ["READY", "CANCELLED"],
+  READY: ["ASSIGNING", "CANCELLED"],
+  ASSIGNING: ["ASSIGNED", "READY", "CANCELLED"],
+  ASSIGNED: ["AT_PICKUP", "ASSIGNING", "CANCELLED"],
+  AT_PICKUP: ["PICKED_UP", "CANCELLED"],
+  PICKED_UP: ["ON_THE_WAY", "CANCELLED"],
+  ON_THE_WAY: ["ARRIVED", "CANCELLED"],
+  ARRIVED: ["DELIVERED", "CANCELLED"],
+  DELIVERED: [],
+  CANCELLED: [],
+  REJECTED: [],
+};
+
+export { STATUS_LABEL } from "./stores";
+
+export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return STATUS_TRANSITIONS[from]?.includes(to) || false;
+}
+
+
 /** Mark the payment row for an order (used when payment status changes). */
 export async function patchPaymentByOrder(orderId: string, patch: Record<string, unknown>): Promise<void> {
   if (!isUuid(orderId)) return;
