@@ -49,13 +49,30 @@ export async function checkPortalAccess(
     const record = rows[0];
     if (record.status === "disabled") return { ok: false, reason: "disabled" };
     
-    // Update last login timestamp in background
-    void patchRecord("portal_access", record.id, { last_login_at: new Date().toISOString() })
-      .catch(err => console.error("[AUTH_DEBUG] Failed to update last_login_at:", err));
-
     return { ok: true, status: "active" };
   } catch (err: any) {
     console.error(`[AUTH_DEBUG] Portal access lookup failed for ${portal}:`, err);
     return { ok: false, reason: "lookup_failed", message: err.message || "Database lookup failed" };
+  }
+}
+
+/** Explicitly record a successful login timestamp. */
+export async function recordPortalLogin(email: string, portal: PortalType) {
+  const normalizedEmail = normalize(email);
+  try {
+    const rows = await listTable<PortalAccessRow>(
+      "portal_access",
+      { 
+        email_normalized: `eq.${normalizedEmail}`, 
+        portal: `eq.${portal}`,
+        limit: 1 
+      },
+      { ttl: 0, fresh: true }
+    );
+    if (rows[0]) {
+      await patchRecord("portal_access", rows[0].id, { last_login_at: new Date().toISOString() });
+    }
+  } catch (err) {
+    console.error("[AUTH_DEBUG] Failed to update last_login_at:", err);
   }
 }

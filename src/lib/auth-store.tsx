@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { loginWithGoogle, logout as ifLogout, getSession } from "./insforge-auth";
 import { insforge } from "./insforge";
 import { listTable } from "./insforge-crud";
@@ -53,13 +53,20 @@ export const getRequestedPortal = () => {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastRequestedPortal = useRef<Role | null>(null);
 
-  const resolveUser = useCallback(async () => {
+  const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
     let session = null;
     try {
-      setLoading(true);
-      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_LOADING] Loading: true");
-      session = insforge.auth.getSession();
+      if (isInitialMountOrSignIn) {
+        setLoading(true);
+        console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_LOADING] Loading: true");
+      }
+      
+      // Fix #1: Use async getCurrentUser to hydrate from cookie on fresh mount
+      const { data: userData } = await insforge.auth.getCurrentUser();
+      session = userData;
+      
       console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_SESSION_RESTORED] Session ID:", session?.user?.id);
       
       const { setCacheAuthScope } = await import("./request-cache");
@@ -71,6 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const authId = session.user.id;
+      const currentPortal = getRequestedPortal() as Role;
+      lastRequestedPortal.current = currentPortal;
 
       // 1. Get user profile
       const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
@@ -78,7 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_USER_RESOLVED] Profile ID:", profile?.id);
 
       if (!profile) {
-        // No profile row: check for logistics authorization by email even without profile
         const roles: Role[] = ["customer"];
         const { isLogisticsStaffEmail } = await import("./logistics-authorization");
         if (await isLogisticsStaffEmail(session.user.email)) roles.push("logistics");
@@ -93,19 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: roles.includes("logistics") ? "logistics" : "customer",
           roles,
           membershipsResolved: true,
-          pendingPortal: getRequestedPortal() as Role,
+          pendingPortal: currentPortal,
         });
         return;
       }
 
       // 2. Resolve Memberships
       const roles: Role[] = ["customer"];
-      const currentPortal = getRequestedPortal() as Role;
       
-      // Authoritative access check from portal_access table
       const { checkPortalAccess } = await import("./portal-authorization");
       
-      // Admin check (preserve existing logic)
       if (profile.role === "admin" || profile.is_admin === true || profile.email === "scoobix.info@gmail.com") {
         roles.push("admin");
       }
@@ -120,11 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Legacy business data lookup - they continue to populate roles but do NOT grant portal admission on their own
+      // Fix #2: Remove { ttl: 0 } from legacy lookups
       const [partner, rider, manager] = await Promise.all([
-        listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
-        listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
-        listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
+        listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }),
+        listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }),
+        listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }),
       ]);
 
       if (partner.length > 0) roles.push("partner");
@@ -150,9 +155,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       console.error("[MEMBERSHIP_ERROR] Failed to resolve user memberships:", err);
       if (session?.user) {
-        // If we have an auth session but membership lookup failed,
-        // we stay in an authenticated but unverified state.
-        // RoleGuard will see membershipsResolved: false and block.
         setUser({
           id: session.user.id,
           name: session.user.name || "User",
@@ -160,26 +162,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           phone: "",
           avatar: "",
           role: "customer",
-          roles: [], // Critical: Do not grant default customer role on DB failure
+          roles: [], 
           membershipsResolved: false,
         });
       } else {
         setUser(null);
       }
     } finally {
-      setLoading(false);
+      if (isInitialMountOrSignIn) {
+        setLoading(false);
+      }
     }
   }, []);
 
+  // Fix #3: Lightweight re-check on portal change
+  useEffect(() => {
+    if (!user || !user.membershipsResolved) return;
+    
+    const currentPortal = getRequestedPortal() as Role;
+    if (currentPortal !== lastRequestedPortal.current) {
+      lastRequestedPortal.current = currentPortal;
+      
+      // If user already has this role in their list, just update UI 'role'
+      if (user.roles.includes(currentPortal)) {
+        setUser(prev => prev ? { ...prev, role: currentPortal, pendingPortal: currentPortal } : null);
+        return;
+      }
+
+      // Otherwise, re-check portal access without global loading spinner
+      (async () => {
+        try {
+          const { checkPortalAccess } = await import("./portal-authorization");
+          if (["partner", "rider", "manager", "logistics"].includes(currentPortal)) {
+            const access = await checkPortalAccess(user.email, currentPortal as any);
+            if (access.ok) {
+              setUser(prev => {
+                if (!prev) return null;
+                const newRoles = Array.from(new Set([...prev.roles, currentPortal]));
+                return { ...prev, role: currentPortal, roles: newRoles, pendingPortal: currentPortal };
+              });
+            }
+          }
+        } catch (err) {
+          console.error("[AUTH_DEBUG] Portal change re-check failed:", err);
+        }
+      })();
+    }
+  }, [user]);
+
   useEffect(() => {
     console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_MOUNT] Initializing auth listener");
-    resolveUser();
+    // Initial mount: use true for isInitialMountOrSignIn
+    resolveUser(true);
 
     const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
       console.log(`[AUTH_DEBUG] Auth State Change: ${event}`);
-      if (event === 'signedIn' || event === 'tokenRefreshed') {
-        console.log("[AUTH_TRACE] Auth State Event: SIGNED_IN/TOKEN_REFRESHED -> Resolving User");
-        resolveUser();
+      if (event === 'signedIn') {
+        console.log("[AUTH_TRACE] Auth State Event: SIGNED_IN -> Resolving User");
+        resolveUser(true); // Sign in: use true for isInitialMountOrSignIn
+      } else if (event === 'tokenRefreshed') {
+        console.log("[AUTH_TRACE] Auth State Event: TOKEN_REFRESHED -> Resolving User (background)");
+        resolveUser(false); // Token refreshed: use false to avoid spinner/re-resolution
       } else if (event === 'signedOut') {
         console.log("[AUTH_TRACE] Auth State Event: SIGNED_OUT");
         setUser(null);
