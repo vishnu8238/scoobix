@@ -26,10 +26,20 @@ export const insforge = (globalThis as any).__INSFORGE_CLIENT__;
 // Helper to get access token (standardized SDK behavior)
 export const getAccessToken = async () => {
   try {
-    const { data } = await insforge.auth.getCurrentUser();
-    return data?.accessToken || null;
+    // 1. Ensure hydration from cookies happens first
+    await insforge.auth.getCurrentUser();
+    
+    // 2. Read authoritative token from the synchronous session getter
+    const session = insforge.auth.getSession();
+    const token = session?.accessToken || null;
+    
+    if (token) {
+      console.log("[INSFORGE_AUTH] Resolved token length:", token.length);
+    }
+    
+    return token;
   } catch (err) {
-    console.warn("[INSFORGE_AUTH] Failed to get current user:", err);
+    console.warn("[INSFORGE_AUTH] Failed to resolve token:", err);
     return null;
   }
 };
