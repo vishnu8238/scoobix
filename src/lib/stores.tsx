@@ -397,10 +397,15 @@ export type OrderStatus =
   | "ACCEPTED"
   | "PREPARING"
   | "READY"
+  | "ASSIGNING"
+  | "ASSIGNED"
+  | "AT_PICKUP"
   | "PICKED_UP"
   | "ON_THE_WAY"
+  | "ARRIVED"
   | "DELIVERED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "REJECTED";
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
   PLACED: "Order placed",

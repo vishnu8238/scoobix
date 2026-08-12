@@ -15,7 +15,7 @@
 
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { publishTableChange } from "./realtime-bus";
-import type { CartItem, Order, OrderStatus as StoreOrderStatus } from "./stores";
+import type { CartItem, Order, OrderStatus } from "./stores";
 
 
 const H = {
