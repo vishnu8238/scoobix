@@ -100,17 +100,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // 2. Resolve Memberships
       const roles: Role[] = ["customer"];
+      const currentPortal = getRequestedPortal() as Role;
       
-      // Authoritative logistics check by email
-      const { isLogisticsStaffEmail: isLogisticsStaff } = await import("./logistics-authorization");
-      if (await isLogisticsStaff(profile.email)) roles.push("logistics");
+      // Authoritative access check from portal_access table
+      const { checkPortalAccess } = await import("./portal-authorization");
+      if (currentPortal !== "customer" && currentPortal !== "admin") {
+        const access = await checkPortalAccess(profile.email, currentPortal as any);
+        if (access.ok) roles.push(currentPortal);
+      }
 
-
+      // Legacy checks for existing portals (Restaurant, Rider, Manager)
       const [partner, rider, manager] = await Promise.all([
         listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
         listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
         listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }, { ttl: 0 }),
       ]);
+
 
       if (partner.length > 0) roles.push("partner");
       if (rider.length > 0) roles.push("rider");
@@ -122,7 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
 
-      const currentPortal = getRequestedPortal() as Role;
+      // Use existing currentPortal
+
       const admissionResult = roles.includes(currentPortal);
       console.log(`[AUTH_DEBUG] [CHECKPOINT: CUSTOMER_ADMISSION_RESULT] Portal: ${currentPortal}, Admitted: ${admissionResult}`);
 
