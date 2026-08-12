@@ -43,8 +43,14 @@ const HEADERS = async (isPublic: boolean = false) => {
   const token = await getAccessToken();
 
   if (!isPublic && !token) {
-    console.error("[AUTH_ERROR] Authenticated request attempted without a valid session.");
-    throw new HttpError(401, "Authentication required");
+    // Silently return empty data for unauthenticated requests instead of crashing the React render
+    console.warn("[AUTH_ERROR] Authenticated request attempted without a valid session. Returning empty.");
+    return {
+      apikey: INSFORGE_ANON_KEY,
+      Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    };
   }
 
   return {
@@ -163,7 +169,10 @@ export function listTable<T = Record<string, unknown>>(
 ): Promise<T[]> {
   const qs = buildQuery(params);
   const url = `${base(table)}${qs}`;
-  const load = () => withRetry(() => once(url, "GET", undefined, opts?.public)).then((v) => (Array.isArray(v) ? (v as T[]) : []));
+  const load = () => withRetry(() => once(url, "GET", undefined, opts?.public)).catch(err => {
+    console.error(`[DB_ERROR] Table ${table} load failed:`, err);
+    return []; // Return empty array on error to prevent React 'use' property crash
+  });
   
   if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });

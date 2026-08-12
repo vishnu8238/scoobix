@@ -25,8 +25,13 @@ export const insforge = (globalThis as any).__INSFORGE_CLIENT__;
 
 // Helper to get access token (standardized SDK behavior)
 export const getAccessToken = async () => {
-  const { data } = await insforge.auth.getCurrentUser();
-  return data?.accessToken || null;
+  try {
+    const { data } = await insforge.auth.getCurrentUser();
+    return data?.accessToken || null;
+  } catch (err) {
+    console.warn("[INSFORGE_AUTH] Failed to get current user:", err);
+    return null;
+  }
 };
 
 // Mock/Stub exports for missing members reported in build errors
