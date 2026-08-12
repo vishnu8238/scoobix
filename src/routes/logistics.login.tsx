@@ -14,14 +14,19 @@ function LogisticsLogin() {
   const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [denialType, setDenialType] = useState<"denied" | "disabled" | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // `denied` survives the auth SDK's callback-param cleanup; `error` kept for older links.
-    if (params.get("denied") === "logistics" || params.get("error") === "unauthorized") {
+    if (params.get("disabled") === "logistics") {
+      setDenialType("disabled");
+      setIsUnauthorized(true);
+    } else if (params.get("denied") === "logistics" || params.get("error") === "unauthorized") {
+      setDenialType("denied");
       setIsUnauthorized(true);
     }
   }, []);
+
 
 
   const handleGoogle = async () => {
@@ -64,10 +69,15 @@ function LogisticsLogin() {
       {isUnauthorized && (
         <div className="mt-8 w-full max-w-[320px] overflow-hidden rounded-2xl bg-destructive/10 ring-1 ring-destructive/20 text-left">
           <div className="p-4">
-            <p className="text-xs font-bold text-destructive uppercase tracking-wider">Access Restricted</p>
-            <p className="mt-1 text-[13px] font-medium text-destructive/90">
-              This Google account is not authorized for Scoobix Logistics.
+            <p className="text-xs font-bold text-destructive uppercase tracking-wider">
+              {denialType === "disabled" ? "Access Disabled" : "Access Restricted"}
             </p>
+            <p className="mt-1 text-[13px] font-medium text-destructive/90">
+              {denialType === "disabled" 
+                ? "Your Scoobix Logistics access has been disabled." 
+                : "This Google account is not authorized for Scoobix Logistics."}
+            </p>
+
             {user && (
                <p className="mt-2 text-[11px] text-destructive/70 truncate">
                  Account: {user.email}

@@ -139,6 +139,7 @@ import { Route as AdminCmsRouteImport } from './routes/admin.cms'
 import { Route as AdminCampaignsRouteImport } from './routes/admin.campaigns'
 import { Route as AdminBulkRouteImport } from './routes/admin.bulk'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
+import { Route as AdminAccessRouteImport } from './routes/admin.access'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
 
@@ -792,6 +793,11 @@ const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAccessRoute = AdminAccessRouteImport.update({
+  id: '/access',
+  path: '/access',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ManagerLeadIdRoute = ManagerLeadIdRouteImport.update({
   id: '/lead/$id',
   path: '/lead/$id',
@@ -813,6 +819,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
+  '/admin/access': typeof AdminAccessRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -941,6 +948,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/admin/access': typeof AdminAccessRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -1076,6 +1084,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/rider': typeof RiderRouteWithChildren
   '/terms': typeof TermsRoute
+  '/admin/access': typeof AdminAccessRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/bulk': typeof AdminBulkRoute
   '/admin/campaigns': typeof AdminCampaignsRoute
@@ -1212,6 +1221,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rider'
     | '/terms'
+    | '/admin/access'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -1340,6 +1350,7 @@ export interface FileRouteTypes {
     | '/'
     | '/privacy'
     | '/terms'
+    | '/admin/access'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -1474,6 +1485,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rider'
     | '/terms'
+    | '/admin/access'
     | '/admin/approvals'
     | '/admin/bulk'
     | '/admin/campaigns'
@@ -2527,6 +2539,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminApprovalsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/access': {
+      id: '/admin/access'
+      path: '/access'
+      fullPath: '/admin/access'
+      preLoaderRoute: typeof AdminAccessRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/manager/lead/$id': {
       id: '/manager/lead/$id'
       path: '/lead/$id'
@@ -2545,6 +2564,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAccessRoute: typeof AdminAccessRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminBulkRoute: typeof AdminBulkRoute
   AdminCampaignsRoute: typeof AdminCampaignsRoute
@@ -2579,6 +2599,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAccessRoute: AdminAccessRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminBulkRoute: AdminBulkRoute,
   AdminCampaignsRoute: AdminCampaignsRoute,

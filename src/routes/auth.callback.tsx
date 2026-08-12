@@ -78,29 +78,23 @@ function AuthCallback() {
           return;
         }
 
-        if (portal === "logistics") {
-          const { checkLogisticsAdmission } = await import("@/lib/logistics-authorization");
-          console.log(
-            "[AUTH_TRACE] logistics authorization → user:",
-            authUser.id ? "PRESENT" : "MISSING",
-            "email:",
-            authUser.email ? "PRESENT" : "MISSING",
-          );
-          const admission = await checkLogisticsAdmission(authUser.email);
+        if (portal === "logistics" || portal === "partner" || portal === "rider" || portal === "manager") {
+          const { checkPortalAccess } = await import("@/lib/portal-authorization");
+          const access = await checkPortalAccess(authUser.email, portal as any);
 
-          if (!admission.ok && admission.reason === "lookup_failed") {
-            console.error("[AUTH_TRACE] logistics_staff lookup failed:", admission.message);
-            setErrorMsg("Unable to verify Logistics access. Please try again.");
+          if (!access.ok && access.reason === "lookup_failed") {
+            setErrorMsg(`Unable to verify ${portal} access. Please try again.`);
             return;
           }
 
-          if (!admission.ok) {
-            console.error("[AUTH_TRACE] Logistics staff record: NOT FOUND");
-            window.location.assign("/logistics/login?denied=logistics");
+          if (!access.ok) {
+            const errorParam = access.reason === "disabled" ? "disabled" : "denied";
+            window.location.assign(`/${portal}/login?${errorParam}=${portal}`);
             return;
           }
-          console.log("[AUTH_TRACE] Logistics authorized (email identity match), level:", admission.level);
+          console.log(`[AUTH_TRACE] ${portal} authorized via portal_access`);
         }
+
 
 
         const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
