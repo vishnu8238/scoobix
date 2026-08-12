@@ -37,17 +37,20 @@ type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
 import { insforge } from "./insforge";
 
-const HEADERS = async () => {
-  // Use getCurrentUser to trigger internal token management if needed,
-  // but we mostly rely on the fact that if we have a token, it's already in the headers
-  // if we used the SDK's from() method. Since we're using fetch here,
-  // we need the token. We'll use a safer way to get it or fallback.
-  const { data } = await insforge.auth.getCurrentUser();
-  const token = (data.user as any)?.access_token || (data.user as any)?.accessToken || INSFORGE_ANON_KEY;
-  
+const HEADERS = async (isPublic: boolean = false) => {
+  // Authoritative session check using the SDK's internal state.
+  // Standard SDK behavior: getSession() is synchronous if the token is already in memory.
+  const session = insforge.auth.getSession();
+  const token = session?.accessToken || null;
+
+  if (!isPublic && !token) {
+    console.error("[AUTH_ERROR] Authenticated request attempted without a valid session.");
+    throw new HttpError(401, "Authentication required");
+  }
+
   return {
     apikey: INSFORGE_ANON_KEY,
-    Authorization: `Bearer ${token}`,
+    Authorization: token ? `Bearer ${token}` : `Bearer ${INSFORGE_ANON_KEY}`,
     "Content-Type": "application/json",
     "Prefer": "return=representation"
   };
@@ -65,9 +68,9 @@ function metricName(method: Method, url: string) {
   return `${method} ${table}`;
 }
 
-async function once(url: string, method: Method, body?: unknown) {
+async function once(url: string, method: Method, body?: unknown, isPublic: boolean = false) {
   const t0 = Date.now();
-  const headers = await HEADERS();
+  const headers = await HEADERS(isPublic);
   const res = await fetch(url, {
     method,
     headers,
@@ -157,11 +160,11 @@ function buildQuery(params?: Record<string, string | number | undefined>): strin
 export function listTable<T = Record<string, unknown>>(
   table: string,
   params?: Record<string, string | number | undefined>,
-  opts?: { ttl?: number; fresh?: boolean },
+  opts?: { ttl?: number; fresh?: boolean; public?: boolean },
 ): Promise<T[]> {
   const qs = buildQuery(params);
   const url = `${base(table)}${qs}`;
-  const load = () => withRetry(() => once(url, "GET")).then((v) => (Array.isArray(v) ? (v as T[]) : []));
+  const load = () => withRetry(() => once(url, "GET", undefined, opts?.public)).then((v) => (Array.isArray(v) ? (v as T[]) : []));
   
   if (!opts?.fresh && cacheGet<T[]>(`db:${table}${qs}`) !== undefined) {
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
@@ -181,7 +184,7 @@ export function listPage<T = Record<string, unknown>>(
   page: number,
   pageSize: number,
   params?: Record<string, string | number | undefined>,
-  opts?: { ttl?: number },
+  opts?: { ttl?: number; public?: boolean },
 ): Promise<T[]> {
   const size = Math.min(Math.max(pageSize, 1), MAX_ROWS);
   return listTable<T>(table, { ...params, limit: size, offset: Math.max(page, 0) * size }, opts);

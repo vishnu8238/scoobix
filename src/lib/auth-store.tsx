@@ -55,19 +55,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const resolveUser = useCallback(async () => {
-    let currentSession = null;
+    let session = null;
     try {
       setLoading(true);
       console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_LOADING] Loading: true");
-      currentSession = await getSession();
-      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_SESSION_RESTORED] Session ID:", currentSession?.user?.id);
+      session = insforge.auth.getSession();
+      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_SESSION_RESTORED] Session ID:", session?.user?.id);
       
-      if (!currentSession || !currentSession.user) {
+      const { setCacheAuthScope } = await import("./request-cache");
+      setCacheAuthScope(session?.user?.id || null);
+
+      if (!session || !session.user) {
         setUser(null);
         return;
       }
 
-      const authId = currentSession.user.id;
+      const authId = session.user.id;
 
       // 1. Get user profile
       const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
@@ -136,16 +139,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pendingPortal: currentPortal,
       });
     } catch (err: any) {
-      console.error("Failed to resolve user:", err);
-      if (currentSession?.user) {
+      console.error("[MEMBERSHIP_ERROR] Failed to resolve user memberships:", err);
+      if (session?.user) {
+        // If we have an auth session but membership lookup failed,
+        // we stay in an authenticated but unverified state.
+        // RoleGuard will see membershipsResolved: false and block.
         setUser({
-          id: currentSession.user.id,
-          name: (currentSession.user.profile as any)?.name || "User",
-          email: currentSession.user.email || "",
+          id: session.user.id,
+          name: session.user.name || "User",
+          email: session.user.email || "",
           phone: "",
           avatar: "",
           role: "customer",
-          roles: ["customer"],
+          roles: [], // Critical: Do not grant default customer role on DB failure
           membershipsResolved: false,
         });
       } else {
