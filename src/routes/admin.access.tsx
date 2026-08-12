@@ -238,42 +238,47 @@ function AccessManagementPage() {
         ) : (
           <DataTable
             columns={["Email", "Portal", "Status", "Last Login", "Added By", "Created", "Actions"]}
-            rows={filteredRecords.map(r => [
-              <div key={`email-${r.id}`} className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                  {r.email[0].toUpperCase()}
+            rows={filteredRecords.map(r => {
+              const emailPrefix = r.email.split("@")[0];
+              const initials = (emailPrefix[0] + (emailPrefix[1] || "")).toUpperCase();
+              
+              return [
+                <div key={`email-${r.id}`} className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
+                    {initials}
+                  </div>
+                  <span className="font-bold">{r.email}</span>
+                </div>,
+                <span key={`portal-${r.id}`} className="font-medium text-muted-foreground">{PORTAL_LABELS[r.portal]}</span>,
+                <StatusBadge key={`status-${r.id}`} label={r.status === "active" ? "Active" : "Suspended"} />,
+                <span key={`login-${r.id}`} className="text-xs text-muted-foreground">
+                  {r.last_login_at ? new Date(r.last_login_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "Never"}
+                </span>,
+                <span key={`actor-${r.id}`} className="text-xs text-muted-foreground">{r.created_by ? "Admin" : "System"}</span>,
+                <span key={`date-${r.id}`} className="text-xs text-muted-foreground">
+                  {new Date(r.created_at).toLocaleDateString()}
+                </span>,
+                <div key={`actions-${r.id}`} className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" 
+                    onClick={() => {
+                      setCurrentRecord(r);
+                      setFormStatus(r.status);
+                      setIsEditOpen(true);
+                    }}>
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" 
+                    className={`h-8 w-8 rounded-lg ${r.status === "active" ? "text-amber-600" : "text-emerald-600"}`}
+                    onClick={() => toggleStatus(r)}>
+                    {r.status === "active" ? <XCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive"
+                    onClick={() => handleRemove(r)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                <span className="font-bold">{r.email}</span>
-              </div>,
-              <span key={`portal-${r.id}`} className="font-medium text-muted-foreground">{PORTAL_LABELS[r.portal]}</span>,
-              <StatusBadge key={`status-${r.id}`} label={r.status === "active" ? "Active" : "Suspended"} />,
-              <span key={`login-${r.id}`} className="text-xs text-muted-foreground">
-                {r.last_login_at ? new Date(r.last_login_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "Never"}
-              </span>,
-              <span key={`actor-${r.id}`} className="text-xs text-muted-foreground">{r.created_by ? "Admin" : "System"}</span>,
-              <span key={`date-${r.id}`} className="text-xs text-muted-foreground">
-                {new Date(r.created_at).toLocaleDateString()}
-              </span>,
-              <div key={`actions-${r.id}`} className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" 
-                  onClick={() => {
-                    setCurrentRecord(r);
-                    setFormStatus(r.status);
-                    setIsEditOpen(true);
-                  }}>
-                  <Edit2 className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" 
-                  className={`h-8 w-8 rounded-lg ${r.status === "active" ? "text-amber-600" : "text-emerald-600"}`}
-                  onClick={() => toggleStatus(r)}>
-                  {r.status === "active" ? <XCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive"
-                  onClick={() => handleRemove(r)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ])}
+              ];
+            })}
           />
         )}
       </section>
