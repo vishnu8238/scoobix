@@ -1,12 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useCallback, useEffect } from "react";
-import { toast } from "sonner";
-import { fetchZones, type DeliveryZone, type Subzone, fetchSubzones } from "@/lib/zones-api";
-import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { Search, Plus, Map as MapIcon, Edit2, Trash2, ArrowLeft, Layers, Bike, Store, ClipboardList, Settings, History, Users, Loader2 } from "lucide-react";
-import { ZoneFormModal, SubzoneFormModal } from "@/components/ZoneFormModal";
-import { GoogleMap } from "@/components/maps/GoogleMap";
-import { format } from "date-fns";
+import { ZoneManager } from "@/components/admin/ZoneManager";
 
 export const Route = createFileRoute("/admin/zones")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Delivery Zones" }] }),
@@ -14,89 +7,13 @@ export const Route = createFileRoute("/admin/zones")({
 });
 
 function ZonesPage() {
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
-  const [subzones, setSubzones] = useState<Subzone[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
-  const [isZoneModalOpen, setIsZoneModalOpen] = useState(false);
-  const [isSubzoneModalOpen, setIsSubzoneModalOpen] = useState(false);
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [z, sz] = await Promise.all([fetchZones(), fetchSubzones()]);
-      setZones(z);
-      setSubzones(sz);
-    } catch {
-      toast.error("Failed to load zones");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { void refresh(); }, [refresh]);
-
-  if (selectedZoneId) {
-    const zone = zones.find(z => z.id === selectedZoneId);
-    if (zone) return <ZoneDetailView zone={zone} subzones={subzones.filter(s => s.zone_id === zone.id)} onBack={() => setSelectedZoneId(null)} />;
-  }
-
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold">Delivery Zones</h1>
-          <p className="text-muted-foreground text-sm">Manage city-wide delivery boundaries and logistics.</p>
-        </div>
-        <button 
-          onClick={() => setIsZoneModalOpen(true)}
-          className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95"
-        >
-          <Plus className="h-4 w-4" /> Create Zone
-        </button>
-      </header>
-
-      <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl bg-muted/50 px-3 py-2 ring-1 ring-border/60">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input 
-              value={q} 
-              onChange={(e) => setQ(e.target.value)} 
-              placeholder="Search zones by name or city..."
-              className="w-full bg-transparent text-sm outline-none"
-            />
-          </div>
-        </div>
-
-        <DataTable
-          columns={["Name", "City", "Status", "Radius", "Subzones", "Created", "Actions"]}
-          rows={zones.filter(z => z.name.toLowerCase().includes(q.toLowerCase())).map(z => [
-            <button key={z.id} onClick={() => setSelectedZoneId(z.id)} className="font-bold text-primary hover:underline text-left">{z.name}</button>,
-            z.city,
-            <StatusBadge key={z.id + "-status"} label={z.status} />,
-            `${z.pickup_radius_km}km`,
-            subzones.filter(s => s.zone_id === z.id).length,
-            z.created_at ? format(new Date(z.created_at), "MMM d, yyyy") : "-",
-            <div key={z.id + "-actions"} className="flex items-center gap-2">
-              <button onClick={() => setSelectedZoneId(z.id)} className="p-1.5 hover:bg-muted rounded-lg"><Edit2 className="h-4 w-4" /></button>
-              <button className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-lg"><Trash2 className="h-4 w-4" /></button>
-            </div>
-          ])}
-        />
-      </section>
-
-      {isZoneModalOpen && (
-        <ZoneFormModal 
-          isOpen={isZoneModalOpen} 
-          onClose={() => setIsZoneModalOpen(false)} 
-          onSuccess={refresh} 
-        />
-      )}
+      <ZoneManager />
     </div>
   );
 }
+
 
 function ZoneDetailView({ zone, subzones, onBack }: { zone: DeliveryZone; subzones: Subzone[]; onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<"overview" | "riders" | "restaurants" | "orders" | "subzones" | "settings" | "audit">("overview");

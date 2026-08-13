@@ -1,75 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { listTable, patchRecord } from "@/lib/insforge-crud";
-import { DataTable } from "@/components/cravio/AdminTable";
-import { Plus, Edit2, Trash2, Search, Loader2, AlertTriangle, UserCheck } from "lucide-react";
-import { format } from "date-fns";
-import { GoogleMap } from "@/components/maps/GoogleMap";
-import { deleteZone, type DeliveryZone, type Subzone, fetchZones, fetchSubzones } from "@/lib/zones-api";
+import { ZoneManager } from "@/components/admin/ZoneManager";
 
 export const Route = createFileRoute("/logistics/zones")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Zones" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Delivery Zones" }] }),
   component: LogisticsZones,
 });
 
 function LogisticsZones() {
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
-  const [subzones, setSubzones] = useState<Subzone[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [z, sz] = await Promise.all([fetchZones(), fetchSubzones()]);
-      setZones(z);
-      setSubzones(sz);
-    } catch {
-      toast.error("Failed to load zones");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { void refresh(); }, [refresh]);
-
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold">Delivery Zones</h1>
-          <p className="text-muted-foreground text-sm">Manage city-wide delivery boundaries.</p>
-        </div>
-      </header>
-
-      <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl bg-muted/50 px-3 py-2 ring-1 ring-border/60">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input 
-              value={q} 
-              onChange={(e) => setQ(e.target.value)} 
-              placeholder="Search zones..."
-              className="w-full bg-transparent text-sm outline-none"
-            />
-          </div>
-        </div>
-
-        <DataTable
-          columns={["Name", "City", "Radius", "Subzones", "Created", "Actions"]}
-          rows={zones.filter(z => z.name.toLowerCase().includes(q.toLowerCase())).map(z => [
-            <span key={z.id} className="font-bold text-primary">{z.name}</span>,
-            z.city,
-            `${z.pickup_radius_km}km`,
-            subzones.filter(s => s.zone_id === z.id).length,
-            z.created_at ? format(new Date(z.created_at), "MMM d, yyyy") : "-",
-            <div key={z.id + "-actions"} className="flex items-center gap-2">
-               <button onClick={() => deleteZone(z.id).then(refresh)} className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-lg"><Trash2 className="h-4 w-4" /></button>
-            </div>
-          ])}
-        />
-      </section>
+      <ZoneManager />
     </div>
   );
 }
+
