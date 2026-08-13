@@ -1,5 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Truck, MapPin, Users, Package, Zap, Settings, History } from "lucide-react";
+import { 
+  Tag, LayoutDashboard, Users, Store, Bike, ClipboardList, 
+  CreditCard, BarChart3, Settings, Bell, Search, Sparkles, 
+  Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, 
+  LifeBuoy, Copy, Gauge, ShieldCheck, Crown, Map as MapIcon, 
+  Navigation, History, LogOut 
+} from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
@@ -20,15 +26,41 @@ function LogisticsLayoutGuard() {
 
 const NAV = [
   { to: "/logistics", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/logistics/drivers", label: "Drivers", icon: Users },
-  { to: "/logistics/orders", label: "Orders", icon: Package },
-  { to: "/logistics/live", label: "Live Ops", icon: Zap },
-  { to: "/logistics/map", label: "Map", icon: MapPin },
-  { to: "/logistics/dispatch", label: "Dispatch", icon: Truck },
-  { to: "/logistics/zones", label: "Zones", icon: MapPin },
-  { to: "/logistics/subzones", label: "Subzones", icon: MapPin },
-  { to: "/logistics/gigs", label: "Gigs", icon: Package },
+  { to: "/logistics/operations", label: "Live Operations", icon: Gauge },
+  { to: "/logistics/live", label: "Logistics Map", icon: MapIcon },
+  { to: "/logistics/cms", label: "CMS Studio", icon: Sparkles },
+  { to: "/logistics/access", label: "Access Management", icon: ShieldCheck },
+  { to: "/logistics/dispatch", label: "Manual Dispatch", icon: Navigation },
+  { to: "/logistics/gigs", label: "Gig Management", icon: Sparkles },
   { to: "/logistics/audit", label: "Audit Logs", icon: History },
+  { to: "/logistics/users", label: "Users", icon: Users },
+
+  { to: "/logistics/restaurants", label: "Restaurants", icon: Store },
+  { to: "/logistics/managers", label: "Merchant Managers", icon: Building2 },
+  { to: "/logistics/verification", label: "Verification & KYC", icon: ShieldCheck },
+  { to: "/logistics/duplicates", label: "Duplicates & Transfers", icon: Copy },
+  { to: "/logistics/drivers", label: "Drivers", icon: Bike },
+  { to: "/logistics/orders", label: "Orders", icon: ClipboardList },
+  { to: "/logistics/zones", label: "Zones & Delivery", icon: MapIcon },
+  { to: "/logistics/subzones", label: "Subzones", icon: MapIcon },
+  { to: "/logistics/scratch-cards", label: "Scratch Cards", icon: Gift },
+
+  { to: "/logistics/campaigns", label: "Marketing Campaigns", icon: Megaphone },
+  { to: "/logistics/coupons", label: "Coupons & Promotions", icon: Tag },
+  { to: "/logistics/subscriptions", label: "Subscriptions & Plans", icon: Crown },
+  { to: "/logistics/ads", label: "Ads", icon: Megaphone },
+  { to: "/logistics/spotlight", label: "Spotlight", icon: Sparkles },
+  { to: "/logistics/discover", label: "Discover More", icon: Compass },
+  { to: "/logistics/trending", label: "Trending Now", icon: TrendingUp },
+  { to: "/logistics/bulk", label: "Bulk Orders", icon: Building2 },
+  { to: "/logistics/wallet", label: "Wallets", icon: Wallet },
+  { to: "/logistics/referrals", label: "Referrals", icon: Gift },
+
+  { to: "/logistics/payments", label: "Payments", icon: CreditCard },
+  { to: "/logistics/reports", label: "Reports", icon: BarChart3 },
+  { to: "/logistics/support", label: "Support", icon: LifeBuoy },
+  { to: "/logistics/performance", label: "Infrastructure", icon: Gauge },
+  { to: "/logistics/security", label: "Security & Audit", icon: ShieldCheck },
   { to: "/logistics/settings", label: "Settings", icon: Settings },
 ];
 
