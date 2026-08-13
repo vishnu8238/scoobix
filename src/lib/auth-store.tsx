@@ -187,10 +187,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let finalRole: Role = "customer";
       if (admissionResult) {
         finalRole = currentPortal;
-      } else if (roles.includes("logistics")) {
+      } else if (roles.includes(currentPortal)) {
+        // Double check
+        finalRole = currentPortal;
+      } else if (roles.includes("logistics") && currentPortal === "logistics") {
         finalRole = "logistics";
-      } else if (roles.length > 0) {
-        finalRole = roles[0];
+      } else if (roles.length > 0 && roles.includes(currentPortal)) {
+        finalRole = currentPortal;
+      } else if (isSuperAdmin && currentPortal !== "customer") {
+        finalRole = currentPortal;
       }
 
       setUser({

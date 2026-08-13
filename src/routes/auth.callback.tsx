@@ -112,7 +112,8 @@ function AuthCallback() {
         localStorage.removeItem("scoobix_oauth_portal_intent");
         console.log("[AUTH_TRACE] Authorization complete. Redirecting to:", dest);
         
-        window.location.replace(dest);
+        // Use window.location.replace but with the full URL to ensure clean navigation
+        window.location.replace(new URL(dest, window.location.origin).href);
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
