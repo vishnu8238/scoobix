@@ -5,11 +5,11 @@ import { useCms } from "@/lib/cms-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/settings")({
-  head: () => ({ meta: [{ title: "Scoobix Admin · Settings" }] }),
-  component: AdminSettings,
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Settings" }] }),
+  component: LogisticsSettings,
 });
 
-function AdminSettings() {
+function LogisticsSettings() {
   const { settings, updateSettings } = useCms();
   const [maintenance, setMaintenance] = useState(false);
   const [notifs, setNotifs] = useState(true);

@@ -5,29 +5,29 @@ import { useLiveOrder } from "@/lib/realtime-hooks";
 import { fetchCompleteOrderDetails, calculateOrderFinancials } from "@/lib/order-details-api";
 import { patchOrder, OrderStatus } from "@/lib/orders-api";
 import { logAudit } from "@/lib/audit-api";
-import { OrderHeader } from "@/components/admin/OrderHeader";
-import { OrderKpiCards } from "@/components/admin/OrderKpiCards";
-import { RestaurantCard, CustomerCard, RiderCard } from "@/components/admin/OrderEntityCards";
-import { OrderItemsList, OrderFinancials } from "@/components/admin/OrderItemsList";
-import { OrderLifecycleTimeline, OrderDeliveryProof } from "@/components/admin/OrderLifecycleTimeline";
-import { OrderTrackingMap } from "@/components/admin/OrderTrackingMap";
+import { OrderHeader } from "@/components/logistics/OrderHeader";
+import { OrderKpiCards } from "@/components/logistics/OrderKpiCards";
+import { RestaurantCard, CustomerCard, RiderCard } from "@/components/logistics/OrderEntityCards";
+import { OrderItemsList, OrderFinancials } from "@/components/logistics/OrderItemsList";
+import { OrderLifecycleTimeline, OrderDeliveryProof } from "@/components/logistics/OrderLifecycleTimeline";
+import { OrderTrackingMap } from "@/components/logistics/OrderTrackingMap";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/logistics/orders/$orderId")({
-  component: OrderDetailsPage,
+  component: LogisticsOrderDetailsPage,
   loader: ({ params, context }) => {
     return context.queryClient.ensureQueryData({
-      queryKey: ["admin", "order-details", params.orderId],
+      queryKey: ["logistics", "order-details", params.orderId],
       queryFn: () => fetchCompleteOrderDetails(params.orderId),
     });
   },
 });
 
-function OrderDetailsPage() {
+function LogisticsOrderDetailsPage() {
   const { orderId } = Route.useParams();
   const { data: initialData } = useSuspenseQuery({
-    queryKey: ["admin", "order-details", orderId],
+    queryKey: ["logistics", "order-details", orderId],
     queryFn: () => fetchCompleteOrderDetails(orderId),
   });
 

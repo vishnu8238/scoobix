@@ -5,11 +5,11 @@ import { History, Search, Loader2, Calendar, User, ShieldAlert } from "lucide-re
 import { fetchAuditLogs, type AuditLog } from "@/lib/audit-logs-api";
 
 export const Route = createFileRoute("/logistics/audit")({
-  head: () => ({ meta: [{ title: "Scoobix Admin · Operational Audit Logs" }] }),
-  component: AdminAuditLogs,
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Operational Audit Logs" }] }),
+  component: LogisticsAuditLogs,
 });
 
-function AdminAuditLogs() {
+function LogisticsAuditLogs() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
