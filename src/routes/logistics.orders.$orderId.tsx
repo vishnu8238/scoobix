@@ -15,19 +15,19 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/logistics/orders/$orderId")({
-  component: LogisticsOrderDetailsPage,
+  component: OrderDetailsPage,
   loader: ({ params, context }) => {
     return context.queryClient.ensureQueryData({
-      queryKey: ["logistics", "order-details", params.orderId],
+      queryKey: ["admin", "order-details", params.orderId],
       queryFn: () => fetchCompleteOrderDetails(params.orderId),
     });
   },
 });
 
-function LogisticsOrderDetailsPage() {
+function OrderDetailsPage() {
   const { orderId } = Route.useParams();
   const { data: initialData } = useSuspenseQuery({
-    queryKey: ["logistics", "order-details", orderId],
+    queryKey: ["admin", "order-details", orderId],
     queryFn: () => fetchCompleteOrderDetails(orderId),
   });
 
@@ -69,7 +69,7 @@ function LogisticsOrderDetailsPage() {
         subjectType: "order",
         subjectId: orderId,
         action: "STATUS_CHANGE",
-        summary: `Logistics manager manually updated status from ${data.order.status} to ${newStatus}`,
+        summary: `Admin manually updated status from ${data.order.status} to ${newStatus}`,
       });
       toast.success(`Status updated to ${newStatus}`);
       await handleRefresh();

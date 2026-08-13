@@ -5,11 +5,10 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),
-  component: LogisticsOrders,
+  head: () => ({ meta: [{ title: "Scoobix Admin · Orders" }] }),
+  component: AdminOrders,
 });
 
 type OrderRow = {
@@ -24,7 +23,7 @@ type NamedRow = { id: string; name?: string };
 
 const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
 
-function LogisticsOrders() {
+function AdminOrders() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [restaurants, setRestaurants] = useState<NamedRow[]>([]);
   const [users, setUsers] = useState<NamedRow[]>([]);
@@ -33,22 +32,12 @@ function LogisticsOrders() {
   const version = useTableVersion(["orders"]);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [o, r, u] = await Promise.all([
-        listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
-        listTable<NamedRow>("restaurants", { limit: 500 }),
-        listTable<NamedRow>("users", { limit: 1000 }),
-      ]);
-      setOrders(o || []);
-      setRestaurants(r || []);
-      setUsers(u || []);
-    } catch (err: any) {
-      console.error("[ORDERS_LOAD]", err);
-      toast.error(`Failed to load orders: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+    const [o, r, u] = await Promise.all([
+      listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
+      listTable<NamedRow>("restaurants", { limit: 500 }),
+      listTable<NamedRow>("users", { limit: 1000 }),
+    ]);
+    setOrders(o); setRestaurants(r); setUsers(u); setLoading(false);
   }, []);
 
   useEffect(() => {
