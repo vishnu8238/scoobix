@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { fetchDriverDetails, fetchDriverOrders, fetchDriverPayouts } from "@/lib/driver-management-api";
 import { User, CreditCard, Truck, History, MapPin, Sparkles, Star, IndianRupee, FileText, Calendar, Loader2 } from "lucide-react";
-import { DriverProfileHeader, DriverTabs, PersonalInfoSection } from "@/components/logistics/DriverProfileComponents";
+import { DriverProfileHeader, DriverTabs, PersonalInfoSection } from "@/components/admin/DriverProfileComponents";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { format } from "date-fns";
 export const Route = createFileRoute("/logistics/drivers/$driverId")({
