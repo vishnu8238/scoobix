@@ -14,6 +14,274 @@ export type Database = {
   }
   public: {
     Tables: {
+      dispatch_history: {
+        Row: {
+          assigned_by: string | null
+          created_at: string | null
+          dispatch_method: string | null
+          driver_id: string | null
+          id: string
+          order_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string | null
+          dispatch_method?: string | null
+          driver_id?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string | null
+          dispatch_method?: string | null
+          driver_id?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          assigned_zone_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_online: boolean | null
+          latitude: number | null
+          license_number: string | null
+          longitude: number | null
+          name: string | null
+          phone: string | null
+          rating: number | null
+          status: string | null
+          total_deliveries: number | null
+          updated_at: string | null
+          user_id: string | null
+          vehicle_number: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          assigned_zone_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_online?: boolean | null
+          latitude?: number | null
+          license_number?: string | null
+          longitude?: number | null
+          name?: string | null
+          phone?: string | null
+          rating?: number | null
+          status?: string | null
+          total_deliveries?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          vehicle_number?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          assigned_zone_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_online?: boolean | null
+          latitude?: number | null
+          license_number?: string | null
+          longitude?: number | null
+          name?: string | null
+          phone?: string | null
+          rating?: number | null
+          status?: string | null
+          total_deliveries?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          vehicle_number?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
+      gigs: {
+        Row: {
+          created_at: string | null
+          distance_km: number | null
+          driver_id: string | null
+          dropoff_location: string | null
+          estimated_time_minutes: number | null
+          gig_type: string | null
+          id: string
+          order_id: string | null
+          payout: number | null
+          pickup_location: string | null
+          status: string | null
+          tips: number | null
+          updated_at: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          distance_km?: number | null
+          driver_id?: string | null
+          dropoff_location?: string | null
+          estimated_time_minutes?: number | null
+          gig_type?: string | null
+          id?: string
+          order_id?: string | null
+          payout?: number | null
+          pickup_location?: string | null
+          status?: string | null
+          tips?: number | null
+          updated_at?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          distance_km?: number | null
+          driver_id?: string | null
+          dropoff_location?: string | null
+          estimated_time_minutes?: number | null
+          gig_type?: string | null
+          id?: string
+          order_id?: string | null
+          payout?: number | null
+          pickup_location?: string | null
+          status?: string | null
+          tips?: number | null
+          updated_at?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gigs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gigs_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "logistics_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_tracking: {
+        Row: {
+          accuracy: number | null
+          driver_id: string | null
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          order_id: string | null
+          speed_kmh: number | null
+          timestamp: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          driver_id?: string | null
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          order_id?: string | null
+          speed_kmh?: number | null
+          timestamp?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          driver_id?: string | null
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          order_id?: string | null
+          speed_kmh?: number | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_tracking_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logistics_zones: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          delivery_fee: number | null
+          id: string
+          manager_id: string | null
+          name: string
+          polygon_coords: Json | null
+          radius_km: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          delivery_fee?: number | null
+          id?: string
+          manager_id?: string | null
+          name: string
+          polygon_coords?: Json | null
+          radius_km?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          delivery_fee?: number | null
+          id?: string
+          manager_id?: string | null
+          name?: string
+          polygon_coords?: Json | null
+          radius_km?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       merchant_managers: {
         Row: {
           created_at: string | null
@@ -97,6 +365,90 @@ export type Database = {
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          actual_delivery_time: string | null
+          assigned_driver_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_address: string | null
+          delivery_fee: number | null
+          delivery_latitude: number | null
+          delivery_longitude: number | null
+          estimated_delivery_time: string | null
+          id: string
+          order_number: string | null
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          restaurant_id: string | null
+          status: string | null
+          total_amount: number | null
+          updated_at: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          actual_delivery_time?: string | null
+          assigned_driver_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_address?: string | null
+          delivery_fee?: number | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          estimated_delivery_time?: string | null
+          id?: string
+          order_number?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          restaurant_id?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          actual_delivery_time?: string | null
+          assigned_driver_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_address?: string | null
+          delivery_fee?: number | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          estimated_delivery_time?: string | null
+          id?: string
+          order_number?: string | null
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          restaurant_id?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "logistics_zones"
             referencedColumns: ["id"]
           },
         ]
@@ -302,6 +654,47 @@ export type Database = {
             columns: ["parent_restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subzones: {
+        Row: {
+          created_at: string | null
+          id: string
+          manager_id: string | null
+          name: string
+          polygon_coords: Json | null
+          status: string | null
+          updated_at: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          manager_id?: string | null
+          name: string
+          polygon_coords?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          manager_id?: string | null
+          name?: string
+          polygon_coords?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subzones_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "logistics_zones"
             referencedColumns: ["id"]
           },
         ]
