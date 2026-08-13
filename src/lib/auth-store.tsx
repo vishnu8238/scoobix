@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lastRequestedPortal = useRef<Role | null>(null);
 
   const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
-    let session = null;
+    let session: any = null;
     try {
       if (isInitialMountOrSignIn) {
         setLoading(true);
