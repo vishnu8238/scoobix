@@ -54,8 +54,9 @@ function AccessManagementPage() {
     try {
       const data = await listPortalAccess();
       setRecords(data);
-    } catch (err) {
-      toast.error("Failed to load access records");
+    } catch (err: any) {
+      console.error("[ACCESS_LOAD_ERROR]", err);
+      toast.error(`Failed to load access records: ${err.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
