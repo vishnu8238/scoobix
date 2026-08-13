@@ -73,6 +73,7 @@ import { Route as ManagerAnalyticsRouteImport } from './routes/manager.analytics
 import { Route as LogisticsZonesRouteImport } from './routes/logistics.zones'
 import { Route as LogisticsSupportRouteImport } from './routes/logistics.support'
 import { Route as LogisticsSubzonesRouteImport } from './routes/logistics.subzones'
+import { Route as LogisticsSubscriptionsRouteImport } from './routes/logistics.subscriptions'
 import { Route as LogisticsSettingsRouteImport } from './routes/logistics.settings'
 import { Route as LogisticsSecurityRouteImport } from './routes/logistics.security'
 import { Route as LogisticsReportsRouteImport } from './routes/logistics.reports'
@@ -470,6 +471,11 @@ const LogisticsSupportRoute = LogisticsSupportRouteImport.update({
 const LogisticsSubzonesRoute = LogisticsSubzonesRouteImport.update({
   id: '/subzones',
   path: '/subzones',
+  getParentRoute: () => LogisticsRoute,
+} as any)
+const LogisticsSubscriptionsRoute = LogisticsSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
   getParentRoute: () => LogisticsRoute,
 } as any)
 const LogisticsSettingsRoute = LogisticsSettingsRouteImport.update({
@@ -947,6 +953,7 @@ export interface FileRoutesByFullPath {
   '/logistics/reports': typeof LogisticsReportsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
+  '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/support': typeof LogisticsSupportRoute
   '/logistics/zones': typeof LogisticsZonesRoute
@@ -1085,6 +1092,7 @@ export interface FileRoutesByTo {
   '/logistics/reports': typeof LogisticsReportsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
+  '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/support': typeof LogisticsSupportRoute
   '/logistics/zones': typeof LogisticsZonesRoute
@@ -1230,6 +1238,7 @@ export interface FileRoutesById {
   '/logistics/reports': typeof LogisticsReportsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
+  '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/support': typeof LogisticsSupportRoute
   '/logistics/zones': typeof LogisticsZonesRoute
@@ -1376,6 +1385,7 @@ export interface FileRouteTypes {
     | '/logistics/reports'
     | '/logistics/security'
     | '/logistics/settings'
+    | '/logistics/subscriptions'
     | '/logistics/subzones'
     | '/logistics/support'
     | '/logistics/zones'
@@ -1514,6 +1524,7 @@ export interface FileRouteTypes {
     | '/logistics/reports'
     | '/logistics/security'
     | '/logistics/settings'
+    | '/logistics/subscriptions'
     | '/logistics/subzones'
     | '/logistics/support'
     | '/logistics/zones'
@@ -1658,6 +1669,7 @@ export interface FileRouteTypes {
     | '/logistics/reports'
     | '/logistics/security'
     | '/logistics/settings'
+    | '/logistics/subscriptions'
     | '/logistics/subzones'
     | '/logistics/support'
     | '/logistics/zones'
@@ -2184,6 +2196,13 @@ declare module '@tanstack/react-router' {
       path: '/subzones'
       fullPath: '/logistics/subzones'
       preLoaderRoute: typeof LogisticsSubzonesRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/subscriptions': {
+      id: '/logistics/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/logistics/subscriptions'
+      preLoaderRoute: typeof LogisticsSubscriptionsRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/settings': {
@@ -2932,6 +2951,7 @@ interface LogisticsRouteChildren {
   LogisticsReportsRoute: typeof LogisticsReportsRoute
   LogisticsSecurityRoute: typeof LogisticsSecurityRoute
   LogisticsSettingsRoute: typeof LogisticsSettingsRoute
+  LogisticsSubscriptionsRoute: typeof LogisticsSubscriptionsRoute
   LogisticsSubzonesRoute: typeof LogisticsSubzonesRoute
   LogisticsSupportRoute: typeof LogisticsSupportRoute
   LogisticsZonesRoute: typeof LogisticsZonesRoute
@@ -2954,6 +2974,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsReportsRoute: LogisticsReportsRoute,
   LogisticsSecurityRoute: LogisticsSecurityRoute,
   LogisticsSettingsRoute: LogisticsSettingsRoute,
+  LogisticsSubscriptionsRoute: LogisticsSubscriptionsRoute,
   LogisticsSubzonesRoute: LogisticsSubzonesRoute,
   LogisticsSupportRoute: LogisticsSupportRoute,
   LogisticsZonesRoute: LogisticsZonesRoute,
