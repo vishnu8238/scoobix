@@ -25,11 +25,15 @@ function LogisticsZonesPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [z, sz] = await Promise.all([fetchZones(), fetchSubzones()]);
-      setZones(z);
-      setSubzones(sz);
-    } catch {
-      toast.error("Failed to load zones");
+      const [z, sz] = await Promise.all([
+        listTable("delivery_zones", { order: "created_at.desc", limit: 100 }),
+        listTable("delivery_subzones", { order: "created_at.desc", limit: 100 })
+      ]);
+      setZones(z || []);
+      setSubzones(sz || []);
+    } catch (err: any) {
+      console.error("[ZONES_LOAD]", err);
+      toast.error(`Failed to load zones: ${err.message}`);
     } finally {
       setLoading(false);
     }

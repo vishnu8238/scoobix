@@ -21,19 +21,26 @@ function LogisticsDispatch() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [o, r] = await Promise.all([
-      listTable<any>("orders", { 
-        status: "in.(PLACED,CONFIRMED,ACCEPTED,PREPARING,READY)",
-        order: "created_at.desc" 
-      }),
-      listTable<any>("drivers", { 
-        online_status: "eq.true",
-        limit: 100 
-      })
-    ]);
-    setOrders(o);
-    setRiders(r);
-    setLoading(false);
+    try {
+      const [ordersData, driversData] = await Promise.all([
+        listTable("orders", { 
+          status: "eq.PLACED", // Adjusted to match user requirement pattern (pending -> PLACED)
+          order: "created_at.asc",
+          limit: 100 
+        }),
+        listTable("drivers", { 
+          status: "eq.ACTIVE",
+          limit: 100 
+        })
+      ]);
+      setOrders(ordersData || []);
+      setRiders(driversData || []); // The variable name was riders, not drivers in the component
+    } catch (err: any) {
+      console.error("[DISPATCH_LOAD]", err);
+      toast.error(`Failed to load dispatch data: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void load(); }, [load, version]);

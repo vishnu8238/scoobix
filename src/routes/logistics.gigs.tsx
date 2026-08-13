@@ -17,9 +17,18 @@ function LogisticsGigs() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchGigs();
-    setGigs(data);
-    setLoading(false);
+    try {
+      const data = await listTable("gigs", {
+        order: "created_at.desc",
+        limit: 200
+      });
+      setGigs(data || []);
+    } catch (err: any) {
+      console.error("[GIGS_LOAD]", err);
+      toast.error(`Failed to load gigs: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void load(); }, [load]);

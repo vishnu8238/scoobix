@@ -17,9 +17,8 @@ export const Route = createFileRoute("/logistics/map")({
 
 function LogisticsZonesDashboard() {
   const [view, setView] = useState<"list" | "map" | "detail">("map");
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
-  const [subzones, setSubzones] = useState<Subzone[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
@@ -28,25 +27,24 @@ function LogisticsZonesDashboard() {
   const [isSubzoneModalOpen, setIsSubzoneModalOpen] = useState(false);
   const [expandedZones, setExpandedZones] = useState<Record<string, boolean>>({});
   
-  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders"]);
+  const version = useTableVersion(["drivers", "orders"]);
 
   const refresh = useCallback(async () => {
-    if (loading && zones.length === 0) return;
     setLoading(true);
     try {
-      const [data, st] = await Promise.all([
-        getZonesWithSubzones(),
-        getZoneStats()
+      const [driversData, ordersData] = await Promise.all([
+        listTable("drivers", { limit: 100 }),
+        listTable("orders", { order: "created_at.desc", limit: 100 })
       ]);
-      setZones(data?.zones || []);
-      setSubzones(data?.subzones || []);
-      setStats(st);
-    } catch (err) {
-      toast.error("Failed to load zones data");
+      setDrivers(driversData || []);
+      setOrders(ordersData || []);
+    } catch (err: any) {
+      console.error("[MAP_LOAD]", err);
+      toast.error(`Failed to load map data: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, [loading, zones.length]);
+  }, []);
 
   const handleSeed = async () => {
     setSeeding(true);

@@ -17,9 +17,9 @@ export const Route = createFileRoute("/logistics/live")({
 
 function LogisticsLiveDashboard() {
   const [view, setView] = useState<"list" | "map" | "detail">("list");
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
-  const [subzones, setSubzones] = useState<Subzone[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [tracking, setTracking] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
@@ -28,25 +28,26 @@ function LogisticsLiveDashboard() {
   const [isSubzoneModalOpen, setIsSubzoneModalOpen] = useState(false);
   const [expandedZones, setExpandedZones] = useState<Record<string, boolean>>({});
   
-  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders"]);
+  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders", "live_tracking"]);
 
   const refresh = useCallback(async () => {
-    if (loading && zones.length === 0) return;
     setLoading(true);
     try {
-      const [data, st] = await Promise.all([
-        getZonesWithSubzones(),
-        getZoneStats()
+      const [ordersData, driversData, trackingData] = await Promise.all([
+        listTable("orders", { order: "created_at.desc", limit: 200 }),
+        listTable("drivers", { limit: 100 }),
+        listTable("live_tracking", { order: "timestamp.desc", limit: 500 })
       ]);
-      setZones(data?.zones || []);
-      setSubzones(data?.subzones || []);
-      setStats(st);
-    } catch (err) {
-      toast.error("Failed to load zones data");
+      setOrders(ordersData || []);
+      setDrivers(driversData || []);
+      setTracking(trackingData || []);
+    } catch (err: any) {
+      console.error("[LIVE_LOAD]", err);
+      toast.error(`Failed to load live data: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, [loading, zones.length]);
+  }, []);
 
   const handleSeed = async () => {
     setSeeding(true);

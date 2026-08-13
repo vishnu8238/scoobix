@@ -22,11 +22,15 @@ function LogisticsSubzonesPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [sz, z] = await Promise.all([fetchSubzones(), fetchZones()]);
-      setSubzones(sz);
-      setZones(z);
-    } catch {
-      toast.error("Failed to load subzones");
+      const [sz, z] = await Promise.all([
+        listTable("delivery_subzones", { order: "created_at.desc", limit: 100 }),
+        listTable("delivery_zones", { order: "created_at.desc", limit: 100 })
+      ]);
+      setSubzones(sz || []);
+      setZones(z || []);
+    } catch (err: any) {
+      console.error("[SUBZONES_LOAD]", err);
+      toast.error(`Failed to load subzones: ${err.message}`);
     } finally {
       setLoading(false);
     }
