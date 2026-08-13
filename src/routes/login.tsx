@@ -64,8 +64,10 @@ function ConsolidatedLogin() {
 
   const handleLogin = async () => {
     try {
+      setError(null);
       await login('google', selectedPortal);
     } catch (err: any) {
+      console.error("[AUTH_DEBUG] Login failure:", err);
       setError(err.message || "Failed to sign in with Google");
     }
   };
