@@ -1,20 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useEffect } from "react";
+import { toast } from "sonner";
 import { fetchSubzones, type Subzone, fetchZones, type DeliveryZone } from "@/lib/zones-api";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { Plus, Edit2, Trash2, Loader2, Map as MapIcon, Layers } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Map as MapIcon, Layers } from "lucide-react";
 import { SubzoneFormModal } from "@/components/ZoneFormModal";
-import { toast } from "sonner";
+import { GoogleMap } from "@/components/maps/GoogleMap";
 
 export const Route = createFileRoute("/logistics/subzones")({
-  component: LogisticsSubzones,
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Subzones" }] }),
+  component: LogisticsSubzonesPage,
 });
 
-function LogisticsSubzones() {
+function LogisticsSubzonesPage() {
   const [subzones, setSubzones] = useState<Subzone[]>([]);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [q, setQ] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -31,14 +34,12 @@ function LogisticsSubzones() {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const zoneName = (id: string) => zones.find(z => z.id === id)?.name || "Unknown Zone";
-
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-extrabold">Subzone Management</h1>
-          <p className="text-muted-foreground text-sm">Fine-grained delivery sector optimization.</p>
+          <h1 className="font-display text-2xl font-extrabold">Delivery Subzones</h1>
+          <p className="text-muted-foreground text-sm">Manage localized delivery sub-neighborhoods and zones.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -48,54 +49,65 @@ function LogisticsSubzones() {
         </button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60 flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-            <Layers className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-2xl font-display font-extrabold">{subzones.length}</p>
-            <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Total Subzones</p>
-          </div>
-        </div>
-        <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60 flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-            <MapIcon className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-2xl font-display font-extrabold">{new Set(subzones.map(s => s.zone_id)).size}</p>
-            <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Zones Covered</p>
-          </div>
-        </div>
-      </div>
-
-      <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
-        {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-        ) : (
-          <DataTable
-            columns={["Subzone", "Parent Zone", "Status", "Actions"]}
-            rows={subzones.map(s => [
-              <span key={s.id} className="font-bold">{s.name}</span>,
-              <span key={s.id} className="text-sm font-medium text-muted-foreground">{zoneName(s.zone_id)}</span>,
-              <StatusBadge key={s.id} label={s.status} />,
-              <div key={s.id} className="flex items-center gap-2">
-                <button className="p-1.5 hover:bg-muted rounded-lg transition"><Edit2 className="h-4 w-4" /></button>
-                <button className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-lg transition"><Trash2 className="h-4 w-4" /></button>
+      <section className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex flex-1 items-center gap-2 rounded-2xl bg-muted/50 px-3 py-2 ring-1 ring-border/60">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <input 
+                  value={q} 
+                  onChange={(e) => setQ(e.target.value)} 
+                  placeholder="Search subzones..."
+                  className="w-full bg-transparent text-sm outline-none"
+                />
               </div>
-            ])}
-          />
-        )}
+            </div>
+
+            <DataTable
+              columns={["Subzone", "Parent Zone", "Status", "Actions"]}
+              rows={subzones.filter(s => s.name.toLowerCase().includes(q.toLowerCase())).map(s => {
+                const parent = zones.find(z => z.id === s.zone_id);
+                return [
+                  <span key={s.id} className="font-bold">{s.name}</span>,
+                  <span key={s.id + "z"} className="text-muted-foreground font-medium">{parent?.name || "Unknown"}</span>,
+                  <StatusBadge key={s.id + "s"} label={s.status} />,
+                  <div key={s.id + "a"} className="flex gap-2">
+                    <button className="p-1.5 hover:bg-muted rounded-lg"><Edit2 className="h-3.5 w-3.5" /></button>
+                    <button className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                ];
+              })}
+            />
+          </div>
+        </div>
+
+        <aside className="space-y-6">
+          <div className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60 h-[500px] overflow-hidden">
+            <h3 className="font-display text-lg font-extrabold mb-4 flex items-center gap-2">
+              <MapIcon className="h-5 w-5" /> Local Map
+            </h3>
+            <div className="h-full w-full rounded-2xl overflow-hidden bg-muted">
+               <GoogleMap 
+                 className="h-full w-full"
+                 polygons={subzones.map(s => ({
+                   id: s.id,
+                   points: s.boundary?.coordinates?.[0]?.map((c: any) => ({ lat: c[1], lng: c[0] })) || [],
+                   label: s.name,
+                   color: "rgba(0,0,0,0.2)"
+                 }))}
+               />
+            </div>
+          </div>
+        </aside>
       </section>
 
-      {isModalOpen && (
-        <SubzoneFormModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          onSuccess={refresh}
-          zones={zones}
-        />
-      )}
+      <SubzoneFormModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={refresh}
+        zones={zones}
+      />
     </div>
   );
 }

@@ -1,95 +1,146 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bike, ClipboardList, Map as MapIcon, Navigation, AlertTriangle, Loader2, TrendingUp, Search } from "lucide-react";
+import { formatPrice } from "@/lib/format";
+import { Users, Store, Bike, ClipboardList, DollarSign, TrendingUp, Loader2, Map as MapIcon, ShieldAlert, LifeBuoy, AlertTriangle } from "lucide-react";
+import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
+import { getZoneStats } from "@/lib/zones-api";
+import { computeSupportAnalytics, listAllTickets, listTicketRatings } from "@/lib/support-api";
 
 export const Route = createFileRoute("/logistics/")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Dashboard" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Command Center" }] }),
   component: LogisticsDashboard,
 });
 
+type OrderRow = {
+  id: string;
+  status?: string;
+  total_price?: number;
+  restaurant_id?: string;
+  customer_id?: string;
+  created_at?: string;
+  driver_id?: string;
+};
+type NamedRow = { id: string; name?: string; image_url?: string };
+
+const dayKey = (d: Date) => d.toISOString().slice(0, 10);
+
 function LogisticsDashboard() {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    riders: { total: 0, online: 0, available: 0, busy: 0, offline: 0 },
-    orders: { active: 0, searching: 0, pending: 0, assigned: 0, accepted: 0, pickedUp: 0, outForDelivery: 0 },
-    zones: { total: 0, active: 0 },
-    alerts: 0
-  });
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [users, setUsers] = useState<NamedRow[]>([]);
+  const [restaurants, setRestaurants] = useState<NamedRow[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [zoneStats, setZoneStats] = useState<any>(null);
+  const [supportStats, setSupportStats] = useState<any>(null);
 
-  const version = useTableVersion(["orders", "drivers", "delivery_zones"]);
+  const version = useTableVersion(["orders", "users", "restaurants", "drivers", "support_tickets"]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [o, d, z] = await Promise.all([
-        listTable<any>("orders", { limit: 1000 }),
-        listTable<any>("drivers", { limit: 500 }),
-        listTable<any>("delivery_zones", { limit: 100 }),
+      // 1. Core Platform Data (Essential for Dashboard)
+      const [o, u, r, d] = await Promise.all([
+        listTable<OrderRow>("orders", { order: "created_at.desc", limit: 500 }).catch(() => [] as OrderRow[]),
+        listTable<NamedRow>("users", { limit: 1000 }).catch(() => [] as NamedRow[]),
+        listTable<NamedRow>("restaurants", { limit: 500 }).catch(() => [] as NamedRow[]),
+        listTable<any>("drivers", { limit: 500 }).catch(() => [] as any[]),
       ]);
+      
+      setOrders(o); 
+      setUsers(u); 
+      setRestaurants(r); 
+      setDrivers(d);
 
-      const riders = {
-        total: d.length,
-        online: d.filter(r => r.online_status).length,
-        available: d.filter(r => r.online_status && !r.current_order_id).length,
-        busy: d.filter(r => r.current_order_id).length,
-        offline: d.filter(r => !r.online_status).length
-      };
-
-      const orders = {
-        active: o.filter(ord => !["DELIVERED", "CANCELLED"].includes(ord.status)).length,
-        searching: o.filter(ord => ord.status === "PLACED").length,
-        pending: o.filter(ord => ord.status === "ACCEPTED").length,
-        assigned: o.filter(ord => ord.status === "READY").length,
-        accepted: o.filter(ord => ord.status === "ACCEPTED").length,
-        pickedUp: o.filter(ord => ord.status === "PICKED_UP").length,
-        outForDelivery: o.filter(ord => ord.status === "ON_THE_WAY").length
-      };
-
-      setStats({
-        riders,
-        orders,
-        zones: { total: z.length, active: z.filter(zone => zone.active).length },
-        alerts: o.filter(ord => ord.status === "PLACED" && (Date.now() - new Date(ord.created_at).getTime() > 300000)).length
-      });
+      // 2. Optional Analytics (Isolated Failure)
+      try {
+        const [z, tickets, ratings] = await Promise.all([
+          getZoneStats().catch(err => {
+            console.warn("[ADMIN_DASHBOARD] Zone stats failed:", err);
+            return null;
+          }),
+          listAllTickets().catch(err => {
+            console.warn("[ADMIN_DASHBOARD] Tickets failed:", err);
+            return [] as any[];
+          }),
+          listTicketRatings().catch(err => {
+            console.warn("[ADMIN_DASHBOARD] Ratings failed:", err);
+            return [] as any[];
+          })
+        ]);
+        
+        setZoneStats(z);
+        if (tickets.length > 0 || ratings.length > 0) {
+          setSupportStats(computeSupportAnalytics(tickets, ratings));
+        } else {
+          setSupportStats(null);
+        }
+      } catch (analyticsErr) {
+        console.error("[ADMIN_DASHBOARD] Critical analytics failure:", analyticsErr);
+      }
+    } catch (err) {
+      console.error("[ADMIN_DASHBOARD] Fatal dashboard load error:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load, version]);
 
+  const nameById = useMemo(() => {
+    const m: Record<string, NamedRow> = {};
+    for (const r of restaurants) m[String(r.id)] = r;
+    return m;
+  }, [restaurants]);
+
+  const userById = useMemo(() => {
+    const m: Record<string, NamedRow> = {};
+    for (const u of users) m[String(u.id)] = u;
+    return m;
+  }, [users]);
+
+  const today = dayKey(new Date());
+  const todaysOrders = useMemo(
+    () => orders.filter((o) => (o.created_at ?? "").slice(0, 10) === today),
+    [orders, today],
+  );
+  
+  const revenueToday = todaysOrders.reduce((s, o) => s + (Number(o.total_price ?? 0) || 0), 0);
+
   const KPIS = [
-    { label: "Active Deliveries", value: stats.orders.active, icon: Truck, tone: "bg-sky-100 text-sky-600" },
-    { label: "Online Riders", value: stats.riders.online, icon: Bike, tone: "bg-emerald-100 text-emerald-600" },
-    { label: "Unassigned Orders", value: stats.orders.searching, icon: Navigation, tone: "bg-amber-100 text-amber-600" },
-    { label: "Operational Alerts", value: stats.alerts, icon: AlertTriangle, tone: stats.alerts > 0 ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400" },
+    { label: "Total Orders", value: orders.length.toLocaleString(), icon: ClipboardList, tone: "bg-primary/10 text-primary" },
+    { label: "Pending Orders", value: orders.filter(o => !["DELIVERED", "CANCELLED"].includes(o.status || "")).length, icon: Loader2, tone: "bg-amber-100 text-amber-700" },
+    { label: "Unassigned", value: orders.filter(o => !o.driver_id && !["DELIVERED", "CANCELLED"].includes(o.status || "")).length, icon: ShieldAlert, tone: "bg-rose-100 text-rose-700" },
+    { label: "Active Partners", value: zoneStats?.activeRiders ?? 0, icon: Bike, tone: "bg-sky-100 text-sky-700" },
+    { label: "Open Tickets", value: supportStats?.open ?? 0, icon: LifeBuoy, tone: "bg-violet-100 text-violet-700" },
+    { label: "Revenue Today", value: formatPrice(revenueToday), icon: DollarSign, tone: "bg-emerald-100 text-emerald-700" },
   ];
 
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Operations Overview</p>
-          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-foreground">Logistics Command</h1>
+          <p className="eyebrow">Operational Control Center</p>
+          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight md:text-4xl">Platform overview</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Real-time logistics and business metrics.</p>
         </div>
-        <button onClick={load} className="rounded-2xl bg-card px-4 py-2.5 text-sm font-bold shadow-soft ring-1 ring-border transition hover:bg-muted">
+        <button onClick={() => void load()} className="rounded-2xl bg-card px-4 py-2.5 text-sm font-bold shadow-soft ring-1 ring-border">
           Refresh Live Data
         </button>
       </header>
 
       {loading ? (
         <div className="flex items-center justify-center gap-2 rounded-3xl bg-card p-16 text-sm text-muted-foreground shadow-card ring-1 ring-border/60">
-          <Loader2 className="h-4 w-4 animate-spin text-sky-600" /> Connecting to logistics engine…
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading command center…
         </div>
       ) : (
-        <div className="grid gap-6">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
             {KPIS.map((k) => (
-              <div key={k.label} className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60 transition hover:shadow-glow/5">
+              <div key={k.label} className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${k.tone}`}>
                   <k.icon className="h-5 w-5" strokeWidth={2.4} />
                 </div>
@@ -99,80 +150,85 @@ function LogisticsDashboard() {
             ))}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
-              <h2 className="font-display text-xl font-extrabold flex items-center gap-2">
-                <Bike className="h-5 w-5 text-sky-600" />
-                Rider Fleet Status
-              </h2>
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-slate-50 ring-1 ring-slate-100">
-                  <p className="text-2xl font-black text-slate-900">{stats.riders.available}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Available</p>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60 lg:col-span-2">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="font-display text-xl font-extrabold">Zone Supply & Demand</h2>
+                  <p className="text-xs text-muted-foreground">Live rider availability across zones</p>
                 </div>
-                <div className="p-4 rounded-2xl bg-slate-50 ring-1 ring-slate-100">
-                  <p className="text-2xl font-black text-slate-900">{stats.riders.busy}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Busy / En Route</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-slate-50 ring-1 ring-slate-100">
-                  <p className="text-2xl font-black text-slate-900">{stats.riders.offline}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Offline</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-slate-50 ring-1 ring-slate-100">
-                  <p className="text-2xl font-black text-slate-900">{stats.riders.total}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-sky-600">Total Registered</p>
-                </div>
+                <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-700">
+                  <TrendingUp className="h-3 w-3" /> Live
+                </span>
+              </div>
+              <div className="space-y-4">
+                 <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 rounded-2xl bg-muted/30">
+                       <p className="text-[10px] font-bold uppercase text-muted-foreground">Available Riders</p>
+                       <p className="text-2xl font-black">{zoneStats?.availableRiders ?? 0}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-muted/30">
+                       <p className="text-[10px] font-bold uppercase text-muted-foreground">Busy Riders</p>
+                       <p className="text-2xl font-black">{zoneStats?.busyRiders ?? 0}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-muted/30">
+                       <p className="text-[10px] font-bold uppercase text-muted-foreground">Offline</p>
+                       <p className="text-2xl font-black">{zoneStats?.offlineRiders ?? 0}</p>
+                    </div>
+                 </div>
+                 <div className="rounded-2xl border border-dashed border-border p-6 flex flex-col items-center justify-center text-center">
+                    <MapIcon className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-sm font-bold">Logistics Map Insight</p>
+                    <p className="text-xs text-muted-foreground max-w-xs">High demand detected in central zones. Unassigned orders increasing.</p>
+                 </div>
               </div>
             </section>
 
             <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
               <h2 className="font-display text-xl font-extrabold flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-sky-600" />
-                Order Lifecycle
+                 <AlertTriangle className="h-5 w-5 text-amber-500" /> Support Queue
               </h2>
-              <div className="mt-6 space-y-3">
-                {[
-                  { label: "Searching for Rider", count: stats.orders.searching, color: "bg-rose-500" },
-                  { label: "Accepted by Rider", count: stats.orders.accepted, color: "bg-sky-500" },
-                  { label: "At Pickup / Preparing", count: stats.orders.assigned, color: "bg-amber-500" },
-                  { label: "Out for Delivery", count: stats.orders.outForDelivery, color: "bg-emerald-500" },
-                ].map(item => (
-                  <div key={item.label} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 ring-1 ring-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-2 w-2 rounded-full ${item.color}`} />
-                      <span className="text-sm font-medium">{item.label}</span>
-                    </div>
-                    <span className="text-sm font-black">{item.count}</span>
-                  </div>
-                ))}
+              <div className="mt-4 space-y-4">
+                 <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Critical Tickets</span>
+                    <span className="font-black text-rose-600">{supportStats?.overdue ?? 0}</span>
+                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Wait Time (Avg)</span>
+                    <span className="font-black">{supportStats?.avgFirstResponseMins ?? 0}m</span>
+                 </div>
+                 <div className="pt-4 border-t border-border/40">
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">CSAT Rating</p>
+                    <p className="text-3xl font-black text-amber-500">{supportStats?.avgRating ?? "—"} <span className="text-lg">★</span></p>
+                 </div>
               </div>
             </section>
           </div>
-        </div>
+
+          <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-display text-xl font-extrabold">Real-time Order Feed</h2>
+            </div>
+            {orders.slice(0, 10).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No active orders.</p>
+            ) : (
+              <DataTable
+                columns={["Order", "Customer", "Restaurant", "Value", "Status", "Time"]}
+                rows={orders.slice(0, 10).map((o) => [
+                  <span key={o.id} className="font-bold text-primary">#{String(o.id).slice(-5).toUpperCase()}</span>,
+                  userById[String(o.customer_id ?? "")]?.name ?? "—",
+                  nameById[String(o.restaurant_id ?? "")]?.name ?? "—",
+                  <span key={o.id} className="font-bold">{formatPrice(Number(o.total_price ?? 0))}</span>,
+                  <StatusBadge key={o.id} label={String(o.status ?? "PLACED")} />,
+                  <span key={o.id} className="text-muted-foreground">
+                    {o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+                  </span>,
+                ])}
+              />
+            )}
+          </section>
+        </>
       )}
     </div>
-  );
-}
-
-function Truck(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-      <path d="M15 18H9" />
-      <path d="M19 18h2a1 1 0 0 0 1-1v-5l-4-4h-3v10" />
-      <circle cx="7" cy="18" r="2" />
-      <circle cx="17" cy="18" r="2" />
-    </svg>
   );
 }
