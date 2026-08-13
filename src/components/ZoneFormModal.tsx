@@ -30,7 +30,13 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
     e.preventDefault();
     setLoading(true);
     try {
-      await createNewZone(formData as any);
+      // Ensure boundary is valid and numbers are proper
+      const submission = {
+        ...formData,
+        pickup_radius_km: Number(formData.pickup_radius_km),
+        max_delivery_distance_km: Number(formData.max_delivery_distance_km),
+      };
+      await createNewZone(submission as any);
       toast.success("Zone created successfully");
       onSuccess();
       onClose();
