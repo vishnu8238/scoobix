@@ -15,7 +15,8 @@ export async function createPortalAccess(data: {
   actorRole?: string;
 }) {
   const record = {
-    email: data.email,
+    email: data.email.trim(),
+    email_normalized: data.email.trim().toLowerCase(),
     portal: data.portal,
     status: data.status,
     created_by: data.actorId,
