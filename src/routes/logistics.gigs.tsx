@@ -6,11 +6,11 @@ import { fetchGigs, type Gig } from "@/lib/gigs-api";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/logistics/gigs")({
-  head: () => ({ meta: [{ title: "Scoobix Admin · Gig Management" }] }),
-  component: AdminGigs,
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
+  component: LogisticsGigs,
 });
 
-function AdminGigs() {
+function LogisticsGigs() {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");

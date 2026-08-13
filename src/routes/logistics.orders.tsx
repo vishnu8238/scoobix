@@ -7,8 +7,8 @@ import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/logistics/orders")({
-  head: () => ({ meta: [{ title: "Scoobix Admin · Orders" }] }),
-  component: AdminOrders,
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),
+  component: LogisticsOrders,
 });
 
 type OrderRow = {
@@ -23,7 +23,7 @@ type NamedRow = { id: string; name?: string };
 
 const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
 
-function AdminOrders() {
+function LogisticsOrders() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [restaurants, setRestaurants] = useState<NamedRow[]>([]);
   const [users, setUsers] = useState<NamedRow[]>([]);

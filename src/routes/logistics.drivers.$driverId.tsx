@@ -25,7 +25,7 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/logistics/drivers/$driverId")({
-  component: DriverProfilePage,
+  component: LogisticsDriverProfilePage,
   loader: ({ params }) => fetchDriverDetails(params.driverId),
 });
 
@@ -47,10 +47,10 @@ const SECONDARY_TABS = [
   { id: "bank", label: "Bank", icon: CreditCard },
 ];
 
-function DriverProfilePage() {
+function LogisticsDriverProfilePage() {
   const { driverId } = Route.useParams();
   const { data: driver } = useSuspenseQuery({
-    queryKey: ["admin", "driver-profile", driverId],
+    queryKey: ["logistics", "driver-profile", driverId],
     queryFn: () => fetchDriverDetails(driverId),
   });
 
@@ -115,7 +115,7 @@ function DriverProfilePage() {
 
 function OrdersTab({ driverId }: { driverId: string }) {
   const { data: orders, isLoading } = useSuspenseQuery({
-    queryKey: ["admin", "driver-orders", driverId],
+    queryKey: ["logistics", "driver-orders", driverId],
     queryFn: () => fetchDriverOrders(driverId),
   });
 
@@ -138,7 +138,7 @@ function OrdersTab({ driverId }: { driverId: string }) {
 
 function PayoutsTab({ driverId }: { driverId: string }) {
   const { data: payouts } = useSuspenseQuery({
-    queryKey: ["admin", "driver-payouts", driverId],
+    queryKey: ["logistics", "driver-payouts", driverId],
     queryFn: () => fetchDriverPayouts(driverId),
   });
 

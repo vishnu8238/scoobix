@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Truck, MapPin, Users, Package, Zap, Settings, MoreHorizontal } from "lucide-react";
+import { LayoutDashboard, Truck, MapPin, Users, Package, Zap, Settings, History } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
@@ -28,7 +28,8 @@ const NAV = [
   { to: "/logistics/zones", label: "Zones", icon: MapPin },
   { to: "/logistics/subzones", label: "Subzones", icon: MapPin },
   { to: "/logistics/gigs", label: "Gigs", icon: Package },
-  { to: "/logistics/more", label: "More", icon: MoreHorizontal },
+  { to: "/logistics/audit", label: "Audit Logs", icon: History },
+  { to: "/logistics/settings", label: "Settings", icon: Settings },
 ];
 
 function LogisticsLayout() {

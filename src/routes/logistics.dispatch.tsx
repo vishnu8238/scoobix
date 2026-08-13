@@ -7,15 +7,14 @@ import { formatPrice } from "@/lib/format";
 import { useTableVersion } from "@/lib/realtime-hooks";
 
 export const Route = createFileRoute("/logistics/dispatch")({
-  head: () => ({ meta: [{ title: "Scoobix Admin · Manual Dispatch" }] }),
-  component: AdminDispatch,
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Manual Dispatch" }] }),
+  component: LogisticsDispatch,
 });
 
-function AdminDispatch() {
+function LogisticsDispatch() {
   const [orders, setOrders] = useState<any[]>([]);
   const [riders, setRiders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
 
   const version = useTableVersion(["orders", "drivers"]);
 
