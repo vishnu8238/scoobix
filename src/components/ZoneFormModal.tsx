@@ -33,8 +33,11 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
       // Ensure boundary is valid and numbers are proper
       const submission = {
         ...formData,
-        pickup_radius_km: Number(formData.pickup_radius_km),
-        max_delivery_distance_km: Number(formData.max_delivery_distance_km),
+        pickup_radius_km: Number(formData.pickup_radius_km) || 1,
+        max_delivery_distance_km: Number(formData.max_delivery_distance_km) || 4,
+        boundary: (formData.boundary?.coordinates?.[0]?.length >= 3) 
+          ? formData.boundary 
+          : { type: "Polygon", coordinates: [] }
       };
       await createNewZone(submission as any);
       toast.success("Zone created successfully");

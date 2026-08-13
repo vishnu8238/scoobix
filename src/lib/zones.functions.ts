@@ -109,28 +109,35 @@ export const createNewZone = createServerFn({ method: "POST" })
     boundary: z.any().optional()
   }))
   .handler(async ({ data }) => {
+    // InsForge / PostgREST compatibility: check if table is accessible
+    // Ensure boundary is never null for the database
+    const payload = {
+      ...data,
+      max_orders_per_rider: 3,
+      assignment_timeout_sec: 60,
+      boundary: data.boundary || { type: "Polygon", coordinates: [] }
+    };
+
     const res = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones`, {
       method: "POST",
       headers: {
         ...HEADERS,
         "Prefer": "return=representation"
       },
-      body: JSON.stringify({
-        ...data,
-        max_orders_per_rider: 3,
-        assignment_timeout_sec: 60,
-        boundary: data.boundary || { type: "Polygon", coordinates: [] }
-      })
+      body: JSON.stringify(payload)
     });
     
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || "Failed to create zone");
+      const errText = await res.text();
+      console.error("InsForge Error:", errText);
+      throw new Error(errText || "Failed to create zone");
     }
     
     const created = await res.json();
     const row = Array.isArray(created) ? created[0] : created;
-    publishTableChange("delivery_zones", "insert", row);
+    if (row) {
+      publishTableChange("delivery_zones", "insert", row);
+    }
     return row;
   });
 
