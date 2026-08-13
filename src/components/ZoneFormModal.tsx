@@ -39,7 +39,10 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
           ? formData.boundary 
           : { type: "Polygon", coordinates: [] }
       };
-      await createNewZone(submission as any);
+      const result = await createNewZone(submission as any);
+      if (result && !result.id) {
+        throw new Error("Creation returned an invalid result");
+      }
       toast.success("Zone created successfully");
       onSuccess();
       onClose();
