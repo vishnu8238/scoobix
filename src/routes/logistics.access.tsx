@@ -30,6 +30,7 @@ const PORTAL_LABELS: Record<PortalType, string> = {
   rider: "Rider",
   manager: "Manager",
   logistics: "Logistics",
+  admin: "Administrator",
 };
 
 function LogisticsAccess() {
