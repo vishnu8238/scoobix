@@ -12,10 +12,10 @@ import { ZoneFormModal, SubzoneFormModal } from "@/components/ZoneFormModal";
 
 export const Route = createFileRoute("/logistics/live")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Live Operations" }] }),
-  component: AdminZonesDashboard,
+  component: LogisticsLiveDashboard,
 });
 
-function AdminZonesDashboard() {
+function LogisticsLiveDashboard() {
   const [view, setView] = useState<"list" | "map" | "detail">("list");
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [subzones, setSubzones] = useState<Subzone[]>([]);
