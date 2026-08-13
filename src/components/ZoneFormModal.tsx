@@ -51,8 +51,8 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
   };
 
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 md:p-8">
+      <div className="w-full max-w-5xl h-[90vh] flex flex-col rounded-[2.5rem] bg-card shadow-2xl ring-1 ring-border/60 overflow-hidden">
         <header className="flex items-center justify-between p-6 border-b border-border/60">
           <h2 className="font-display text-xl font-extrabold">{initialData ? "Edit Zone" : "Create Zone"}</h2>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition">
