@@ -35,9 +35,9 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
 
     // 1. Not logged in? Redirect to portal-specific login
     if (!user) {
-      if (pathname.includes("/login") || pathname.includes("/onboarding")) return;
+      if (pathname === "/login" || pathname.includes("/onboarding")) return;
       
-      const loginPath = portal === "customer" ? "/customer/login" : (portal === "partner" ? "/partner/login" : `/${portal}/login`);
+      const loginPath = `/login?portal=${portal}`;
       console.log("[AUTH_DEBUG] RoleGuard Redirecting to Login:", loginPath);
       navigate({ to: loginPath as any });
       return;
