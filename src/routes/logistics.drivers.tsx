@@ -5,6 +5,7 @@ import { Star, Plus, Check, X, Ban, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLiveTable } from "@/lib/realtime-hooks";
 import { kvGet, kvSet } from "@/lib/kv-store";
+import { listTable } from "@/lib/insforge-crud";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/drivers")({
@@ -26,12 +27,31 @@ type UserRow = { id: string; name?: string | null; email?: string | null };
 const STATUS_KEY = "driver_status";
 
 function LogisticsDrivers() {
-  const { rows: drivers } = useLiveTable<DriverRow>("drivers", { params: { limit: 300 }, minMs: 10000, maxMs: 60000 });
-  const { rows: users } = useLiveTable<UserRow>("users", { params: { limit: 500 }, minMs: 30000, maxMs: 120000 });
+  const [drivers, setDrivers] = useState<DriverRow[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    void kvGet<Record<string, string>>(STATUS_KEY).then((v) => { if (v) setOverrides(v); });
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [d, u, v] = await Promise.all([
+          listTable<DriverRow>("drivers", { order: "total_deliveries.desc", limit: 300 }),
+          listTable<UserRow>("users", { limit: 500 }),
+          kvGet<Record<string, string>>(STATUS_KEY)
+        ]);
+        setDrivers(d || []);
+        setUsers(u || []);
+        if (v) setOverrides(v);
+      } catch (err: any) {
+        console.error("[DRIVERS_LOAD]", err);
+        toast.error(`Failed to load drivers: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const nameFor = (d: DriverRow) => {

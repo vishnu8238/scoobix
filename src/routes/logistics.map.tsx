@@ -7,6 +7,7 @@ import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
 import { updateZone, deleteZone, getZoneStats, type DeliveryZone, type Subzone } from "@/lib/zones-api";
 import { getZonesWithSubzones, seedVadodaraStructure } from "@/lib/zones.functions";
 import { useTableVersion } from "@/lib/realtime-hooks";
+import { listTable } from "@/lib/insforge-crud";
 import { format } from "date-fns";
 import { ZoneFormModal, SubzoneFormModal } from "@/components/ZoneFormModal";
 
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/logistics/map")({
 
 function LogisticsZonesDashboard() {
   const [view, setView] = useState<"list" | "map" | "detail">("map");
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [subzones, setSubzones] = useState<Subzone[]>([]);
   const [stats, setStats] = useState<any>(null);
@@ -28,25 +31,29 @@ function LogisticsZonesDashboard() {
   const [isSubzoneModalOpen, setIsSubzoneModalOpen] = useState(false);
   const [expandedZones, setExpandedZones] = useState<Record<string, boolean>>({});
   
-  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders"]);
+  const version = useTableVersion(["drivers", "orders"]);
 
   const refresh = useCallback(async () => {
-    if (loading && zones.length === 0) return;
     setLoading(true);
     try {
-      const [data, st] = await Promise.all([
+      const [driversData, ordersData, zoneData, st] = await Promise.all([
+        listTable("drivers", { limit: 100 }),
+        listTable("orders", { order: "created_at.desc", limit: 100 }),
         getZonesWithSubzones(),
         getZoneStats()
       ]);
-      setZones(data?.zones || []);
-      setSubzones(data?.subzones || []);
+      setDrivers(driversData || []);
+      setOrders(ordersData || []);
+      setZones(zoneData?.zones || []);
+      setSubzones(zoneData?.subzones || []);
       setStats(st);
-    } catch (err) {
-      toast.error("Failed to load zones data");
+    } catch (err: any) {
+      console.error("[MAP_LOAD]", err);
+      toast.error(`Failed to load map data: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, [loading, zones.length]);
+  }, []);
 
   const handleSeed = async () => {
     setSeeding(true);

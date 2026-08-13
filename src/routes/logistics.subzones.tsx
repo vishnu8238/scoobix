@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { fetchSubzones, type Subzone, fetchZones, type DeliveryZone } from "@/lib/zones-api";
+import { listTable } from "@/lib/insforge-crud";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Plus, Edit2, Trash2, Search, Map as MapIcon, Layers } from "lucide-react";
 import { SubzoneFormModal } from "@/components/ZoneFormModal";
@@ -22,11 +23,15 @@ function LogisticsSubzonesPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [sz, z] = await Promise.all([fetchSubzones(), fetchZones()]);
-      setSubzones(sz);
-      setZones(z);
-    } catch {
-      toast.error("Failed to load subzones");
+      const [sz, z] = await Promise.all([
+        listTable("delivery_subzones", { order: "created_at.desc", limit: 100 }) as unknown as Subzone[],
+        listTable("delivery_zones", { order: "created_at.desc", limit: 100 }) as unknown as DeliveryZone[]
+      ]);
+      setSubzones(sz || []);
+      setZones(z || []);
+    } catch (err: any) {
+      console.error("[SUBZONES_LOAD]", err);
+      toast.error(`Failed to load subzones: ${err.message}`);
     } finally {
       setLoading(false);
     }

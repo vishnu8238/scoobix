@@ -5,6 +5,7 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),
@@ -32,12 +33,22 @@ function LogisticsOrders() {
   const version = useTableVersion(["orders"]);
 
   const load = useCallback(async () => {
-    const [o, r, u] = await Promise.all([
-      listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
-      listTable<NamedRow>("restaurants", { limit: 500 }),
-      listTable<NamedRow>("users", { limit: 1000 }),
-    ]);
-    setOrders(o); setRestaurants(r); setUsers(u); setLoading(false);
+    setLoading(true);
+    try {
+      const [o, r, u] = await Promise.all([
+        listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
+        listTable<NamedRow>("restaurants", { limit: 500 }),
+        listTable<NamedRow>("users", { limit: 1000 }),
+      ]);
+      setOrders(o || []);
+      setRestaurants(r || []);
+      setUsers(u || []);
+    } catch (err: any) {
+      console.error("[ORDERS_LOAD]", err);
+      toast.error(`Failed to load orders: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
