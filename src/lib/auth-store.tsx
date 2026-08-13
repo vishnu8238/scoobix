@@ -146,13 +146,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles.push("admin");
       }
 
-      // Check current portal access via portal_access table for privileged portals
-      if (["partner", "rider", "manager", "logistics"].includes(currentPortal)) {
-        const access = await checkPortalAccess(profile?.email || session.user.email, currentPortal as any);
-        if (access.ok) {
-          roles.push(currentPortal);
+      // Check current portal access via portal_access table for ALL privileged portals
+      if (["partner", "rider", "manager", "logistics", "admin"].includes(currentPortal)) {
+        if (currentPortal === "admin") {
+          if (profile?.role === "admin" || profile?.is_admin === true || profile?.email === "scoobix.info@gmail.com") {
+            roles.push("admin");
+          }
         } else {
-          console.log(`[AUTH_DEBUG] Access ${access.reason} for ${currentPortal}`);
+          const access = await checkPortalAccess(profile?.email || session.user.email, currentPortal as any);
+          if (access.ok) {
+            roles.push(currentPortal);
+          } else {
+            console.log(`[AUTH_DEBUG] Access ${access.reason} for ${currentPortal}`);
+          }
         }
       }
 
