@@ -160,7 +160,8 @@ function applyParams(query: any, params?: Record<string, string | number | undef
 async function handleResponse<T>(promise: Promise<any>, method: string, table: string): Promise<T> {
   const t0 = Date.now();
   try {
-    const { data, error, status, statusText } = await promise;
+    const res = await promise;
+    const { data, error, status, statusText } = res;
     
     recordMetric({
       kind: "api",
