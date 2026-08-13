@@ -98,7 +98,7 @@ function RootComponent() {
  */
 function AppShellContent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isDesktop = pathname.startsWith("/admin");
+  const isDesktop = pathname.startsWith("/admin") || pathname.startsWith("/logistics");
   
   // catalogVersion is used for reactive data updates, but we NO LONGER
   // use it as a key for the Outlet. This prevents destructive remounts.

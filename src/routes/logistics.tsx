@@ -69,7 +69,7 @@ function LogisticsLayout() {
 
   return (
     <div className="min-h-svh w-full bg-[radial-gradient(circle_at_top_left,_oklch(0.96_0.04_148_/_0.4),_oklch(0.99_0.005_120)_45%)] font-sans">
-      <div className="mx-auto flex min-h-svh max-w-[1600px]">
+      <div className="mx-auto flex min-h-svh max-w-full">
         {/* Sidebar */}
         <aside className="sticky top-0 hidden h-svh w-64 flex-col gap-1 border-r border-border/60 bg-card/60 p-5 backdrop-blur-md md:flex">
           <div className="mb-6 flex items-center gap-3">
