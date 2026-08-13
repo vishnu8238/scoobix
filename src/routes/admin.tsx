@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { APPS, appHead } from "@/lib/apps";
-import { useAuth } from "@/lib/auth-store";
+import { useAuth, getRequestedPortal } from "@/lib/auth-store";
 
 import { cn } from "@/lib/format";
 import { warmAnalytics } from "@/lib/analytics-jobs";
@@ -69,9 +69,24 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
 ];
 
 function AdminLayout() {
+  const { user, loading, authState } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Heavy aggregation runs in the background, never during a user request.
   useEffect(() => { warmAnalytics(); }, []);
+
+  const portal = getRequestedPortal();
+
+  // If we are strictly unauthenticated and NOT on the login page, redirect
+  useEffect(() => {
+    if (!loading && !user && authState === "unauthenticated" && pathname !== "/login") {
+      window.location.replace(`/login?portal=${portal}`);
+    }
+  }, [user, loading, authState, pathname, portal]);
+
+  // Show nothing if unauthenticated to prevent layout flash before redirect
+  if (!user && pathname !== "/login") {
+    return null;
+  }
 
   // Public login page is isolated from the protected shell.
   if (pathname === "/login") {
