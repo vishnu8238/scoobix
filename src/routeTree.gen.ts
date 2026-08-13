@@ -173,6 +173,11 @@ const LogisticsRoute = LogisticsRouteImport.update({
   path: '/logistics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LogisticsRoute = LogisticsRouteImport.update({
+  id: '/logistics',
+  path: '/logistics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -948,6 +953,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/logistics': typeof LogisticsIndexRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/access': typeof AdminAccessRoute
@@ -1063,7 +1069,6 @@ export interface FileRoutesByTo {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
-  '/logistics': typeof LogisticsIndexRoute
   '/manager': typeof ManagerIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
@@ -1350,6 +1355,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/logistics'
     | '/privacy'
     | '/terms'
     | '/admin/access'
@@ -1465,7 +1471,6 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/admin'
     | '/app'
-    | '/logistics'
     | '/manager'
     | '/partner'
     | '/rider'
@@ -1617,6 +1622,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  LogisticsRoute: typeof LogisticsRoute
   LogisticsRoute: typeof LogisticsRouteWithChildren
   ManagerRoute: typeof ManagerRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
@@ -1663,6 +1669,13 @@ declare module '@tanstack/react-router' {
       path: '/manager'
       fullPath: '/manager'
       preLoaderRoute: typeof ManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/logistics': {
+      id: '/logistics'
+      path: '/logistics'
+      fullPath: '/logistics'
+      preLoaderRoute: typeof LogisticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logistics': {
@@ -2900,6 +2913,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  LogisticsRoute: LogisticsRoute,
   LogisticsRoute: LogisticsRouteWithChildren,
   ManagerRoute: ManagerRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
