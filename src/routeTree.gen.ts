@@ -76,6 +76,7 @@ import { Route as LogisticsSubzonesRouteImport } from './routes/logistics.subzon
 import { Route as LogisticsSubscriptionsRouteImport } from './routes/logistics.subscriptions'
 import { Route as LogisticsSettingsRouteImport } from './routes/logistics.settings'
 import { Route as LogisticsSecurityRouteImport } from './routes/logistics.security'
+import { Route as LogisticsScratchCardsRouteImport } from './routes/logistics.scratch-cards'
 import { Route as LogisticsReportsRouteImport } from './routes/logistics.reports'
 import { Route as LogisticsReferralsRouteImport } from './routes/logistics.referrals'
 import { Route as LogisticsPerformanceRouteImport } from './routes/logistics.performance'
@@ -486,6 +487,11 @@ const LogisticsSettingsRoute = LogisticsSettingsRouteImport.update({
 const LogisticsSecurityRoute = LogisticsSecurityRouteImport.update({
   id: '/security',
   path: '/security',
+  getParentRoute: () => LogisticsRoute,
+} as any)
+const LogisticsScratchCardsRoute = LogisticsScratchCardsRouteImport.update({
+  id: '/scratch-cards',
+  path: '/scratch-cards',
   getParentRoute: () => LogisticsRoute,
 } as any)
 const LogisticsReportsRoute = LogisticsReportsRouteImport.update({
@@ -951,6 +957,7 @@ export interface FileRoutesByFullPath {
   '/logistics/performance': typeof LogisticsPerformanceRoute
   '/logistics/referrals': typeof LogisticsReferralsRoute
   '/logistics/reports': typeof LogisticsReportsRoute
+  '/logistics/scratch-cards': typeof LogisticsScratchCardsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
@@ -1090,6 +1097,7 @@ export interface FileRoutesByTo {
   '/logistics/performance': typeof LogisticsPerformanceRoute
   '/logistics/referrals': typeof LogisticsReferralsRoute
   '/logistics/reports': typeof LogisticsReportsRoute
+  '/logistics/scratch-cards': typeof LogisticsScratchCardsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
@@ -1236,6 +1244,7 @@ export interface FileRoutesById {
   '/logistics/performance': typeof LogisticsPerformanceRoute
   '/logistics/referrals': typeof LogisticsReferralsRoute
   '/logistics/reports': typeof LogisticsReportsRoute
+  '/logistics/scratch-cards': typeof LogisticsScratchCardsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
@@ -1383,6 +1392,7 @@ export interface FileRouteTypes {
     | '/logistics/performance'
     | '/logistics/referrals'
     | '/logistics/reports'
+    | '/logistics/scratch-cards'
     | '/logistics/security'
     | '/logistics/settings'
     | '/logistics/subscriptions'
@@ -1522,6 +1532,7 @@ export interface FileRouteTypes {
     | '/logistics/performance'
     | '/logistics/referrals'
     | '/logistics/reports'
+    | '/logistics/scratch-cards'
     | '/logistics/security'
     | '/logistics/settings'
     | '/logistics/subscriptions'
@@ -1667,6 +1678,7 @@ export interface FileRouteTypes {
     | '/logistics/performance'
     | '/logistics/referrals'
     | '/logistics/reports'
+    | '/logistics/scratch-cards'
     | '/logistics/security'
     | '/logistics/settings'
     | '/logistics/subscriptions'
@@ -2217,6 +2229,13 @@ declare module '@tanstack/react-router' {
       path: '/security'
       fullPath: '/logistics/security'
       preLoaderRoute: typeof LogisticsSecurityRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/scratch-cards': {
+      id: '/logistics/scratch-cards'
+      path: '/scratch-cards'
+      fullPath: '/logistics/scratch-cards'
+      preLoaderRoute: typeof LogisticsScratchCardsRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/reports': {
@@ -2949,6 +2968,7 @@ interface LogisticsRouteChildren {
   LogisticsPerformanceRoute: typeof LogisticsPerformanceRoute
   LogisticsReferralsRoute: typeof LogisticsReferralsRoute
   LogisticsReportsRoute: typeof LogisticsReportsRoute
+  LogisticsScratchCardsRoute: typeof LogisticsScratchCardsRoute
   LogisticsSecurityRoute: typeof LogisticsSecurityRoute
   LogisticsSettingsRoute: typeof LogisticsSettingsRoute
   LogisticsSubscriptionsRoute: typeof LogisticsSubscriptionsRoute
@@ -2972,6 +2992,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsPerformanceRoute: LogisticsPerformanceRoute,
   LogisticsReferralsRoute: LogisticsReferralsRoute,
   LogisticsReportsRoute: LogisticsReportsRoute,
+  LogisticsScratchCardsRoute: LogisticsScratchCardsRoute,
   LogisticsSecurityRoute: LogisticsSecurityRoute,
   LogisticsSettingsRoute: LogisticsSettingsRoute,
   LogisticsSubscriptionsRoute: LogisticsSubscriptionsRoute,
