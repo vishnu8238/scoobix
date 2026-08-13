@@ -73,7 +73,7 @@ export function ZoneManager() {
   }, [zones, selectedZone]);
 
   return (
-    <div className="relative flex flex-col h-full w-full overflow-hidden bg-background h-screen">
+    <div className="relative flex flex-col h-full w-full overflow-hidden bg-background">
       {/* Map Header Overlay */}
       <div className="absolute left-6 right-6 top-6 z-10 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-3 rounded-2xl bg-white/90 p-2 pr-4 shadow-xl backdrop-blur-md ring-1 ring-black/5 dark:bg-zinc-900/90">
