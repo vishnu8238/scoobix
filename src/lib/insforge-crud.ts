@@ -164,13 +164,13 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
     const { data, error, status, statusText } = res || {};
     
     // Auth Guard: suppress 401s on initial mount/background reads to prevent console noise.
-    if (!res && method !== "GET") {
+    // We treat missing res as a 401 "No token" state.
+    if (!res) {
+      if (method === "GET") {
+        console.warn(`[DB_AUTH_SILENT] No session for GET ${table}. Returning empty.`);
+        return (Array.isArray(data) ? [] : null) as unknown as T;
+      }
       throw new HttpError(401, "No token provided");
-    }
-    
-    if (!res && method === "GET") {
-      console.warn(`[DB_AUTH_SILENT] No session for GET ${table}. Returning empty.`);
-      return (Array.isArray(data) ? [] : null) as unknown as T;
     }
     
     recordMetric({
