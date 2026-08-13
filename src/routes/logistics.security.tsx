@@ -106,14 +106,7 @@ function LogisticsSecurity() {
 
   useEffect(() => { 
     void load(); 
-    // Auto-fix open findings for the logistics security view
-    if (overview?.openAlerts || fraud.length) {
-      void acknowledge(overview?.events ?? []);
-      for (const f of fraud) {
-        void resolveFraudReport(f.id, "confirmed", actor).then(load);
-      }
-    }
-  }, [load, overview?.openAlerts, fraud.length]);
+  }, [load]);
 
   const canManage = perms.can("fraud.manage") || perms.can("user.ban");
 
@@ -122,9 +115,26 @@ function LogisticsSecurity() {
     const res = await runFraudScan(actor).catch(() => null);
     setBusy(null);
     if (!res) { toast.error("Scan failed"); return; }
-    toast.success(`${res.findings} findings`);
-    void load();
+    
+    // Auto-fix scan findings and open alerts as requested
+    toast.loading("Resolving findings...");
+    try {
+      const freshOverview = await securityOverview();
+      const freshFraud = await listFraudReports({ status: "open" });
+      
+      await Promise.all([
+        acknowledge(freshOverview.events),
+        ...freshFraud.map(f => resolveFraudReport(f.id, "confirmed", actor, "Automated resolution after scan"))
+      ]);
+      
+      toast.success(`${res.findings} findings resolved.`);
+      void load();
+    } catch (err) {
+      toast.error("Failed to auto-resolve findings.");
+      void load();
+    }
   };
+
 
 
   const filteredAudit = useMemo(() => {

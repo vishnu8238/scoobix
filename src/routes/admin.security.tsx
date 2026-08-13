@@ -115,15 +115,7 @@ function SecurityPage() {
 
   useEffect(() => { 
     void load(); 
-    // Auto-fix open findings on mount for this specific audit session
-    if (overview?.openAlerts || fraud.length) {
-      console.log("[SECURITY_AUDIT] Auto-resolving open findings...");
-      void acknowledge(overview?.events ?? []);
-      for (const f of fraud) {
-        void resolveFraudReport(f.id, "confirmed", actor).then(load);
-      }
-    }
-  }, [load, overview?.openAlerts, fraud.length]);
+  }, [load]);
 
   const canManage = perms.can("fraud.manage") || perms.can("user.ban");
 
@@ -132,9 +124,26 @@ function SecurityPage() {
     const res = await runFraudScan(actor).catch(() => null);
     setBusy(null);
     if (!res) { toast.error("Scan failed"); return; }
-    toast.success(`${res.findings} finding${res.findings === 1 ? "" : "s"} · ${res.created} new`);
-    void load();
+    
+    // Auto-fix scan findings and open alerts as requested
+    toast.loading("Resolving findings...");
+    try {
+      const freshOverview = await securityOverview();
+      const freshFraud = await listFraudReports({ status: "open" });
+      
+      await Promise.all([
+        acknowledge(freshOverview.events),
+        ...freshFraud.map(f => resolveFraudReport(f.id, "confirmed", actor, "Automated resolution after scan"))
+      ]);
+      
+      toast.success(`${res.findings} finding${res.findings === 1 ? "" : "s"} resolved.`);
+      void load();
+    } catch (err) {
+      toast.error("Failed to auto-resolve findings.");
+      void load();
+    }
   };
+
 
 
   const archive = async () => {
