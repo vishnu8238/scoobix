@@ -102,12 +102,16 @@ function AuthCallback() {
 
 
 
+        // 4. Force a Store Hydration Check
+        // Before redirecting, we must ensure the global AuthProvider has 
+        // resolved the user and roles. We don't have direct access to the context here,
+        // so we trust the destination portal's RoleGuard will pick up the session.
+        // We use window.location.replace to ensure the callback page is removed from history.
+
         const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
         localStorage.removeItem("scoobix_oauth_portal_intent");
-        console.log("[AUTH_TRACE] Redirecting to final destination:", dest);
+        console.log("[AUTH_TRACE] Authorization complete. Redirecting to:", dest);
         
-        // Use window.location.replace to ensure the callback page is removed from history
-        // and force a clean entry into the portal.
         window.location.replace(dest);
 
       } catch (err: any) {

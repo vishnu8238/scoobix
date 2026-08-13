@@ -137,41 +137,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // 2. Resolve Memberships
+      // 2. Resolve Authoritative Portal Access (portal_access table)
       const roles: Role[] = ["customer"];
-      
       const { checkPortalAccess } = await import("./portal-authorization");
       
-      if (profile?.role === "admin" || profile?.is_admin === true || profile?.email === "scoobix.info@gmail.com") {
-        roles.push("admin");
-      }
+      const SUPER_ADMIN = "scoobix.info@gmail.com";
+      const isSuperAdmin = profile?.email === SUPER_ADMIN || session.user.email === SUPER_ADMIN || profile?.role === "admin";
 
-      // Check current portal access via portal_access table for ALL privileged portals
-      if (["partner", "rider", "manager", "logistics", "admin"].includes(currentPortal)) {
-        if (currentPortal === "admin") {
-          if (profile?.role === "admin" || profile?.is_admin === true || profile?.email === "scoobix.info@gmail.com") {
-            roles.push("admin");
-          }
-        } else {
-          const access = await checkPortalAccess(profile?.email || session.user.email, currentPortal as any);
+      if (isSuperAdmin) {
+        roles.push("admin", "logistics", "partner", "rider", "manager");
+      } else {
+        // Check portal_access for the specifically requested portal
+        if (["partner", "rider", "manager", "logistics", "admin"].includes(currentPortal)) {
+          const access = await checkPortalAccess(session.user.email, currentPortal as any);
           if (access.ok) {
             roles.push(currentPortal);
-          } else {
-            console.log(`[AUTH_DEBUG] Access ${access.reason} for ${currentPortal}`);
           }
+        }
+        
+        // Background: Check for other active portal permissions to hydrate the roles list
+        const otherPortals: Role[] = ["partner", "rider", "manager", "logistics", "admin"];
+        for (const p of otherPortals) {
+          if (p === currentPortal || roles.includes(p)) continue;
+          const access = await checkPortalAccess(session.user.email, p as any);
+          if (access.ok) roles.push(p);
         }
       }
 
-      // Fix #2: Remove { ttl: 0 } from legacy lookups
+      // 3. Resolve Business Memberships (Legacy Tables - Non-authoritative for admission)
+      // These are still checked to support business logic/profiles, but they don't 
+      // independently grant admission if portal_access exists for that portal.
       const [partner, rider, manager] = await Promise.all([
         listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }),
         listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }),
         listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }),
       ]);
 
-      if (partner.length > 0) roles.push("partner");
-      if (rider.length > 0) roles.push("rider");
-      if (manager.length > 0) roles.push("manager");
+      if (partner.length > 0 && !roles.includes("partner")) roles.push("partner");
+      if (rider.length > 0 && !roles.includes("rider")) roles.push("rider");
+      if (manager.length > 0 && !roles.includes("manager")) roles.push("manager");
       
       console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
 

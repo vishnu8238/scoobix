@@ -33,13 +33,14 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     
 
 
-    // 1. Not logged in? Redirect to portal-specific login
+    // 1. Not logged in? 
     if (!user) {
       if (pathname === "/login" || pathname.includes("/onboarding")) return;
       
+      // If we are strictly unauthenticated (no session), go to login
       const loginPath = `/login?portal=${portal}`;
-      console.log("[AUTH_DEBUG] RoleGuard Redirecting to Login:", loginPath);
-      navigate({ to: loginPath as any });
+      console.log("[AUTH_DEBUG] RoleGuard: Unauthenticated, redirecting to login:", loginPath);
+      window.location.replace(loginPath);
       return;
     }
 
@@ -53,21 +54,9 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       const hasAccess = allowedRoles.some(role => user.roles.includes(role));
       
       if (!hasAccess) {
-        if (portal === "logistics") {
-          // If authoritative resolution finished and they don't have it, stay on login page with error.
-          if (!pathname.includes("/login")) {
-            console.log("[AUTH_DEBUG] RoleGuard: Logistics unauthorized, redirecting to login.");
-            window.location.replace("/login?portal=logistics&error=unauthorized");
-          }
-        } else if (portal === "admin") {
-          if (!pathname.includes("/login")) {
-            console.log("[AUTH_DEBUG] RoleGuard: Admin unauthorized, redirecting to login.");
-            window.location.replace("/login?portal=admin&error=unauthorized");
-          }
-        } else if (!pathname.includes("/login") && !pathname.includes("/onboarding")) {
-           // Default fallback for other portals
-           console.log("[AUTH_DEBUG] RoleGuard: No access, redirecting to login.");
-           window.location.replace(`/login?portal=${portal}&error=unauthorized`);
+        if (!pathname.includes("/login") && !pathname.includes("/onboarding")) {
+           console.log(`[AUTH_DEBUG] RoleGuard: ${portal} unauthorized for user ${user.email}. Redirecting.`);
+           window.location.replace(`/login?portal=${portal}&denied=${portal}`);
         }
       }
     }
