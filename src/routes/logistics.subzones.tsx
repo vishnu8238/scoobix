@@ -22,7 +22,7 @@ function LogisticsSubzones() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [sz, z] = await Promise.all([fetchSubzones(), fetchSubzones(), fetchZones()]);
+      const [sz, z] = await Promise.all([fetchSubzones(), fetchZones()]);
       setSubzones(sz);
       setZones(z);
     } catch {
