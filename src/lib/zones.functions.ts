@@ -115,7 +115,9 @@ export const createNewZone = createServerFn({ method: "POST" })
       ...data,
       max_orders_per_rider: 3,
       assignment_timeout_sec: 60,
-      boundary: data.boundary || { type: "Polygon", coordinates: [] }
+      boundary: (data.boundary?.coordinates?.[0]?.length >= 3) 
+        ? data.boundary 
+        : { type: "Polygon", coordinates: [] }
     };
 
     const res = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones`, {
