@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { Sparkles, Search, Plus, Loader2, Calendar, Target, Award, MapPin, Edit2, Trash2 } from "lucide-react";
+import { Search, Plus, Loader2, Calendar, RefreshCw, Upload, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { fetchGigs, type Gig } from "@/lib/gigs-api";
-import { format } from "date-fns";
+import { format, addDays, startOfToday } from "date-fns";
+import { GigCard, GigStats } from "@/components/admin/GigCard";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
@@ -14,6 +15,7 @@ function LogisticsGigs() {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [selectedDate, setSelectedDate] = useState(startOfToday());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -24,71 +26,124 @@ function LogisticsGigs() {
 
   useEffect(() => { void load(); }, [load]);
 
+  const dates = Array.from({ length: 7 }).map((_, i) => addDays(startOfToday(), i - 1));
+
+  const filteredGigs = gigs.filter(g => 
+    g.title.toLowerCase().includes(q.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
-      <header className="flex items-center justify-between">
+    <div className="min-h-screen space-y-8 bg-slate-50/50 p-8 dark:bg-transparent">
+      <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="eyebrow">Incentives</p>
-          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Gigs</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Configure delivery incentives and limited-time targets.</p>
+          <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">Fleet Gig Management</h1>
+          <p className="mt-1 text-sm font-bold text-muted-foreground/60">Manage delivery slots and rider incentives for the fleet</p>
         </div>
-        <button className="flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">
-          <Plus className="h-4 w-4" /> Create Gig
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <GigStats 
+            totalGigs={gigs.length} 
+            needed={1080} 
+            enrolled={162} 
+            fullyBooked={0} 
+          />
+          
+          <div className="flex items-center gap-2 border-l border-border/60 pl-3">
+            <button 
+              onClick={() => load()}
+              className="group flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 transition-all hover:bg-muted active:scale-95"
+            >
+              <RefreshCw className={cn("h-4 w-4 transition-transform group-active:rotate-180", loading && "animate-spin")} />
+            </button>
+            <button className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95">
+              <Plus className="h-4 w-4" /> Create New Gig
+            </button>
+            <button className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white transition-all hover:bg-slate-800 active:scale-95 dark:bg-slate-100 dark:text-slate-900">
+              <Upload className="h-4 w-4" /> Upload Excel
+            </button>
+          </div>
+        </div>
       </header>
 
-      <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl bg-muted/50 px-3 py-2 ring-1 ring-border/60">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2">
+          <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          
+          <div className="flex items-center gap-2 rounded-2xl bg-emerald-50/50 p-1 ring-1 ring-emerald-100 dark:bg-emerald-950/20 dark:ring-emerald-900/30">
+            {dates.map((date) => (
+              <button
+                key={date.toISOString()}
+                onClick={() => setSelectedDate(date)}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black transition-all",
+                  format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
+                    : "text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-400"
+                )}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                {format(date, "EEE, dd MMM, yyyy")}
+              </button>
+            ))}
+          </div>
+          
+          <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-10 items-center rounded-xl bg-card px-3 ring-1 ring-border/60 focus-within:ring-primary/40">
             <Search className="h-4 w-4 text-muted-foreground" />
             <input 
               value={q} 
               onChange={(e) => setQ(e.target.value)} 
-              placeholder="Search by title, zone..."
-              className="w-full bg-transparent text-sm outline-none"
+              placeholder="Search gigs..."
+              className="ml-2 w-48 bg-transparent text-xs font-bold outline-none"
             />
+          </div>
+          <div className="flex h-10 items-center gap-2 rounded-xl bg-card px-3 font-mono text-xs font-black ring-1 ring-border/60">
+            {format(selectedDate, "dd-MM-yyyy")}
+            <Calendar className="h-3.5 w-3.5 opacity-40" />
+          </div>
+        </div>
+      </div>
+
+      <section>
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-emerald-100 p-2 dark:bg-emerald-950/50">
+              <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+              Gigs for {format(selectedDate, "EEEE").toUpperCase()}
+            </h2>
+          </div>
+          <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+            {filteredGigs.length} Gigs
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-        ) : gigs.length === 0 ? (
-          <div className="py-20 text-center flex flex-col items-center">
-            <Sparkles className="h-10 w-10 text-muted-foreground/30 mb-2" />
-            <p className="font-bold">No gigs found</p>
-            <p className="text-xs text-muted-foreground">Create your first delivery incentive to get started.</p>
+          <div className="flex min-h-[400px] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : filteredGigs.length === 0 ? (
+          <div className="flex min-h-[400px] flex-col items-center justify-center rounded-[3rem] bg-card/50 ring-1 ring-border/40">
+            <div className="mb-4 rounded-full bg-muted p-6">
+              <Calendar className="h-12 w-12 text-muted-foreground/30" />
+            </div>
+            <p className="text-lg font-black text-slate-900 dark:text-white">No gigs available</p>
+            <p className="text-sm font-bold text-muted-foreground/60">Try selecting another date or adjusting your search.</p>
           </div>
         ) : (
-          <DataTable
-            columns={["Gig", "Reward", "Target", "Status", "Schedule", "Location", "Actions"]}
-            rows={gigs.filter(g => g.title.toLowerCase().includes(q.toLowerCase())).map(g => [
-              <div key={g.id+"tit"} className="flex flex-col">
-                <span className="font-bold text-sm">{g.title}</span>
-                <span className="text-[10px] text-muted-foreground line-clamp-1">{g.description}</span>
-              </div>,
-              <div key={g.id+"rew"} className="flex items-center gap-1 font-black text-emerald-600">
-                <Award className="h-3 w-3" />
-                ₹{g.reward_amount}
-              </div>,
-              <div key={g.id+"trg"} className="flex items-center gap-1 font-bold">
-                <Target className="h-3 w-3" />
-                {g.target_deliveries} Orders
-              </div>,
-              <StatusBadge key={g.id+"st"} label={g.status} />,
-              <div key={g.id+"sch"} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                {format(new Date(g.start_time), "MMM d")} - {format(new Date(g.end_time), "MMM d")}
-              </div>,
-              <div key={g.id+"loc"} className="flex items-center gap-1 text-[10px] font-bold">
-                <MapPin className="h-3 w-3" />
-                {g.zone_id ? "Specific Zone" : "All Zones"}
-              </div>,
-              <div key={g.id+"act"} className="flex items-center gap-2">
-                <button className="p-1.5 hover:bg-muted rounded-lg"><Edit2 className="h-4 w-4" /></button>
-                <button className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-lg"><Trash2 className="h-4 w-4" /></button>
-              </div>
-            ])}
-          />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredGigs.map((gig) => (
+              <GigCard key={gig.id} gig={gig} />
+            ))}
+          </div>
         )}
       </section>
     </div>
