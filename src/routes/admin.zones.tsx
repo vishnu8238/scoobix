@@ -8,7 +8,7 @@ export const Route = createFileRoute("/admin/zones")({
 
 function ZonesPage() {
   return (
-    <div className="space-y-6">
+    <div className="fixed inset-0 md:left-64 p-0">
       <ZoneManager />
     </div>
   );
