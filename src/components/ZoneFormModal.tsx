@@ -53,7 +53,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
       <div 
-        className="relative w-full max-w-5xl bg-zinc-950 rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-5xl bg-zinc-950 rounded-[2.5rem] border border-white/10 shadow-[2xl] overflow-hidden flex flex-col max-h-[95vh]"
         onClick={e => e.stopPropagation()}
       >
         <header className="flex items-center justify-between p-6 border-b border-border/60">
