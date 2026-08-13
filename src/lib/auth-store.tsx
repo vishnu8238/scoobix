@@ -137,13 +137,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const { checkPortalAccess } = await import("./portal-authorization");
       
-      if (profile.role === "admin" || profile.is_admin === true || profile.email === "scoobix.info@gmail.com") {
+      if (profile?.role === "admin" || profile?.is_admin === true || profile?.email === "scoobix.info@gmail.com") {
         roles.push("admin");
       }
 
       // Check current portal access via portal_access table for privileged portals
       if (["partner", "rider", "manager", "logistics"].includes(currentPortal)) {
-        const access = await checkPortalAccess(profile.email, currentPortal as any);
+        const access = await checkPortalAccess(profile?.email || session.user.email, currentPortal as any);
         if (access.ok) {
           roles.push(currentPortal);
         } else {
