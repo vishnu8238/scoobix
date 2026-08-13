@@ -72,6 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
     let session: any = null;
+    const timeoutId = setTimeout(() => {
+      if (authState === "session_resolving" || authState === "authorization_resolving") {
+        console.warn("[AUTH_DEBUG] resolveUser timed out after 15s");
+        setAuthError("Authentication timed out. Please check your connection.");
+        setAuthState("auth_error");
+      }
+    }, 15000);
+
     try {
       if (isInitialMountOrSignIn) {
         setLoading(true);
@@ -256,11 +264,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
     } finally {
+      clearTimeout(timeoutId);
       if (isInitialMountOrSignIn) {
         setLoading(false);
       }
     }
-  }, []);
+  }, [authState]);
 
   // Fix #3: Lightweight re-check on portal change
   useEffect(() => {
@@ -334,9 +343,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     const portal = getRequestedPortal();
+    console.log("[AUTH_TRACE] User signing out from portal:", portal);
     await ifLogout();
     setUser(null);
-    window.location.assign(portal === "customer" ? "/" : `/login?portal=${portal}`);
+    setAuthState("unauthenticated");
+    window.location.replace(new URL(portal === "customer" ? "/" : `/login?portal=${portal}`, window.location.origin).href);
   };
 
   return (
