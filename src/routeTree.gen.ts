@@ -71,6 +71,7 @@ import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as ManagerAnalyticsRouteImport } from './routes/manager.analytics'
 import { Route as LogisticsZonesRouteImport } from './routes/logistics.zones'
+import { Route as LogisticsSupportRouteImport } from './routes/logistics.support'
 import { Route as LogisticsSubzonesRouteImport } from './routes/logistics.subzones'
 import { Route as LogisticsSettingsRouteImport } from './routes/logistics.settings'
 import { Route as LogisticsReferralsRouteImport } from './routes/logistics.referrals'
@@ -453,6 +454,11 @@ const ManagerAnalyticsRoute = ManagerAnalyticsRouteImport.update({
 const LogisticsZonesRoute = LogisticsZonesRouteImport.update({
   id: '/zones',
   path: '/zones',
+  getParentRoute: () => LogisticsRoute,
+} as any)
+const LogisticsSupportRoute = LogisticsSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => LogisticsRoute,
 } as any)
 const LogisticsSubzonesRoute = LogisticsSubzonesRouteImport.update({
@@ -900,6 +906,7 @@ export interface FileRoutesByFullPath {
   '/logistics/referrals': typeof LogisticsReferralsRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
+  '/logistics/support': typeof LogisticsSupportRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
@@ -1031,6 +1038,7 @@ export interface FileRoutesByTo {
   '/logistics/referrals': typeof LogisticsReferralsRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
+  '/logistics/support': typeof LogisticsSupportRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
@@ -1169,6 +1177,7 @@ export interface FileRoutesById {
   '/logistics/referrals': typeof LogisticsReferralsRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
+  '/logistics/support': typeof LogisticsSupportRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
   '/manager/calendar': typeof ManagerCalendarRoute
@@ -1308,6 +1317,7 @@ export interface FileRouteTypes {
     | '/logistics/referrals'
     | '/logistics/settings'
     | '/logistics/subzones'
+    | '/logistics/support'
     | '/logistics/zones'
     | '/manager/analytics'
     | '/manager/calendar'
@@ -1439,6 +1449,7 @@ export interface FileRouteTypes {
     | '/logistics/referrals'
     | '/logistics/settings'
     | '/logistics/subzones'
+    | '/logistics/support'
     | '/logistics/zones'
     | '/manager/analytics'
     | '/manager/calendar'
@@ -1576,6 +1587,7 @@ export interface FileRouteTypes {
     | '/logistics/referrals'
     | '/logistics/settings'
     | '/logistics/subzones'
+    | '/logistics/support'
     | '/logistics/zones'
     | '/manager/analytics'
     | '/manager/calendar'
@@ -2086,6 +2098,13 @@ declare module '@tanstack/react-router' {
       path: '/zones'
       fullPath: '/logistics/zones'
       preLoaderRoute: typeof LogisticsZonesRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/support': {
+      id: '/logistics/support'
+      path: '/support'
+      fullPath: '/logistics/support'
+      preLoaderRoute: typeof LogisticsSupportRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/subzones': {
@@ -2794,6 +2813,7 @@ interface LogisticsRouteChildren {
   LogisticsReferralsRoute: typeof LogisticsReferralsRoute
   LogisticsSettingsRoute: typeof LogisticsSettingsRoute
   LogisticsSubzonesRoute: typeof LogisticsSubzonesRoute
+  LogisticsSupportRoute: typeof LogisticsSupportRoute
   LogisticsZonesRoute: typeof LogisticsZonesRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
 }
@@ -2809,6 +2829,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsReferralsRoute: LogisticsReferralsRoute,
   LogisticsSettingsRoute: LogisticsSettingsRoute,
   LogisticsSubzonesRoute: LogisticsSubzonesRoute,
+  LogisticsSupportRoute: LogisticsSupportRoute,
   LogisticsZonesRoute: LogisticsZonesRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
 }
