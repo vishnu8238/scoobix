@@ -12,7 +12,8 @@ import { OrderItemsList, OrderFinancials } from "@/components/admin/OrderItemsLi
 import { OrderLifecycleTimeline, OrderDeliveryProof } from "@/components/admin/OrderLifecycleTimeline";
 import { OrderTrackingMap } from "@/components/admin/OrderTrackingMap";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
+import { AssignRiderModal } from "@/components/admin/AssignRiderModal";
 
 export const Route = createFileRoute("/admin/orders/$orderId")({
   component: OrderDetailsPage,
@@ -34,6 +35,7 @@ function OrderDetailsPage() {
   const liveOrder = useLiveOrder(orderId);
   const [data, setData] = useState(initialData);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAssignRiderOpen, setIsAssignRiderOpen] = useState(false);
 
   useEffect(() => {
     if (liveOrder) {
@@ -85,7 +87,7 @@ function OrderDetailsPage() {
         order={data.order} 
         onRefresh={handleRefresh}
         onShowHistory={() => {}}
-        onAssignRider={() => {}}
+        onAssignRider={() => setIsAssignRiderOpen(true)}
         onUpdateStatus={handleUpdateStatus}
         onTrack={() => {}}
       />
@@ -104,6 +106,7 @@ function OrderDetailsPage() {
             customer={data.customer} 
             rider={data.rider} 
             order={data.order} 
+            showAllRiders={true}
           />
           
           <OrderItemsList items={data.items} />
@@ -122,6 +125,15 @@ function OrderDetailsPage() {
           <OrderLifecycleTimeline history={data.history} />
         </div>
       </div>
+
+      <AssignRiderModal 
+        isOpen={isAssignRiderOpen}
+        onClose={() => setIsAssignRiderOpen(false)}
+        orderId={orderId}
+        onAssigned={handleRefresh}
+        currentRiderId={data.order.driver_id}
+        zoneId={data.order.zone_id}
+      />
 
       {isUpdating && (
         <div className="fixed inset-0 bg-background/20 backdrop-blur-[1px] flex items-center justify-center z-50">
