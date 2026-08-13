@@ -83,8 +83,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       lastRequestedPortal.current = currentPortal;
 
       // 1. Get user profile
-      const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
-      const profile = profiles[0];
+      let profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
+      let profile = profiles[0];
+
+      // Auto-create a users row on first sign-in
+      if (!profile) {
+        try {
+          const { createRecord } = await import("./insforge-crud");
+          const newProfile = await createRecord("users", {
+            id: authId,
+            email: session.user.email,
+            email_normalized: session.user.email.toLowerCase(),
+            name: session.user.name || "New User",
+            phone: "",
+            avatar_url: session.user.avatar_url || session.user.user_metadata?.picture || "",
+            role: "customer", // Default role for new sign-ups
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+          profile = newProfile;
+          console.log("[AUTH_DEBUG] [CHECKPOINT: AUTO_CREATED_USER] New user created in database:", authId);
+        } catch (err) {
+          console.error("[AUTH_ERROR] Failed to auto-create user profile:", err);
+          // Don't fail the login — fall through with just session data
+          profile = null;
+        }
+      }
       console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_USER_RESOLVED] Profile ID:", profile?.id);
 
       if (!profile) {
