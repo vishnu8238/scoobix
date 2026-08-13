@@ -147,21 +147,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isSuperAdmin) {
         roles.push("admin", "logistics", "partner", "rider", "manager");
       } else {
-        // Check portal_access for the specifically requested portal
-        if (["partner", "rider", "manager", "logistics", "admin"].includes(currentPortal)) {
-          const access = await checkPortalAccess(session.user.email, currentPortal as any);
-          if (access.ok) {
-            roles.push(currentPortal);
-          }
-        }
-        
-        // Background: Check for other active portal permissions to hydrate the roles list
+        // Authoritative check against portal_access for ALL portals to ensure consistency
         const otherPortals: Role[] = ["partner", "rider", "manager", "logistics", "admin"];
-        for (const p of otherPortals) {
-          if (p === currentPortal || roles.includes(p)) continue;
-          const access = await checkPortalAccess(session.user.email, p as any);
-          if (access.ok) roles.push(p);
+        
+        // Check current portal first for speed
+        if (otherPortals.includes(currentPortal)) {
+          const access = await checkPortalAccess(session.user.email, currentPortal as any);
+          if (access.ok) roles.push(currentPortal);
         }
+
+        // Check others in parallel
+        const results = await Promise.all(
+          otherPortals.filter(p => p !== currentPortal).map(async (p) => {
+            const access = await checkPortalAccess(session.user.email, p as any);
+            return access.ok ? p : null;
+          })
+        );
+        
+        results.forEach(r => {
+          if (r && !roles.includes(r)) roles.push(r);
+        });
       }
 
       // 3. Resolve Business Memberships (Legacy Tables - Non-authoritative for admission)
