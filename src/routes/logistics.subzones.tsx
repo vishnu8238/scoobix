@@ -24,8 +24,8 @@ function LogisticsSubzonesPage() {
     setLoading(true);
     try {
       const [sz, z] = await Promise.all([
-        listTable("delivery_subzones", { order: "created_at.desc", limit: 100 }),
-        listTable("delivery_zones", { order: "created_at.desc", limit: 100 })
+        listTable("delivery_subzones", { order: "created_at.desc", limit: 100 }) as unknown as Subzone[],
+        listTable("delivery_zones", { order: "created_at.desc", limit: 100 }) as unknown as DeliveryZone[]
       ]);
       setSubzones(sz || []);
       setZones(z || []);

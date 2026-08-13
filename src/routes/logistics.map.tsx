@@ -20,6 +20,9 @@ function LogisticsZonesDashboard() {
   const [view, setView] = useState<"list" | "map" | "detail">("map");
   const [drivers, setDrivers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [subzones, setSubzones] = useState<Subzone[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
@@ -33,12 +36,17 @@ function LogisticsZonesDashboard() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [driversData, ordersData] = await Promise.all([
+      const [driversData, ordersData, zoneData, st] = await Promise.all([
         listTable("drivers", { limit: 100 }),
-        listTable("orders", { order: "created_at.desc", limit: 100 })
+        listTable("orders", { order: "created_at.desc", limit: 100 }),
+        getZonesWithSubzones(),
+        getZoneStats()
       ]);
       setDrivers(driversData || []);
       setOrders(ordersData || []);
+      setZones(zoneData?.zones || []);
+      setSubzones(zoneData?.subzones || []);
+      setStats(st);
     } catch (err: any) {
       console.error("[MAP_LOAD]", err);
       toast.error(`Failed to load map data: ${err.message}`);

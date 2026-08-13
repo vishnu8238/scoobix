@@ -21,6 +21,9 @@ function LogisticsLiveDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [tracking, setTracking] = useState<any[]>([]);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [subzones, setSubzones] = useState<Subzone[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
@@ -29,19 +32,24 @@ function LogisticsLiveDashboard() {
   const [isSubzoneModalOpen, setIsSubzoneModalOpen] = useState(false);
   const [expandedZones, setExpandedZones] = useState<Record<string, boolean>>({});
   
-  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders", "live_tracking"]);
+  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders", "live_tracking", "gigs"]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [ordersData, driversData, trackingData] = await Promise.all([
+      const [ordersData, driversData, trackingData, zoneData, st] = await Promise.all([
         listTable("orders", { order: "created_at.desc", limit: 200 }),
         listTable("drivers", { limit: 100 }),
-        listTable("live_tracking", { order: "timestamp.desc", limit: 500 })
+        listTable("live_tracking", { order: "timestamp.desc", limit: 500 }),
+        getZonesWithSubzones(),
+        getZoneStats()
       ]);
       setOrders(ordersData || []);
       setDrivers(driversData || []);
       setTracking(trackingData || []);
+      setZones(zoneData?.zones || []);
+      setSubzones(zoneData?.subzones || []);
+      setStats(st);
     } catch (err: any) {
       console.error("[LIVE_LOAD]", err);
       toast.error(`Failed to load live data: ${err.message}`);

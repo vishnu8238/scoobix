@@ -23,7 +23,7 @@ function LogisticsGigs() {
       const data = await listTable("gigs", {
         order: "created_at.desc",
         limit: 200
-      });
+      }) as unknown as Gig[];
       setGigs(data || []);
     } catch (err: any) {
       console.error("[GIGS_LOAD]", err);
