@@ -57,12 +57,17 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
           // If authoritative resolution finished and they don't have it, stay on login page with error.
           if (!pathname.includes("/login")) {
             console.log("[AUTH_DEBUG] RoleGuard: Logistics unauthorized, redirecting to login.");
-            window.location.assign("/logistics/login?error=unauthorized");
+            window.location.replace("/login?portal=logistics&error=unauthorized");
+          }
+        } else if (portal === "admin") {
+          if (!pathname.includes("/login")) {
+            console.log("[AUTH_DEBUG] RoleGuard: Admin unauthorized, redirecting to login.");
+            window.location.replace("/login?portal=admin&error=unauthorized");
           }
         } else if (!pathname.includes("/login") && !pathname.includes("/onboarding")) {
            // Default fallback for other portals
-           console.log("[AUTH_DEBUG] RoleGuard: Defaulting to /app");
-           navigate({ to: "/app" as any });
+           console.log("[AUTH_DEBUG] RoleGuard: No access, redirecting to login.");
+           window.location.replace(`/login?portal=${portal}&error=unauthorized`);
         }
       }
     }

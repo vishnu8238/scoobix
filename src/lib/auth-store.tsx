@@ -176,7 +176,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
 
       const admissionResult = roles.includes(currentPortal);
-      console.log(`[AUTH_DEBUG] [CHECKPOINT: PORTAL_ADMISSION_RESULT] Portal: ${currentPortal}, Admitted: ${admissionResult}`);
+      console.log(`[AUTH_DEBUG] [CHECKPOINT: PORTAL_ADMISSION_RESULT] Portal: ${currentPortal}, Admitted: ${admissionResult}, Roles: ${roles.join(",")}`);
+
+      // Determine the final role to set in the store. 
+      // Priority: 1. Current portal if admitted, 2. Logistics if admitted, 3. First available role, 4. Customer.
+      let finalRole: Role = "customer";
+      if (admissionResult) {
+        finalRole = currentPortal;
+      } else if (roles.includes("logistics")) {
+        finalRole = "logistics";
+      } else if (roles.length > 0) {
+        finalRole = roles[0];
+      }
 
       setUser({
         id: profile.id,
@@ -184,7 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: profile.email || "",
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
-        role: roles.includes(currentPortal) ? currentPortal : (currentPortal === "logistics" && roles.includes("logistics") ? "logistics" : roles[0]),
+        role: finalRole,
         roles,
         membershipsResolved: true,
         pendingPortal: currentPortal,
