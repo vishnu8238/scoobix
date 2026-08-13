@@ -8,7 +8,7 @@ export const Route = createFileRoute("/logistics/zones")({
 
 function LogisticsZones() {
   return (
-    <div className="fixed inset-0 md:left-64 p-0">
+    <div className="h-full w-full">
       <ZoneManager />
     </div>
   );

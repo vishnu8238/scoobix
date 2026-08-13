@@ -117,7 +117,7 @@ function AdminLayout() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 px-5 py-6 md:px-10 md:py-8">
+        <main className="flex-1 flex flex-col h-svh overflow-hidden px-5 py-6 md:px-10 md:py-8">
           {/* Mobile top */}
           <div className="mb-6 flex items-center justify-between md:hidden">
             <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ function AdminLayout() {
             })}
           </nav>
 
-          <div className="animate-fade-up">
+          <div className="flex-1 min-h-0 animate-fade-up">
             <Outlet />
           </div>
         </main>
