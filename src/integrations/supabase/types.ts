@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      merchant_managers: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          id: string
+          monthly_target: number | null
+          name: string | null
+          phone: string | null
+          region: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          monthly_target?: number | null
+          name?: string | null
+          phone?: string | null
+          region?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          monthly_target?: number | null
+          name?: string | null
+          phone?: string | null
+          region?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      onboarding_events: {
+        Row: {
+          actor_role: string | null
+          created_at: string | null
+          id: string
+          manager_id: string | null
+          note: string | null
+          restaurant_id: string | null
+          status: string | null
+        }
+        Insert: {
+          actor_role?: string | null
+          created_at?: string | null
+          id?: string
+          manager_id?: string | null
+          note?: string | null
+          restaurant_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          actor_role?: string | null
+          created_at?: string | null
+          id?: string
+          manager_id?: string | null
+          note?: string | null
+          restaurant_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_events_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_events_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portal_access: {
         Row: {
           created_at: string | null
@@ -49,6 +136,175 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      restaurants: {
+        Row: {
+          address: string | null
+          approved_at: string | null
+          bank_account: string | null
+          bank_holder: string | null
+          bank_ifsc: string | null
+          bank_name: string | null
+          branch_code: string | null
+          branch_name: string | null
+          city: string | null
+          closing_time: string | null
+          code: string | null
+          commission: number | null
+          contact_email: string | null
+          contact_phone: string | null
+          cover_image: string | null
+          cover_url: string | null
+          created_at: string | null
+          cuisine: string | null
+          delivery_radius: number | null
+          documents: Json | null
+          duplicate_flag: string | null
+          fssai_number: string | null
+          gst_number: string | null
+          id: string
+          is_branch: boolean | null
+          latitude: number | null
+          logo: string | null
+          logo_url: string | null
+          longitude: number | null
+          manager_id: string | null
+          name: string | null
+          onboarded_by: string | null
+          onboarding_status: string | null
+          opening_time: string | null
+          owner_email: string | null
+          owner_id: string | null
+          owner_name: string | null
+          owner_phone: string | null
+          pan_number: string | null
+          parent_restaurant_id: string | null
+          pincode: string | null
+          rejection_reason: string | null
+          rst_code: string | null
+          status: string | null
+          submitted_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          approved_at?: string | null
+          bank_account?: string | null
+          bank_holder?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          branch_code?: string | null
+          branch_name?: string | null
+          city?: string | null
+          closing_time?: string | null
+          code?: string | null
+          commission?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          cover_image?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          cuisine?: string | null
+          delivery_radius?: number | null
+          documents?: Json | null
+          duplicate_flag?: string | null
+          fssai_number?: string | null
+          gst_number?: string | null
+          id?: string
+          is_branch?: boolean | null
+          latitude?: number | null
+          logo?: string | null
+          logo_url?: string | null
+          longitude?: number | null
+          manager_id?: string | null
+          name?: string | null
+          onboarded_by?: string | null
+          onboarding_status?: string | null
+          opening_time?: string | null
+          owner_email?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          pan_number?: string | null
+          parent_restaurant_id?: string | null
+          pincode?: string | null
+          rejection_reason?: string | null
+          rst_code?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          approved_at?: string | null
+          bank_account?: string | null
+          bank_holder?: string | null
+          bank_ifsc?: string | null
+          bank_name?: string | null
+          branch_code?: string | null
+          branch_name?: string | null
+          city?: string | null
+          closing_time?: string | null
+          code?: string | null
+          commission?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          cover_image?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          cuisine?: string | null
+          delivery_radius?: number | null
+          documents?: Json | null
+          duplicate_flag?: string | null
+          fssai_number?: string | null
+          gst_number?: string | null
+          id?: string
+          is_branch?: boolean | null
+          latitude?: number | null
+          logo?: string | null
+          logo_url?: string | null
+          longitude?: number | null
+          manager_id?: string | null
+          name?: string | null
+          onboarded_by?: string | null
+          onboarding_status?: string | null
+          opening_time?: string | null
+          owner_email?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          pan_number?: string | null
+          parent_restaurant_id?: string | null
+          pincode?: string | null
+          rejection_reason?: string | null
+          rst_code?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurants_onboarded_by_fkey"
+            columns: ["onboarded_by"]
+            isOneToOne: false
+            referencedRelation: "merchant_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurants_parent_restaurant_id_fkey"
+            columns: ["parent_restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
