@@ -14,8 +14,8 @@ import { OrderTrackingMap } from "@/components/admin/OrderTrackingMap";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-export const Route = createFileRoute("/logistics/orders/$orderId")({
-  component: LogisticsOrderDetailsPage,
+export const Route = createFileRoute("/admin/orders/$orderId")({
+  component: OrderDetailsPage,
   loader: ({ params, context }) => {
     return context.queryClient.ensureQueryData({
       queryKey: ["admin", "order-details", params.orderId],
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/logistics/orders/$orderId")({
   },
 });
 
-function LogisticsOrderDetailsPage() {
+function OrderDetailsPage() {
   const { orderId } = Route.useParams();
   const { data: initialData } = useSuspenseQuery({
     queryKey: ["admin", "order-details", orderId],

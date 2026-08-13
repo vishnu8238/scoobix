@@ -4,12 +4,12 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { History, Search, Loader2, Calendar, User, ShieldAlert } from "lucide-react";
 import { fetchAuditLogs, type AuditLog } from "@/lib/audit-logs-api";
 
-export const Route = createFileRoute("/logistics/audit")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Operational Audit Logs" }] }),
-  component: LogisticsAuditLogs,
+export const Route = createFileRoute("/admin/audit")({
+  head: () => ({ meta: [{ title: "Scoobix Admin · Operational Audit Logs" }] }),
+  component: AdminAuditLogs,
 });
 
-function LogisticsAuditLogs() {
+function AdminAuditLogs() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");

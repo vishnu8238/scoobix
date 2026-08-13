@@ -24,8 +24,8 @@ import { DriverProfileHeader, DriverTabs, PersonalInfoSection } from "@/componen
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { format } from "date-fns";
 
-export const Route = createFileRoute("/logistics/drivers/$driverId")({
-  component: LogisticsDriverProfilePage,
+export const Route = createFileRoute("/admin/drivers/$driverId")({
+  component: DriverProfilePage,
   loader: ({ params }) => fetchDriverDetails(params.driverId),
 });
 
@@ -47,7 +47,7 @@ const SECONDARY_TABS = [
   { id: "bank", label: "Bank", icon: CreditCard },
 ];
 
-function LogisticsDriverProfilePage() {
+function DriverProfilePage() {
   const { driverId } = Route.useParams();
   const { data: driver } = useSuspenseQuery({
     queryKey: ["admin", "driver-profile", driverId],
