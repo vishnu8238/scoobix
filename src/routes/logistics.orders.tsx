@@ -1,49 +1,117 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState, useCallback, useEffect } from "react";
-import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { ClipboardList, Loader2, User, Store } from "lucide-react";
-import { listTable } from "@/lib/insforge-crud";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
+import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
+import { listTable } from "@/lib/insforge-crud";
+import { useTableVersion } from "@/lib/realtime-hooks";
+import { Loader2, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/logistics/orders")({
-  component: LogisticsOrders,
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),
+  component: AdminOrders,
 });
 
-function LogisticsOrders() {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+type OrderRow = {
+  id: string;
+  status?: string;
+  total_price?: number;
+  restaurant_id?: string;
+  customer_id?: string;
+  created_at?: string;
+};
+type NamedRow = { id: string; name?: string };
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    const data = await listTable<any>("orders", { order: "created_at.desc", limit: 100 });
-    setOrders(data);
-    setLoading(false);
+const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
+
+function AdminOrders() {
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [restaurants, setRestaurants] = useState<NamedRow[]>([]);
+  const [users, setUsers] = useState<NamedRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("ALL");
+  const version = useTableVersion(["orders"]);
+
+  const load = useCallback(async () => {
+    const [o, r, u] = await Promise.all([
+      listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
+      listTable<NamedRow>("restaurants", { limit: 500 }),
+      listTable<NamedRow>("users", { limit: 1000 }),
+    ]);
+    setOrders(o); setRestaurants(r); setUsers(u); setLoading(false);
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void load();
+  }, [load, version]);
+
+  const nameById = useMemo(() => Object.fromEntries(restaurants.map((r) => [String(r.id), r.name ?? "—"])), [restaurants]);
+  const userById = useMemo(() => Object.fromEntries(users.map((u) => [String(u.id), u.name ?? "—"])), [users]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const status = (o: OrderRow) => String(o.status ?? "PLACED").toUpperCase();
+
+  const stats = useMemo(() => {
+    const todays = orders.filter((o) => (o.created_at ?? "").slice(0, 10) === today);
+    return [
+      { key: "ALL", label: "Placed today", value: todays.length },
+      { key: "PROGRESS", label: "In progress", value: orders.filter((o) => IN_PROGRESS.includes(status(o))).length },
+      { key: "DELIVERED", label: "Completed", value: orders.filter((o) => status(o) === "DELIVERED").length },
+      { key: "CANCELLED", label: "Cancelled", value: orders.filter((o) => status(o) === "CANCELLED").length },
+    ];
+  }, [orders, today]);
+
+  const visible = useMemo(() => {
+    if (filter === "ALL") return orders;
+    if (filter === "PROGRESS") return orders.filter((o) => IN_PROGRESS.includes(status(o)));
+    return orders.filter((o) => status(o) === filter);
+  }, [orders, filter]);
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-2xl font-extrabold">Order Ledger</h1>
-        <p className="text-sm text-muted-foreground">Comprehensive history of all logistics-managed orders.</p>
+        <p className="eyebrow">Orders</p>
+        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Live order ledger</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Monitor every order across the platform in real time.</p>
       </header>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {stats.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setFilter(s.key)}
+            className={`rounded-3xl p-5 text-left shadow-soft ring-1 transition ${filter === s.key ? "bg-primary/5 ring-primary/40" : "bg-card ring-border/60"}`}
+          >
+            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{s.label}</p>
+            <p className="mt-2 font-display text-2xl font-extrabold">{s.value.toLocaleString()}</p>
+          </button>
+        ))}
+      </div>
 
       <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
         {loading ? (
-          <div className="flex items-center justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading orders…
+          </div>
+        ) : visible.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">No orders in this view.</p>
         ) : (
           <DataTable
-            columns={["Order", "Customer", "Restaurant", "Total", "Status", "Time"]}
-            rows={orders.map(o => [
-              <span key={o.id} className="font-bold">#{o.id.slice(-5).toUpperCase()}</span>,
-              <div key={o.id} className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /> {o.customer_name || "Guest"}</div>,
-              <div key={o.id} className="flex items-center gap-2"><Store className="h-4 w-4 text-muted-foreground" /> {o.restaurant_name || "Restaurant"}</div>,
-              <span key={o.id} className="font-bold">{formatPrice(o.total_price)}</span>,
-              <StatusBadge key={o.id} label={o.status} />,
-              <span key={o.id} className="text-muted-foreground text-xs">
-                {o.created_at ? new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}
-              </span>
+            columns={["Order", "Customer", "Restaurant", "Total", "Status", "Time", "Action"]}
+            rows={visible.map((o) => [
+              <code key={`code${o.id}`} className="font-mono text-[10px] font-bold text-primary">#{o.id.slice(0, 8)}</code>,
+              <span key={`name${o.id}`} className="font-bold">{userById[String(o.customer_id)] || "—"}</span>,
+              <span key={`owner${o.id}`} className="text-muted-foreground">{nameById[String(o.restaurant_id)] || "—"}</span>,
+              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price || 0)}</span>,
+              <StatusBadge key={`status${o.id}`} label={String(o.status || "PLACED")} />,
+              <span key={`mgr${o.id}`} className="text-[10px] font-medium text-muted-foreground">{(o.created_at ?? "").slice(11, 16)}</span>,
+              <Link 
+                key={`act${o.id}`} 
+                to="/logistics/orders/$orderId" 
+                params={{ orderId: o.id }}
+                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+              >
+                Manage <ExternalLink className="h-3 w-3" />
+              </Link>
             ])}
           />
         )}
