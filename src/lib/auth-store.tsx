@@ -81,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 15000);
 
     try {
-    try {
       if (isInitialMountOrSignIn) {
         setLoading(true);
         setAuthState("session_resolving");
