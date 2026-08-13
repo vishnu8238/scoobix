@@ -1,16 +1,21 @@
-import { useEffect, useRef } from "react";
-import { MapPin, Truck, Store } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { MapPin, Truck, Store, User, Loader2 } from "lucide-react";
 import { initGoogleMaps } from "@/lib/maps-service";
+import { listTable } from "@/lib/insforge-crud";
 
 type OrderTrackingMapProps = {
   restaurant: any;
   customer: any;
   rider: any;
   order: any;
+  showAllRiders?: boolean;
 };
 
-export function OrderTrackingMap({ restaurant, customer, rider, order }: OrderTrackingMapProps) {
+export function OrderTrackingMap({ restaurant, customer, rider, order, showAllRiders = false }: OrderTrackingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
+  const googleMapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const [loadingDrivers, setLoadingDrivers] = useState(false);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -41,79 +46,134 @@ export function OrderTrackingMap({ restaurant, customer, rider, order }: OrderTr
         zoomControl: true,
       });
 
-      const bounds = new google.maps.LatLngBounds();
-
-      // Restaurant Marker
-      if (restaurant?.latitude && restaurant?.longitude) {
-        const pos = { lat: Number(restaurant.latitude), lng: Number(restaurant.longitude) };
-        new google.maps.Marker({
-          position: pos,
-          map,
-          title: "Restaurant",
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: "#3B82F6",
-            fillOpacity: 1,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 2,
-            scale: 8
-          }
-        });
-        bounds.extend(pos);
-      }
-
-      // Customer Marker
-      if (order?.latitude && order?.longitude) {
-        const pos = { lat: Number(order.latitude), lng: Number(order.longitude) };
-        new google.maps.Marker({
-          position: pos,
-          map,
-          title: "Customer",
-          icon: {
-            path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-            fillColor: "#EF4444",
-            fillOpacity: 1,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 2,
-            scale: 6
-          }
-        });
-        bounds.extend(pos);
-      }
-
-      // Rider Marker
-      if (rider?.latitude && rider?.longitude) {
-        const pos = { lat: Number(rider.latitude), lng: Number(rider.longitude) };
-        new google.maps.Marker({
-          position: pos,
-          map,
-          title: "Rider",
-          icon: {
-            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-            fillColor: "#10B981",
-            fillOpacity: 1,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 2,
-            scale: 7
-          }
-        });
-        bounds.extend(pos);
-      }
-
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds);
-      }
+      googleMapRef.current = map;
+      updateMarkers(google, map);
     };
 
     void run();
   }, [restaurant, customer, rider, order]);
 
+  // Handle showing all available riders on the map if requested
+  useEffect(() => {
+    if (showAllRiders && googleMapRef.current) {
+      void loadAndShowAllDrivers();
+    }
+  }, [showAllRiders, order?.zone_id]);
+
+  const loadAndShowAllDrivers = async () => {
+    if (!googleMapRef.current) return;
+    setLoadingDrivers(true);
+    try {
+      const google = await initGoogleMaps();
+      const params: any = { online_status: "eq.true", limit: 50 };
+      if (order?.zone_id) params.zone_id = `eq.${order.zone_id}`;
+      
+      const drivers = await listTable("drivers", params);
+      
+      // Add drivers to map
+      drivers.forEach(driver => {
+        if (driver.latitude && driver.longitude && driver.id !== rider?.id) {
+          const marker = new google.maps.Marker({
+            position: { lat: Number(driver.latitude), lng: Number(driver.longitude) },
+            map: googleMapRef.current,
+            title: `Driver: ${driver.id.slice(0,8)}`,
+            icon: {
+              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              fillColor: "#94a3b8", // Grey for available
+              fillOpacity: 0.6,
+              strokeColor: "#FFFFFF",
+              strokeWeight: 1,
+              scale: 5
+            }
+          });
+          markersRef.current.push(marker);
+        }
+      });
+    } catch (error) {
+      console.error("Failed to load nearby drivers for map", error);
+    } finally {
+      setLoadingDrivers(false);
+    }
+  };
+
+  const updateMarkers = (google: any, map: any) => {
+    // Clear old markers if any
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+
+    const bounds = new google.maps.LatLngBounds();
+
+    // Restaurant Marker
+    if (restaurant?.latitude && restaurant?.longitude) {
+      const pos = { lat: Number(restaurant.latitude), lng: Number(restaurant.longitude) };
+      const marker = new google.maps.Marker({
+        position: pos,
+        map,
+        title: "Restaurant",
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: "#3B82F6",
+          fillOpacity: 1,
+          strokeColor: "#FFFFFF",
+          strokeWeight: 2,
+          scale: 8
+        }
+      });
+      markersRef.current.push(marker);
+      bounds.extend(pos);
+    }
+
+    // Customer Marker
+    if (order?.latitude && order?.longitude) {
+      const pos = { lat: Number(order.latitude), lng: Number(order.longitude) };
+      const marker = new google.maps.Marker({
+        position: pos,
+        map,
+        title: "Customer",
+        icon: {
+          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+          fillColor: "#EF4444",
+          fillOpacity: 1,
+          strokeColor: "#FFFFFF",
+          strokeWeight: 2,
+          scale: 6
+        }
+      });
+      markersRef.current.push(marker);
+      bounds.extend(pos);
+    }
+
+    // Assigned Rider Marker
+    if (rider?.latitude && rider?.longitude) {
+      const pos = { lat: Number(rider.latitude), lng: Number(rider.longitude) };
+      const marker = new google.maps.Marker({
+        position: pos,
+        map,
+        title: "Assigned Rider",
+        icon: {
+          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+          fillColor: "#10B981",
+          fillOpacity: 1,
+          strokeColor: "#FFFFFF",
+          strokeWeight: 2,
+          scale: 7
+        }
+      });
+      markersRef.current.push(marker);
+      bounds.extend(pos);
+    }
+
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds);
+    }
+  };
+
   return (
-    <div className="rounded-3xl bg-card shadow-soft ring-1 ring-border/60 overflow-hidden h-[400px] relative">
+    <div className="rounded-3xl bg-card shadow-soft ring-1 ring-border/60 overflow-hidden h-[450px] relative">
       <div ref={mapRef} className="w-full h-full" />
       
       <div className="absolute top-4 left-4 flex flex-col gap-2">
-        <div className="bg-card/90 backdrop-blur-md px-3 py-2 rounded-2xl shadow-lg ring-1 ring-border/40 flex items-center gap-3">
+        <div className="bg-card/90 backdrop-blur-md px-3 py-2 rounded-2xl shadow-lg ring-1 ring-border/40 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-primary" />
             <span className="text-[10px] font-bold uppercase tracking-wider">Restaurant</span>
@@ -128,12 +188,28 @@ export function OrderTrackingMap({ restaurant, customer, rider, order }: OrderTr
               <div className="h-3 w-px bg-border/60" />
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Rider</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Assigned Rider</span>
+              </div>
+            </>
+          )}
+          {showAllRiders && (
+            <>
+              <div className="h-3 w-px bg-border/60" />
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-slate-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Nearby Drivers</span>
               </div>
             </>
           )}
         </div>
       </div>
+
+      {loadingDrivers && (
+        <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-md px-3 py-2 rounded-2xl shadow-lg ring-1 ring-border/40 flex items-center gap-2">
+          <Loader2 className="h-3 w-3 animate-spin text-primary" />
+          <span className="text-[9px] font-black uppercase tracking-widest">Updating Drivers...</span>
+        </div>
+      )}
     </div>
   );
 }
