@@ -65,7 +65,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Fix #1: Use async getAccessToken to hydrate from cookie on fresh mount
       const token = await getAccessToken();
-      const { data: userData } = await insforge.auth.getCurrentUser();
+      const { data: userData, error: authError } = await insforge.auth.getCurrentUser();
+      if (authError) {
+         console.log("[AUTH_DEBUG] No current user session found:", authError.message);
+         setUser(null);
+         return;
+      }
       session = userData;
       
       console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_SESSION_RESTORED] Session ID:", session?.user?.id);

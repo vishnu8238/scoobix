@@ -172,10 +172,12 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
 
     if (error) {
       if (method === "GET" && status === 401) {
+        // Return empty array/null instead of throwing 401 for GETs to allow 
+        // graceful UI degradation when unauthenticated.
         console.warn(`[DB_AUTH_SILENT] Unauthenticated GET suppressed: ${table}`);
-      } else {
-        console.error(`[DB_ERROR] ${method} ${table} failed. Full error:`, JSON.stringify(error, null, 2), "status:", status, "statusText:", statusText);
+        return (Array.isArray(data) ? [] : null) as unknown as T;
       }
+      console.error(`[DB_ERROR] ${method} ${table} failed. Full error:`, JSON.stringify(error, null, 2), "status:", status, "statusText:", statusText);
       throw new HttpError(status ?? 0, error.message || error.error || error.detail || statusText || JSON.stringify(error) || "Unknown database error");
     }
 
