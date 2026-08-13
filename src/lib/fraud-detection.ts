@@ -466,7 +466,10 @@ const SCANNERS = [
  * so a missing table can never abort the whole pass.
  */
 export async function runFraudScan(actor?: { id: string; role?: string }): Promise<ScanResult> {
-  const results = await Promise.all(SCANNERS.map((s) => s().catch(() => [] as FraudFinding[])));
+  const results = await Promise.all(SCANNERS.map((s) => s().catch((err) => {
+    console.error(`[FRAUD_SCAN] Scanner failed:`, err);
+    return [] as FraudFinding[];
+  })));
   const findings = results.flat().filter((f) => f.subjectId && f.score >= 30);
 
   let created = 0;

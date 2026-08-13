@@ -38,7 +38,12 @@ export const ensureAuthHydrated = async () => {
     try {
       console.log("[INSFORGE_AUTH] Hydrating session from storage/cookies...");
       // getCurrentUser handles the refresh logic and hydrates the session internally
-      await insforge.auth.getCurrentUser();
+      const { data: session, error } = await insforge.auth.getCurrentUser();
+      if (error) {
+        console.warn("[INSFORGE_AUTH] No session found during hydration:", error.message);
+        cachedAccessToken = null;
+        return;
+      }
       
       // Pull token from the SDK
       const auth = insforge.auth;
