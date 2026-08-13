@@ -3,16 +3,16 @@ import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { fetchSubzones, type Subzone, fetchZones, type DeliveryZone } from "@/lib/zones-api";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { Plus, Edit2, Trash2, Search, Map as MapIcon, Layers } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Map as MapIcon } from "lucide-react";
 import { SubzoneFormModal } from "@/components/ZoneFormModal";
 import { GoogleMap } from "@/components/maps/GoogleMap";
 
 export const Route = createFileRoute("/logistics/subzones")({
-  head: () => ({ meta: [{ title: "Scoobix Admin · Subzones" }] }),
-  component: SubzonesPage,
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Subzones" }] }),
+  component: LogisticsSubzones,
 });
 
-function SubzonesPage() {
+function LogisticsSubzones() {
   const [subzones, setSubzones] = useState<Subzone[]>([]);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ function SubzonesPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [sz, z] = await Promise.all([fetchSubzones(), fetchZones()]);
+      const [sz, z] = await Promise.all([fetchSubzones(), fetchSubzones(), fetchZones()]);
       setSubzones(sz);
       setZones(z);
     } catch {
