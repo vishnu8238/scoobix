@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { fetchZones, type DeliveryZone, type Subzone, fetchSubzones } from "@/lib/zones-api";
+import { listTable } from "@/lib/insforge-crud";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Search, Plus, Map as MapIcon, Edit2, Trash2, ArrowLeft, Layers, Bike, Store, ClipboardList, Settings, History, Users, Loader2 } from "lucide-react";
 import { ZoneFormModal, SubzoneFormModal } from "@/components/ZoneFormModal";

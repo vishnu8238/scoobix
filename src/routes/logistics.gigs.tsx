@@ -3,7 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Sparkles, Search, Plus, Loader2, Calendar, Target, Award, MapPin, Edit2, Trash2 } from "lucide-react";
 import { fetchGigs, type Gig } from "@/lib/gigs-api";
+import { listTable } from "@/lib/insforge-crud";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),

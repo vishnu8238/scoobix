@@ -7,6 +7,7 @@ import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
 import { updateZone, deleteZone, getZoneStats, type DeliveryZone, type Subzone } from "@/lib/zones-api";
 import { getZonesWithSubzones, seedVadodaraStructure } from "@/lib/zones.functions";
 import { useTableVersion } from "@/lib/realtime-hooks";
+import { listTable } from "@/lib/insforge-crud";
 import { format } from "date-fns";
 import { ZoneFormModal, SubzoneFormModal } from "@/components/ZoneFormModal";
 

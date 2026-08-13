@@ -5,6 +5,7 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),

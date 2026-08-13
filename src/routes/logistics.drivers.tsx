@@ -5,6 +5,7 @@ import { Star, Plus, Check, X, Ban, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLiveTable } from "@/lib/realtime-hooks";
 import { kvGet, kvSet } from "@/lib/kv-store";
+import { listTable } from "@/lib/insforge-crud";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/drivers")({

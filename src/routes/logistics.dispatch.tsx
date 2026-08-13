@@ -5,6 +5,7 @@ import { Navigation, Search, Loader2, Bike, Store, MapPin, ShieldAlert, History 
 import { listTable } from "@/lib/insforge-crud";
 import { formatPrice } from "@/lib/format";
 import { useTableVersion } from "@/lib/realtime-hooks";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/dispatch")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Manual Dispatch" }] }),
