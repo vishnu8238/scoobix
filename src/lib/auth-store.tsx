@@ -23,9 +23,20 @@ export type User = {
   pendingPortal?: Role;
 };
 
+export type AuthState = 
+  | "initializing" 
+  | "oauth_callback_in_progress" 
+  | "session_resolving" 
+  | "authenticated" 
+  | "unauthenticated" 
+  | "authorization_resolving" 
+  | "auth_error";
+
 type AuthCtx = {
   user: User | null;
   loading: boolean;
+  authState: AuthState;
+  authError: string | null;
   login: (provider: 'google', portal?: string, options?: { prompt?: 'select_account' | 'consent' | 'none' }) => Promise<void>;
   logout: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -34,6 +45,8 @@ type AuthCtx = {
 const AuthContext = createContext<AuthCtx>({
   user: null,
   loading: true,
+  authState: "initializing",
+  authError: null,
   login: async () => {},
   logout: async () => {},
   signOut: async () => {},
@@ -53,6 +66,8 @@ export const getRequestedPortal = () => {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState<AuthState>("initializing");
+  const [authError, setAuthError] = useState<string | null>(null);
   const lastRequestedPortal = useRef<Role | null>(null);
 
   const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
@@ -60,7 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       if (isInitialMountOrSignIn) {
         setLoading(true);
-        console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_LOADING] Loading: true");
+        setAuthState("session_resolving");
+        setAuthError(null);
+        console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_LOADING] Loading: true, State: session_resolving");
       }
       
       // Fix #1: Use async getAccessToken to hydrate from cookie on fresh mount
@@ -69,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (authError) {
          console.log("[AUTH_DEBUG] No current user session found:", authError.message);
          setUser(null);
+         setAuthState("unauthenticated");
          return;
       }
       session = userData;
@@ -80,8 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!session || !session.user) {
         setUser(null);
+        setAuthState("unauthenticated");
         return;
       }
+
+      setAuthState("authorization_resolving");
 
       const authId = session.user.id;
       const currentPortal = getRequestedPortal() as Role;
@@ -214,8 +235,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         membershipsResolved: true,
         pendingPortal: currentPortal,
       });
+      setAuthState("authenticated");
     } catch (err: any) {
       console.error("[MEMBERSHIP_ERROR] Failed to resolve user memberships:", err);
+      setAuthError(err.message || "Failed to resolve permissions.");
+      setAuthState("auth_error");
+      
       if (session?.user) {
         setUser({
           id: session.user.id,
@@ -318,6 +343,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       loading,
+      authState,
+      authError,
       login,
       logout,
       signOut: logout,

@@ -112,7 +112,7 @@ function AuthCallback() {
         localStorage.removeItem("scoobix_oauth_portal_intent");
         console.log("[AUTH_TRACE] Authorization complete. Redirecting to:", dest);
         
-        // Use window.location.replace but with the full URL to ensure clean navigation
+        // Remove callback from history
         window.location.replace(new URL(dest, window.location.origin).href);
 
       } catch (err: any) {

@@ -13,14 +13,14 @@ interface AdminGuardProps {
 }
 
 export function AdminGuard({ children }: AdminGuardProps) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, authState } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || authState === "initializing" || authState === "session_resolving") return;
 
     if (!user) {
       if (pathname !== "/login") {
@@ -57,7 +57,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     verify();
   }, [user, authLoading, navigate, pathname]);
 
-  if ((authLoading || (user && authorized === null)) && pathname !== "/login") {
+  if ((authLoading || authState === "initializing" || authState === "session_resolving" || (user && authorized === null)) && pathname !== "/login") {
     return (
       <div className="flex min-h-svh items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-4">

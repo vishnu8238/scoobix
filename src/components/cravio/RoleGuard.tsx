@@ -16,7 +16,7 @@ interface RoleGuardProps {
 }
 
 export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, authState } = useAuth();
   const navigate = useNavigate();
   const portal = getRequestedPortal();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -28,8 +28,8 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     }
     
     // AUTH HYDRATION PROTECTION: 
-    // Do NOT trigger any redirects if auth is still initializing.
-    if (loading) return;
+    // Do NOT trigger any redirects if auth is still initializing or resolving.
+    if (loading || authState === "initializing" || authState === "session_resolving" || authState === "authorization_resolving") return;
     
     // 1. Not logged in? 
     if (!user) {
@@ -60,7 +60,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     }
   }, [user, loading, portal, allow, navigate, pathname]);
 
-  if (loading) {
+  if (loading || authState === "initializing" || authState === "session_resolving" || authState === "authorization_resolving") {
     // If we are already on a login page, just show it.
     if (pathname.includes("/login")) {
       return <>{children}</>;
