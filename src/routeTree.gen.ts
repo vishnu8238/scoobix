@@ -142,6 +142,8 @@ import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAccessRouteImport } from './routes/admin.access'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
+import { Route as LogisticsOrdersOrderIdRouteImport } from './routes/logistics.orders.$orderId'
+import { Route as LogisticsDriversDriverIdRouteImport } from './routes/logistics.drivers.$driverId'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
 import { Route as AdminOrdersOrderIdRouteImport } from './routes/admin.orders.$orderId'
 import { Route as AdminDriversDriverIdRouteImport } from './routes/admin.drivers.$driverId'
@@ -813,6 +815,17 @@ const ManagerLeadIdRoute = ManagerLeadIdRouteImport.update({
   path: '/lead/$id',
   getParentRoute: () => ManagerRoute,
 } as any)
+const LogisticsOrdersOrderIdRoute = LogisticsOrdersOrderIdRouteImport.update({
+  id: '/$orderId',
+  path: '/$orderId',
+  getParentRoute: () => LogisticsOrdersRoute,
+} as any)
+const LogisticsDriversDriverIdRoute =
+  LogisticsDriversDriverIdRouteImport.update({
+    id: '/$driverId',
+    path: '/$driverId',
+    getParentRoute: () => LogisticsDriversRoute,
+  } as any)
 const AppGroupSessionIdRoute = AppGroupSessionIdRouteImport.update({
   id: '/group/$sessionId',
   path: '/group/$sessionId',
@@ -977,6 +990,8 @@ export interface FileRoutesByFullPath {
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/logistics/drivers/$driverId': typeof LogisticsDriversDriverIdRoute
+  '/logistics/orders/$orderId': typeof LogisticsOrdersOrderIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRoutesByTo {
@@ -1109,6 +1124,8 @@ export interface FileRoutesByTo {
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/logistics/drivers/$driverId': typeof LogisticsDriversDriverIdRoute
+  '/logistics/orders/$orderId': typeof LogisticsOrdersOrderIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRoutesById {
@@ -1250,6 +1267,8 @@ export interface FileRoutesById {
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
+  '/logistics/drivers/$driverId': typeof LogisticsDriversDriverIdRoute
+  '/logistics/orders/$orderId': typeof LogisticsOrdersOrderIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
 export interface FileRouteTypes {
@@ -1392,6 +1411,8 @@ export interface FileRouteTypes {
     | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
+    | '/logistics/drivers/$driverId'
+    | '/logistics/orders/$orderId'
     | '/manager/lead/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1524,6 +1545,8 @@ export interface FileRouteTypes {
     | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
+    | '/logistics/drivers/$driverId'
+    | '/logistics/orders/$orderId'
     | '/manager/lead/$id'
   id:
     | '__root__'
@@ -1664,6 +1687,8 @@ export interface FileRouteTypes {
     | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
+    | '/logistics/drivers/$driverId'
+    | '/logistics/orders/$orderId'
     | '/manager/lead/$id'
   fileRoutesById: FileRoutesById
 }
@@ -2616,6 +2641,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerLeadIdRouteImport
       parentRoute: typeof ManagerRoute
     }
+    '/logistics/orders/$orderId': {
+      id: '/logistics/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/logistics/orders/$orderId'
+      preLoaderRoute: typeof LogisticsOrdersOrderIdRouteImport
+      parentRoute: typeof LogisticsOrdersRoute
+    }
+    '/logistics/drivers/$driverId': {
+      id: '/logistics/drivers/$driverId'
+      path: '/$driverId'
+      fullPath: '/logistics/drivers/$driverId'
+      preLoaderRoute: typeof LogisticsDriversDriverIdRouteImport
+      parentRoute: typeof LogisticsDriversRoute
+    }
     '/app/group/$sessionId': {
       id: '/app/group/$sessionId'
       path: '/group/$sessionId'
@@ -2814,10 +2853,12 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface LogisticsDriversRouteChildren {
   LogisticsDriversRoute: typeof LogisticsDriversRoute
+  LogisticsDriversDriverIdRoute: typeof LogisticsDriversDriverIdRoute
 }
 
 const LogisticsDriversRouteChildren: LogisticsDriversRouteChildren = {
   LogisticsDriversRoute: LogisticsDriversRoute,
+  LogisticsDriversDriverIdRoute: LogisticsDriversDriverIdRoute,
 }
 
 const LogisticsDriversRouteWithChildren =
@@ -2825,10 +2866,12 @@ const LogisticsDriversRouteWithChildren =
 
 interface LogisticsOrdersRouteChildren {
   LogisticsOrdersRoute: typeof LogisticsOrdersRoute
+  LogisticsOrdersOrderIdRoute: typeof LogisticsOrdersOrderIdRoute
 }
 
 const LogisticsOrdersRouteChildren: LogisticsOrdersRouteChildren = {
   LogisticsOrdersRoute: LogisticsOrdersRoute,
+  LogisticsOrdersOrderIdRoute: LogisticsOrdersOrderIdRoute,
 }
 
 const LogisticsOrdersRouteWithChildren = LogisticsOrdersRoute._addFileChildren(
