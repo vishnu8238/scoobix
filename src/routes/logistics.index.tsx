@@ -10,7 +10,7 @@ import { computeSupportAnalytics, listAllTickets, listTicketRatings } from "@/li
 
 export const Route = createFileRoute("/logistics/")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Command Center" }] }),
-  component: AdminDashboard,
+  component: LogisticsDashboard,
 });
 
 type OrderRow = {
@@ -26,7 +26,7 @@ type NamedRow = { id: string; name?: string; image_url?: string };
 
 const dayKey = (d: Date) => d.toISOString().slice(0, 10);
 
-function AdminDashboard() {
+function LogisticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [users, setUsers] = useState<NamedRow[]>([]);
@@ -40,7 +40,6 @@ function AdminDashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Core Platform Data (Essential for Dashboard)
       const [o, u, r, d] = await Promise.all([
         listTable<OrderRow>("orders", { order: "created_at.desc", limit: 500 }).catch(() => [] as OrderRow[]),
         listTable<NamedRow>("users", { limit: 1000 }).catch(() => [] as NamedRow[]),
@@ -53,19 +52,18 @@ function AdminDashboard() {
       setRestaurants(r); 
       setDrivers(d);
 
-      // 2. Optional Analytics (Isolated Failure)
       try {
         const [z, tickets, ratings] = await Promise.all([
           getZoneStats().catch(err => {
-            console.warn("[ADMIN_DASHBOARD] Zone stats failed:", err);
+            console.warn("[LOGISTICS_DASHBOARD] Zone stats failed:", err);
             return null;
           }),
           listAllTickets().catch(err => {
-            console.warn("[ADMIN_DASHBOARD] Tickets failed:", err);
+            console.warn("[LOGISTICS_DASHBOARD] Tickets failed:", err);
             return [] as any[];
           }),
           listTicketRatings().catch(err => {
-            console.warn("[ADMIN_DASHBOARD] Ratings failed:", err);
+            console.warn("[LOGISTICS_DASHBOARD] Ratings failed:", err);
             return [] as any[];
           })
         ]);
@@ -77,10 +75,10 @@ function AdminDashboard() {
           setSupportStats(null);
         }
       } catch (analyticsErr) {
-        console.error("[ADMIN_DASHBOARD] Critical analytics failure:", analyticsErr);
+        console.error("[LOGISTICS_DASHBOARD] Critical analytics failure:", analyticsErr);
       }
     } catch (err) {
-      console.error("[ADMIN_DASHBOARD] Fatal dashboard load error:", err);
+      console.error("[LOGISTICS_DASHBOARD] Fatal dashboard load error:", err);
     } finally {
       setLoading(false);
     }
