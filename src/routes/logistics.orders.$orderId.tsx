@@ -14,7 +14,7 @@ import { OrderTrackingMap } from "@/components/admin/OrderTrackingMap";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-export const Route = createFileRoute("/admin/orders/$orderId")({
+export const Route = createFileRoute("/logistics/orders/$orderId")({
   component: OrderDetailsPage,
   loader: ({ params, context }) => {
     return context.queryClient.ensureQueryData({

@@ -4,7 +4,7 @@ import { Shield, Bell, Globe, CreditCard, Users, LifeBuoy, Save } from "lucide-r
 import { useCms } from "@/lib/cms-store";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/admin/settings")({
+export const Route = createFileRoute("/logistics/settings")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Settings" }] }),
   component: AdminSettings,
 });

@@ -24,7 +24,7 @@ import { DriverProfileHeader, DriverTabs, PersonalInfoSection } from "@/componen
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { format } from "date-fns";
 
-export const Route = createFileRoute("/admin/drivers/$driverId")({
+export const Route = createFileRoute("/logistics/drivers/$driverId")({
   component: DriverProfilePage,
   loader: ({ params }) => fetchDriverDetails(params.driverId),
 });

@@ -72,6 +72,7 @@ import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as ManagerAnalyticsRouteImport } from './routes/manager.analytics'
 import { Route as LogisticsZonesRouteImport } from './routes/logistics.zones'
 import { Route as LogisticsSubzonesRouteImport } from './routes/logistics.subzones'
+import { Route as LogisticsSettingsRouteImport } from './routes/logistics.settings'
 import { Route as LogisticsOrdersRouteImport } from './routes/logistics.orders'
 import { Route as LogisticsMapRouteImport } from './routes/logistics.map'
 import { Route as LogisticsLiveRouteImport } from './routes/logistics.live'
@@ -461,6 +462,11 @@ const LogisticsZonesRoute = LogisticsZonesRouteImport.update({
 const LogisticsSubzonesRoute = LogisticsSubzonesRouteImport.update({
   id: '/subzones',
   path: '/subzones',
+  getParentRoute: () => LogisticsRoute,
+} as any)
+const LogisticsSettingsRoute = LogisticsSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => LogisticsRoute,
 } as any)
 const LogisticsOrdersRoute = LogisticsOrdersRouteImport.update({
@@ -890,6 +896,7 @@ export interface FileRoutesByFullPath {
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/map': typeof LogisticsMapRoute
   '/logistics/orders': typeof LogisticsOrdersRouteWithChildren
+  '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -1020,6 +1027,7 @@ export interface FileRoutesByTo {
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/map': typeof LogisticsMapRoute
   '/logistics/orders': typeof LogisticsOrdersRouteWithChildren
+  '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -1155,6 +1163,7 @@ export interface FileRoutesById {
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/map': typeof LogisticsMapRoute
   '/logistics/orders': typeof LogisticsOrdersRouteWithChildren
+  '/logistics/settings': typeof LogisticsSettingsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -1292,6 +1301,7 @@ export interface FileRouteTypes {
     | '/logistics/live'
     | '/logistics/map'
     | '/logistics/orders'
+    | '/logistics/settings'
     | '/logistics/subzones'
     | '/logistics/zones'
     | '/manager/analytics'
@@ -1422,6 +1432,7 @@ export interface FileRouteTypes {
     | '/logistics/live'
     | '/logistics/map'
     | '/logistics/orders'
+    | '/logistics/settings'
     | '/logistics/subzones'
     | '/logistics/zones'
     | '/manager/analytics'
@@ -1556,6 +1567,7 @@ export interface FileRouteTypes {
     | '/logistics/live'
     | '/logistics/map'
     | '/logistics/orders'
+    | '/logistics/settings'
     | '/logistics/subzones'
     | '/logistics/zones'
     | '/manager/analytics'
@@ -2082,6 +2094,13 @@ declare module '@tanstack/react-router' {
       path: '/subzones'
       fullPath: '/logistics/subzones'
       preLoaderRoute: typeof LogisticsSubzonesRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/settings': {
+      id: '/logistics/settings'
+      path: '/settings'
+      fullPath: '/logistics/settings'
+      preLoaderRoute: typeof LogisticsSettingsRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/orders': {
@@ -2766,6 +2785,7 @@ interface LogisticsRouteChildren {
   LogisticsLiveRoute: typeof LogisticsLiveRoute
   LogisticsMapRoute: typeof LogisticsMapRoute
   LogisticsOrdersRoute: typeof LogisticsOrdersRouteWithChildren
+  LogisticsSettingsRoute: typeof LogisticsSettingsRoute
   LogisticsSubzonesRoute: typeof LogisticsSubzonesRoute
   LogisticsZonesRoute: typeof LogisticsZonesRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
@@ -2779,6 +2799,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsLiveRoute: LogisticsLiveRoute,
   LogisticsMapRoute: LogisticsMapRoute,
   LogisticsOrdersRoute: LogisticsOrdersRouteWithChildren,
+  LogisticsSettingsRoute: LogisticsSettingsRoute,
   LogisticsSubzonesRoute: LogisticsSubzonesRoute,
   LogisticsZonesRoute: LogisticsZonesRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
