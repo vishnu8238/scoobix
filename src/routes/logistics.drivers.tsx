@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/drivers")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Drivers" }] }),
-  component: AdminDrivers,
+  component: LogisticsDrivers,
 });
 
 type DriverRow = {
@@ -25,7 +25,7 @@ type UserRow = { id: string; name?: string | null; email?: string | null };
 
 const STATUS_KEY = "driver_status";
 
-function AdminDrivers() {
+function LogisticsDrivers() {
   const { rows: drivers } = useLiveTable<DriverRow>("drivers", { params: { limit: 300 }, minMs: 10000, maxMs: 60000 });
   const { rows: users } = useLiveTable<UserRow>("users", { params: { limit: 500 }, minMs: 30000, maxMs: 120000 });
   const [overrides, setOverrides] = useState<Record<string, string>>({});

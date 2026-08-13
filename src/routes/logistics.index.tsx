@@ -10,7 +10,7 @@ import { computeSupportAnalytics, listAllTickets, listTicketRatings } from "@/li
 
 export const Route = createFileRoute("/logistics/")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Command Center" }] }),
-  component: AdminDashboard,
+  component: LogisticsDashboard,
 });
 
 type OrderRow = {
@@ -26,7 +26,7 @@ type NamedRow = { id: string; name?: string; image_url?: string };
 
 const dayKey = (d: Date) => d.toISOString().slice(0, 10);
 
-function AdminDashboard() {
+function LogisticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [users, setUsers] = useState<NamedRow[]>([]);
