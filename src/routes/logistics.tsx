@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Truck, MapPin, Users, Package, Zap, Settings, MoreHorizontal } from "lucide-react";
+import { LayoutDashboard, Truck, MapPin, Users, Package, Zap, Settings, History } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
