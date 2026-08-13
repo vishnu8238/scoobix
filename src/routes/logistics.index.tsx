@@ -9,7 +9,7 @@ import { getZoneStats } from "@/lib/zones-api";
 import { computeSupportAnalytics, listAllTickets, listTicketRatings } from "@/lib/support-api";
 
 export const Route = createFileRoute("/logistics/")({
-  head: () => ({ meta: [{ title: "Scoobix Master Admin · Command Center" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Command Center" }] }),
   component: AdminDashboard,
 });
 
