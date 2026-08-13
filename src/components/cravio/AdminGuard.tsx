@@ -43,6 +43,8 @@ export function AdminGuard({ children }: AdminGuardProps) {
     if (authLoading || authState === "initializing" || authState === "session_resolving") return;
 
     if (!user) return;
+
+    const verify = async () => {
       // Safety timeout: 10 seconds to verify admin email
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("Verification timeout")), 10000)
@@ -68,7 +70,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     };
 
     verify();
-  }, [user, authLoading, navigate, pathname]);
+  }, [user, authLoading, authState]);
 
   if ((authLoading || authState === "initializing" || authState === "session_resolving" || (user && authorized === null)) && pathname !== "/login") {
     return (
