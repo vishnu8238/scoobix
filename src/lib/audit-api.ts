@@ -18,7 +18,7 @@ export const AUDIT_TABLE = "audit_logs";
 export type AuditCategory =
   | "auth" | "user" | "restaurant" | "rider" | "manager" | "admin" | "support"
   | "wallet" | "coupon" | "reward" | "subscription" | "payment" | "kyc"
-  | "settings" | "security" | "privacy";
+  | "settings" | "security" | "privacy" | "logistics";
 
 export type AuditSeverity = "info" | "notice" | "warning" | "critical";
 
