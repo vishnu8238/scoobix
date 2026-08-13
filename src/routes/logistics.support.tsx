@@ -1,10 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { LifeBuoy, Search, Loader2, MessageSquare, Clock, Filter, CheckCircle2, AlertCircle } from "lucide-react";
-import { listAllTickets, type SupportTicket, updateTicketStatus, listTicketRatings } from "@/lib/support-api";
+import { 
+  listAllTickets, 
+  type SupportTicket, 
+  setTicketStatus, 
+  listTicketRatings,
+  ticketStatus,
+  ticketPriority,
+  STATUS_LABEL,
+  STATUS_TONE,
+  computeSupportAnalytics
+} from "@/lib/support-api";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { toast } from "sonner";
 import { useTableVersion } from "@/lib/realtime-hooks";
+import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/logistics/support")({
   head: () => ({ meta: [
@@ -15,11 +26,12 @@ export const Route = createFileRoute("/logistics/support")({
 });
 
 function LogisticsSupport() {
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [ratings, setRatings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const version = useTableVersion(["support_tickets"]);
 
@@ -39,17 +51,26 @@ function LogisticsSupport() {
   useEffect(() => { void load(); }, [load, version]);
 
   const filtered = tickets.filter(t => {
-    const matchesQ = (t.subject + t.message).toLowerCase().includes(q.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || t.status === statusFilter;
+    const matchesQ = (t.title || "" + t.description || "").toLowerCase().includes(q.toLowerCase());
+    const matchesStatus = statusFilter === "all" || ticketStatus(t) === statusFilter;
     return matchesQ && matchesStatus;
   });
 
+  const analytics = computeSupportAnalytics(tickets, ratings);
+
   const stats = [
-    { label: "Open Tickets", value: tickets.filter(t => t.status === "open").length, icon: MessageSquare, color: "text-blue-600 bg-blue-50" },
-    { label: "Pending", value: tickets.filter(t => t.status === "pending").length, icon: Clock, color: "text-amber-600 bg-amber-50" },
-    { label: "Resolved", value: tickets.filter(t => t.status === "closed").length, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
-    { label: "Avg Rating", value: ratings.length > 0 ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1) : "—", icon: AlertCircle, color: "text-purple-600 bg-purple-50" },
+    { label: "Open Tickets", value: analytics.open, icon: MessageSquare, color: "text-blue-600 bg-blue-50" },
+    { label: "Breached SLA", value: analytics.breached, icon: Clock, color: "text-amber-600 bg-amber-50" },
+    { label: "Resolved", value: analytics.closed, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50" },
+    { label: "Avg Rating", value: analytics.avgRating ?? "—", icon: AlertCircle, color: "text-purple-600 bg-purple-50" },
   ];
+
+  const changeStatus = async (t: SupportTicket, status: any) => {
+    const actor = { id: user?.id ?? null, role: "admin", name: user?.email ?? user?.name ?? "Logistics" };
+    await setTicketStatus(t, status, actor);
+    toast.success(`${t.ticket_code} → ${STATUS_LABEL[status]}`);
+    void load();
+  };
 
   return (
     <div className="space-y-6">
@@ -78,7 +99,7 @@ function LogisticsSupport() {
             <input 
               value={q} 
               onChange={(e) => setQ(e.target.value)} 
-              placeholder="Search by subject or message content..."
+              placeholder="Search by title or description..."
               className="w-full bg-transparent text-sm outline-none"
             />
           </div>
@@ -89,9 +110,9 @@ function LogisticsSupport() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="bg-transparent text-sm font-bold outline-none"
             >
-              <option value="ALL">All Status</option>
+              <option value="all">All Status</option>
               <option value="open">Open</option>
-              <option value="pending">Pending</option>
+              <option value="resolved">Resolved</option>
               <option value="closed">Closed</option>
             </select>
           </div>
@@ -102,25 +123,32 @@ function LogisticsSupport() {
         ) : (
           <DataTable
             columns={["Ticket", "Requester", "Subject", "Status", "Priority", "Created", "Actions"]}
-            rows={filtered.map(t => [
-              <span key={t.id} className="font-mono text-[10px] font-bold uppercase text-primary">#{t.id.slice(0, 8)}</span>,
-              <div key={t.id+"u"} className="flex flex-col">
-                <span className="text-xs font-bold">{t.user_id.slice(0, 8)}</span>
-                <span className="text-[10px] text-muted-foreground uppercase">{t.portal}</span>
-              </div>,
-              <p key={t.id+"s"} className="max-w-[200px] truncate text-xs font-medium">{t.subject}</p>,
-              <StatusBadge key={t.id+"st"} label={t.status.toUpperCase()} />,
-              <span key={t.id+"p"} className={`text-[10px] font-bold uppercase ${t.priority === 'urgent' ? 'text-rose-600' : 'text-muted-foreground'}`}>{t.priority}</span>,
-              <span key={t.id+"c"} className="text-[10px] text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</span>,
-              <div key={t.id+"a"} className="flex gap-2">
-                <button 
-                  onClick={() => updateTicketStatus(t.id, t.status === "closed" ? "open" : "closed").then(load)}
-                  className="rounded-lg bg-muted px-2 py-1 text-[10px] font-bold uppercase transition hover:bg-primary-soft hover:text-primary"
-                >
-                  {t.status === "closed" ? "Reopen" : "Close"}
-                </button>
-              </div>
-            ])}
+            rows={filtered.map(t => {
+              const s = ticketStatus(t);
+              const p = ticketPriority(t);
+              return [
+                <span key={t.id} className="font-mono text-[10px] font-bold uppercase text-primary">{t.ticket_code || t.id.slice(0, 8)}</span>,
+                <div key={t.id+"u"} className="flex flex-col">
+                  <span className="text-xs font-bold">{t.contact_name || t.created_by?.slice(0, 8) || "—"}</span>
+                  <span className="text-[10px] text-muted-foreground uppercase">{t.role || "user"}</span>
+                </div>,
+                <p key={t.id+"s"} className="max-w-[200px] truncate text-xs font-medium">{t.title}</p>,
+                <span key={t.id+"st"} className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${STATUS_TONE[s]}`}>{STATUS_LABEL[s]}</span>,
+                <span key={t.id+"p"} className={`text-[10px] font-bold uppercase ${p === 'urgent' ? 'text-rose-600' : 'text-muted-foreground'}`}>{p}</span>,
+                <span key={t.id+"c"} className="text-[10px] text-muted-foreground">{t.created_at ? new Date(t.created_at).toLocaleDateString() : "—"}</span>,
+                <div key={t.id+"a"} className="flex gap-2">
+                  <select
+                    value={s}
+                    onChange={(e) => void changeStatus(t, e.target.value)}
+                    className="rounded-xl bg-muted/60 px-2 py-1.5 text-xs font-bold outline-none ring-1 ring-border/60"
+                  >
+                    <option value="open">Open</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              ];
+            })}
           />
         )}
       </section>
