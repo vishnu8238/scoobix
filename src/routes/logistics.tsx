@@ -1,5 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Truck, MapPin, Users, Package, Zap, Settings, History } from "lucide-react";
+import { 
+  Tag, LayoutDashboard, Users, Store, Bike, ClipboardList, 
+  CreditCard, BarChart3, Settings, Bell, Search, Sparkles, 
+  Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, 
+  LifeBuoy, Copy, Gauge, ShieldCheck, Crown, Map as MapIcon, 
+  Navigation, History, LogOut 
+} from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
