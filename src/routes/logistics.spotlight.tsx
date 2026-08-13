@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Sparkles, Save } from "lucide-react";
 import { useSpotlight, type SpotlightContent } from "@/lib/scoobix-extras";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/format";
 import { toast } from "sonner";
 

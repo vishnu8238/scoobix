@@ -74,6 +74,7 @@ import { Route as LogisticsZonesRouteImport } from './routes/logistics.zones'
 import { Route as LogisticsSupportRouteImport } from './routes/logistics.support'
 import { Route as LogisticsSubzonesRouteImport } from './routes/logistics.subzones'
 import { Route as LogisticsSubscriptionsRouteImport } from './routes/logistics.subscriptions'
+import { Route as LogisticsSpotlightRouteImport } from './routes/logistics.spotlight'
 import { Route as LogisticsSettingsRouteImport } from './routes/logistics.settings'
 import { Route as LogisticsSecurityRouteImport } from './routes/logistics.security'
 import { Route as LogisticsScratchCardsRouteImport } from './routes/logistics.scratch-cards'
@@ -477,6 +478,11 @@ const LogisticsSubzonesRoute = LogisticsSubzonesRouteImport.update({
 const LogisticsSubscriptionsRoute = LogisticsSubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
+  getParentRoute: () => LogisticsRoute,
+} as any)
+const LogisticsSpotlightRoute = LogisticsSpotlightRouteImport.update({
+  id: '/spotlight',
+  path: '/spotlight',
   getParentRoute: () => LogisticsRoute,
 } as any)
 const LogisticsSettingsRoute = LogisticsSettingsRouteImport.update({
@@ -960,6 +966,7 @@ export interface FileRoutesByFullPath {
   '/logistics/scratch-cards': typeof LogisticsScratchCardsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
+  '/logistics/spotlight': typeof LogisticsSpotlightRoute
   '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/support': typeof LogisticsSupportRoute
@@ -1100,6 +1107,7 @@ export interface FileRoutesByTo {
   '/logistics/scratch-cards': typeof LogisticsScratchCardsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
+  '/logistics/spotlight': typeof LogisticsSpotlightRoute
   '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/support': typeof LogisticsSupportRoute
@@ -1247,6 +1255,7 @@ export interface FileRoutesById {
   '/logistics/scratch-cards': typeof LogisticsScratchCardsRoute
   '/logistics/security': typeof LogisticsSecurityRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
+  '/logistics/spotlight': typeof LogisticsSpotlightRoute
   '/logistics/subscriptions': typeof LogisticsSubscriptionsRoute
   '/logistics/subzones': typeof LogisticsSubzonesRoute
   '/logistics/support': typeof LogisticsSupportRoute
@@ -1395,6 +1404,7 @@ export interface FileRouteTypes {
     | '/logistics/scratch-cards'
     | '/logistics/security'
     | '/logistics/settings'
+    | '/logistics/spotlight'
     | '/logistics/subscriptions'
     | '/logistics/subzones'
     | '/logistics/support'
@@ -1535,6 +1545,7 @@ export interface FileRouteTypes {
     | '/logistics/scratch-cards'
     | '/logistics/security'
     | '/logistics/settings'
+    | '/logistics/spotlight'
     | '/logistics/subscriptions'
     | '/logistics/subzones'
     | '/logistics/support'
@@ -1681,6 +1692,7 @@ export interface FileRouteTypes {
     | '/logistics/scratch-cards'
     | '/logistics/security'
     | '/logistics/settings'
+    | '/logistics/spotlight'
     | '/logistics/subscriptions'
     | '/logistics/subzones'
     | '/logistics/support'
@@ -2215,6 +2227,13 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/logistics/subscriptions'
       preLoaderRoute: typeof LogisticsSubscriptionsRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/spotlight': {
+      id: '/logistics/spotlight'
+      path: '/spotlight'
+      fullPath: '/logistics/spotlight'
+      preLoaderRoute: typeof LogisticsSpotlightRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/settings': {
@@ -2971,6 +2990,7 @@ interface LogisticsRouteChildren {
   LogisticsScratchCardsRoute: typeof LogisticsScratchCardsRoute
   LogisticsSecurityRoute: typeof LogisticsSecurityRoute
   LogisticsSettingsRoute: typeof LogisticsSettingsRoute
+  LogisticsSpotlightRoute: typeof LogisticsSpotlightRoute
   LogisticsSubscriptionsRoute: typeof LogisticsSubscriptionsRoute
   LogisticsSubzonesRoute: typeof LogisticsSubzonesRoute
   LogisticsSupportRoute: typeof LogisticsSupportRoute
@@ -2995,6 +3015,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsScratchCardsRoute: LogisticsScratchCardsRoute,
   LogisticsSecurityRoute: LogisticsSecurityRoute,
   LogisticsSettingsRoute: LogisticsSettingsRoute,
+  LogisticsSpotlightRoute: LogisticsSpotlightRoute,
   LogisticsSubscriptionsRoute: LogisticsSubscriptionsRoute,
   LogisticsSubzonesRoute: LogisticsSubzonesRoute,
   LogisticsSupportRoute: LogisticsSupportRoute,
