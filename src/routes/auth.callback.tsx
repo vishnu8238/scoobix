@@ -105,7 +105,10 @@ function AuthCallback() {
         const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
         localStorage.removeItem("scoobix_oauth_portal_intent");
         console.log("[AUTH_TRACE] Redirecting to final destination:", dest);
-        window.location.assign(dest);
+        
+        // Use window.location.replace to ensure the callback page is removed from history
+        // and force a clean entry into the portal.
+        window.location.replace(dest);
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
