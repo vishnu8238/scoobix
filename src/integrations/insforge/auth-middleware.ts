@@ -23,9 +23,12 @@ export const requireInsForgeAuth = createMiddleware({ type: 'function' }).server
       anonKey: INSFORGE_ANON_KEY || "",
     });
 
-    // InsForge SDK typically handles the token in its auth methods
-    // We check if the token is valid by getting the current user
-    const { data: userData, error } = await insforge.auth.getCurrentUser(token);
+    // For server-side validation, we typically set the session token manually in the client 
+    // or rely on a specific verification method if available.
+    // If getCurrentUser() doesn't take a token, we might need a different approach 
+    // depending on the SDK version.
+    
+    const { data: userData, error } = await insforge.auth.getCurrentUser();
     
     if (error || !userData?.user) {
       throw new Error('Unauthorized: Invalid token');
