@@ -198,9 +198,9 @@ function GoogleMapInner({
     }
 
     if (hasPoints) {
-      map.fitBounds(bounds, { top: 40, bottom: 40, left: 40, right: 40 });
+      map.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 });
       (window as any).google.maps.event.addListenerOnce(map, 'idle', () => {
-        if (map.getZoom()! > 16) map.setZoom(16);
+        if (map.getZoom()! > 15) map.setZoom(15);
       });
     }
   }, [map, markers, route, polygons, pickedAt]);
