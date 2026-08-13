@@ -85,6 +85,7 @@ import { Route as LogisticsLiveRouteImport } from './routes/logistics.live'
 import { Route as LogisticsGigsRouteImport } from './routes/logistics.gigs'
 import { Route as LogisticsDriversRouteImport } from './routes/logistics.drivers'
 import { Route as LogisticsDispatchRouteImport } from './routes/logistics.dispatch'
+import { Route as LogisticsCouponsRouteImport } from './routes/logistics.coupons'
 import { Route as LogisticsCampaignsRouteImport } from './routes/logistics.campaigns'
 import { Route as LogisticsAuditRouteImport } from './routes/logistics.audit'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -531,6 +532,11 @@ const LogisticsDispatchRoute = LogisticsDispatchRouteImport.update({
   path: '/dispatch',
   getParentRoute: () => LogisticsRoute,
 } as any)
+const LogisticsCouponsRoute = LogisticsCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
+  getParentRoute: () => LogisticsRoute,
+} as any)
 const LogisticsCampaignsRoute = LogisticsCampaignsRouteImport.update({
   id: '/campaigns',
   path: '/campaigns',
@@ -928,6 +934,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/campaigns': typeof LogisticsCampaignsRoute
+  '/logistics/coupons': typeof LogisticsCouponsRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/gigs': typeof LogisticsGigsRoute
@@ -1065,6 +1072,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/campaigns': typeof LogisticsCampaignsRoute
+  '/logistics/coupons': typeof LogisticsCouponsRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/gigs': typeof LogisticsGigsRoute
@@ -1209,6 +1217,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/campaigns': typeof LogisticsCampaignsRoute
+  '/logistics/coupons': typeof LogisticsCouponsRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/gigs': typeof LogisticsGigsRoute
@@ -1354,6 +1363,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/logistics/audit'
     | '/logistics/campaigns'
+    | '/logistics/coupons'
     | '/logistics/dispatch'
     | '/logistics/drivers'
     | '/logistics/gigs'
@@ -1491,6 +1501,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/logistics/audit'
     | '/logistics/campaigns'
+    | '/logistics/coupons'
     | '/logistics/dispatch'
     | '/logistics/drivers'
     | '/logistics/gigs'
@@ -1634,6 +1645,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/logistics/audit'
     | '/logistics/campaigns'
+    | '/logistics/coupons'
     | '/logistics/dispatch'
     | '/logistics/drivers'
     | '/logistics/gigs'
@@ -2256,6 +2268,13 @@ declare module '@tanstack/react-router' {
       path: '/dispatch'
       fullPath: '/logistics/dispatch'
       preLoaderRoute: typeof LogisticsDispatchRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/coupons': {
+      id: '/logistics/coupons'
+      path: '/coupons'
+      fullPath: '/logistics/coupons'
+      preLoaderRoute: typeof LogisticsCouponsRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/campaigns': {
@@ -2900,6 +2919,7 @@ const LogisticsOrdersRouteWithChildren = LogisticsOrdersRoute._addFileChildren(
 interface LogisticsRouteChildren {
   LogisticsAuditRoute: typeof LogisticsAuditRoute
   LogisticsCampaignsRoute: typeof LogisticsCampaignsRoute
+  LogisticsCouponsRoute: typeof LogisticsCouponsRoute
   LogisticsDispatchRoute: typeof LogisticsDispatchRoute
   LogisticsDriversRoute: typeof LogisticsDriversRouteWithChildren
   LogisticsGigsRoute: typeof LogisticsGigsRoute
@@ -2921,6 +2941,7 @@ interface LogisticsRouteChildren {
 const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsAuditRoute: LogisticsAuditRoute,
   LogisticsCampaignsRoute: LogisticsCampaignsRoute,
+  LogisticsCouponsRoute: LogisticsCouponsRoute,
   LogisticsDispatchRoute: LogisticsDispatchRoute,
   LogisticsDriversRoute: LogisticsDriversRouteWithChildren,
   LogisticsGigsRoute: LogisticsGigsRoute,
