@@ -23,8 +23,8 @@ export function AdminGuard({ children }: AdminGuardProps) {
     if (authLoading) return;
 
     if (!user) {
-      if (pathname !== "/admin/login") {
-        navigate({ to: "/admin/login" as any });
+      if (pathname !== "/login") {
+        navigate({ to: "/login?portal=admin" as any });
       }
       return;
     }
@@ -57,7 +57,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     verify();
   }, [user, authLoading, navigate, pathname]);
 
-  if ((authLoading || (user && authorized === null)) && pathname !== "/admin/login") {
+  if ((authLoading || (user && authorized === null)) && pathname !== "/login") {
     return (
       <div className="flex min-h-svh items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-4">
@@ -70,7 +70,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  if (user && authorized === false && pathname !== "/admin/login") {
+  if (user && authorized === false && pathname !== "/login") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-zinc-950 px-6 text-center animate-fade-up">
         <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-[2.5rem] bg-zinc-900 shadow-[0_0_50px_rgba(255,255,255,0.05)] ring-1 ring-zinc-800">
@@ -107,17 +107,17 @@ export function AdminGuard({ children }: AdminGuardProps) {
           </button>
           
           <button
-            onClick={() => window.location.assign("/admin/login")}
+            onClick={() => window.location.assign("/login?portal=admin")}
             className="block w-full text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition"
           >
-            Return to Admin Login
+            Return to Login
           </button>
         </div>
       </div>
     );
   }
 
-  if (!user && pathname !== "/admin/login") {
+  if (!user && pathname !== "/login") {
      return <div className="min-h-svh bg-zinc-950" />;
   }
 

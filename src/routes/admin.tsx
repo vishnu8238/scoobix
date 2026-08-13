@@ -74,7 +74,7 @@ function AdminLayout() {
   useEffect(() => { warmAnalytics(); }, []);
 
   // Public login page is isolated from the protected shell.
-  if (pathname === "/admin/login") {
+  if (pathname === "/login") {
     return <Outlet />;
   }
 

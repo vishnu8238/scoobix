@@ -74,7 +74,7 @@ function AuthCallback() {
         // 3. Authorization Check
         if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
           console.error("[AUTH_TRACE] Admin unauthorized");
-          window.location.assign("/admin/login?error=unauthorized");
+          window.location.assign("/login?portal=admin&error=unauthorized");
           return;
         }
 
@@ -90,7 +90,7 @@ function AuthCallback() {
           if (!access.ok) {
             const errorParam = access.reason === "disabled" ? "disabled" : "denied";
             // Do not redirect to Customer, keep them at the portal login with an error
-            window.location.assign(`/${portal}/login?${errorParam}=${portal}`);
+            window.location.assign(`/login?portal=${portal}&${errorParam}=${portal}`);
             return;
           }
           console.log(`[AUTH_TRACE] ${portal} authorized via portal_access`);

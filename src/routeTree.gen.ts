@@ -15,6 +15,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as LogisticsRouteImport } from './routes/logistics'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -33,7 +34,6 @@ import { Route as RiderProfileRouteImport } from './routes/rider.profile'
 import { Route as RiderOnboardingRouteImport } from './routes/rider.onboarding'
 import { Route as RiderNotificationsRouteImport } from './routes/rider.notifications'
 import { Route as RiderMoreRouteImport } from './routes/rider.more'
-import { Route as RiderLoginRouteImport } from './routes/rider.login'
 import { Route as RiderIncentivesRouteImport } from './routes/rider.incentives'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
@@ -50,7 +50,6 @@ import { Route as PartnerNotificationsRouteImport } from './routes/partner.notif
 import { Route as PartnerMoreRouteImport } from './routes/partner.more'
 import { Route as PartnerMenuRouteImport } from './routes/partner.menu'
 import { Route as PartnerMealsRouteImport } from './routes/partner.meals'
-import { Route as PartnerLoginRouteImport } from './routes/partner.login'
 import { Route as PartnerHoursRouteImport } from './routes/partner.hours'
 import { Route as PartnerCouponsRouteImport } from './routes/partner.coupons'
 import { Route as PartnerCollectionsRouteImport } from './routes/partner.collections'
@@ -67,7 +66,6 @@ import { Route as ManagerProfileRouteImport } from './routes/manager.profile'
 import { Route as ManagerOnboardingRouteImport } from './routes/manager.onboarding'
 import { Route as ManagerNotificationsRouteImport } from './routes/manager.notifications'
 import { Route as ManagerMoreRouteImport } from './routes/manager.more'
-import { Route as ManagerLoginRouteImport } from './routes/manager.login'
 import { Route as ManagerLeadsRouteImport } from './routes/manager.leads'
 import { Route as ManagerHistoryRouteImport } from './routes/manager.history'
 import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
@@ -78,13 +76,11 @@ import { Route as LogisticsSubzonesRouteImport } from './routes/logistics.subzon
 import { Route as LogisticsSettingsRouteImport } from './routes/logistics.settings'
 import { Route as LogisticsRidersRouteImport } from './routes/logistics.riders'
 import { Route as LogisticsOrdersRouteImport } from './routes/logistics.orders'
-import { Route as LogisticsLoginRouteImport } from './routes/logistics.login'
 import { Route as LogisticsLiveRouteImport } from './routes/logistics.live'
 import { Route as LogisticsExceptionsRouteImport } from './routes/logistics.exceptions'
 import { Route as LogisticsDispatchRouteImport } from './routes/logistics.dispatch'
 import { Route as LogisticsAuditRouteImport } from './routes/logistics.audit'
 import { Route as LogisticsAnalyticsRouteImport } from './routes/logistics.analytics'
-import { Route as CustomerLoginRouteImport } from './routes/customer.login'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppWalletRouteImport } from './routes/app.wallet'
 import { Route as AppValueRouteImport } from './routes/app.value'
@@ -129,7 +125,6 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminOperationsRouteImport } from './routes/admin.operations'
 import { Route as AdminManagersRouteImport } from './routes/admin.managers'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminGigsRouteImport } from './routes/admin.gigs'
 import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
@@ -176,6 +171,11 @@ const ManagerRoute = ManagerRouteImport.update({
 const LogisticsRoute = LogisticsRouteImport.update({
   id: '/logistics',
   path: '/logistics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -268,11 +268,6 @@ const RiderMoreRoute = RiderMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => RiderRoute,
 } as any)
-const RiderLoginRoute = RiderLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => RiderRoute,
-} as any)
 const RiderIncentivesRoute = RiderIncentivesRouteImport.update({
   id: '/incentives',
   path: '/incentives',
@@ -351,11 +346,6 @@ const PartnerMenuRoute = PartnerMenuRouteImport.update({
 const PartnerMealsRoute = PartnerMealsRouteImport.update({
   id: '/meals',
   path: '/meals',
-  getParentRoute: () => PartnerRoute,
-} as any)
-const PartnerLoginRoute = PartnerLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => PartnerRoute,
 } as any)
 const PartnerHoursRoute = PartnerHoursRouteImport.update({
@@ -438,11 +428,6 @@ const ManagerMoreRoute = ManagerMoreRouteImport.update({
   path: '/more',
   getParentRoute: () => ManagerRoute,
 } as any)
-const ManagerLoginRoute = ManagerLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => ManagerRoute,
-} as any)
 const ManagerLeadsRoute = ManagerLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -493,11 +478,6 @@ const LogisticsOrdersRoute = LogisticsOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => LogisticsRoute,
 } as any)
-const LogisticsLoginRoute = LogisticsLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => LogisticsRoute,
-} as any)
 const LogisticsLiveRoute = LogisticsLiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -522,11 +502,6 @@ const LogisticsAnalyticsRoute = LogisticsAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
   getParentRoute: () => LogisticsRoute,
-} as any)
-const CustomerLoginRoute = CustomerLoginRouteImport.update({
-  id: '/customer/login',
-  path: '/customer/login',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
@@ -748,11 +723,6 @@ const AdminManagersRoute = AdminManagersRouteImport.update({
   path: '/managers',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminLiveRoute = AdminLiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -843,6 +813,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/logistics': typeof LogisticsRouteWithChildren
   '/manager': typeof ManagerRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
@@ -862,7 +833,6 @@ export interface FileRoutesByFullPath {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRouteWithChildren
@@ -907,13 +877,11 @@ export interface FileRoutesByFullPath {
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/customer/login': typeof CustomerLoginRoute
   '/logistics/analytics': typeof LogisticsAnalyticsRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/exceptions': typeof LogisticsExceptionsRoute
   '/logistics/live': typeof LogisticsLiveRoute
-  '/logistics/login': typeof LogisticsLoginRoute
   '/logistics/orders': typeof LogisticsOrdersRoute
   '/logistics/riders': typeof LogisticsRidersRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
@@ -924,7 +892,6 @@ export interface FileRoutesByFullPath {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
-  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -941,7 +908,6 @@ export interface FileRoutesByFullPath {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
-  '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/more': typeof PartnerMoreRoute
@@ -958,7 +924,6 @@ export interface FileRoutesByFullPath {
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
-  '/rider/login': typeof RiderLoginRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -981,6 +946,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/access': typeof AdminAccessRoute
@@ -996,7 +962,6 @@ export interface FileRoutesByTo {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRouteWithChildren
@@ -1041,13 +1006,11 @@ export interface FileRoutesByTo {
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/customer/login': typeof CustomerLoginRoute
   '/logistics/analytics': typeof LogisticsAnalyticsRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/exceptions': typeof LogisticsExceptionsRoute
   '/logistics/live': typeof LogisticsLiveRoute
-  '/logistics/login': typeof LogisticsLoginRoute
   '/logistics/orders': typeof LogisticsOrdersRoute
   '/logistics/riders': typeof LogisticsRidersRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
@@ -1058,7 +1021,6 @@ export interface FileRoutesByTo {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
-  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -1075,7 +1037,6 @@ export interface FileRoutesByTo {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
-  '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/more': typeof PartnerMoreRoute
@@ -1092,7 +1053,6 @@ export interface FileRoutesByTo {
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
-  '/rider/login': typeof RiderLoginRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -1118,6 +1078,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/logistics': typeof LogisticsRouteWithChildren
   '/manager': typeof ManagerRouteWithChildren
   '/partner': typeof PartnerRouteWithChildren
@@ -1137,7 +1098,6 @@ export interface FileRoutesById {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRouteWithChildren
@@ -1182,13 +1142,11 @@ export interface FileRoutesById {
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/customer/login': typeof CustomerLoginRoute
   '/logistics/analytics': typeof LogisticsAnalyticsRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/exceptions': typeof LogisticsExceptionsRoute
   '/logistics/live': typeof LogisticsLiveRoute
-  '/logistics/login': typeof LogisticsLoginRoute
   '/logistics/orders': typeof LogisticsOrdersRoute
   '/logistics/riders': typeof LogisticsRidersRoute
   '/logistics/settings': typeof LogisticsSettingsRoute
@@ -1199,7 +1157,6 @@ export interface FileRoutesById {
   '/manager/calendar': typeof ManagerCalendarRoute
   '/manager/history': typeof ManagerHistoryRoute
   '/manager/leads': typeof ManagerLeadsRoute
-  '/manager/login': typeof ManagerLoginRoute
   '/manager/more': typeof ManagerMoreRoute
   '/manager/notifications': typeof ManagerNotificationsRoute
   '/manager/onboarding': typeof ManagerOnboardingRoute
@@ -1216,7 +1173,6 @@ export interface FileRoutesById {
   '/partner/collections': typeof PartnerCollectionsRoute
   '/partner/coupons': typeof PartnerCouponsRoute
   '/partner/hours': typeof PartnerHoursRoute
-  '/partner/login': typeof PartnerLoginRoute
   '/partner/meals': typeof PartnerMealsRoute
   '/partner/menu': typeof PartnerMenuRoute
   '/partner/more': typeof PartnerMoreRoute
@@ -1233,7 +1189,6 @@ export interface FileRoutesById {
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
-  '/rider/login': typeof RiderLoginRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
@@ -1260,6 +1215,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/login'
     | '/logistics'
     | '/manager'
     | '/partner'
@@ -1279,7 +1235,6 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/gigs'
     | '/admin/live'
-    | '/admin/login'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -1324,13 +1279,11 @@ export interface FileRouteTypes {
     | '/app/value'
     | '/app/wallet'
     | '/auth/callback'
-    | '/customer/login'
     | '/logistics/analytics'
     | '/logistics/audit'
     | '/logistics/dispatch'
     | '/logistics/exceptions'
     | '/logistics/live'
-    | '/logistics/login'
     | '/logistics/orders'
     | '/logistics/riders'
     | '/logistics/settings'
@@ -1341,7 +1294,6 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
-    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1358,7 +1310,6 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
-    | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
     | '/partner/more'
@@ -1375,7 +1326,6 @@ export interface FileRouteTypes {
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
-    | '/rider/login'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1398,6 +1348,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/privacy'
     | '/terms'
     | '/admin/access'
@@ -1413,7 +1364,6 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/gigs'
     | '/admin/live'
-    | '/admin/login'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -1458,13 +1408,11 @@ export interface FileRouteTypes {
     | '/app/value'
     | '/app/wallet'
     | '/auth/callback'
-    | '/customer/login'
     | '/logistics/analytics'
     | '/logistics/audit'
     | '/logistics/dispatch'
     | '/logistics/exceptions'
     | '/logistics/live'
-    | '/logistics/login'
     | '/logistics/orders'
     | '/logistics/riders'
     | '/logistics/settings'
@@ -1475,7 +1423,6 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
-    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1492,7 +1439,6 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
-    | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
     | '/partner/more'
@@ -1509,7 +1455,6 @@ export interface FileRouteTypes {
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
-    | '/rider/login'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1534,6 +1479,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/login'
     | '/logistics'
     | '/manager'
     | '/partner'
@@ -1553,7 +1499,6 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/gigs'
     | '/admin/live'
-    | '/admin/login'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -1598,13 +1543,11 @@ export interface FileRouteTypes {
     | '/app/value'
     | '/app/wallet'
     | '/auth/callback'
-    | '/customer/login'
     | '/logistics/analytics'
     | '/logistics/audit'
     | '/logistics/dispatch'
     | '/logistics/exceptions'
     | '/logistics/live'
-    | '/logistics/login'
     | '/logistics/orders'
     | '/logistics/riders'
     | '/logistics/settings'
@@ -1615,7 +1558,6 @@ export interface FileRouteTypes {
     | '/manager/calendar'
     | '/manager/history'
     | '/manager/leads'
-    | '/manager/login'
     | '/manager/more'
     | '/manager/notifications'
     | '/manager/onboarding'
@@ -1632,7 +1574,6 @@ export interface FileRouteTypes {
     | '/partner/collections'
     | '/partner/coupons'
     | '/partner/hours'
-    | '/partner/login'
     | '/partner/meals'
     | '/partner/menu'
     | '/partner/more'
@@ -1649,7 +1590,6 @@ export interface FileRouteTypes {
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
-    | '/rider/login'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
@@ -1675,6 +1615,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
   LogisticsRoute: typeof LogisticsRouteWithChildren
   ManagerRoute: typeof ManagerRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
@@ -1682,7 +1623,6 @@ export interface RootRouteChildren {
   RiderRoute: typeof RiderRouteWithChildren
   TermsRoute: typeof TermsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
-  CustomerLoginRoute: typeof CustomerLoginRoute
   RestaurantIdRoute: typeof RestaurantIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
 }
@@ -1729,6 +1669,13 @@ declare module '@tanstack/react-router' {
       path: '/logistics'
       fullPath: '/logistics'
       preLoaderRoute: typeof LogisticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -1857,13 +1804,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiderMoreRouteImport
       parentRoute: typeof RiderRoute
     }
-    '/rider/login': {
-      id: '/rider/login'
-      path: '/login'
-      fullPath: '/rider/login'
-      preLoaderRoute: typeof RiderLoginRouteImport
-      parentRoute: typeof RiderRoute
-    }
     '/rider/incentives': {
       id: '/rider/incentives'
       path: '/incentives'
@@ -1974,13 +1914,6 @@ declare module '@tanstack/react-router' {
       path: '/meals'
       fullPath: '/partner/meals'
       preLoaderRoute: typeof PartnerMealsRouteImport
-      parentRoute: typeof PartnerRoute
-    }
-    '/partner/login': {
-      id: '/partner/login'
-      path: '/login'
-      fullPath: '/partner/login'
-      preLoaderRoute: typeof PartnerLoginRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/hours': {
@@ -2095,13 +2028,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerMoreRouteImport
       parentRoute: typeof ManagerRoute
     }
-    '/manager/login': {
-      id: '/manager/login'
-      path: '/login'
-      fullPath: '/manager/login'
-      preLoaderRoute: typeof ManagerLoginRouteImport
-      parentRoute: typeof ManagerRoute
-    }
     '/manager/leads': {
       id: '/manager/leads'
       path: '/leads'
@@ -2172,13 +2098,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsOrdersRouteImport
       parentRoute: typeof LogisticsRoute
     }
-    '/logistics/login': {
-      id: '/logistics/login'
-      path: '/login'
-      fullPath: '/logistics/login'
-      preLoaderRoute: typeof LogisticsLoginRouteImport
-      parentRoute: typeof LogisticsRoute
-    }
     '/logistics/live': {
       id: '/logistics/live'
       path: '/live'
@@ -2213,13 +2132,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/logistics/analytics'
       preLoaderRoute: typeof LogisticsAnalyticsRouteImport
       parentRoute: typeof LogisticsRoute
-    }
-    '/customer/login': {
-      id: '/customer/login'
-      path: '/customer/login'
-      fullPath: '/customer/login'
-      preLoaderRoute: typeof CustomerLoginRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -2529,13 +2441,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminManagersRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/live': {
       id: '/admin/live'
       path: '/live'
@@ -2696,7 +2601,6 @@ interface AdminRouteChildren {
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
   AdminGigsRoute: typeof AdminGigsRoute
   AdminLiveRoute: typeof AdminLiveRoute
-  AdminLoginRoute: typeof AdminLoginRoute
   AdminManagersRoute: typeof AdminManagersRoute
   AdminOperationsRoute: typeof AdminOperationsRoute
   AdminOrdersRoute: typeof AdminOrdersRouteWithChildren
@@ -2734,7 +2638,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDuplicatesRoute: AdminDuplicatesRoute,
   AdminGigsRoute: AdminGigsRoute,
   AdminLiveRoute: AdminLiveRoute,
-  AdminLoginRoute: AdminLoginRoute,
   AdminManagersRoute: AdminManagersRoute,
   AdminOperationsRoute: AdminOperationsRoute,
   AdminOrdersRoute: AdminOrdersRouteWithChildren,
@@ -2824,7 +2727,6 @@ interface LogisticsRouteChildren {
   LogisticsDispatchRoute: typeof LogisticsDispatchRoute
   LogisticsExceptionsRoute: typeof LogisticsExceptionsRoute
   LogisticsLiveRoute: typeof LogisticsLiveRoute
-  LogisticsLoginRoute: typeof LogisticsLoginRoute
   LogisticsOrdersRoute: typeof LogisticsOrdersRoute
   LogisticsRidersRoute: typeof LogisticsRidersRoute
   LogisticsSettingsRoute: typeof LogisticsSettingsRoute
@@ -2840,7 +2742,6 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsDispatchRoute: LogisticsDispatchRoute,
   LogisticsExceptionsRoute: LogisticsExceptionsRoute,
   LogisticsLiveRoute: LogisticsLiveRoute,
-  LogisticsLoginRoute: LogisticsLoginRoute,
   LogisticsOrdersRoute: LogisticsOrdersRoute,
   LogisticsRidersRoute: LogisticsRidersRoute,
   LogisticsSettingsRoute: LogisticsSettingsRoute,
@@ -2859,7 +2760,6 @@ interface ManagerRouteChildren {
   ManagerCalendarRoute: typeof ManagerCalendarRoute
   ManagerHistoryRoute: typeof ManagerHistoryRoute
   ManagerLeadsRoute: typeof ManagerLeadsRoute
-  ManagerLoginRoute: typeof ManagerLoginRoute
   ManagerMoreRoute: typeof ManagerMoreRoute
   ManagerNotificationsRoute: typeof ManagerNotificationsRoute
   ManagerOnboardingRoute: typeof ManagerOnboardingRoute
@@ -2878,7 +2778,6 @@ const ManagerRouteChildren: ManagerRouteChildren = {
   ManagerCalendarRoute: ManagerCalendarRoute,
   ManagerHistoryRoute: ManagerHistoryRoute,
   ManagerLeadsRoute: ManagerLeadsRoute,
-  ManagerLoginRoute: ManagerLoginRoute,
   ManagerMoreRoute: ManagerMoreRoute,
   ManagerNotificationsRoute: ManagerNotificationsRoute,
   ManagerOnboardingRoute: ManagerOnboardingRoute,
@@ -2903,7 +2802,6 @@ interface PartnerRouteChildren {
   PartnerCollectionsRoute: typeof PartnerCollectionsRoute
   PartnerCouponsRoute: typeof PartnerCouponsRoute
   PartnerHoursRoute: typeof PartnerHoursRoute
-  PartnerLoginRoute: typeof PartnerLoginRoute
   PartnerMealsRoute: typeof PartnerMealsRoute
   PartnerMenuRoute: typeof PartnerMenuRoute
   PartnerMoreRoute: typeof PartnerMoreRoute
@@ -2925,7 +2823,6 @@ const PartnerRouteChildren: PartnerRouteChildren = {
   PartnerCollectionsRoute: PartnerCollectionsRoute,
   PartnerCouponsRoute: PartnerCouponsRoute,
   PartnerHoursRoute: PartnerHoursRoute,
-  PartnerLoginRoute: PartnerLoginRoute,
   PartnerMealsRoute: PartnerMealsRoute,
   PartnerMenuRoute: PartnerMenuRoute,
   PartnerMoreRoute: PartnerMoreRoute,
@@ -2948,7 +2845,6 @@ interface RiderRouteChildren {
   RiderEarningsRoute: typeof RiderEarningsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
   RiderIncentivesRoute: typeof RiderIncentivesRoute
-  RiderLoginRoute: typeof RiderLoginRoute
   RiderMoreRoute: typeof RiderMoreRoute
   RiderNotificationsRoute: typeof RiderNotificationsRoute
   RiderOnboardingRoute: typeof RiderOnboardingRoute
@@ -2966,7 +2862,6 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderEarningsRoute: RiderEarningsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
   RiderIncentivesRoute: RiderIncentivesRoute,
-  RiderLoginRoute: RiderLoginRoute,
   RiderMoreRoute: RiderMoreRoute,
   RiderNotificationsRoute: RiderNotificationsRoute,
   RiderOnboardingRoute: RiderOnboardingRoute,
@@ -2984,6 +2879,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
   LogisticsRoute: LogisticsRouteWithChildren,
   ManagerRoute: ManagerRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
@@ -2991,7 +2887,6 @@ const rootRouteChildren: RootRouteChildren = {
   RiderRoute: RiderRouteWithChildren,
   TermsRoute: TermsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
-  CustomerLoginRoute: CustomerLoginRoute,
   RestaurantIdRoute: RestaurantIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
 }
