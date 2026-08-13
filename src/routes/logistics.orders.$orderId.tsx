@@ -65,7 +65,7 @@ function LogisticsOrderDetailsPage() {
     const ok = await patchOrder(orderId, { status: newStatus });
     if (ok) {
       await logAudit({
-        category: "logistics",
+        category: "admin",
         subjectType: "order",
         subjectId: orderId,
         action: "STATUS_CHANGE",
