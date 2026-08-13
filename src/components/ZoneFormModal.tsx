@@ -51,8 +51,8 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start md:items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="relative w-full max-w-5xl my-auto flex flex-col rounded-[2.5rem] bg-card shadow-2xl ring-1 ring-border/60 overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex items-start md:items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto">
+      <div className="relative w-full max-w-5xl my-auto flex flex-col rounded-[2.5rem] bg-card shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/60 overflow-hidden">
         <header className="flex items-center justify-between p-6 border-b border-border/60">
           <h2 className="font-display text-xl font-extrabold">{initialData ? "Edit Zone" : "Create Zone"}</h2>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition">
@@ -240,8 +240,8 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
   };
 
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl rounded-3xl bg-card shadow-card ring-1 ring-border/60">
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-background/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl rounded-3xl bg-card shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/60">
         <header className="flex items-center justify-between p-6 border-b border-border/60">
           <h2 className="font-display text-xl font-extrabold">{initialData ? "Edit Subzone" : "Add Subzone"}</h2>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition">
