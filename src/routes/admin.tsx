@@ -80,7 +80,7 @@ function AdminLayout() {
 
   return (
     <div className="min-h-svh w-full bg-[radial-gradient(circle_at_top_left,_oklch(0.96_0.04_148_/_0.4),_oklch(0.99_0.005_120)_45%)] font-sans">
-      <div className="mx-auto flex min-h-svh max-w-[1600px]">
+      <div className="mx-auto flex min-h-svh max-w-full">
         {/* Sidebar */}
         <aside className="sticky top-0 hidden h-svh w-64 flex-col gap-1 border-r border-border/60 bg-card/60 p-5 backdrop-blur-md md:flex">
           <div className="mb-6 flex items-center gap-3">
@@ -117,7 +117,7 @@ function AdminLayout() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 flex flex-col h-svh overflow-hidden px-5 py-6 md:px-10 md:py-8">
+        <main className="flex-1 flex flex-col h-svh overflow-hidden">
           {/* Mobile top */}
           <div className="mb-6 flex items-center justify-between md:hidden">
             <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ function AdminLayout() {
           </div>
 
           {/* Desktop top bar */}
-          <header className="mb-8 hidden items-center justify-between md:flex">
+          <header className="mb-8 hidden items-center justify-between md:flex px-5 pt-6 md:px-10 md:pt-8">
             <div className="relative w-full max-w-md">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -170,7 +170,7 @@ function AdminLayout() {
             })}
           </nav>
 
-          <div className="flex-1 min-h-0 animate-fade-up">
+          <div className="flex-1 min-h-0 animate-fade-up px-5 py-6 md:px-10 md:py-8 has-[.h-full]:p-0">
             <Outlet />
           </div>
         </main>
