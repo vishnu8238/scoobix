@@ -1,16 +1,5 @@
-/**
- * Session management, account security, security events, consent and privacy.
- *
- * SCOOBIX RESET: Minimal business stubs for unauthenticated access.
- */
-import {
-  createRecord, invalidateTable,
-  listPage, listTable, patchRecord, patchWhereIn,
-} from "./insforge-crud";
-import { logAudit } from "./audit-api";
-import { currentApp, deviceContext, resolveIp } from "./device-context";
-import { type Permission, type SecurityRole } from "./permissions";
-import { sanitizeText } from "./api-guard";
+import { listTable, patchRecord, createRecord, patchWhereIn } from "./insforge-crud";
+import { deviceContext } from "./device-context";
 
 /* ------------------------------------------------------------------ types */
 
@@ -31,12 +20,6 @@ export type LoginRow = {
   platform?: string; user_agent?: string; created_at?: string;
 };
 
-export type SecurityEventType =
-  | "new_login" | "password_changed" | "email_changed" | "phone_changed"
-  | "account_locked" | "account_unlocked" | "account_suspended" | "account_restored"
-  | "deletion_requested" | "deletion_cancelled" | "permission_changed"
-  | "fraud_alert" | "session_revoked" | "data_exported" | "consent_updated" | "rate_limited";
-
 export type SecurityEventRow = {
   id: string;
   user_id?: string; role?: string; type?: string; severity?: string;
@@ -55,120 +38,6 @@ export type DeviceRow = {
   meta?: Record<string, unknown> | null; created_at?: string;
 };
 
-export type AccountState = "active" | "locked" | "suspended" | "pending_deletion" | "deleted";
-
-export const SESSIONS_TABLE = "user_sessions";
-export const LOGIN_TABLE = "login_history";
-export const EVENTS_TABLE = "security_events";
-export const DEVICES_TABLE = "device_registry";
-export const CONSENT_TABLE = "consent_records";
-export const OVERRIDES_TABLE = "permission_overrides";
-export const USERS_TABLE = "users";
-
-export function securityOverview(): Promise<any> {
-  return Promise.resolve({
-    openAlerts: 0, criticalAlerts: 0, failedLogins24h: 0,
-    activeSessions: 0, lockedAccounts: 0, deviceCount: 0,
-    blockedDevices: 0, pendingDeletions: 0,
-    events: [], sessionList: [], deviceList: [], lockedUsers: [], deletionRequests: []
-  });
-}
-
-export async function suspendAccount(id: string, actor: any, reason: string, days: number) {
-  return;
-}
-
-export async function unlockAccount(id: string, actor: any) {
-  return;
-}
-
-export async function restoreAccount(id: string, actor: any) {
-  return;
-}
-
-/* -------------------------------------------------------- security events */
-
-export async function recordSecurityEvent(input: any): Promise<SecurityEventRow | null> {
-  return null;
-}
-
-export function listSecurityEvents(opts: any = {}) {
-  return Promise.resolve([]);
-}
-
-export async function acknowledgeSecurityEvents(ids: string[], adminId: string) {
-  return;
-}
-
-/* --------------------------------------------------------- device registry */
-
-export async function touchDevice(userId: string, opts: any = {}): Promise<DeviceRow | null> {
-  return null;
-}
-
-
-export function listDevices(userId?: string, limit = 100) {
-  return Promise.resolve([]);
-}
-
-export async function setDeviceFlags(id: string, flags: { trusted?: boolean; blocked?: boolean }) {
-  return;
-}
-
-/* ------------------------------------------------------------- sessions */
-
-export function localSessionId(): string | null {
-  return null;
-}
-
-export async function startSession(userId: string, role: string): Promise<SessionRow | null> {
-  return null;
-}
-
-export async function heartbeatSession(): Promise<void> {
-  return;
-}
-
-export function listSessions(userId: string, opts: any = {}) {
-  return Promise.resolve([]);
-}
-
-export function listAllActiveSessions(limit = 200) {
-  return Promise.resolve([]);
-}
-
-export async function revokeSession(sessionId: string, actor: any, reason = "manual") {
-  return;
-}
-
-export async function revokeAllSessions(userId: string, actor: any, opts: any = {}): Promise<number> {
-  return 0;
-}
-
-export async function endCurrentSession(userId?: string | null) {
-  return;
-}
-
-/* -------------------------------------------------------- login history */
-
-export async function recordLogin(input: any): Promise<void> {
-  return;
-}
-
-export function listLoginHistory(userId: string, limit = 50) {
-  return Promise.resolve([]);
-}
-
-export function listFailedLogins(hours = 24, limit = 200) {
-  return Promise.resolve([]);
-}
-
-export async function lastLogin(userId: string): Promise<LoginRow | null> {
-  return null;
-}
-
-/* ------------------------------------------------------- account security */
-
 export type UserSecurityRow = {
   id: string;
   email?: string; role?: string; name?: string; phone?: string;
@@ -181,14 +50,149 @@ export type UserSecurityRow = {
   is_super_admin?: boolean; permissions?: unknown; created_at?: string;
 };
 
-export async function fetchUserSecurity(userId: string): Promise<UserSecurityRow | null> {
-  return null;
+export const SESSIONS_TABLE = "user_sessions";
+export const LOGIN_TABLE = "login_history";
+export const EVENTS_TABLE = "security_events";
+export const DEVICES_TABLE = "device_registry";
+export const USERS_TABLE = "users";
+
+/* ------------------------------------------------------------- overview */
+
+export async function securityOverview() {
+  const dayAgo = new Date(Date.now() - 86400_000).toISOString();
+  
+  const [events, sessions, devices, lockedUsers, failedLogins, deletions] = await Promise.all([
+    listTable<SecurityEventRow>(EVENTS_TABLE, { acknowledged: "eq.false", limit: 50 }).catch(() => []),
+    listTable<SessionRow>(SESSIONS_TABLE, { status: "eq.active", limit: 100 }).catch(() => []),
+    listTable<DeviceRow>(DEVICES_TABLE, { limit: 100 }).catch(() => []),
+    listTable<UserSecurityRow>(USERS_TABLE, { "or": "(account_state.eq.locked,account_state.eq.suspended)", limit: 50 }).catch(() => []),
+    listTable<LoginRow>(LOGIN_TABLE, { success: "eq.false", created_at: `gte.${dayAgo}`, limit: 100 }).catch(() => []),
+    listTable<UserSecurityRow>(USERS_TABLE, { account_state: "eq.pending_deletion", limit: 50 }).catch(() => []),
+  ]);
+
+  return {
+    openAlerts: events.length,
+    criticalAlerts: events.filter((e) => e.severity === 'critical').length,
+    failedLogins24h: failedLogins.length,
+    activeSessions: sessions.length,
+    lockedAccounts: lockedUsers.length,
+    deviceCount: devices.length,
+    blockedDevices: devices.filter((d) => d.blocked).length,
+    pendingDeletions: deletions.length,
+    events,
+    sessionList: sessions,
+    deviceList: devices,
+    lockedUsers,
+    failedList: failedLogins,
+    deletionRequests: deletions,
+    deletions // Legacy field for UI compatibility
+  };
 }
 
-export function accountUsable(user: UserSecurityRow | null): { ok: boolean; reason?: string; state: AccountState } {
-  return { ok: true, state: "active" };
-}
+/* -------------------------------------------------------- account actions */
 
 export async function lockAccount(userId: string, actor: any, reason: string) {
-  return;
+  await patchRecord(USERS_TABLE, userId, {
+    account_state: 'locked',
+    locked: true,
+    lock_reason: reason,
+    locked_at: new Date().toISOString(),
+    locked_by: actor.id
+  });
+}
+
+export async function suspendAccount(id: string, actor: any, reason: string, days: number) {
+  const until = new Date(Date.now() + days * 86400_000).toISOString();
+  await patchRecord(USERS_TABLE, id, {
+    account_state: 'suspended',
+    suspended_until: until,
+    suspension_reason: reason
+  });
+}
+
+export async function unlockAccount(userId: string, actor: any) {
+  await patchRecord(USERS_TABLE, userId, {
+    account_state: 'active',
+    locked: false,
+    lock_reason: null,
+    locked_at: null,
+    locked_by: null
+  });
+}
+
+export async function restoreAccount(id: string, actor: any) {
+  await patchRecord(USERS_TABLE, id, {
+    account_state: 'active',
+    suspended_until: null,
+    suspension_reason: null,
+    locked: false,
+    lock_reason: null
+  });
+}
+
+/* -------------------------------------------------------- security events */
+
+export async function recordSecurityEvent(input: {
+  userId?: string | null;
+  type: string;
+  severity: string;
+  title: string;
+  detail?: string;
+  meta?: any;
+}) {
+  const ctx = deviceContext();
+  return createRecord<SecurityEventRow>(EVENTS_TABLE, {
+    user_id: input.userId,
+    type: input.type,
+    severity: input.severity,
+    title: input.title,
+    detail: input.detail,
+    meta: input.meta,
+    ip: ctx.ip,
+    device_id: ctx.deviceId,
+    acknowledged: false,
+    created_at: new Date().toISOString()
+  });
+}
+
+export async function acknowledgeSecurityEvents(ids: string[], adminId: string) {
+  const now = new Date().toISOString();
+  await patchWhereIn(EVENTS_TABLE, ids, {
+    acknowledged: true,
+    acknowledged_by: adminId,
+    acknowledged_at: now
+  });
+}
+
+/* ------------------------------------------------------------- sessions */
+
+export async function revokeSession(sessionId: string, actor: any, reason = "admin_revoked") {
+  await patchRecord(SESSIONS_TABLE, sessionId, {
+    status: 'revoked',
+    revoked_at: new Date().toISOString(),
+    revoked_by: actor.id,
+    revoke_reason: reason
+  });
+}
+
+export async function revokeAllSessions(userId: string, actor: any, opts: any = {}) {
+  const sessions = await listTable<SessionRow>(SESSIONS_TABLE, { user_id: `eq.${userId}`, status: "eq.active" });
+  if (!sessions.length) return 0;
+  
+  await patchWhereIn(SESSIONS_TABLE, sessions.map(s => s.id), {
+    status: 'revoked',
+    revoked_at: new Date().toISOString(),
+    revoked_by: actor.id,
+    revoke_reason: opts.reason || "admin_revoked_all"
+  });
+  return sessions.length;
+}
+
+/* ------------------------------------------------------------- devices */
+
+export async function setDeviceFlags(id: string, flags: { trusted?: boolean; blocked?: boolean }) {
+  await patchRecord(DEVICES_TABLE, id, {
+    ...flags,
+    updated_at: new Date().toISOString()
+  });
 }
