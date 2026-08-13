@@ -30,6 +30,8 @@ const NAV = [
   { to: "/logistics/live", label: "Logistics Map", icon: MapIcon },
   { to: "/logistics/cms", label: "CMS Studio", icon: Sparkles },
   { to: "/logistics/access", label: "Access Management", icon: ShieldCheck },
+  { to: "/logistics/verification", label: "Verification & KYC", icon: ShieldCheck },
+  { to: "/logistics/duplicates", label: "Duplicates & Transfers", icon: Copy },
   { to: "/logistics/dispatch", label: "Manual Dispatch", icon: Navigation },
   { to: "/logistics/gigs", label: "Gig Management", icon: Sparkles },
   { to: "/logistics/audit", label: "Audit Logs", icon: History },

@@ -112,18 +112,18 @@ function LogisticsDashboard() {
     { label: "Total Orders", value: orders.length.toLocaleString(), icon: ClipboardList, tone: "bg-primary/10 text-primary" },
     { label: "Pending Orders", value: orders.filter(o => !["DELIVERED", "CANCELLED"].includes(o.status || "")).length, icon: Loader2, tone: "bg-amber-100 text-amber-700" },
     { label: "Unassigned", value: orders.filter(o => !o.driver_id && !["DELIVERED", "CANCELLED"].includes(o.status || "")).length, icon: ShieldAlert, tone: "bg-rose-100 text-rose-700" },
-    { label: "Active Partners", value: zoneStats?.activeRiders ?? 0, icon: Bike, tone: "bg-sky-100 text-sky-700" },
+    { label: "Active Riders", value: zoneStats?.activeRiders ?? 0, icon: Bike, tone: "bg-sky-100 text-sky-700" },
     { label: "Open Tickets", value: supportStats?.open ?? 0, icon: LifeBuoy, tone: "bg-violet-100 text-violet-700" },
     { label: "Revenue Today", value: formatPrice(revenueToday), icon: DollarSign, tone: "bg-emerald-100 text-emerald-700" },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-left">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">Operational Control Center</p>
+          <p className="eyebrow">Logistics Command Center</p>
           <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight md:text-4xl">Platform overview</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Real-time logistics and business metrics.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Real-time logistics and fleet metrics.</p>
         </div>
         <button onClick={() => void load()} className="rounded-2xl bg-card px-4 py-2.5 text-sm font-bold shadow-soft ring-1 ring-border">
           Refresh Live Data
@@ -153,7 +153,7 @@ function LogisticsDashboard() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h2 className="font-display text-xl font-extrabold">Zone Supply & Demand</h2>
-                  <p className="text-xs text-muted-foreground">Live rider availability across zones</p>
+                  <p className="text-xs text-muted-foreground">Live fleet availability across zones</p>
                 </div>
                 <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-700">
                   <TrendingUp className="h-3 w-3" /> Live
@@ -177,7 +177,7 @@ function LogisticsDashboard() {
                  <div className="rounded-2xl border border-dashed border-border p-6 flex flex-col items-center justify-center text-center">
                     <MapIcon className="h-8 w-8 text-muted-foreground/30 mb-2" />
                     <p className="text-sm font-bold">Logistics Map Insight</p>
-                    <p className="text-xs text-muted-foreground max-w-xs">High demand detected in central zones. Unassigned orders increasing.</p>
+                    <p className="text-xs text-muted-foreground max-w-xs">High demand detected in central zones. Fleet allocation optimization required.</p>
                  </div>
               </div>
             </section>
