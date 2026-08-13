@@ -25,7 +25,7 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/logistics/drivers/$driverId")({
-  component: DriverProfilePage,
+  component: LogisticsDriverProfilePage,
   loader: ({ params }) => fetchDriverDetails(params.driverId),
 });
 
@@ -47,7 +47,7 @@ const SECONDARY_TABS = [
   { id: "bank", label: "Bank", icon: CreditCard },
 ];
 
-function DriverProfilePage() {
+function LogisticsDriverProfilePage() {
   const { driverId } = Route.useParams();
   const { data: driver } = useSuspenseQuery({
     queryKey: ["admin", "driver-profile", driverId],

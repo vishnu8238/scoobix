@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/logistics/orders/$orderId")({
-  component: OrderDetailsPage,
+  component: LogisticsOrderDetailsPage,
   loader: ({ params, context }) => {
     return context.queryClient.ensureQueryData({
       queryKey: ["admin", "order-details", params.orderId],
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/logistics/orders/$orderId")({
   },
 });
 
-function OrderDetailsPage() {
+function LogisticsOrderDetailsPage() {
   const { orderId } = Route.useParams();
   const { data: initialData } = useSuspenseQuery({
     queryKey: ["admin", "order-details", orderId],
