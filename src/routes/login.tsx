@@ -49,8 +49,12 @@ function ConsolidatedLogin() {
       if (user.roles.includes(selectedPortal)) {
         const dest = selectedPortal === "customer" ? "/app" : `/${selectedPortal}`;
         console.log(`[AUTH_DEBUG] Login: User authorized for ${selectedPortal}, navigating to ${dest}`);
+        // Use replace to prevent back-button loops
         navigate({ to: dest as any, replace: true });
-      } else if (selectedPortal !== "customer") {
+      } else if (selectedPortal === "customer") {
+        // Normal customers go to /app
+        navigate({ to: "/app", replace: true });
+      } else {
         // If they chose a privileged portal but aren't authorized, 
         // they stay here and see the error message (already handled via URL params)
         console.warn(`[AUTH_DEBUG] Login: User NOT authorized for ${selectedPortal}. Roles:`, user.roles);

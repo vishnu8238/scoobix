@@ -308,9 +308,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    const portal = getRequestedPortal();
     await ifLogout();
     setUser(null);
-    window.location.assign("/");
+    window.location.assign(portal === "customer" ? "/" : `/login?portal=${portal}`);
   };
 
   return (

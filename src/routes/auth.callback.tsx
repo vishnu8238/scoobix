@@ -108,7 +108,7 @@ function AuthCallback() {
         // so we trust the destination portal's RoleGuard will pick up the session.
         // We use window.location.replace to ensure the callback page is removed from history.
 
-        const dest = portal === "customer" || !portal ? "/app" : (portal.startsWith("/") ? portal : `/${portal}`);
+        const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
         localStorage.removeItem("scoobix_oauth_portal_intent");
         console.log("[AUTH_TRACE] Authorization complete. Redirecting to:", dest);
         
