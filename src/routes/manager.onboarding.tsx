@@ -110,41 +110,46 @@ function OnboardingFlow() {
     if (!id) return;
     let cancelled = false;
     void (async () => {
-      const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 }, { fresh: true });
-      const r = rows[0];
-      if (cancelled || !r) { setLoading(false); return; }
-      setRecord(r);
-      setForm({
-        ...EMPTY,
-        name: r.name ?? "",
-        cuisine: r.cuisine ?? "",
-        owner_name: r.owner_name ?? "",
-        owner_email: r.owner_email ?? "",
-        owner_phone: r.owner_phone ?? "",
-        contact_phone: r.contact_phone ?? "",
-        contact_email: r.contact_email ?? "",
-        address: r.address ?? "",
-        city: r.city ?? "",
-        pincode: r.pincode ?? "",
-        latitude: r.latitude ?? null,
-        longitude: r.longitude ?? null,
-        opening_time: r.opening_time ?? "10:00",
-        closing_time: r.closing_time ?? "23:00",
-        logo_url: r.logo_url ?? r.logo ?? "",
-        cover_url: r.cover_url ?? r.cover_image ?? "",
-        documents: Array.isArray(r.documents) ? (r.documents as Form["documents"]) : [],
-        bank_holder: r.bank_holder ?? "",
-        bank_account: r.bank_account ?? "",
-        bank_ifsc: r.bank_ifsc ?? "",
-        bank_name: r.bank_name ?? "",
-        gst_number: r.gst_number ?? "",
-        fssai_number: r.fssai_number ?? "",
-        pan_number: (r as { pan_number?: string | null }).pan_number ?? "",
-        branch_name: (r as { branch_name?: string | null }).branch_name ?? "",
-        delivery_radius: String(r.delivery_radius ?? 5),
-        commission: String(r.commission ?? 20),
-      });
-      setLoading(false);
+      try {
+        const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 }, { fresh: true });
+        const r = rows[0];
+        if (cancelled || !r) { setLoading(false); return; }
+        setRecord(r);
+        setForm({
+          ...EMPTY,
+          name: r.name ?? "",
+          cuisine: r.cuisine ?? "",
+          owner_name: r.owner_name ?? "",
+          owner_email: r.owner_email ?? "",
+          owner_phone: r.owner_phone ?? "",
+          contact_phone: r.contact_phone ?? "",
+          contact_email: r.contact_email ?? "",
+          address: r.address ?? "",
+          city: r.city ?? "",
+          pincode: r.pincode ?? "",
+          latitude: r.latitude ?? null,
+          longitude: r.longitude ?? null,
+          opening_time: r.opening_time ?? "10:00",
+          closing_time: r.closing_time ?? "23:00",
+          logo_url: r.logo_url ?? r.logo ?? "",
+          cover_url: r.cover_url ?? r.cover_image ?? "",
+          documents: Array.isArray(r.documents) ? (r.documents as Form["documents"]) : [],
+          bank_holder: r.bank_holder ?? "",
+          bank_account: r.bank_account ?? "",
+          bank_ifsc: r.bank_ifsc ?? "",
+          bank_name: r.bank_name ?? "",
+          gst_number: r.gst_number ?? "",
+          fssai_number: r.fssai_number ?? "",
+          pan_number: (r as { pan_number?: string | null }).pan_number ?? "",
+          branch_name: (r as { branch_name?: string | null }).branch_name ?? "",
+          delivery_radius: String(r.delivery_radius ?? 5),
+          commission: String(r.commission ?? 20),
+        });
+        setLoading(false);
+      } catch (err: any) {
+        console.error("[LOAD_ERROR]", err);
+        setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, [id]);

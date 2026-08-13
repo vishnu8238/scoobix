@@ -215,7 +215,7 @@ export function listTable<T = Record<string, unknown>>(
   }).then(v => Array.isArray(v) ? v : [])
     .catch(err => {
       console.error(`[DB_ERROR] Table ${table} load failed:`, err);
-      // Don't silently return [] — let the error bubble up so the UI can show it
+      // NEW (surfaces real errors)
       throw err;
     });
   
