@@ -161,7 +161,11 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
   const t0 = Date.now();
   try {
     const res = await promise;
-    const { data, error, status, statusText } = res;
+    const { data, error, status, statusText } = res || {};
+    
+    if (!res && method !== "GET") {
+      throw new HttpError(401, "No token provided");
+    }
     
     recordMetric({
       kind: "api",
