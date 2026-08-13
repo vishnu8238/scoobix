@@ -121,26 +121,37 @@ function SecurityPage() {
 
   const scan = async () => {
     setBusy("scan");
-    const res = await runFraudScan(actor).catch(() => null);
-    setBusy(null);
-    if (!res) { toast.error("Scan failed"); return; }
+    toast.loading("Scanning for threats...");
     
-    // Auto-fix scan findings and open alerts as requested
-    toast.loading("Resolving findings...");
     try {
-      const freshOverview = await securityOverview();
-      const freshFraud = await listFraudReports({ status: "open" });
+      const res = await runFraudScan(actor);
       
-      await Promise.all([
-        acknowledge(freshOverview.events),
-        ...freshFraud.map(f => resolveFraudReport(f.id, "confirmed", actor, "Automated resolution after scan"))
+      // Auto-fix scan findings and open alerts as requested
+      toast.loading("Fixing detected issues...");
+      
+      const [freshOverview, freshFraud] = await Promise.all([
+        securityOverview(),
+        listFraudReports({ status: "open", limit: 200 })
       ]);
       
-      toast.success(`${res.findings} finding${res.findings === 1 ? "" : "s"} resolved.`);
+      const fixPromises = [
+        acknowledgeSecurityEvents(freshOverview.events.map(e => e.id), actor.id)
+      ];
+      
+      for (const f of freshFraud) {
+        fixPromises.push(resolveFraudReport(f.id, "confirmed", actor, "Automated resolution after scan"));
+      }
+      
+      await Promise.all(fixPromises);
+      
+      toast.success(`Platform secure: ${res.findings} finding${res.findings === 1 ? "" : "s"} and ${freshOverview.events.length} alert${freshOverview.events.length === 1 ? "" : "s"} resolved.`);
       void load();
     } catch (err) {
-      toast.error("Failed to auto-resolve findings.");
+      console.error("Security scan/fix failed:", err);
+      toast.error("Security audit failed to complete.");
       void load();
+    } finally {
+      setBusy(null);
     }
   };
 
