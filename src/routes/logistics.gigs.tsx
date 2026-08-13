@@ -3,34 +3,23 @@ import { useCallback, useEffect, useState } from "react";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Sparkles, Search, Plus, Loader2, Calendar, Target, Award, MapPin, Edit2, Trash2 } from "lucide-react";
 import { fetchGigs, type Gig } from "@/lib/gigs-api";
-import { listTable } from "@/lib/insforge-crud";
 import { format } from "date-fns";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/gigs")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
-  component: LogisticsGigs,
+  head: () => ({ meta: [{ title: "Scoobix Admin · Gig Management" }] }),
+  component: AdminGigs,
 });
 
-function LogisticsGigs() {
+function AdminGigs() {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const data = await listTable("gigs", {
-        order: "created_at.desc",
-        limit: 200
-      }) as unknown as Gig[];
-      setGigs(data || []);
-    } catch (err: any) {
-      console.error("[GIGS_LOAD]", err);
-      toast.error(`Failed to load gigs: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+    const data = await fetchGigs();
+    setGigs(data);
+    setLoading(false);
   }, []);
 
   useEffect(() => { void load(); }, [load]);

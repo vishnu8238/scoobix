@@ -5,14 +5,13 @@ import { Navigation, Search, Loader2, Bike, Store, MapPin, ShieldAlert, History 
 import { listTable } from "@/lib/insforge-crud";
 import { formatPrice } from "@/lib/format";
 import { useTableVersion } from "@/lib/realtime-hooks";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/dispatch")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Manual Dispatch" }] }),
-  component: LogisticsDispatch,
+  head: () => ({ meta: [{ title: "Scoobix Admin · Manual Dispatch" }] }),
+  component: AdminDispatch,
 });
 
-function LogisticsDispatch() {
+function AdminDispatch() {
   const [orders, setOrders] = useState<any[]>([]);
   const [riders, setRiders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,26 +21,19 @@ function LogisticsDispatch() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const [ordersData, driversData] = await Promise.all([
-        listTable("orders", { 
-          status: "eq.PLACED", // Adjusted to match user requirement pattern (pending -> PLACED)
-          order: "created_at.asc",
-          limit: 100 
-        }),
-        listTable("drivers", { 
-          status: "eq.ACTIVE",
-          limit: 100 
-        })
-      ]);
-      setOrders(ordersData || []);
-      setRiders(driversData || []); // The variable name was riders, not drivers in the component
-    } catch (err: any) {
-      console.error("[DISPATCH_LOAD]", err);
-      toast.error(`Failed to load dispatch data: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+    const [o, r] = await Promise.all([
+      listTable<any>("orders", { 
+        status: "in.(PLACED,CONFIRMED,ACCEPTED,PREPARING,READY)",
+        order: "created_at.desc" 
+      }),
+      listTable<any>("drivers", { 
+        online_status: "eq.true",
+        limit: 100 
+      })
+    ]);
+    setOrders(o);
+    setRiders(r);
+    setLoading(false);
   }, []);
 
   useEffect(() => { void load(); }, [load, version]);

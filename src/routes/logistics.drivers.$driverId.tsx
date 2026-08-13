@@ -20,7 +20,7 @@ import {
   Calendar,
   Loader2
 } from "lucide-react";
-import { DriverProfileHeader, DriverTabs, PersonalInfoSection } from "@/components/admin/DriverProfileComponents";
+import { DriverProfileHeader, DriverTabs, PersonalInfoSection } from "@/components/logistics/DriverProfileComponents";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { format } from "date-fns";
 

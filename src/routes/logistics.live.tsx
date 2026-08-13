@@ -7,20 +7,16 @@ import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
 import { updateZone, deleteZone, getZoneStats, type DeliveryZone, type Subzone } from "@/lib/zones-api";
 import { getZonesWithSubzones, seedVadodaraStructure } from "@/lib/zones.functions";
 import { useTableVersion } from "@/lib/realtime-hooks";
-import { listTable } from "@/lib/insforge-crud";
 import { format } from "date-fns";
 import { ZoneFormModal, SubzoneFormModal } from "@/components/ZoneFormModal";
 
 export const Route = createFileRoute("/logistics/live")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Live Operations" }] }),
-  component: LogisticsLiveDashboard,
+  head: () => ({ meta: [{ title: "Scoobix Admin · Zones & Delivery Management" }] }),
+  component: AdminZonesDashboard,
 });
 
-function LogisticsLiveDashboard() {
+function AdminZonesDashboard() {
   const [view, setView] = useState<"list" | "map" | "detail">("list");
-  const [orders, setOrders] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [tracking, setTracking] = useState<any[]>([]);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [subzones, setSubzones] = useState<Subzone[]>([]);
   const [stats, setStats] = useState<any>(null);
@@ -32,31 +28,25 @@ function LogisticsLiveDashboard() {
   const [isSubzoneModalOpen, setIsSubzoneModalOpen] = useState(false);
   const [expandedZones, setExpandedZones] = useState<Record<string, boolean>>({});
   
-  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders", "live_tracking", "gigs"]);
+  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders"]);
 
   const refresh = useCallback(async () => {
+    if (loading && zones.length === 0) return;
     setLoading(true);
     try {
-      const [ordersData, driversData, trackingData, zoneData, st] = await Promise.all([
-        listTable("orders", { order: "created_at.desc", limit: 200 }),
-        listTable("drivers", { limit: 100 }),
-        listTable("live_tracking", { order: "timestamp.desc", limit: 500 }),
+      const [data, st] = await Promise.all([
         getZonesWithSubzones(),
         getZoneStats()
       ]);
-      setOrders(ordersData || []);
-      setDrivers(driversData || []);
-      setTracking(trackingData || []);
-      setZones(zoneData?.zones || []);
-      setSubzones(zoneData?.subzones || []);
+      setZones(data?.zones || []);
+      setSubzones(data?.subzones || []);
       setStats(st);
-    } catch (err: any) {
-      console.error("[LIVE_LOAD]", err);
-      toast.error(`Failed to load live data: ${err.message}`);
+    } catch (err) {
+      toast.error("Failed to load zones data");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loading, zones.length]);
 
   const handleSeed = async () => {
     setSeeding(true);

@@ -2,18 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { fetchSubzones, type Subzone, fetchZones, type DeliveryZone } from "@/lib/zones-api";
-import { listTable } from "@/lib/insforge-crud";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Plus, Edit2, Trash2, Search, Map as MapIcon, Layers } from "lucide-react";
 import { SubzoneFormModal } from "@/components/ZoneFormModal";
 import { GoogleMap } from "@/components/maps/GoogleMap";
 
 export const Route = createFileRoute("/logistics/subzones")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Subzones" }] }),
-  component: LogisticsSubzonesPage,
+  head: () => ({ meta: [{ title: "Scoobix Admin · Subzones" }] }),
+  component: SubzonesPage,
 });
 
-function LogisticsSubzonesPage() {
+function SubzonesPage() {
   const [subzones, setSubzones] = useState<Subzone[]>([]);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,15 +22,11 @@ function LogisticsSubzonesPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [sz, z] = await Promise.all([
-        listTable("delivery_subzones", { order: "created_at.desc", limit: 100 }) as unknown as Subzone[],
-        listTable("delivery_zones", { order: "created_at.desc", limit: 100 }) as unknown as DeliveryZone[]
-      ]);
-      setSubzones(sz || []);
-      setZones(z || []);
-    } catch (err: any) {
-      console.error("[SUBZONES_LOAD]", err);
-      toast.error(`Failed to load subzones: ${err.message}`);
+      const [sz, z] = await Promise.all([fetchSubzones(), fetchZones()]);
+      setSubzones(sz);
+      setZones(z);
+    } catch {
+      toast.error("Failed to load subzones");
     } finally {
       setLoading(false);
     }
