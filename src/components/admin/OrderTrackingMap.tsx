@@ -71,12 +71,12 @@ export function OrderTrackingMap({ restaurant, customer, rider, order, showAllRi
       const drivers = await listTable("drivers", params);
       
       // Add drivers to map
-      drivers.forEach(driver => {
+      drivers.forEach((driver: any) => {
         if (driver.latitude && driver.longitude && driver.id !== rider?.id) {
           const marker = new google.maps.Marker({
             position: { lat: Number(driver.latitude), lng: Number(driver.longitude) },
             map: googleMapRef.current,
-            title: `Driver: ${driver.id.slice(0,8)}`,
+            title: `Driver: ${String(driver.id).slice(0, 8)}`,
             icon: {
               path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
               fillColor: "#94a3b8", // Grey for available
