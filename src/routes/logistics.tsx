@@ -28,7 +28,8 @@ const NAV = [
   { to: "/logistics/zones", label: "Zones", icon: MapPin },
   { to: "/logistics/subzones", label: "Subzones", icon: MapPin },
   { to: "/logistics/gigs", label: "Gigs", icon: Package },
-  { to: "/logistics/more", label: "More", icon: MoreHorizontal },
+  { to: "/logistics/audit", label: "Audit Logs", icon: History },
+  { to: "/logistics/settings", label: "Settings", icon: Settings },
 ];
 
 function LogisticsLayout() {
