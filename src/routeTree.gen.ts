@@ -85,6 +85,7 @@ import { Route as LogisticsLiveRouteImport } from './routes/logistics.live'
 import { Route as LogisticsGigsRouteImport } from './routes/logistics.gigs'
 import { Route as LogisticsDriversRouteImport } from './routes/logistics.drivers'
 import { Route as LogisticsDispatchRouteImport } from './routes/logistics.dispatch'
+import { Route as LogisticsCampaignsRouteImport } from './routes/logistics.campaigns'
 import { Route as LogisticsAuditRouteImport } from './routes/logistics.audit'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppWalletRouteImport } from './routes/app.wallet'
@@ -530,6 +531,11 @@ const LogisticsDispatchRoute = LogisticsDispatchRouteImport.update({
   path: '/dispatch',
   getParentRoute: () => LogisticsRoute,
 } as any)
+const LogisticsCampaignsRoute = LogisticsCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => LogisticsRoute,
+} as any)
 const LogisticsAuditRoute = LogisticsAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
@@ -921,6 +927,7 @@ export interface FileRoutesByFullPath {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/logistics/audit': typeof LogisticsAuditRoute
+  '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/gigs': typeof LogisticsGigsRoute
@@ -1057,6 +1064,7 @@ export interface FileRoutesByTo {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/logistics/audit': typeof LogisticsAuditRoute
+  '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/gigs': typeof LogisticsGigsRoute
@@ -1200,6 +1208,7 @@ export interface FileRoutesById {
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/logistics/audit': typeof LogisticsAuditRoute
+  '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/dispatch': typeof LogisticsDispatchRoute
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/gigs': typeof LogisticsGigsRoute
@@ -1344,6 +1353,7 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/logistics/audit'
+    | '/logistics/campaigns'
     | '/logistics/dispatch'
     | '/logistics/drivers'
     | '/logistics/gigs'
@@ -1480,6 +1490,7 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/logistics/audit'
+    | '/logistics/campaigns'
     | '/logistics/dispatch'
     | '/logistics/drivers'
     | '/logistics/gigs'
@@ -1622,6 +1633,7 @@ export interface FileRouteTypes {
     | '/app/wallet'
     | '/auth/callback'
     | '/logistics/audit'
+    | '/logistics/campaigns'
     | '/logistics/dispatch'
     | '/logistics/drivers'
     | '/logistics/gigs'
@@ -2244,6 +2256,13 @@ declare module '@tanstack/react-router' {
       path: '/dispatch'
       fullPath: '/logistics/dispatch'
       preLoaderRoute: typeof LogisticsDispatchRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/campaigns': {
+      id: '/logistics/campaigns'
+      path: '/campaigns'
+      fullPath: '/logistics/campaigns'
+      preLoaderRoute: typeof LogisticsCampaignsRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/audit': {
@@ -2880,6 +2899,7 @@ const LogisticsOrdersRouteWithChildren = LogisticsOrdersRoute._addFileChildren(
 
 interface LogisticsRouteChildren {
   LogisticsAuditRoute: typeof LogisticsAuditRoute
+  LogisticsCampaignsRoute: typeof LogisticsCampaignsRoute
   LogisticsDispatchRoute: typeof LogisticsDispatchRoute
   LogisticsDriversRoute: typeof LogisticsDriversRouteWithChildren
   LogisticsGigsRoute: typeof LogisticsGigsRoute
@@ -2900,6 +2920,7 @@ interface LogisticsRouteChildren {
 
 const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsAuditRoute: LogisticsAuditRoute,
+  LogisticsCampaignsRoute: LogisticsCampaignsRoute,
   LogisticsDispatchRoute: LogisticsDispatchRoute,
   LogisticsDriversRoute: LogisticsDriversRouteWithChildren,
   LogisticsGigsRoute: LogisticsGigsRoute,
