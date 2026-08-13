@@ -72,15 +72,16 @@ function AuthCallback() {
         console.log("[AUTH_TRACE] [SESSION_VERIFIED] ID:", authUser.id, "Email:", authUser.email);
         
         // 3. Authorization Check
-        if (portal === "admin" && authUser.email !== "scoobix.info@gmail.com") {
-          console.error("[AUTH_TRACE] Admin unauthorized");
-          window.location.assign("/login?portal=admin&error=unauthorized");
-          return;
-        }
-
-        if (portal === "logistics" || portal === "partner" || portal === "rider" || portal === "manager") {
+        if (portal === "logistics" || portal === "partner" || portal === "rider" || portal === "manager" || portal === "admin") {
           const { checkPortalAccess } = await import("@/lib/portal-authorization");
-          const access = await checkPortalAccess(authUser.email, portal as any);
+          
+          let access;
+          if (portal === "admin") {
+            const isAdmin = authUser.email === "scoobix.info@gmail.com";
+            access = isAdmin ? { ok: true, status: "active" } : { ok: false, reason: "denied" };
+          } else {
+            access = await checkPortalAccess(authUser.email, portal as any);
+          }
 
           if (!access.ok && access.reason === "lookup_failed") {
             setErrorMsg(`Unable to verify ${portal} access. Please try again.`);
@@ -89,12 +90,12 @@ function AuthCallback() {
 
           if (!access.ok) {
             const errorParam = access.reason === "disabled" ? "disabled" : "denied";
-            // Do not redirect to Customer, keep them at the portal login with an error
+            console.warn(`[AUTH_TRACE] ${portal} access denied:`, access.reason);
             window.location.assign(`/login?portal=${portal}&${errorParam}=${portal}`);
             return;
           }
-          console.log(`[AUTH_TRACE] ${portal} authorized via portal_access`);
-          // Record login timestamp
+          
+          console.log(`[AUTH_TRACE] ${portal} authorized`);
           const { recordPortalLogin } = await import("@/lib/portal-authorization");
           void recordPortalLogin(authUser.email, portal as any);
         }
