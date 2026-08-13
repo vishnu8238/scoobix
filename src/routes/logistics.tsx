@@ -33,6 +33,7 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/logistics/orders", label: "Orders", icon: ClipboardList },
   { to: "/logistics/zones", label: "Zones & Delivery", icon: MapIcon },
   { to: "/logistics/subzones", label: "Subzones", icon: MapIcon },
+  { to: "/logistics/audit", label: "Audit Logs", icon: History },
 ];
 
 function LogisticsLayout() {
