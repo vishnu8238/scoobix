@@ -94,6 +94,7 @@ import { Route as LogisticsDiscoverRouteImport } from './routes/logistics.discov
 import { Route as LogisticsCouponsRouteImport } from './routes/logistics.coupons'
 import { Route as LogisticsCampaignsRouteImport } from './routes/logistics.campaigns'
 import { Route as LogisticsAuditRouteImport } from './routes/logistics.audit'
+import { Route as LogisticsAccessRouteImport } from './routes/logistics.access'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppWalletRouteImport } from './routes/app.wallet'
 import { Route as AppValueRouteImport } from './routes/app.value'
@@ -583,6 +584,11 @@ const LogisticsAuditRoute = LogisticsAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => LogisticsRoute,
 } as any)
+const LogisticsAccessRoute = LogisticsAccessRouteImport.update({
+  id: '/access',
+  path: '/access',
+  getParentRoute: () => LogisticsRoute,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -968,6 +974,7 @@ export interface FileRoutesByFullPath {
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/logistics/access': typeof LogisticsAccessRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/coupons': typeof LogisticsCouponsRoute
@@ -1112,6 +1119,7 @@ export interface FileRoutesByTo {
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/logistics/access': typeof LogisticsAccessRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/coupons': typeof LogisticsCouponsRoute
@@ -1263,6 +1271,7 @@ export interface FileRoutesById {
   '/app/value': typeof AppValueRoute
   '/app/wallet': typeof AppWalletRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/logistics/access': typeof LogisticsAccessRoute
   '/logistics/audit': typeof LogisticsAuditRoute
   '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/coupons': typeof LogisticsCouponsRoute
@@ -1415,6 +1424,7 @@ export interface FileRouteTypes {
     | '/app/value'
     | '/app/wallet'
     | '/auth/callback'
+    | '/logistics/access'
     | '/logistics/audit'
     | '/logistics/campaigns'
     | '/logistics/coupons'
@@ -1559,6 +1569,7 @@ export interface FileRouteTypes {
     | '/app/value'
     | '/app/wallet'
     | '/auth/callback'
+    | '/logistics/access'
     | '/logistics/audit'
     | '/logistics/campaigns'
     | '/logistics/coupons'
@@ -1709,6 +1720,7 @@ export interface FileRouteTypes {
     | '/app/value'
     | '/app/wallet'
     | '/auth/callback'
+    | '/logistics/access'
     | '/logistics/audit'
     | '/logistics/campaigns'
     | '/logistics/coupons'
@@ -2405,6 +2417,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsAuditRouteImport
       parentRoute: typeof LogisticsRoute
     }
+    '/logistics/access': {
+      id: '/logistics/access'
+      path: '/access'
+      fullPath: '/logistics/access'
+      preLoaderRoute: typeof LogisticsAccessRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -3031,6 +3050,7 @@ const LogisticsOrdersRouteWithChildren = LogisticsOrdersRoute._addFileChildren(
 )
 
 interface LogisticsRouteChildren {
+  LogisticsAccessRoute: typeof LogisticsAccessRoute
   LogisticsAuditRoute: typeof LogisticsAuditRoute
   LogisticsCampaignsRoute: typeof LogisticsCampaignsRoute
   LogisticsCouponsRoute: typeof LogisticsCouponsRoute
@@ -3059,6 +3079,7 @@ interface LogisticsRouteChildren {
 }
 
 const LogisticsRouteChildren: LogisticsRouteChildren = {
+  LogisticsAccessRoute: LogisticsAccessRoute,
   LogisticsAuditRoute: LogisticsAuditRoute,
   LogisticsCampaignsRoute: LogisticsCampaignsRoute,
   LogisticsCouponsRoute: LogisticsCouponsRoute,
