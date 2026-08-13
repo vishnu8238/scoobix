@@ -4,6 +4,7 @@ import { Search, Plus, Loader2, Calendar, RefreshCw, Upload, Download, ChevronLe
 import { fetchGigs, type Gig } from "@/lib/gigs-api";
 import { format, addDays, startOfToday } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
+import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/logistics/gigs")({
@@ -16,6 +17,7 @@ function LogisticsGigs() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [selectedDate, setSelectedDate] = useState(startOfToday());
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,7 +57,10 @@ function LogisticsGigs() {
             >
               <RefreshCw className={cn("h-4 w-4 transition-transform group-active:rotate-180", loading && "animate-spin")} />
             </button>
-            <button className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-95"
+            >
               <Plus className="h-4 w-4" /> Create New Gig
             </button>
             <button className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white transition-all hover:bg-slate-800 active:scale-95 dark:bg-slate-100 dark:text-slate-900">
@@ -146,6 +151,12 @@ function LogisticsGigs() {
           </div>
         )}
       </section>
+
+      <CreateGigModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={load}
+      />
     </div>
   );
 }
