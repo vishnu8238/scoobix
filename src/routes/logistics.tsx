@@ -36,46 +36,46 @@ function LogisticsLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <div className="flex min-h-svh bg-background font-sans">
-      {/* DESKTOP SIDEBAR */}
-      <aside className="sticky top-0 hidden h-svh w-64 flex-col border-r bg-card md:flex">
-        <div className="flex h-full flex-col p-6">
-          {/* Logo */}
-          <div className="mb-8 flex items-center gap-3">
-            <ScoobixMark size={32} />
-            <span className="font-display text-xl font-extrabold tracking-tight">Logistics</span>
+    <div className="min-h-svh w-full bg-[radial-gradient(circle_at_top_left,_oklch(0.96_0.04_148_/_0.4),_oklch(0.99_0.005_120)_45%)] font-sans">
+      <div className="mx-auto flex min-h-svh max-w-[1600px]">
+        {/* Sidebar */}
+        <aside className="sticky top-0 hidden h-svh w-64 flex-col gap-1 border-r border-border/60 bg-card/60 p-5 backdrop-blur-md md:flex">
+          <div className="mb-6 flex items-center gap-3">
+            <ScoobixMark size={36} />
+            <div>
+              <p className="font-display text-lg font-extrabold leading-none tracking-tight text-foreground">Scoobix</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Logistics</p>
+            </div>
           </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1">
-            {NAV.map((item) => {
-              const active = item.exact ? pathname === item.to : pathname.startsWith(item.to);
+          <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto">
+            {NAV.map((n) => {
+              const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
               return (
                 <Link
-                  key={item.to}
-                  to={item.to}
+                  key={n.to}
+                  to={n.to}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+                    "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition",
                     active 
-                      ? "bg-primary text-primary-foreground shadow-sm" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-primary text-primary-foreground shadow-glow" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
+                  <n.icon className="h-4 w-4" strokeWidth={active ? 2.5 : 2} />
+                  {n.label}
                 </Link>
               );
             })}
           </nav>
-        </div>
-      </aside>
+        </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 overflow-y-auto p-6 md:p-10">
-        <div className="mx-auto max-w-7xl animate-fade-in">
-          <Outlet />
-        </div>
-      </main>
+        {/* Main content */}
+        <main className="flex-1 px-5 py-6 md:px-10 md:py-8">
+          <div className="animate-fade-up">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
