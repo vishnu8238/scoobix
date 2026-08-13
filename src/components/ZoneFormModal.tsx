@@ -139,7 +139,6 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                    }] : []}
                    onPolygonEdit={(_, points) => {
                      const newCoords = points.map(p => [p.lng, p.lat]);
-                     // Close the polygon
                      if (newCoords.length > 0) {
                         newCoords.push([...newCoords[0]]);
                      }
@@ -149,10 +148,10 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                      }));
                    }}
                    onPick={(coords) => {
-                     if (formData.boundary.coordinates?.[0]?.length) return; // Don't reset if already drawing
+                     if (formData.boundary.coordinates?.[0]?.length > 0) return; 
                      const lat = coords.lat;
                      const lng = coords.lng;
-                     const offset = 0.02;
+                     const offset = 0.005; 
                      const newCoords = [
                        [lng - offset, lat - offset],
                        [lng + offset, lat - offset],
@@ -164,7 +163,6 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                        ...prev, 
                        boundary: { type: "Polygon", coordinates: [newCoords] } 
                      }));
-                     toast.info(`Set boundary center to ${lat.toFixed(4)}, ${lng.toFixed(4)}. Drag vertices to refine.`);
                    }}
                  />
               </div>
