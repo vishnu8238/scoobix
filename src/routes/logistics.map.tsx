@@ -55,7 +55,7 @@ function LogisticsMap() {
             lat: r.last_lat,
             lng: r.last_lng,
             label: r.name,
-            icon: "rider"
+            kind: "rider"
           }))}
         />
       </div>
