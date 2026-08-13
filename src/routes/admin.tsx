@@ -76,12 +76,8 @@ function AdminLayout() {
 
   const portal = getRequestedPortal();
 
-  // If we are strictly unauthenticated and NOT on the login page, redirect
-  useEffect(() => {
-    if (!loading && !user && authState === "unauthenticated" && pathname !== "/login") {
-      window.location.replace(`/login?portal=${portal}`);
-    }
-  }, [user, loading, authState, pathname, portal]);
+  // Admission and auth redirects are handled strictly by AdminGuard/RoleGuard.
+  // The redundant useEffect here was removed to prevent race conditions and loops.
 
   // Show nothing if unauthenticated to prevent layout flash before redirect
   if (!user && pathname !== "/login") {

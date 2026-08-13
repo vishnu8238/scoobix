@@ -18,18 +18,31 @@ export function AdminGuard({ children }: AdminGuardProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (authLoading || authState === "initializing" || authState === "session_resolving" || (user && authorized === null)) {
+        setTimedOut(true);
+      }
+    }, 15000);
+
     if (authLoading || authState === "initializing" || authState === "session_resolving") return;
 
     if (!user) {
-      if (pathname !== "/login") {
-        navigate({ to: "/login?portal=admin" as any });
+      if (pathname !== "/login" && authState === "unauthenticated") {
+        window.location.replace(new URL("/login?portal=admin", window.location.origin).href);
       }
       return;
     }
 
-    const verify = async () => {
+    return () => clearTimeout(timer);
+  }, [user, authLoading, authState, pathname, authorized]);
+
+  useEffect(() => {
+    if (authLoading || authState === "initializing" || authState === "session_resolving") return;
+
+    if (!user) return;
       // Safety timeout: 10 seconds to verify admin email
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("Verification timeout")), 10000)
@@ -61,10 +74,27 @@ export function AdminGuard({ children }: AdminGuardProps) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 animate-pulse">
-            Security Verification...
-          </p>
+          {timedOut ? (
+            <div className="text-center space-y-4 animate-fade-up">
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-xs text-destructive font-medium uppercase tracking-widest">Security Timeout</p>
+                <p className="text-[10px] text-zinc-500 mt-1">Verification is taking longer than expected.</p>
+              </div>
+              <button 
+                onClick={() => window.location.reload()}
+                className="text-[10px] font-bold uppercase tracking-widest text-white hover:underline"
+              >
+                Retry Security Check
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 animate-pulse">
+                Security Verification...
+              </p>
+            </>
+          )}
         </div>
       </div>
     );
