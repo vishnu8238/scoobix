@@ -31,16 +31,14 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     // Do NOT trigger any redirects if auth is still initializing.
     if (loading) return;
     
-
-
     // 1. Not logged in? 
     if (!user) {
-      if (pathname === "/login" || pathname.includes("/onboarding")) return;
+      if (pathname === "/login" || pathname.includes("/onboarding") || pathname.includes("/auth/callback")) return;
       
       // If we are strictly unauthenticated (no session), go to login
       const loginPath = `/login?portal=${portal}`;
       console.log("[AUTH_DEBUG] RoleGuard: Unauthenticated, redirecting to login:", loginPath);
-      window.location.replace(loginPath);
+      window.location.replace(new URL(loginPath, window.location.origin).href);
       return;
     }
 
