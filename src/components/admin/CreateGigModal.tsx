@@ -65,6 +65,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
 
 
   const seedPrereqs = useServerFn(seedLogisticsPrerequisites);
+  const probeSchema = useServerFn(probeInsForgeSchema);
   const [isSeeding, setIsSeeding] = useState(false);
 
   const loadZones = async () => {
