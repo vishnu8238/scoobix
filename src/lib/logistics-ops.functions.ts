@@ -109,9 +109,10 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
           result.errors.push(`${table} insert failed: ${insertError.message}`);
         } else {
           console.log(`[SEED_PREREQ] Success for ${table}`);
-          result.zones++;
+          if (table === "cities") result.cities++;
+          else result.zones++;
           result.diagnostics.push({ table, op: "insert", status: insertStatus, success: true });
-          publishTableChange(table, "insert", zonePayload);
+          publishTableChange(table, "insert", payload);
         }
       } catch (e: any) {
         console.error(`[SEED_PREREQ] Critical error for ${table}:`, e);
