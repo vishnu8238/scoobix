@@ -116,13 +116,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0, select: "id,name,role,email,phone,avatar_url" }).catch(() => []);
         profile = profiles[0];
 
-        // Ensure we capture all metadata for resolution
+        // Ensure we capture ALL authoritative metadata for resolution
         const combinedUserData = { 
           ...sessionUser, 
           ...profile,
           user_metadata: sessionUser.user_metadata,
           profile: sessionUser.profile,
-          identities: sessionUser.identities
+          identities: sessionUser.identities,
+          raw: sessionUser // Keep the raw object in case it has vendor-specific fields
         };
         const sessionNameCandidate = getDisplayName(combinedUserData);
         
@@ -196,7 +197,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...profile, 
         user_metadata: sessionUser.user_metadata, 
         profile: sessionUser.profile,
-        identities: sessionUser.identities
+        identities: sessionUser.identities,
+        raw: sessionUser
       });
       console.log("[AUTH_TRACE] Resolved display name:", displayName);
 
