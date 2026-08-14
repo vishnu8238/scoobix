@@ -5,6 +5,7 @@ import {
   useMap,
   MapMouseEvent,
 } from "@vis.gl/react-google-maps";
+import { MapPin } from "lucide-react";
 import type { LatLng } from "@/lib/geo";
 import { interpolate } from "@/lib/geo";
 import { GoogleMapsProvider } from "./GoogleMapsProvider";
