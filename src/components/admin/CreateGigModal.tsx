@@ -39,11 +39,11 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   });
 
   // Unique cities from loaded zones
-  // We prioritize 'City 1' and 'City 2' as fallback options if no data is returned
   const cities = useMemo(() => {
     const list = Array.from(new Set(zones.map(z => z.city))).filter(Boolean).sort();
     if (list.length === 0 && !loadingZones) {
-      return ["City 1", "City 2"];
+      // If db is empty, return fallback City 1 as an option
+      return ["City 1"];
     }
     return list;
   }, [zones, loadingZones]);
@@ -51,8 +51,9 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   // Filtered zones based on selected city
   const filteredZones = useMemo(() => {
     const list = zones.filter(z => z.city === formData.city).sort((a, b) => a.name.localeCompare(b.name));
-    if (list.length === 0 && (formData.city === "City 1" || formData.city === "City 2")) {
-      return [{ id: "z1111111-1111-4111-a111-111111111111", name: "Zone 1", city: formData.city }];
+    if (list.length === 0 && formData.city === "City 1") {
+      // Hardcoded fallback Zone 1 that matches the authoritative seed ID
+      return [{ id: "z1110000-0000-0000-0000-000000000001", name: "Zone 1", city: "City 1" }];
     }
     return list;
   }, [zones, formData.city]);
