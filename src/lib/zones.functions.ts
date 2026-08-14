@@ -13,8 +13,8 @@ export const getZonesWithSubzones = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
       const [zonesRes, subzonesRes] = await Promise.all([
-        fetch(`${INSFORGE_URL}/api/database/records/delivery_zones?order=name.asc`, { headers: HEADERS }),
-        fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones?order=name.asc`, { headers: HEADERS })
+        fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?order=name.asc`, { headers: HEADERS }),
+        fetch(`${INSFORGE_URL}/api/database/records/subzones?order=name.asc`, { headers: HEADERS })
       ]);
       
       const zones = zonesRes.ok ? await zonesRes.json() : [];
@@ -41,7 +41,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
 
     for (const zDef of zones) {
       // Check if zone exists
-      const zCheck = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones?name=ilike.${encodeURIComponent(zDef.name)}&city=eq.Vadodara`, { headers: HEADERS });
+      const zCheck = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?name=ilike.${encodeURIComponent(zDef.name)}&city=eq.Vadodara`, { headers: HEADERS });
       let zoneData = zCheck.ok ? await zCheck.json() : [];
       let zoneId;
 
@@ -49,7 +49,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
         zoneId = zoneData[0].id;
         skipped++;
       } else {
-        const createZ = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones`, {
+        const createZ = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones`, {
           method: "POST",
           headers: {
             ...HEADERS,
@@ -74,13 +74,13 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
       if (!zoneId) continue;
 
       for (const szName of zDef.subzones) {
-        const szCheck = await fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones?name=ilike.${encodeURIComponent(szName)}&zone_id=eq.${zoneId}`, { headers: HEADERS });
+        const szCheck = await fetch(`${INSFORGE_URL}/api/database/records/subzones?name=ilike.${encodeURIComponent(szName)}&zone_id=eq.${zoneId}`, { headers: HEADERS });
         const szData = szCheck.ok ? await szCheck.json() : [];
 
         if (szData && szData.length > 0) {
           skipped++;
         } else {
-          await fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones`, {
+          await fetch(`${INSFORGE_URL}/api/database/records/subzones`, {
             method: "POST",
             headers: HEADERS,
             body: JSON.stringify({
@@ -120,7 +120,7 @@ export const createNewZone = createServerFn({ method: "POST" })
         : { type: "Polygon", coordinates: [] }
     };
 
-    const res = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones`, {
+    const res = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones`, {
       method: "POST",
       headers: {
         ...HEADERS,
@@ -138,7 +138,7 @@ export const createNewZone = createServerFn({ method: "POST" })
     const created = await res.json();
     const row = Array.isArray(created) ? created[0] : created;
     if (row) {
-      publishTableChange("delivery_zones", "insert", row);
+      publishTableChange("logistics_zones", "insert", row);
     }
     return row;
   });
@@ -151,7 +151,7 @@ export const createNewSubzone = createServerFn({ method: "POST" })
     boundary: z.any().optional()
   }))
   .handler(async ({ data }) => {
-    const res = await fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones`, {
+    const res = await fetch(`${INSFORGE_URL}/api/database/records/subzones`, {
       method: "POST",
       headers: {
         ...HEADERS,
@@ -170,6 +170,6 @@ export const createNewSubzone = createServerFn({ method: "POST" })
     
     const created = await res.json();
     const row = Array.isArray(created) ? created[0] : created;
-    publishTableChange("delivery_subzones", "insert", row);
+    publishTableChange("subzones", "insert", row);
     return row;
   });
