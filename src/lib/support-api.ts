@@ -158,7 +158,7 @@ export async function createTicket(data: Partial<SupportTicket>) {
   return createRecord<SupportTicket>("support_tickets", { ...data, ticket_code, status: "open" });
 }
 
-export async function addTicketMessage(data: any, legacyTicketArg?: any) {
+export async function addTicketMessage(data: any, legacyTicketArg?: any, legacyTicketData?: any) {
   // Handle legacy 3-arg calls
   const ticketId = typeof data === 'string' ? data : data.ticketId;
   const payload = typeof data === 'string' ? legacyTicketArg : data;
@@ -359,7 +359,7 @@ export function computeSupportAnalytics(tickets: SupportTicket[], ratings: Ticke
   };
 }
 
-export async function escalateTicket(ticket: SupportTicket | string, actor: any) {
+export async function escalateTicket(ticket: SupportTicket | string, actor: any, reason?: string) {
   const id = typeof ticket === 'string' ? ticket : ticket.id;
   await patchRecord("support_tickets", id, { status: "escalated", escalated: true });
   await createRecord("ticket_activity", {
@@ -368,6 +368,7 @@ export async function escalateTicket(ticket: SupportTicket | string, actor: any)
     actor_name: actor.name,
     actor_role: actor.role,
     action: "Escalated ticket",
+    to_value: reason || "Escalated to admin",
   });
 }
 
