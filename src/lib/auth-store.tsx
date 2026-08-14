@@ -116,8 +116,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0, select: "id,name,role,email,phone,avatar_url" }).catch(() => []);
         profile = profiles[0];
 
-        // If table profile is missing or lacks a name, but we have a session name, update it
-        const sessionNameCandidate = getDisplayName({ ...sessionUser, auth: sessionUser.auth, user_metadata: sessionUser.user_metadata, profile: sessionUser.profile });
+        // Ensure we capture ALL authoritative metadata for resolution
+        const combinedUserData = { 
+          ...sessionUser, 
+          ...profile,
+          user_metadata: sessionUser.user_metadata,
+          profile: sessionUser.profile,
+          identities: sessionUser.identities,
+          raw: sessionUser // Keep the raw object in case it has vendor-specific fields
+        };
+        const sessionNameCandidate = getDisplayName(combinedUserData);
         
         if (!profile && userEmail) {
           console.log("[AUTH_TRACE] Creating new profile for:", userEmail);
@@ -184,7 +192,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log("[AUTH_TRACE] Final Roles:", uniqueRoles, "Current Portal:", currentPortal, "Has Access:", hasAccess);
 
-      const displayName = getDisplayName({ ...sessionUser, ...profile, auth: sessionUser.auth, user_metadata: sessionUser.user_metadata, profile: sessionUser.profile });
+      const displayName = getDisplayName({ 
+        ...sessionUser, 
+        ...profile, 
+        user_metadata: sessionUser.user_metadata, 
+        profile: sessionUser.profile,
+        identities: sessionUser.identities,
+        raw: sessionUser
+      });
       console.log("[AUTH_TRACE] Resolved display name:", displayName);
 
       setUser({

@@ -10,12 +10,30 @@ export function getDisplayName(user: any): string {
   const isGeneric = (name: any) => {
     if (typeof name !== 'string') return true;
     const n = name.trim().toLowerCase();
-    return !n || n === 'user' || n === 'null' || n === 'undefined' || n === 'manager' || n === 'admin' || n === 'partner' || n === 'rider' || n === 'scoobix';
+    // Filter out generic placeholders and known email prefixes used as fallbacks
+    return (
+      !n || 
+      n === 'user' || 
+      n === 'null' || 
+      n === 'undefined' || 
+      n === 'manager' || 
+      n === 'admin' || 
+      n === 'partner' || 
+      n === 'rider' || 
+      n === 'scoobix' || 
+      n === 'scoobix.info' ||
+      n === 'scoobix.v' ||
+      n.startsWith('scoobix.') ||
+      n.includes('merchant manager') ||
+      n.includes('administrator')
+    );
   };
 
   const normalize = (val: any): string | null => {
     if (typeof val !== 'string') return null;
     const cleaned = val.trim();
+    // Prevent name fields from just repeating the email if it's the generic one
+    if (cleaned.toLowerCase().includes('scoobix.info')) return null;
     return isGeneric(cleaned) ? null : cleaned;
   };
 
@@ -31,17 +49,16 @@ export function getDisplayName(user: any): string {
     { val: user.profile?.display_name, src: 'profile.display_name' },
     { val: user.profile?.first_name && user.profile?.last_name ? `${user.profile.first_name} ${user.profile.last_name}` : user.profile?.first_name, src: 'profile.names' },
     
-    // InsForge User Metadata / Identities
+    // Google identity data in provider_metadata (authoritative for Google OAuth)
     { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
     { val: user.user_metadata?.name, src: 'metadata.name' },
     { val: user.user_metadata?.display_name, src: 'metadata.display_name' },
-    { val: user.metadata?.full_name, src: 'raw_metadata.full_name' },
-    { val: user.metadata?.name, src: 'raw_metadata.name' },
     
-    // Check identities array (common in social logins)
+    // Provider-specific raw metadata (Google)
     { val: user.identities?.[0]?.identity_data?.full_name, src: 'identity.full_name' },
     { val: user.identities?.[0]?.identity_data?.name, src: 'identity.name' },
-
+    { val: user.identities?.[0]?.identity_data?.custom_claims?.name, src: 'identity.claims.name' },
+    
     // Top-level / Fallback fields
     { val: user.full_name, src: 'top.full_name' },
     { val: user.display_name, src: 'top.display_name' },
@@ -50,7 +67,12 @@ export function getDisplayName(user: any): string {
 
   for (const { val, src } of candidates) {
     const res = normalize(val);
-    if (res) return res;
+    if (res) {
+      if (typeof window !== "undefined" && (window as any).LOG_IDENTITY_SOURCE) {
+        console.log(`[IDENTITY_RESOLVER] Resolved "${res}" from ${src}`);
+      }
+      return res;
+    }
   }
 
   // 2. Fallback to Email Prefix (last resort before "User")
