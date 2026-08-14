@@ -37,10 +37,24 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   });
 
   // Unique cities from loaded zones
-  const cities = Array.from(new Set(zones.map(z => z.city))).filter(Boolean).sort();
+  // We prioritize 'City 1' and 'City 2' as fallback options if no data is returned
+  const cities = useMemo(() => {
+    const list = Array.from(new Set(zones.map(z => z.city))).filter(Boolean).sort();
+    if (list.length === 0 && !loadingZones && !zonesError) {
+      return ["City 1", "City 2"];
+    }
+    return list;
+  }, [zones, loadingZones, zonesError]);
   
   // Filtered zones based on selected city
-  const filteredZones = zones.filter(z => z.city === formData.city).sort((a, b) => a.name.localeCompare(b.name));
+  const filteredZones = useMemo(() => {
+    const list = zones.filter(z => z.city === formData.city).sort((a, b) => a.name.localeCompare(b.name));
+    if (list.length === 0 && (formData.city === "City 1" || formData.city === "City 2")) {
+      return [{ id: "zone-1-fallback", name: "Zone 1", city: formData.city }];
+    }
+    return list;
+  }, [zones, formData.city]);
+
 
   useEffect(() => {
     if (isOpen) {
