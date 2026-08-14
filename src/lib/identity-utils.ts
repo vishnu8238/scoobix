@@ -10,10 +10,13 @@ export function getDisplayName(user: any): string {
   const isGeneric = (name: any) => {
     if (typeof name !== 'string') return true;
     const n = name.trim().toLowerCase();
-    // Filter out generic placeholders and known email prefixes used as fallbacks
+    
+    // Explicitly check for the generic "User" string
+    if (n === 'user') return true;
+
+    // Filter out common generic placeholders and email prefixes that are not real names
     return (
       !n || 
-      n === 'user' || 
       n === 'null' || 
       n === 'undefined' || 
       n === 'manager' || 
@@ -32,6 +35,10 @@ export function getDisplayName(user: any): string {
   const normalize = (val: any): string | null => {
     if (typeof val !== 'string') return null;
     const cleaned = val.trim();
+    
+    // If it's the literal string "User", reject it
+    if (cleaned.toLowerCase() === 'user') return null;
+
     // Prevent name fields from just repeating the email if it's the generic one
     if (cleaned.toLowerCase().includes('scoobix.info')) return null;
     return isGeneric(cleaned) ? null : cleaned;
@@ -39,8 +46,9 @@ export function getDisplayName(user: any): string {
 
   // 1. Deep search through every known InsForge/Google source
   // We prioritize: Table Profile Name > Nested Metadata/Social Profile > Top-level fields
+  // IMPORTANT: We skip the DB 'name' if it's just "User"
   const candidates = [
-    // Table Profile Name (if passed in the merged object)
+    // Table Profile Name (if passed in the merged object) - skip if generic
     { val: user.name, src: 'profile_table.name' },
     
     // InsForge Nested Social Profile (Common for Google OAuth)
@@ -68,8 +76,11 @@ export function getDisplayName(user: any): string {
   for (const { val, src } of candidates) {
     const res = normalize(val);
     if (res) {
-      if (typeof window !== "undefined" && (window as any).LOG_IDENTITY_SOURCE) {
-        console.log(`[IDENTITY_RESOLVER] Resolved "${res}" from ${src}`);
+      if (typeof window !== "undefined") {
+        // Always log in development or if diagnostic flag is set
+        if ((window as any).LOG_IDENTITY_SOURCE || (import.meta as any).env.DEV) {
+          console.log(`[IDENTITY_RESOLVER] Resolved "${res}" from ${src}`);
+        }
       }
       return res;
     }
