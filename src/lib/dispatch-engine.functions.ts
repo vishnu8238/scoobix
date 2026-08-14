@@ -86,7 +86,7 @@ export const processManualAssignment = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     // 1. Update Order
-    await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${data.orderId}`, {
+    await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ORDERS}?id=eq.${data.orderId}`, {
       method: "PATCH",
       headers: HEADERS,
       body: JSON.stringify({ 
