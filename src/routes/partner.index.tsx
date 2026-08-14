@@ -55,7 +55,7 @@ function PartnerDashboard() {
       <header className="flex items-center justify-between">
         <div>
           <p className="eyebrow">Restaurant Partner</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">{restaurant?.name || user?.name || "Partner"}</h1>
+          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">{user?.name || "Partner"}</h1>
           <div className="mt-1.5"><RestaurantIdBadge restaurant={restaurant} /></div>
           <p className="mt-1 text-sm text-muted-foreground">{isClosed ? "Temporarily closed" : isAccepting ? "Open now · accepting orders" : "Open · paused new orders"}</p>
         </div>
