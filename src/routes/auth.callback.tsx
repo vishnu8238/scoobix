@@ -47,7 +47,7 @@ function AuthCallback() {
         // 2. Wait for the SDK to process the callback and emit a user
         // We use a simple loop to wait for the user session to be established by the SDK automatically
         let retryCount = 0;
-        const maxRetries = 20; // ~10 seconds total
+        const maxRetries = 30; // ~15 seconds total
         
         const waitForUser = async (): Promise<any> => {
           const { data: userData, error: userError } = await insforge.auth.getCurrentUser();
@@ -72,32 +72,39 @@ function AuthCallback() {
         console.log("[AUTH_TRACE] [SESSION_VERIFIED] ID:", authUser.id, "Email:", authUser.email);
         
         // 3. Authorization Check
-        if (portal === "logistics" || portal === "partner" || portal === "rider" || portal === "manager" || portal === "admin") {
+        // We ALWAYS verify access against the portal_access table for privileged portals
+        const privilegedPortals = ["logistics", "partner", "rider", "manager", "admin"];
+        if (privilegedPortals.includes(portal || "")) {
           const { checkPortalAccess } = await import("@/lib/portal-authorization");
           
           let access;
-          if (portal === "admin") {
-            const isAdmin = authUser.email === "scoobix.info@gmail.com";
-            access = isAdmin ? { ok: true, status: "active" } : { ok: false, reason: "denied" };
-          } else {
-            access = await checkPortalAccess(authUser.email, portal as any);
-          }
+          const userEmail = authUser.email?.toLowerCase().trim();
+          const isSuperAdmin = userEmail === "scoobix.info@gmail.com";
 
-          if (!access.ok && access.reason === "lookup_failed") {
-            setErrorMsg(`Unable to verify ${portal} access. Please try again.`);
-            return;
+          if (isSuperAdmin) {
+            access = { ok: true, status: "active" };
+          } else {
+            access = await checkPortalAccess(userEmail, portal as any);
           }
 
           if (!access.ok) {
-            const errorParam = access.reason === "disabled" ? "disabled" : "denied";
-            console.warn(`[AUTH_TRACE] ${portal} access denied:`, access.reason);
-            window.location.assign(`/login?portal=${portal}&${errorParam}=${portal}`);
+            const reason = access.reason;
+            console.warn(`[AUTH_TRACE] ${portal} access denied:`, reason);
+            
+            if (reason === "lookup_failed") {
+              setErrorMsg(`Unable to verify ${portal} access due to a database error. Please try again.`);
+              return;
+            }
+
+            const errorParam = reason === "disabled" ? "disabled" : "denied";
+            // Clean redirect to login with the error flag
+            window.location.replace(`${window.location.origin}/login?portal=${portal}&${errorParam}=${portal}`);
             return;
           }
           
           console.log(`[AUTH_TRACE] ${portal} authorized`);
           const { recordPortalLogin } = await import("@/lib/portal-authorization");
-          void recordPortalLogin(authUser.email, portal as any);
+          void recordPortalLogin(userEmail, portal as any);
         }
 
 
