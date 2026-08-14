@@ -20,50 +20,73 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     
     const city1Id = "c1111111-1111-4111-a111-111111111111";
     const zone1Id = "z1111111-1111-4111-a111-111111111111";
+    const city2Id = "c2222222-2222-4222-b222-222222222222";
     
+    // Hardcoded tables to ensure we hit all possible schema variations
     const tables = ["logistics_zones", "delivery_zones"];
     let result = { cities: 0, zones: 0 };
 
+    const demoZones = [
+      {
+        id: zone1Id,
+        name: "Zone 1",
+        city: "City 1",
+        city_id: city1Id,
+        status: "ACTIVE",
+        boundary: { type: "Polygon", coordinates: [[[73.1, 22.3], [73.2, 22.3], [73.2, 22.4], [73.1, 22.4], [73.1, 22.3]]] },
+        center_lat: 22.3072,
+        center_lng: 73.1812,
+        pickup_radius_km: 5,
+        max_delivery_distance_km: 10,
+        max_orders_per_rider: 3,
+        assignment_timeout_sec: 30,
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+      },
+      {
+        id: "z2222222-2222-4222-b222-222222222222",
+        name: "Zone 2",
+        city: "City 2",
+        city_id: city2Id,
+        status: "ACTIVE",
+        boundary: { type: "Polygon", coordinates: [[[73.3, 22.5], [73.4, 22.5], [73.4, 22.6], [73.3, 22.6], [73.3, 22.5]]] },
+        center_lat: 22.5072,
+        center_lng: 73.3812,
+        pickup_radius_km: 5,
+        max_delivery_distance_km: 10,
+        max_orders_per_rider: 3,
+        assignment_timeout_sec: 30,
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+      }
+    ];
+
     for (const table of tables) {
-      try {
-        // 1. Check if Zone 1 exists in this table
-        const check = await fetch(`${INSFORGE_URL}/api/database/records/${table}?id=eq.${zone1Id}`, { headers: HEADERS });
-        const found = check.ok ? await check.json() : [];
-        
-        if (found && found.length > 0) {
-          console.log(`[SEED_PREREQ] Zone 1 already exists in ${table}.`);
-          continue;
+      for (const zone of demoZones) {
+        try {
+          const check = await fetch(`${INSFORGE_URL}/api/database/records/${table}?id=eq.${zone.id}`, { headers: HEADERS });
+          const found = check.ok ? await check.json() : [];
+          
+          if (found && found.length > 0) {
+            console.log(`[SEED_PREREQ] Zone ${zone.name} already exists in ${table}.`);
+            continue;
+          }
+
+          const insert = await fetch(`${INSFORGE_URL}/api/database/records/${table}`, {
+            method: "POST",
+            headers: { ...HEADERS, "Prefer": "return=minimal" },
+            body: JSON.stringify(zone)
+          });
+
+          if (insert.ok) {
+            console.log(`[SEED_PREREQ] Successfully seeded ${zone.name} to ${table}.`);
+            result.zones++;
+            publishTableChange(table, "insert", zone);
+          } else {
+            const err = await insert.text();
+            console.warn(`[SEED_PREREQ] Failed to seed ${table} for ${zone.name}:`, err);
+          }
+        } catch (e) {
+          console.error(`[SEED_PREREQ] Error seeding ${table}:`, e);
         }
-
-        // 2. Insert Zone 1 (which includes the city name)
-        const zone = {
-          id: zone1Id,
-          name: "Zone 1",
-          city: "City 1",
-          city_id: city1Id,
-          status: "ACTIVE",
-          boundary: { type: "Polygon", coordinates: [[[0,0], [0,1], [1,1], [1,0], [0,0]]] },
-          center_lat: 22.3072,
-          center_lng: 73.1812,
-          metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
-        };
-
-        const insert = await fetch(`${INSFORGE_URL}/api/database/records/${table}`, {
-          method: "POST",
-          headers: { ...HEADERS, "Prefer": "return=minimal" },
-          body: JSON.stringify(zone)
-        });
-
-        if (insert.ok) {
-          console.log(`[SEED_PREREQ] Successfully seeded Zone 1 to ${table}.`);
-          result.zones++;
-          publishTableChange(table, "insert", zone);
-        } else {
-          const err = await insert.text();
-          console.warn(`[SEED_PREREQ] Failed to seed ${table}:`, err);
-        }
-      } catch (e) {
-        console.error(`[SEED_PREREQ] Error seeding ${table}:`, e);
       }
     }
 
