@@ -1,6 +1,8 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import { useAuth, Role, getRequestedPortal } from "@/lib/auth-store";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /**
  * SCOOBIX — ROLE GUARD
