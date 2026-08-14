@@ -127,7 +127,7 @@ export const createNewZone = createServerFn({ method: "POST" })
         : { type: "Polygon", coordinates: [] }
     };
 
-    const res = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones`, {
+    const res = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}`, {
       method: "POST",
       headers: {
         ...HEADERS,
