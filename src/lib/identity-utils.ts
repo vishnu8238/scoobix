@@ -45,27 +45,27 @@ export function getDisplayName(user: any): string {
   };
 
   // 1. Deep search through every known InsForge/Google source
-  // We prioritize: Table Profile Name > Nested Metadata/Social Profile > Top-level fields
-  // IMPORTANT: We skip the DB 'name' if it's just "User"
+  // We prioritize: Social Identity > Metadata > Table Profile > Top-level fields
+  // IMPORTANT: We prioritize social identity and metadata because they come directly from OAuth (Google).
   const candidates = [
-    // Table Profile Name (if passed in the merged object) - skip if generic
-    { val: user.name, src: 'profile_table.name' },
-    
-    // InsForge Nested Social Profile (Common for Google OAuth)
+    // Google identity data in provider_metadata (authoritative for Google OAuth)
+    { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
+    { val: user.user_metadata?.name, src: 'metadata.name' },
+    { val: user.user_metadata?.display_name, src: 'metadata.display_name' },
+
+    // Provider-specific raw metadata (Google) from identities array
+    { val: user.identities?.[0]?.identity_data?.full_name, src: 'identity.full_name' },
+    { val: user.identities?.[0]?.identity_data?.name, src: 'identity.name' },
+    { val: user.identities?.[0]?.identity_data?.custom_claims?.name, src: 'identity.claims.name' },
+
+    // InsForge Nested Social Profile
     { val: user.profile?.full_name, src: 'profile.full_name' },
     { val: user.profile?.name, src: 'profile.name' },
     { val: user.profile?.display_name, src: 'profile.display_name' },
     { val: user.profile?.first_name && user.profile?.last_name ? `${user.profile.first_name} ${user.profile.last_name}` : user.profile?.first_name, src: 'profile.names' },
     
-    // Google identity data in provider_metadata (authoritative for Google OAuth)
-    { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
-    { val: user.user_metadata?.name, src: 'metadata.name' },
-    { val: user.user_metadata?.display_name, src: 'metadata.display_name' },
-    
-    // Provider-specific raw metadata (Google)
-    { val: user.identities?.[0]?.identity_data?.full_name, src: 'identity.full_name' },
-    { val: user.identities?.[0]?.identity_data?.name, src: 'identity.name' },
-    { val: user.identities?.[0]?.identity_data?.custom_claims?.name, src: 'identity.claims.name' },
+    // Table Profile Name (if passed in the merged object)
+    { val: user.name, src: 'profile_table.name' },
     
     // Top-level / Fallback fields
     { val: user.full_name, src: 'top.full_name' },
