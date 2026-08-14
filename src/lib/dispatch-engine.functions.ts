@@ -32,7 +32,7 @@ export const findEligibleRiders = createServerFn({ method: "POST" })
 
     // 2. Fetch Subzone status if provided
     if (data.subzoneId) {
-      const szRes = await fetch(`${INSFORGE_URL}/api/database/records/subzones?id=eq.${data.subzoneId}`, { headers: HEADERS });
+      const szRes = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}?id=eq.${data.subzoneId}`, { headers: HEADERS });
       const subzones = await szRes.json();
       const subzone = subzones?.[0];
       if (!subzone || subzone.status !== "ACTIVE") return [];
