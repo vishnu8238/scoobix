@@ -158,7 +158,7 @@ export const createNewSubzone = createServerFn({ method: "POST" })
     boundary: z.any().optional()
   }))
   .handler(async ({ data }) => {
-    const res = await fetch(`${INSFORGE_URL}/api/database/records/subzones`, {
+    const res = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}`, {
       method: "POST",
       headers: {
         ...HEADERS,
