@@ -3,7 +3,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useLiveOrder } from "@/lib/realtime-hooks";
 import { fetchCompleteOrderDetails, calculateOrderFinancials } from "@/lib/order-details-api";
-import { patchOrder, OrderStatus } from "@/lib/orders-api";
+import { patchOrder, type OrderStatus } from "@/lib/orders-api";
+import { updateOrderStatus } from "@/lib/order-mgmt.functions";
 import { logAudit } from "@/lib/audit-api";
 import { OrderHeader } from "@/components/admin/OrderHeader";
 import { OrderKpiCards } from "@/components/admin/OrderKpiCards";
@@ -64,8 +65,8 @@ function LogisticsOrderDetailsPage() {
 
   const handleUpdateStatus = async (newStatus: OrderStatus) => {
     setIsUpdating(true);
-    const ok = await patchOrder(orderId, { status: newStatus });
-    if (ok) {
+    try {
+      await updateOrderStatus({ data: { orderId, status: newStatus } });
       await logAudit({
         category: "admin",
         subjectType: "order",
@@ -75,10 +76,11 @@ function LogisticsOrderDetailsPage() {
       });
       toast.success(`Status updated to ${newStatus}`);
       await handleRefresh();
-    } else {
-      toast.error("Failed to update status");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update status");
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   };
 
   return (

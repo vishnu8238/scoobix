@@ -4,7 +4,9 @@ import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink, Database } from "lucide-react";
+import { seedDemoOrders } from "@/lib/logistics-ops.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),
@@ -29,6 +31,7 @@ function LogisticsOrders() {
   const [users, setUsers] = useState<NamedRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("ALL");
+  const [isSeeding, setIsSeeding] = useState(false);
   const version = useTableVersion(["orders"]);
 
   const load = useCallback(async () => {
@@ -70,8 +73,31 @@ function LogisticsOrders() {
     <div className="space-y-6">
       <header>
         <p className="eyebrow">Orders</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Live order ledger</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Monitor every order across the platform in real time.</p>
+        <div className="flex items-center justify-between mt-1">
+          <div>
+            <h1 className="font-display text-3xl font-extrabold tracking-tight">Live order ledger</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Monitor every order across the platform in real time.</p>
+          </div>
+          <button
+            onClick={async () => {
+              setIsSeeding(true);
+              try {
+                const res = await seedDemoOrders({ data: undefined });
+                toast.success(`Seeded ${res.seeded} demo orders`);
+                void load();
+              } catch (e: any) {
+                toast.error(e.message || "Failed to seed demo orders");
+              } finally {
+                setIsSeeding(false);
+              }
+            }}
+            disabled={isSeeding}
+            className="flex items-center gap-2 rounded-2xl bg-amber-500/10 px-4 py-2.5 text-xs font-black text-amber-600 ring-1 ring-amber-500/20 transition hover:bg-amber-500/20 active:scale-95 disabled:opacity-50"
+          >
+            {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+            Seed Demo Orders
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

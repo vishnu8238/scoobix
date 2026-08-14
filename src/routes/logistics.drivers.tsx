@@ -27,6 +27,7 @@ import { patchRecord } from "@/lib/insforge-crud";
 import { syncSubjectStatus } from "@/lib/verification-api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AddPartnerModal } from "@/components/admin/AddPartnerModal";
 
 export const Route = createFileRoute("/logistics/drivers")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Delivery Partners" }] }),
@@ -53,6 +54,7 @@ function LogisticsDrivers() {
   const [busy, setBusy] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({ city: "all", status: "all", carrier: "all" });
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const nameFor = (d: DriverRow) => {
     const u = users.find((x) => x.id === d.user_id);
@@ -88,7 +90,10 @@ function LogisticsDrivers() {
           <p className="eyebrow">Logistics Management</p>
           <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Delivery Partners</h1>
         </div>
-        <button className="flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95"
+        >
           <Plus className="h-4 w-4" /> Add Partner
         </button>
       </header>
@@ -174,6 +179,15 @@ function LogisticsDrivers() {
           })}
         />
       </section>
+
+      <AddPartnerModal 
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => {
+          // LiveTable will pick it up automatically, but we can toast for confirmation
+          toast.success("Partner list refreshed");
+        }}
+      />
     </div>
   );
 }

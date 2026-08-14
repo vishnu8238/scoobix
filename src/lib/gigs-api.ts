@@ -1,4 +1,5 @@
 import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
+import { newUuid } from "./orders-api";
 
 export type Gig = {
   id: string;
@@ -11,6 +12,9 @@ export type Gig = {
   status: "ACTIVE" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
   zone_id?: string;
   subzone_id?: string;
+  city_id?: string;
+  completion_pct?: number;
+  capacity?: number;
   created_at: string;
 };
 
@@ -24,16 +28,15 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  // Use explicit select to ensure we don't hit "undefined_column" on missing columns
   return listTable<Gig>("gigs", { 
-    select: "id,status,zone_id,created_at", 
     order: "created_at.desc", 
     ...params 
   });
 }
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
-  return createRecord<Gig>("gigs", gig as any);
+  const id = newUuid();
+  return createRecord<Gig>("gigs", { ...gig, id } as any);
 }
 
 export async function updateGig(id: string, patch: Partial<Gig>) {

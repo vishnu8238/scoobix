@@ -32,29 +32,57 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!formData.city || !formData.zone) {
+      toast.error("City and Zone are required");
+      return;
+    }
+
     setLoading(true);
     
     try {
-      const startTime = new Date(`${formData.date}T${formData.startHour}:${formData.startMinute}:00`).toISOString();
-      const endTime = new Date(`${formData.date}T${formData.endHour}:${formData.endMinute}:00`).toISOString();
+      // Use full ISO strings for consistency
+      const startTime = new Date(`${formData.date}T${formData.startHour}:${formData.startMinute}:00Z`).toISOString();
+      const endTime = new Date(`${formData.date}T${formData.endHour}:${formData.endMinute}:00Z`).toISOString();
 
-      await createGig({
+      const newGig = await createGig({
         title: `Gig ${formData.startHour}:${formData.startMinute} - ${formData.endHour}:${formData.endMinute}`,
-        description: `Gig in ${formData.city || 'unspecified city'}, Zone ${formData.zone || 'unspecified zone'}`,
+        description: `Gig in ${formData.city}, Zone ${formData.zone}`,
         reward_amount: Number(formData.payout),
-        target_deliveries: 10, // Default target
+        target_deliveries: 10,
         start_time: startTime,
         end_time: endTime,
         status: "SCHEDULED",
-        zone_id: formData.zone || undefined
+        zone_id: formData.zone,
+        city_id: formData.city,
+        capacity: Number(formData.neededPeople),
+        completion_pct: Number(formData.completionPercentage)
       });
 
-      toast.success("Gig created successfully");
-      onSuccess();
-      onClose();
-    } catch (error) {
+      if (newGig) {
+        toast.success("Gig created successfully");
+        onSuccess();
+        onClose();
+        // Reset form
+        setFormData({
+          date: format(new Date(), "yyyy-MM-dd"),
+          startHour: "00",
+          startMinute: "00",
+          endHour: "02",
+          endMinute: "00",
+          payout: "300",
+          neededPeople: "1",
+          completionPercentage: "50",
+          city: "",
+          zone: ""
+        });
+      } else {
+        throw new Error("Creation returned no record");
+      }
+    } catch (error: any) {
       console.error("Failed to create gig:", error);
-      toast.error("Failed to create gig");
+      toast.error(error.message || "Failed to create gig. Check permissions.");
     } finally {
       setLoading(false);
     }
