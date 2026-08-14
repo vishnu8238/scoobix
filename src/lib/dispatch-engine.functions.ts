@@ -24,14 +24,14 @@ export const findEligibleRiders = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     // 1. Fetch zone configuration
-    const zoneRes = await fetch(`${INSFORGE_URL}/api/database/records/delivery_zones?id=eq.${data.zoneId}`, { headers: HEADERS });
+    const zoneRes = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?id=eq.${data.zoneId}`, { headers: HEADERS });
     const zones = await zoneRes.json();
     const zone = zones?.[0];
     if (!zone || zone.status !== "ACTIVE") return [];
 
     // 2. Fetch Subzone status if provided
     if (data.subzoneId) {
-      const szRes = await fetch(`${INSFORGE_URL}/api/database/records/delivery_subzones?id=eq.${data.subzoneId}`, { headers: HEADERS });
+      const szRes = await fetch(`${INSFORGE_URL}/api/database/records/subzones?id=eq.${data.subzoneId}`, { headers: HEADERS });
       const subzones = await szRes.json();
       const subzone = subzones?.[0];
       if (!subzone || subzone.status !== "ACTIVE") return [];

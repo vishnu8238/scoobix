@@ -291,9 +291,9 @@ export function publishTableChange(
     add("ticket", r.ticket_id);
     if (table === "merchant_managers") add("manager", id);
     add("manager", r.manager_id);
-    if (table === "delivery_zones") add("zone", id);
+    if (table === "logistics_zones") add("zone", id);
     add("zone", r.zone_id);
-    if (table === "delivery_subzones") add("subzone", id);
+    if (table === "subzones") add("subzone", id);
     add("subzone", r.subzone_id);
   }
   for (const ch of scoped) void publishChange(ch, payload);
