@@ -1,11 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Search, Plus, Loader2, Calendar, RefreshCw, Upload, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { 
+  Search, 
+  Plus, 
+  Loader2, 
+  Calendar, 
+  RefreshCw, 
+  Upload, 
+  Download, 
+  ChevronLeft, 
+  ChevronRight,
+  Filter,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  Clock,
+  MapPin,
+  TrendingUp,
+  Settings
+} from "lucide-react";
 import { fetchGigs, type Gig } from "@/lib/gigs-api";
 import { format, addDays, startOfToday } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
