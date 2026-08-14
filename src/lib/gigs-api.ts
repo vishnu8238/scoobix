@@ -1,4 +1,5 @@
 import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
+import { publishTableChange } from "./realtime-bus";
 import { newUuid } from "./orders-api";
 
 export type Gig = {
