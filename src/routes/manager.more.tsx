@@ -36,7 +36,7 @@ function ManagerMore() {
       <PageHeader title="More" back={false} />
       <div className="px-5 pt-4">
         <div className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
-          <p className="font-display text-lg font-extrabold">{manager?.name || user?.name}</p>
+          <p className="font-display text-lg font-extrabold">{user?.name || manager?.name || "Merchant Manager"}</p>
           <p className="text-[12px] text-muted-foreground">{manager?.email || user?.email}</p>
           <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-primary">
             Merchant Manager{manager?.region ? ` · ${manager.region}` : ""}
