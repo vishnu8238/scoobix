@@ -103,7 +103,7 @@ function PartnerMore() {
         <span className="grid h-10 w-10 place-items-center rounded-2xl bg-rose-100 text-rose-700"><LogOut className="h-5 w-5" strokeWidth={2.4} /></span>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold">Logout</div>
-          <div className="truncate text-xs text-muted-foreground">{user?.email ?? "Signed out"}</div>
+          <div className="truncate text-xs text-muted-foreground">{user?.name} · {user?.email ?? "Signed out"}</div>
         </div>
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
       </button>
