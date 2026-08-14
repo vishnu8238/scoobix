@@ -30,7 +30,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         id: newUuid(),
         name: "Demo Kitchen",
         status: "ACTIVE",
-        metadata: { is_demo: true }
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
       await fetch(`${INSFORGE_URL}/api/database/records/restaurants`, {
         method: "POST", headers: HEADERS, body: JSON.stringify(demoRest)
@@ -44,7 +44,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         id: newUuid(),
         name: "Demo Customer",
         role: "customer",
-        metadata: { is_demo: true }
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
       await fetch(`${INSFORGE_URL}/api/database/records/users`, {
         method: "POST", headers: HEADERS, body: JSON.stringify(demoCust)
@@ -55,6 +55,15 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
     const zoneId = zones[0]?.id;
     const statuses = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
     const orders = [];
+
+    // Check for existing demo orders to ensure idempotency
+    const existingDemoRes = await fetch(`${INSFORGE_URL}/api/database/records/orders?metadata->>demo_tag=eq.logistics_test_v2&limit=1`, { headers: HEADERS });
+    const existingDemo = existingDemoRes.ok ? await existingDemoRes.json() : [];
+    
+    if (existingDemo.length > 0) {
+      console.log("[SEED] Demo orders already exist, skipping creation.");
+      return { seeded: 0, message: "Demo orders already exist" };
+    }
 
     for (let i = 0; i < 5; i++) {
       const id = newUuid();
@@ -89,6 +98,9 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       if (res.ok) {
         orders.push(order);
         publishTableChange("orders", "insert", order);
+      } else {
+        const err = await res.text();
+        console.error(`[SEED] Failed to insert order ${i}:`, err);
       }
     }
 
