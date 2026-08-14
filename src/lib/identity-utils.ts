@@ -98,7 +98,7 @@ export function getDisplayName(user: any): string {
     if (res) return res;
   }
 
-  return "User";
+  return "";
 }
 
 /**
