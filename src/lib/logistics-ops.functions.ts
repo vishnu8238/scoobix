@@ -28,9 +28,15 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
       const createRest = await fetch(`${INSFORGE_URL}/api/database/records/restaurants`, {
-        method: "POST", headers: HEADERS, body: JSON.stringify(demoRest)
+        method: "POST", 
+        headers: { ...HEADERS, "Prefer": "return=representation" }, 
+        body: JSON.stringify(demoRest)
       });
-      if (createRest.ok) restaurants = [demoRest];
+      if (createRest.ok) {
+        const created = await createRest.json();
+        restaurants = Array.isArray(created) ? created : [created];
+        if (restaurants.length === 0) restaurants = [demoRest];
+      }
     }
 
     // 2. Ensure a demo customer exists
@@ -47,9 +53,15 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
       const createCust = await fetch(`${INSFORGE_URL}/api/database/records/users`, {
-        method: "POST", headers: HEADERS, body: JSON.stringify(demoCust)
+        method: "POST", 
+        headers: { ...HEADERS, "Prefer": "return=representation" }, 
+        body: JSON.stringify(demoCust)
       });
-      if (createCust.ok) customers = [demoCust];
+      if (createCust.ok) {
+        const created = await createCust.json();
+        customers = Array.isArray(created) ? created : [created];
+        if (customers.length === 0) customers = [demoCust];
+      }
     }
 
     // 3. Get a zone
@@ -97,13 +109,17 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
 
       const res = await fetch(`${INSFORGE_URL}/api/database/records/orders`, {
         method: "POST",
-        headers: HEADERS,
+        headers: { ...HEADERS, "Prefer": "return=representation" },
         body: JSON.stringify(order)
       });
 
       if (res.ok) {
         seeded++;
         publishTableChange("orders", "insert", order);
+      } else {
+        const errText = await res.text();
+        console.error(`[SEED] Failed to insert order ${demoRef}:`, errText);
+        throw new Error(`Database error: ${errText}`);
       }
     }
 
