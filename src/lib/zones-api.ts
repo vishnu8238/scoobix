@@ -1,5 +1,11 @@
 import { listTable, createRecord, patchRecord, deleteRecord, createRecords } from "./insforge-crud";
 
+export const TABLE_ZONES = "logistics_zones";
+export const TABLE_SUBZONES = "subzones";
+export const TABLE_DRIVERS = "drivers";
+export const TABLE_ORDERS = "orders";
+export const TABLE_AUDIT = "audit_logs";
+
 export type DeliveryZone = {
   id: string;
   name: string;
