@@ -39,11 +39,11 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   });
 
   // Unique cities from loaded zones
-  // We prioritize 'City 1' and 'City 2' as fallback options if no data is returned
   const cities = useMemo(() => {
     const list = Array.from(new Set(zones.map(z => z.city))).filter(Boolean).sort();
     if (list.length === 0 && !loadingZones) {
-      return ["City 1", "City 2"];
+      // If db is empty, return fallback City 1 as an option
+      return ["City 1"];
     }
     return list;
   }, [zones, loadingZones]);
@@ -51,8 +51,9 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   // Filtered zones based on selected city
   const filteredZones = useMemo(() => {
     const list = zones.filter(z => z.city === formData.city).sort((a, b) => a.name.localeCompare(b.name));
-    if (list.length === 0 && (formData.city === "City 1" || formData.city === "City 2")) {
-      return [{ id: "z1111111-1111-4111-a111-111111111111", name: "Zone 1", city: formData.city }];
+    if (list.length === 0 && formData.city === "City 1") {
+      // Hardcoded fallback Zone 1 that matches the authoritative seed ID
+      return [{ id: "z1110000-0000-0000-0000-000000000001", name: "Zone 1", city: "City 1" }];
     }
     return list;
   }, [zones, formData.city]);
@@ -66,16 +67,31 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     setLoadingZones(true);
     setZonesError(null);
     try {
+      console.log("[GIG_MODAL] Querying authoritative zones...");
       const data = await fetchZones();
       if (!data || data.length === 0) {
-        console.log("[GIG_MODAL] No zones found, enabling UI fallbacks for City 1/City 2");
-        setZones([]); // Fallback handled by useMemo
+        console.warn("[GIG_MODAL] Authoritative zones table is empty. Triggering automatic seed...");
+        const seedResult = await seedPrereqs();
+        console.log("[GIG_MODAL] Auto-seed result:", seedResult);
+        
+        // Re-fetch after seeding
+        const freshData = await fetchZones();
+        if (!freshData || freshData.length === 0) {
+           console.log("[GIG_MODAL] DB still empty after seed, using UI fallbacks.");
+           setZones([]);
+        } else {
+           setZones(freshData);
+        }
       } else {
+        console.log(`[GIG_MODAL] Found ${data.length} zones.`);
         setZones(data);
       }
     } catch (err: any) {
-      console.error("[GIG_MODAL] Failed to fetch zones:", err);
-      setZonesError("Failed to load cities and zones. Please check your connection or database permissions.");
+      console.error("[GIG_MODAL] Fetch error:", err);
+      const isAuthError = err.status === 401 || err.message?.includes("Unauthorized");
+      setZonesError(isAuthError 
+        ? "Session expired or unauthorized. Please refresh the page."
+        : `Database Error: ${err.message || "Failed to load cities and zones."}`);
     } finally {
       setLoadingZones(false);
     }
@@ -90,11 +106,15 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   const handleSeed = async () => {
     setIsSeeding(true);
     try {
-      await seedPrereqs();
-      toast.success("Demo City & Zone seeded successfully");
+      const result = await seedPrereqs();
+      if (result.errors && result.errors.length > 0) {
+        toast.error(`Seed partially failed: ${result.errors[0]}`);
+      } else {
+        toast.success(`Seeded ${result.zones} zones successfully`);
+      }
       await loadZones();
-    } catch (err) {
-      toast.error("Failed to seed demo data");
+    } catch (err: any) {
+      toast.error(`Seed failed: ${err.message || "Unknown error"}`);
     } finally {
       setIsSeeding(false);
     }

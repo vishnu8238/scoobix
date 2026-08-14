@@ -16,77 +16,69 @@ const HEADERS = {
  */
 export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
   .handler(async () => {
-    console.log("[SEED_PREREQ] Starting idempotent city/zone seeding...");
+    console.log("[SEED_PREREQ] Starting authoritative idempotent city/zone seeding...");
     
-    const city1Id = "c1111111-1111-4111-a111-111111111111";
-    const zone1Id = "z1111111-1111-4111-a111-111111111111";
-    const city2Id = "c2222222-2222-4222-b222-222222222222";
+    // c1110000-0000-0000-0000-000000000001
+    const city1Id = "c1110000-0000-0000-0000-000000000001";
+    const zone1Id = "z1110000-0000-0000-0000-000000000001";
     
-    // Hardcoded tables to ensure we hit all possible schema variations
     const tables = ["logistics_zones", "delivery_zones"];
-    let result = { cities: 0, zones: 0 };
+    let result = { cities: 0, zones: 0, errors: [] as string[] };
 
-    const demoZones = [
-      {
-        id: zone1Id,
-        name: "Zone 1",
-        city: "City 1",
-        city_id: city1Id,
-        status: "ACTIVE",
-        boundary: { type: "Polygon", coordinates: [[[73.1, 22.3], [73.2, 22.3], [73.2, 22.4], [73.1, 22.4], [73.1, 22.3]]] },
-        center_lat: 22.3072,
-        center_lng: 73.1812,
-        pickup_radius_km: 5,
-        max_delivery_distance_km: 10,
-        max_orders_per_rider: 3,
-        assignment_timeout_sec: 30,
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
-      },
-      {
-        id: "z2222222-2222-4222-b222-222222222222",
-        name: "Zone 2",
-        city: "City 2",
-        city_id: city2Id,
-        status: "ACTIVE",
-        boundary: { type: "Polygon", coordinates: [[[73.3, 22.5], [73.4, 22.5], [73.4, 22.6], [73.3, 22.6], [73.3, 22.5]]] },
-        center_lat: 22.5072,
-        center_lng: 73.3812,
-        pickup_radius_km: 5,
-        max_delivery_distance_km: 10,
-        max_orders_per_rider: 3,
-        assignment_timeout_sec: 30,
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
-      }
-    ];
+    const zonePayload = {
+      id: zone1Id,
+      name: "Zone 1",
+      city: "City 1",
+      city_id: city1Id,
+      status: "ACTIVE",
+      boundary: { type: "Polygon", coordinates: [[[73.1, 22.3], [73.2, 22.3], [73.2, 22.4], [73.1, 22.4], [73.1, 22.3]]] },
+      center_lat: 22.3072,
+      center_lng: 73.1812,
+      pickup_radius_km: 5,
+      max_delivery_distance_km: 10,
+      max_orders_per_rider: 3,
+      assignment_timeout_sec: 30,
+      metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+    };
 
     for (const table of tables) {
-      for (const zone of demoZones) {
-        try {
-          const check = await fetch(`${INSFORGE_URL}/api/database/records/${table}?id=eq.${zone.id}`, { headers: HEADERS });
-          const found = check.ok ? await check.json() : [];
-          
-          if (found && found.length > 0) {
-            console.log(`[SEED_PREREQ] Zone ${zone.name} already exists in ${table}.`);
-            continue;
-          }
-
-          const insert = await fetch(`${INSFORGE_URL}/api/database/records/${table}`, {
-            method: "POST",
-            headers: { ...HEADERS, "Prefer": "return=minimal" },
-            body: JSON.stringify(zone)
-          });
-
-          if (insert.ok) {
-            console.log(`[SEED_PREREQ] Successfully seeded ${zone.name} to ${table}.`);
-            result.zones++;
-            publishTableChange(table, "insert", zone);
-          } else {
-            const err = await insert.text();
-            console.warn(`[SEED_PREREQ] Failed to seed ${table} for ${zone.name}:`, err);
-          }
-        } catch (e) {
-          console.error(`[SEED_PREREQ] Error seeding ${table}:`, e);
+      try {
+        console.log(`[SEED_PREREQ] Probing ${table}...`);
+        const check = await fetch(`${INSFORGE_URL}/api/database/records/${table}?id=eq.${zone1Id}`, { headers: HEADERS });
+        
+        if (!check.ok) {
+          const errStatus = check.status;
+          const errText = await check.text();
+          console.warn(`[SEED_PREREQ] Probe failed for ${table} (${errStatus}):`, errText);
+          result.errors.push(`${table} probe failed: ${errStatus}`);
+          continue;
         }
+
+        const found = await check.json();
+        if (found && found.length > 0) {
+          console.log(`[SEED_PREREQ] Record exists in ${table}.`);
+          continue;
+        }
+
+        console.log(`[SEED_PREREQ] Inserting into ${table}...`);
+        const insert = await fetch(`${INSFORGE_URL}/api/database/records/${table}`, {
+          method: "POST",
+          headers: { ...HEADERS, "Prefer": "return=minimal" },
+          body: JSON.stringify(zonePayload)
+        });
+
+        if (insert.ok) {
+          console.log(`[SEED_PREREQ] Success for ${table}`);
+          result.zones++;
+          publishTableChange(table, "insert", zonePayload);
+        } else {
+          const errText = await insert.text();
+          console.warn(`[SEED_PREREQ] Insert failed for ${table}:`, errText);
+          result.errors.push(`${table} insert failed: ${errText}`);
+        }
+      } catch (e: any) {
+        console.error(`[SEED_PREREQ] Critical error for ${table}:`, e);
+        result.errors.push(`${table} exception: ${e.message}`);
       }
     }
 
@@ -97,6 +89,9 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
   .handler(async () => {
     console.log("[SEED] Starting idempotent demo seeding...");
     
+    const city1Id = "c1110000-0000-0000-0000-000000000001";
+    const zone1Id = "z1110000-0000-0000-0000-000000000001";
+
     // 1. Ensure a demo restaurant exists
     const restSearch = await fetch(`${INSFORGE_URL}/api/database/records/restaurants?metadata->>demo_tag=eq.logistics_test_v2&limit=1`, { headers: HEADERS });
     let restaurants = restSearch.ok ? await restSearch.json() : [];
@@ -108,6 +103,8 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         name: "Scoobix Demo Kitchen",
         address: "123 Logistics Hub, Vadodara",
         status: "ACTIVE",
+        zone_id: zone1Id,
+        city_id: city1Id,
         metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
       const createRest = await fetch(`${INSFORGE_URL}/api/database/records/restaurants`, {
@@ -147,9 +144,13 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       }
     }
 
-    // 3. Get a zone
-    const zonesRes = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS });
-    const zones = zonesRes.ok ? await zonesRes.json() : [];
+    // 3. Get a zone (prefer the one we seeded)
+    const zonesRes = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?id=eq.${zone1Id}`, { headers: HEADERS });
+    let zones = zonesRes.ok ? await zonesRes.json() : [];
+    if (!zones.length) {
+      const allZones = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS });
+      zones = allZones.ok ? await allZones.json() : [];
+    }
     const zoneId = zones[0]?.id;
 
     if (!restaurants.length || !customers.length) {

@@ -29,7 +29,9 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
+  console.log("[GIGS_API] Fetching authoritative gigs...");
   return listTable<Gig>("gigs", { 
+    select: "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,subzone_id,city_id,capacity,completion_pct,created_at",
     order: "created_at.desc", 
     ...params 
   });
