@@ -13,13 +13,7 @@ export type User = {
   avatar: string;
   role: Role;
   roles: Role[];
-  /**
-   * True only once real membership resolution has definitively completed.
-   * While false, `roles` is NOT authoritative and must never be used to deny
-   * access or redirect the user to a different portal.
-   */
   membershipsResolved: boolean;
-  /** Navigation context only — never an authorization source. */
   pendingPortal?: Role;
 };
 
@@ -56,6 +50,10 @@ const AuthContext = createContext<AuthCtx>({
 
 export const getRequestedPortal = () => {
   if (typeof window === "undefined") return "customer";
+  const params = new URLSearchParams(window.location.search);
+  const portalParam = params.get("portal");
+  if (portalParam) return portalParam as Role;
+  
   const path = window.location.pathname;
   if (path.startsWith("/partner")) return "partner";
   if (path.startsWith("/rider")) return "rider";
@@ -73,286 +71,149 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lastRequestedPortal = useRef<Role | null>(null);
 
   const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
-    let session: any = null;
     const timeoutId = setTimeout(() => {
-      if (authState === "session_resolving" || authState === "authorization_resolving") {
-        console.warn("[AUTH_DEBUG] resolveUser timed out after 15s");
-        setAuthError("Authentication timed out. Please check your connection.");
-        setAuthState("auth_error");
-      }
-    }, 15000);
+      setLoading(false);
+      setAuthState((prev) => (prev === "session_resolving" || prev === "authorization_resolving" ? "auth_error" : prev));
+      setAuthError((prev) => prev || "Authentication timed out. Please try again.");
+    }, 20000);
 
     try {
       if (isInitialMountOrSignIn) {
         setLoading(true);
         setAuthState("session_resolving");
         setAuthError(null);
-        console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_LOADING] Loading: true, State: session_resolving");
       }
       
-      // Fix #1: Use async getAccessToken to hydrate from cookie on fresh mount
-      const token = await getAccessToken();
-      const { data: userData, error: authError } = await insforge.auth.getCurrentUser();
-      if (authError) {
-         console.log("[AUTH_DEBUG] No current user session found:", authError.message);
+      const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => ({ data: null, error: e }));
+      
+      if (currentUserError || !userData?.user) {
          setUser(null);
          setAuthState("unauthenticated");
          return;
       }
-      session = userData;
       
-      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_SESSION_RESTORED] Session ID:", session?.user?.id);
+      const sessionUser = userData.user;
+      const authId = sessionUser.id;
       
       const { setCacheAuthScope } = await import("./request-cache");
-      setCacheAuthScope(session?.user?.id || null);
-
-      if (!session || !session.user) {
-        setUser(null);
-        setAuthState("unauthenticated");
-        return;
-      }
+      setCacheAuthScope(authId);
 
       setAuthState("authorization_resolving");
-
-      const authId = session.user.id;
       const currentPortal = getRequestedPortal() as Role;
       lastRequestedPortal.current = currentPortal;
 
-      // 1. Get user profile
-      let profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 });
+      let profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }).catch(() => []);
       let profile = profiles[0];
 
-      // Auto-create a users row on first sign-in
       if (!profile) {
         try {
           const { createRecord } = await import("./insforge-crud");
-          const newProfile = await createRecord("users", {
+          profile = await createRecord("users", {
             id: authId,
-            email: session.user.email,
-            email_normalized: session.user.email.toLowerCase(),
-            name: session.user.name || "New User",
-            phone: "",
-            avatar_url: session.user.avatar_url || session.user.user_metadata?.picture || "",
-            role: "customer", // Default role for new sign-ups
+            email: sessionUser.email,
+            email_normalized: sessionUser.email.toLowerCase(),
+            name: sessionUser.name || "User",
+            role: "customer",
             is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
           });
-          profile = newProfile;
-          console.log("[AUTH_DEBUG] [CHECKPOINT: AUTO_CREATED_USER] New user created in database:", authId);
         } catch (err) {
-          console.error("[AUTH_ERROR] Failed to auto-create user profile:", err);
-          // Don't fail the login — fall through with just session data
-          profile = null;
+          console.error("[AUTH_ERROR] Profile creation failed:", err);
         }
       }
-      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_USER_RESOLVED] Profile ID:", profile?.id);
 
-      if (!profile) {
-        const roles: Role[] = ["customer"];
-        const { isLogisticsStaffEmail } = await import("./logistics-authorization");
-        if (await isLogisticsStaffEmail(session.user.email)) roles.push("logistics");
-
-        console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Result: basic-customer (no profile)");
-        setUser({
-          id: authId,
-          name: session.user.name || "New User",
-          email: session.user.email || "",
-          phone: "",
-          avatar: "",
-          role: roles.includes("logistics") ? "logistics" : "customer",
-          roles,
-          membershipsResolved: true,
-          pendingPortal: currentPortal,
-        });
-        return;
-      }
-
-      // 2. Resolve Authoritative Portal Access (portal_access table)
       const roles: Role[] = ["customer"];
       const { checkPortalAccess } = await import("./portal-authorization");
       
       const SUPER_ADMIN = "scoobix.info@gmail.com";
-      const isSuperAdmin = profile?.email === SUPER_ADMIN || session.user.email === SUPER_ADMIN || profile?.role === "admin";
+      const userEmail = sessionUser.email?.toLowerCase();
+      const isSuperAdmin = userEmail === SUPER_ADMIN || profile?.role === "admin";
 
       if (isSuperAdmin) {
         roles.push("admin", "logistics", "partner", "rider", "manager");
-      } else {
-        // Authoritative check against portal_access for ALL portals to ensure consistency
+      } else if (userEmail) {
         const otherPortals: Role[] = ["partner", "rider", "manager", "logistics", "admin"];
-        
-        // Check current portal first for speed
-        if (otherPortals.includes(currentPortal)) {
-          const access = await checkPortalAccess(session.user.email, currentPortal as any);
-          if (access.ok) roles.push(currentPortal);
-        }
-
-        // Check others in parallel
         const results = await Promise.all(
-          otherPortals.filter(p => p !== currentPortal).map(async (p) => {
-            const access = await checkPortalAccess(session.user.email, p as any);
+          otherPortals.map(async (p) => {
+            const access = await checkPortalAccess(userEmail, p as any).catch(() => ({ ok: false }));
             return access.ok ? p : null;
           })
         );
-        
-        results.forEach(r => {
-          if (r && !roles.includes(r)) roles.push(r);
-        });
+        results.forEach(r => { if (r) roles.push(r); });
       }
 
-      // 3. Resolve Business Memberships (Legacy Tables - Non-authoritative for admission)
-      // These are still checked to support business logic/profiles, but they don't 
-      // independently grant admission if portal_access exists for that portal.
-      const [partner, rider, manager] = await Promise.all([
-        listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }),
-        listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }),
-        listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }),
-      ]);
+      if (profile?.id) {
+        const [partner, rider, manager] = await Promise.all([
+          listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
+          listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
+          listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
+        ]);
+        if (partner.length > 0 && !roles.includes("partner")) roles.push("partner");
+        if (rider.length > 0 && !roles.includes("rider")) roles.push("rider");
+        if (manager.length > 0 && !roles.includes("manager")) roles.push("manager");
+      }
 
-      if (partner.length > 0 && !roles.includes("partner")) roles.push("partner");
-      if (rider.length > 0 && !roles.includes("rider")) roles.push("rider");
-      if (manager.length > 0 && !roles.includes("manager")) roles.push("manager");
+      const hasAccess = currentPortal === "customer" || roles.includes(currentPortal);
       
-      console.log("[AUTH_DEBUG] [CHECKPOINT: MEMBERSHIPS_RESOLVED] Roles:", roles);
-
-      const admissionResult = roles.includes(currentPortal);
-      console.log(`[AUTH_DEBUG] [CHECKPOINT: PORTAL_ADMISSION_RESULT] Portal: ${currentPortal}, Admitted: ${admissionResult}, Roles: ${roles.join(",")}`);
-
-      // Final Admission Logic
-      if (currentPortal !== "customer" && !roles.includes(currentPortal)) {
-         console.warn(`[AUTH_TRACE] USER DENIED ADMISSION TO ${currentPortal}`);
-         
-         // Fetch specific reason for better UI
-         const access = await checkPortalAccess(session.user.email, currentPortal as any);
-         
-         setUser({
-           id: profile.id,
-           name: profile.name || "User",
-           email: profile.email || "",
-           phone: profile.phone || "",
-           avatar: profile.avatar_url || "",
-           role: "customer",
-           roles,
-           membershipsResolved: true,
-           pendingPortal: currentPortal,
-         });
-         
-         setAuthState(access.ok ? "authenticated" : (access.reason === "disabled" ? "disabled" : "denied"));
-         return;
-      }
-
       setUser({
-        id: profile.id,
-        name: profile.name || "User",
-        email: profile.email || "",
-        phone: profile.phone || "",
-        avatar: profile.avatar_url || "",
-        role: admissionResult ? currentPortal : "customer",
-        roles,
+        id: authId,
+        name: profile?.name || sessionUser.name || "User",
+        email: sessionUser.email || "",
+        phone: profile?.phone || "",
+        avatar: profile?.avatar_url || sessionUser.avatar_url || "",
+        role: hasAccess ? currentPortal : "customer",
+        roles: Array.from(new Set(roles)),
         membershipsResolved: true,
         pendingPortal: currentPortal,
       });
-      setAuthState("authenticated");
+
+      if (!hasAccess && (currentPortal as string) !== "customer") {
+        const access = await checkPortalAccess(userEmail, currentPortal as any).catch(() => ({ ok: false, reason: "denied" }));
+        setAuthState((access as any).reason === "disabled" ? "disabled" : "denied");
+      } else {
+        setAuthState("authenticated");
+      }
     } catch (err: any) {
-      console.error("[MEMBERSHIP_ERROR] Failed to resolve user memberships:", err);
+      console.error("[AUTH_CRITICAL]", err);
       setAuthError(err.message || "Failed to resolve permissions.");
       setAuthState("auth_error");
-      
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          name: session.user.name || "User",
-          email: session.user.email || "",
-          phone: "",
-          avatar: "",
-          role: "customer",
-          roles: [], 
-          membershipsResolved: false,
-        });
-      } else {
-        setUser(null);
-      }
     } finally {
       clearTimeout(timeoutId);
-      if (isInitialMountOrSignIn) {
-        setLoading(false);
-      }
+      if (isInitialMountOrSignIn) setLoading(false);
     }
-  }, [authState]);
+  }, []);
 
-  // Fix #3: Lightweight re-check on portal change
   useEffect(() => {
     if (!user || !user.membershipsResolved) return;
-    
     const currentPortal = getRequestedPortal() as Role;
     if (currentPortal !== lastRequestedPortal.current) {
       lastRequestedPortal.current = currentPortal;
-      
-      // If user already has this role in their list, just update UI 'role'
       if (user.roles.includes(currentPortal)) {
-        setUser(prev => prev ? { ...prev, role: currentPortal, pendingPortal: currentPortal } : null);
-        return;
+        setUser(prev => prev ? { ...prev, role: currentPortal } : null);
+      } else if (currentPortal !== "customer") {
+        resolveUser(false);
       }
-
-      // Otherwise, re-check portal access without global loading spinner
-      (async () => {
-        try {
-          const { checkPortalAccess } = await import("./portal-authorization");
-          if (["partner", "rider", "manager", "logistics"].includes(currentPortal)) {
-            const access = await checkPortalAccess(user.email, currentPortal as any);
-            if (access.ok) {
-              setUser(prev => {
-                if (!prev) return null;
-                const newRoles = Array.from(new Set([...prev.roles, currentPortal]));
-                return { ...prev, role: currentPortal, roles: newRoles, pendingPortal: currentPortal };
-              });
-            }
-          }
-        } catch (err) {
-          console.error("[AUTH_DEBUG] Portal change re-check failed:", err);
-        }
-      })();
     }
-  }, [user]);
+  }, [user, resolveUser]);
 
   useEffect(() => {
-    console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_MOUNT] Initializing auth listener");
-    // Initial mount: use true for isInitialMountOrSignIn
     resolveUser(true);
-
     const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
-      console.log(`[AUTH_DEBUG] Auth State Change: ${event}`);
-      if (event === 'signedIn') {
-        console.log("[AUTH_TRACE] Auth State Event: SIGNED_IN -> Resolving User");
-        resolveUser(true); // Sign in: use true for isInitialMountOrSignIn
-      } else if (event === 'tokenRefreshed') {
-        console.log("[AUTH_TRACE] Auth State Event: TOKEN_REFRESHED -> Resolving User (background)");
-        resolveUser(false); // Token refreshed: use false to avoid spinner/re-resolution
-      } else if (event === 'signedOut') {
-        console.log("[AUTH_TRACE] Auth State Event: SIGNED_OUT");
+      if (event === 'signedIn') resolveUser(true);
+      else if (event === 'signedOut') {
         setUser(null);
+        setAuthState("unauthenticated");
         setLoading(false);
       }
     });
-
-    return () => {
-      console.log("[AUTH_DEBUG] [CHECKPOINT: AUTH_STORE_UNMOUNT]");
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [resolveUser]);
 
   const login = async (provider: 'google', portal: string = "customer", options: { prompt?: 'select_account' | 'consent' | 'none' } = {}) => {
-    try {
-      if (provider === 'google') await loginWithGoogle(portal, options);
-    } catch (err) {
-      console.error("Login error:", err);
-      throw err;
-    }
+    if (provider === 'google') await loginWithGoogle(portal, options);
   };
 
   const logout = async () => {
     const portal = getRequestedPortal();
-    console.log("[AUTH_TRACE] User signing out from portal:", portal);
     await ifLogout();
     setUser(null);
     setAuthState("unauthenticated");
@@ -361,13 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user,
-      loading,
-      authState,
-      authError,
-      login,
-      logout,
-      signOut: logout,
+      user, loading, authState, authError, login, logout, signOut: logout,
     }}>
       {children}
     </AuthContext.Provider>

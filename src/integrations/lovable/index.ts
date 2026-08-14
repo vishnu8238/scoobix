@@ -1,1 +1,4 @@
-export * from './supabase-bridge';
+/**
+ * Empty bridge index.
+ */
+export {};
