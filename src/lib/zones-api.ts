@@ -39,6 +39,7 @@ export type SubzoneRider = {
 export async function fetchZones(params?: Record<string, any>) {
   console.log("[ZONES_API] Fetching logistics_zones authoritative...");
   // Use explicit select to ensure we don't hit "undefined_column" on missing columns
+  // Note: Only verified columns are selected to avoid production schema errors
   return listTable<DeliveryZone>("logistics_zones", { 
     select: "id,name,city,status,created_at,updated_at", 
     order: "name.asc", 
@@ -60,6 +61,7 @@ export async function deleteZone(id: string) {
 
 export async function fetchSubzones(zoneId?: string) {
   const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
+  // Use explicit select to ensure we don't hit "undefined_column" on missing columns
   return listTable<Subzone>("subzones", { 
     select: "id,zone_id,name,status,created_at,updated_at", 
     order: "name.asc", 
