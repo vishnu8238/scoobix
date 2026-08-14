@@ -177,6 +177,6 @@ export const createNewSubzone = createServerFn({ method: "POST" })
     
     const created = await res.json();
     const row = Array.isArray(created) ? created[0] : created;
-    publishTableChange("subzones", "insert", row);
+    publishTableChange(TABLE_SUBZONES, "insert", row);
     return row;
   });
