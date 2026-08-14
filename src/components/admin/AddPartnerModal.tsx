@@ -31,6 +31,10 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess }: AddPartnerModalP
     setLoading(true);
     
     try {
+      if (!formData.name || !formData.email || !formData.phone) {
+        throw new Error("Name, Email, and Phone are required");
+      }
+
       const userId = newUuid();
       const driverId = newUuid();
 
@@ -40,44 +44,40 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess }: AddPartnerModalP
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        role: "rider"
+        role: "rider",
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       });
 
-      if (!user) throw new Error("Failed to create user record");
+      if (!user) throw new Error("Failed to create user record. Possibly duplicate email/phone.");
 
-      try {
-        // 2. Create Driver/Partner
-        const driver = await createRecord("drivers", {
-          id: driverId,
-          user_id: userId,
-          vehicle_type: formData.vehicle_type,
-          vehicle_number: formData.vehicle_number,
-          phone: formData.phone,
-          online_status: false,
-          verification_status: "PENDING",
-          city: formData.city,
-          created_at: new Date().toISOString()
+      // 2. Create Driver/Partner
+      const driver = await createRecord("drivers", {
+        id: driverId,
+        user_id: userId,
+        vehicle_type: formData.vehicle_type,
+        vehicle_number: formData.vehicle_number,
+        phone: formData.phone,
+        online_status: false,
+        verification_status: "VERIFIED",
+        city: formData.city,
+        created_at: new Date().toISOString(),
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+      });
+
+      if (driver) {
+        toast.success("Delivery partner added successfully");
+        onSuccess();
+        onClose();
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          vehicle_type: "bike",
+          vehicle_number: "",
+          city: "Vadodara"
         });
-
-        if (driver) {
-          toast.success("Delivery partner added successfully");
-          onSuccess();
-          onClose();
-          setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            vehicle_type: "bike",
-            vehicle_number: "",
-            city: "Vadodara"
-          });
-        } else {
-          throw new Error("Failed to create driver record");
-        }
-      } catch (innerErr) {
-        // Cleanup orphaned user? In postgrest without transactions this is tricky.
-        // For now just rethrow so the user knows driver creation failed.
-        throw innerErr;
+      } else {
+        throw new Error("Failed to create driver record");
       }
     } catch (error: any) {
       console.error("Failed to add partner:", error);

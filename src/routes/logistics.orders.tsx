@@ -83,7 +83,13 @@ function LogisticsOrders() {
               setIsSeeding(true);
               try {
                 const res = await seedDemoOrders({ data: undefined });
-                toast.success(`Seeded ${res.seeded} demo orders`);
+                if (res.seeded > 0) {
+                  toast.success(`Seeded ${res.seeded} new demo orders`);
+                } else if (res.existing > 0) {
+                  toast.info(`All ${res.existing} demo orders already present`);
+                } else {
+                  toast.error("Failed to seed orders");
+                }
                 void load();
               } catch (e: any) {
                 toast.error(e.message || "Failed to seed demo orders");
