@@ -139,6 +139,55 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
               </Alert>
             )}
 
+            {/* City & Zone Row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  City <span className="text-rose-500">*</span>
+                </Label>
+                <Select 
+                  value={formData.city} 
+                  onValueChange={(v) => setFormData({ ...formData, city: v, zone: "" })}
+                  disabled={loadingZones || !!zonesError}
+                >
+                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold">
+                    {loadingZones ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading...</span>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Select City" />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {cities.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Zone <span className="text-rose-500">*</span>
+                </Label>
+                <Select 
+                  value={formData.zone}
+                  disabled={!formData.city || loadingZones || !!zonesError}
+                  onValueChange={(v) => setFormData({ ...formData, zone: v })}
+                >
+                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold">
+                    <SelectValue placeholder={formData.city ? "Select Zone" : "Select city first"} />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {filteredZones.map(zone => (
+                      <SelectItem key={zone.id} value={zone.id}>{zone.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 Date <span className="text-rose-500">*</span>
@@ -199,54 +248,6 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
                     required
                   />
                 </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  City <span className="text-rose-500">*</span>
-                </Label>
-                <Select 
-                  value={formData.city} 
-                  onValueChange={(v) => setFormData({ ...formData, city: v, zone: "" })}
-                  disabled={loadingZones || !!zonesError}
-                >
-                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold">
-                    {loadingZones ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Loading...</span>
-                      </div>
-                    ) : (
-                      <SelectValue placeholder="Select City" />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    {cities.map(city => (
-                      <SelectItem key={city} value={city}>{city}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Zone <span className="text-rose-500">*</span>
-                </Label>
-                <Select 
-                  value={formData.zone}
-                  disabled={!formData.city || loadingZones || !!zonesError}
-                  onValueChange={(v) => setFormData({ ...formData, zone: v })}
-                >
-                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold">
-                    <SelectValue placeholder={formData.city ? "Select Zone" : "Select city first"} />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    {filteredZones.map(zone => (
-                      <SelectItem key={zone.id} value={zone.id}>{zone.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
