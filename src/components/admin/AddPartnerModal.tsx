@@ -45,36 +45,43 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess }: AddPartnerModalP
 
       if (!user) throw new Error("Failed to create user record");
 
-      // 2. Create Driver/Partner
-      const driver = await createRecord("drivers", {
-        id: driverId,
-        user_id: userId,
-        vehicle_type: formData.vehicle_type,
-        vehicle_number: formData.vehicle_number,
-        phone: formData.phone,
-        online_status: false,
-        verification_status: "PENDING",
-        city: formData.city
-      });
-
-      if (driver) {
-        toast.success("Delivery partner added successfully");
-        onSuccess();
-        onClose();
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          vehicle_type: "bike",
-          vehicle_number: "",
-          city: "Vadodara"
+      try {
+        // 2. Create Driver/Partner
+        const driver = await createRecord("drivers", {
+          id: driverId,
+          user_id: userId,
+          vehicle_type: formData.vehicle_type,
+          vehicle_number: formData.vehicle_number,
+          phone: formData.phone,
+          online_status: false,
+          verification_status: "PENDING",
+          city: formData.city,
+          created_at: new Date().toISOString()
         });
-      } else {
-        throw new Error("Failed to create driver record");
+
+        if (driver) {
+          toast.success("Delivery partner added successfully");
+          onSuccess();
+          onClose();
+          setFormData({
+            name: "",
+            email: "",
+            phone: "",
+            vehicle_type: "bike",
+            vehicle_number: "",
+            city: "Vadodara"
+          });
+        } else {
+          throw new Error("Failed to create driver record");
+        }
+      } catch (innerErr) {
+        // Cleanup orphaned user? In postgrest without transactions this is tricky.
+        // For now just rethrow so the user knows driver creation failed.
+        throw innerErr;
       }
     } catch (error: any) {
       console.error("Failed to add partner:", error);
-      toast.error(error.message || "Failed to add partner");
+      toast.error(error.message || "Failed to add partner. Check for duplicate email/phone.");
     } finally {
       setLoading(false);
     }

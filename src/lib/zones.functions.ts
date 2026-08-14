@@ -117,16 +117,17 @@ export const createNewZone = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     // InsForge / PostgREST compatibility: check if table is accessible
-    // Ensure boundary is never null for the database
+    const boundary = (data.boundary?.type === "Polygon" && data.boundary.coordinates?.[0]?.length >= 3) 
+      ? data.boundary 
+      : { type: "Polygon", coordinates: [] };
+
     const payload = {
       ...data,
       max_orders_per_rider: 3,
       assignment_timeout_sec: 60,
-      center_lat: (data.boundary?.type === "Point") ? data.boundary.coordinates[1] : (data.boundary?.type === "Polygon" ? data.boundary.coordinates[0][0][1] : null),
-      center_lng: (data.boundary?.type === "Point") ? data.boundary.coordinates[0] : (data.boundary?.type === "Polygon" ? data.boundary.coordinates[0][0][0] : null),
-      boundary: (data.boundary?.type === "Polygon" && data.boundary.coordinates?.[0]?.length >= 3) 
-        ? data.boundary 
-        : { type: "Polygon", coordinates: [] }
+      center_lat: (boundary.coordinates?.[0]?.length > 0) ? boundary.coordinates[0][0][1] : 22.3072,
+      center_lng: (boundary.coordinates?.[0]?.length > 0) ? boundary.coordinates[0][0][0] : 73.1812,
+      boundary
     };
 
     const res = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}`, {
