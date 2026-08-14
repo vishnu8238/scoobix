@@ -23,10 +23,10 @@ const PORTALS: { id: Role; label: string; icon: any; color: string; desc: string
 ];
 
 function ConsolidatedLogin() {
-  const { login, user, loading } = useAuth();
+  const { login, user, loading, authState, authError } = useAuth();
   const navigate = useNavigate();
   const [selectedPortal, setSelectedPortal] = useState<Role>("customer");
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -39,9 +39,9 @@ function ConsolidatedLogin() {
     if (err) {
       const p = params.get("portal") || "requested";
       if (err === "disabled") {
-        setError(`Your access to the ${p} portal has been disabled. Please contact support.`);
+        setLocalError(`Your access to the ${p} portal has been disabled. Please contact support.`);
       } else {
-        setError(`You don't have permission to access the ${p} portal.`);
+        setLocalError(`You don't have permission to access the ${p} portal.`);
       }
     }
   }, []);
@@ -67,15 +67,15 @@ function ConsolidatedLogin() {
 
   const handleLogin = async () => {
     try {
-      setError(null);
+      setLocalError(null);
       await login('google', selectedPortal);
     } catch (err: any) {
       console.error("[AUTH_DEBUG] Login failure:", err);
-      setError(err.message || "Failed to sign in with Google");
+      setLocalError(err.message || "Failed to sign in with Google");
     }
   };
 
-  if (loading && !error) {
+  if (loading && !localError && !authError) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -96,12 +96,12 @@ function ConsolidatedLogin() {
         <p className="text-sm text-muted-foreground">Select a portal to continue</p>
       </div>
 
-      {(error || (authState === "auth_error" && authError)) && (
+      {(localError || (authState === "auth_error" && authError)) && (
         <div className="mb-6 w-full overflow-hidden rounded-2xl bg-destructive/10 ring-1 ring-destructive/20 p-4 text-left flex items-start gap-3">
           <ShieldCheck className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-xs font-bold text-destructive uppercase tracking-wider">Authentication Error</p>
-            <p className="mt-1 text-[13px] font-medium text-destructive/90">{error || authError}</p>
+            <p className="mt-1 text-[13px] font-medium text-destructive/90">{localError || authError}</p>
             <Button 
               variant="link" 
               className="p-0 h-auto text-[10px] font-bold uppercase text-primary mt-2"
@@ -122,7 +122,7 @@ function ConsolidatedLogin() {
               key={portal.id}
               onClick={() => {
                 setSelectedPortal(portal.id);
-                setError(null);
+                setLocalError(null);
               }}
               className={cn(
                 "relative flex flex-col items-start p-4 rounded-2xl text-left transition-all ring-1 ring-border/60 hover:shadow-soft",
