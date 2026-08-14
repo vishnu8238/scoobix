@@ -181,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log("[AUTH_TRACE] Final Roles:", uniqueRoles, "Current Portal:", currentPortal, "Has Access:", hasAccess);
 
-      const displayName = getDisplayName({ ...sessionUser, ...profile });
+      const displayName = getDisplayName({ ...sessionUser, ...profile, auth: sessionUser.auth, user_metadata: sessionUser.user_metadata, profile: sessionUser.profile });
       console.log("[AUTH_TRACE] Resolved display name:", displayName);
 
       setUser({
