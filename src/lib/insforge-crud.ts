@@ -242,14 +242,14 @@ export function listTable<T = Record<string, unknown>>(
   const load = () => withRetry<T[]>(table, async () => {
     let query = insforge.database.from(table).select(select);
     query = applyParams(query, params);
-    const data = await handleResponse<T[]>(query, "GET", table);
-    return Array.isArray(data) ? data : [];
-  })
-    .catch(err => {
-      console.error(`[DB_ERROR] Table ${table} load failed:`, err);
-      // Surface real errors as rejection
-      return Promise.reject(err);
-    });
+    try {
+      const data = await handleResponse<T[]>(query, "GET", table);
+      return Array.isArray(data) ? data : [];
+    } catch (err: any) {
+      if (err.isSchemaError) return [];
+      throw err;
+    }
+  });
   
   if (!opts?.fresh && cacheGet<T[]>(cacheKey) !== undefined) {
     recordMetric({ kind: "api", name: `GET ${table}`, ms: 0, ok: true, cached: true });
