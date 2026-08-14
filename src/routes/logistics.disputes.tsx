@@ -95,9 +95,9 @@ function LogisticsDisputes() {
               <StatusBadge key={d.id+"s"} label={d.status} />,
               <span key={d.id+"c"} className="text-muted-foreground text-xs">{new Date(d.created_at).toLocaleDateString()}</span>,
               <div key={d.id+"a"} className="flex gap-1.5">
-                <button onClick={() => handleStatus(d.id, "investigating")} className="p-1.5 rounded-full bg-amber-100 text-amber-700 hover:scale-110 transition" title="Investigate"><Clock className="h-3.5 w-3.5" /></button>
-                <button onClick={() => handleStatus(d.id, "resolved")} className="p-1.5 rounded-full bg-emerald-100 text-emerald-700 hover:scale-110 transition" title="Resolve"><CheckCircle2 className="h-3.5 w-3.5" /></button>
-                <button onClick={() => handleStatus(d.id, "rejected")} className="p-1.5 rounded-full bg-rose-100 text-rose-700 hover:scale-110 transition" title="Reject"><XCircle className="h-3.5 w-3.5" /></button>
+                <button onClick={() => handleStatus(d.id, "investigating")} className="p-1.5 rounded-full bg-amber-100 text-amber-700 hover:scale-110 transition active:scale-95" title="Investigate"><Clock className="h-3.5 w-3.5" /></button>
+                <button onClick={() => handleStatus(d.id, "resolved")} className="p-1.5 rounded-full bg-emerald-100 text-emerald-700 hover:scale-110 transition active:scale-95" title="Resolve"><CheckCircle2 className="h-3.5 w-3.5" /></button>
+                <button onClick={() => handleStatus(d.id, "rejected")} className="p-1.5 rounded-full bg-rose-100 text-rose-700 hover:scale-110 transition active:scale-95" title="Reject"><XCircle className="h-3.5 w-3.5" /></button>
               </div>
             ])}
           />

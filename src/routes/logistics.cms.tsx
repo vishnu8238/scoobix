@@ -150,7 +150,7 @@ function LogisticsCms() {
               <div key={s.id+"d"} className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <Clock className="h-3 w-3" /> {s.published_at ? new Date(s.published_at).toLocaleDateString() : "Draft"}
               </div>,
-              <button key={s.id+"del"} className="p-1.5 rounded-full text-muted-foreground hover:bg-rose-50 hover:text-rose-600 transition">
+              <button key={s.id+"del"} className="p-1.5 rounded-full text-muted-foreground hover:bg-rose-50 hover:text-rose-600 transition active:scale-90">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             ])}
