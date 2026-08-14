@@ -108,6 +108,51 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     );
   }
 
+  // 4. Denied / Disabled state handling
+  if (authState === "denied" || authState === "disabled") {
+     const portalLabel = portal.charAt(0).toUpperCase() + portal.slice(1);
+     return (
+      <div className="flex min-h-svh flex-col items-center justify-center bg-background p-6 text-center animate-fade-up">
+        <div className="mb-6 h-20 w-20 rounded-3xl bg-destructive/10 flex items-center justify-center ring-1 ring-destructive/20 shadow-soft">
+          <ShieldCheck className="h-10 w-10 text-destructive" />
+        </div>
+        <h1 className="font-display text-2xl font-extrabold tracking-tight mb-2 uppercase italic">Access Restricted</h1>
+        <p className="text-sm text-muted-foreground max-w-xs mb-8">
+          {authState === "disabled" 
+            ? `Your access to the ${portalLabel} portal has been disabled by an administrator.`
+            : `You do not have permission to access the ${portalLabel} portal with account ${user?.email}.`}
+        </p>
+        
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <Button 
+            onClick={() => window.location.replace(`/login?portal=${portal}`)}
+            className="h-12 rounded-2xl shadow-glow font-bold"
+          >
+            Try Another Account
+          </Button>
+          <Button 
+            variant="ghost"
+            onClick={() => window.location.replace("/")}
+            className="h-12 rounded-2xl text-xs font-bold uppercase tracking-widest"
+          >
+            Back to Home
+          </Button>
+        </div>
+        
+        {/* Safe Diagnostics */}
+        <div className="mt-12 pt-6 border-t border-border/40 w-full max-w-xs opacity-40">
+           <p className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest mb-1">Authorization Details</p>
+           <div className="text-[9px] font-mono text-left space-y-0.5">
+             <p>Portal: {portal}</p>
+             <p>Email: {user?.email?.toLowerCase()}</p>
+             <p>Reason: {authState}</p>
+             <p>Resolved: {String(user?.membershipsResolved)}</p>
+           </div>
+        </div>
+      </div>
+     );
+  }
+
   // If not logged in and not on login/onboarding, we've triggered a redirect.
   if (!user && !pathname.includes("/login") && !pathname.includes("/onboarding")) {
     return <div className="min-h-svh bg-background" />;

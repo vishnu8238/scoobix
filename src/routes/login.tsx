@@ -37,9 +37,12 @@ function ConsolidatedLogin() {
     
     const err = params.get("error") || params.get("denied") || params.get("disabled");
     if (err) {
-      setError(err === "unauthorized" || err === "denied" 
-        ? `You don't have permission to access the ${params.get("portal") || "requested"} portal.`
-        : `Your access to the ${params.get("portal") || "requested"} portal has been disabled.`);
+      const p = params.get("portal") || "requested";
+      if (err === "disabled") {
+        setError(`Your access to the ${p} portal has been disabled. Please contact support.`);
+      } else {
+        setError(`You don't have permission to access the ${p} portal.`);
+      }
     }
   }, []);
 

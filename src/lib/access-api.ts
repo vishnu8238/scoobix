@@ -14,12 +14,28 @@ export async function createPortalAccess(data: {
   actorName?: string;
   actorRole?: string;
 }) {
+  const email_normalized = data.email.trim().toLowerCase();
+  const portal = data.portal.toLowerCase() as PortalType;
+
+  // 1. Check for existing grant to prevent duplicates
+  const existing = await listTable<PortalAccessRow>("portal_access", {
+    email_normalized: `eq.${email_normalized}`,
+    portal: `eq.${portal}`,
+    limit: 1
+  }, { fresh: true });
+
+  if (existing.length > 0) {
+    throw new Error("This email already has access to this portal");
+  }
+
   const record = {
-    email: data.email.trim(),
-    email_normalized: data.email.trim().toLowerCase(),
-    portal: data.portal,
+    email: email_normalized,
+    email_normalized: email_normalized,
+    portal: portal,
     status: data.status,
     created_by: data.actorId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
 
   const res = await createRecord<PortalAccessRow>("portal_access", record);

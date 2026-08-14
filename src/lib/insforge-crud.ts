@@ -228,8 +228,8 @@ export function listTable<T = Record<string, unknown>>(
   }).then(v => Array.isArray(v) ? v : [])
     .catch(err => {
       console.error(`[DB_ERROR] Table ${table} load failed:`, err);
-      // NEW (surfaces real errors)
-      throw err;
+      // Surface real errors as rejection
+      return Promise.reject(err);
     });
   
   if (!opts?.fresh && cacheGet<T[]>(cacheKey) !== undefined) {

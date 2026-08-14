@@ -1,6 +1,6 @@
-import { listTable, patchRecord } from "./insforge-crud";
+import { listTable, patchRecord, createRecord } from "./insforge-crud";
 
-export type PortalType = "partner" | "rider" | "manager" | "logistics" | "admin";
+export type PortalType = "partner" | "rider" | "manager" | "logistics" | "admin" | "customer";
 export type PortalStatus = "active" | "disabled";
 
 export type PortalAccessRow = {
@@ -44,13 +44,39 @@ export async function checkPortalAccess(
       "portal_access",
       { 
         email_normalized: `eq.${normalizedEmail}`, 
-        portal: `eq.${portal}`,
+        portal: `eq.${portal.toLowerCase()}`,
         limit: 1 
       },
       { ttl: 0, fresh: true }
     );
 
-    if (rows.length === 0) return { ok: false, reason: "not_found" };
+    if (rows.length === 0) {
+      // Fallback for legacy rows that might only have 'email' and not 'email_normalized'
+      const legacyRows = await listTable<PortalAccessRow>(
+        "portal_access",
+        { 
+          email: `eq.${normalizedEmail}`, 
+          portal: `eq.${portal.toLowerCase()}`,
+          limit: 1 
+        },
+        { ttl: 0, fresh: true }
+      );
+      
+      if (legacyRows.length > 0) {
+        console.log(`[AUTH_DEBUG] Legacy row found for ${normalizedEmail} on ${portal}. Repairing...`);
+        // Repair the record in the background
+        const legacy = legacyRows[0];
+        void patchRecord("portal_access", legacy.id, { 
+          email_normalized: normalizedEmail,
+          email: normalizedEmail // Ensure base email is also normalized
+        }).catch(err => console.error("[AUTH_DEBUG] Failed to repair legacy row:", err));
+        
+        if (legacy.status === "disabled") return { ok: false, reason: "disabled" };
+        return { ok: true, status: "active" };
+      }
+      
+      return { ok: false, reason: "not_found" };
+    }
     
     const record = rows[0];
     if (record.status === "disabled") return { ok: false, reason: "disabled" };
@@ -70,13 +96,15 @@ export async function recordPortalLogin(email: string, portal: PortalType) {
       "portal_access",
       { 
         email_normalized: `eq.${normalizedEmail}`, 
-        portal: `eq.${portal}`,
+        portal: `eq.${portal.toLowerCase()}`,
         limit: 1 
       },
       { ttl: 0, fresh: true }
     );
     if (rows[0]) {
-      await patchRecord("portal_access", rows[0].id, { last_login_at: new Date().toISOString() });
+      await patchRecord("portal_access", rows[0].id, { 
+        last_login_at: new Date().toISOString() 
+      });
     }
   } catch (err) {
     console.error("[AUTH_DEBUG] Failed to update last_login_at:", err);
