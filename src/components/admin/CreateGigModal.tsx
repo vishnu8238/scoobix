@@ -135,6 +135,19 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     }
   };
 
+  const handleProbe = async () => {
+    setIsProbing(true);
+    try {
+      const result = await probeSchema();
+      setSchemaData(result);
+      toast.success("Schema probe complete");
+    } catch (err: any) {
+      toast.error(`Probe failed: ${err.message}`);
+    } finally {
+      setIsProbing(false);
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
