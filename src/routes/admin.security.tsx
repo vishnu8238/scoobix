@@ -26,6 +26,7 @@ import {
 import {
   archiveOldAudit, auditStats, listAudit, type AuditRow, type AuditStats,
 } from "@/lib/audit-api";
+import { fixSecurityIssues } from "@/lib/security-actions";
 import { PERMISSION_GROUPS, PERMISSION_MATRIX, ROLE_LABEL, type SecurityRole } from "@/lib/permissions";
 import { cn } from "@/lib/format";
 
@@ -125,31 +126,35 @@ function SecurityPage() {
     
     try {
       const res = await runFraudScan(actor);
-      
-      // Auto-fix scan findings and open alerts as requested
-      toast.loading("Fixing detected issues...");
-      
-      const [freshOverview, freshFraud] = await Promise.all([
-        securityOverview(),
-        listFraudReports({ status: "open", limit: 200 })
-      ]);
-      
-      const fixPromises = [
-        acknowledgeSecurityEvents(freshOverview.events.map(e => e.id), actor.id)
-      ];
-      
-      for (const f of freshFraud) {
-        fixPromises.push(resolveFraudReport(f.id, "confirmed", actor, "Automated resolution after scan"));
-      }
-      
-      await Promise.all(fixPromises);
-      
-      toast.success(`Platform secure: ${res.findings} finding${res.findings === 1 ? "" : "s"} and ${freshOverview.events.length} alert${freshOverview.events.length === 1 ? "" : "s"} resolved.`);
+      toast.success(`Scan complete: ${res.findings} findings identified.`);
       void load();
     } catch (err) {
-      console.error("Security scan/fix failed:", err);
-      toast.error("Security audit failed to complete.");
+      console.error("Security scan failed:", err);
+      toast.error("Security scan failed to complete.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const fixAll = async () => {
+    setBusy("fix");
+    const t = toast.loading("Executing platform-wide security remediation...");
+    
+    try {
+      const res = await fixSecurityIssues({ 
+        actorId: actor.id, 
+        actorRole: actor.role 
+      });
+      
+      toast.success(
+        `Remediation complete: ${res.resolvedFraud} fraud issues resolved, ` +
+        `${res.acknowledgedAlerts} alerts acknowledged, and ${res.archivedAudit} audit logs archived.`,
+        { id: t, duration: 5000 }
+      );
       void load();
+    } catch (err) {
+      console.error("Security remediation failed:", err);
+      toast.error("Security remediation failed to complete.", { id: t });
     } finally {
       setBusy(null);
     }
@@ -212,9 +217,13 @@ function SecurityPage() {
           <Button size="sm" variant="outline" onClick={() => void load()} disabled={loading}>
             <RefreshCw className={cn("mr-2 h-3.5 w-3.5", loading && "animate-spin")} /> Refresh
           </Button>
-          <Button size="sm" onClick={scan} disabled={busy === "scan" || !perms.can("fraud.manage")}>
+          <Button size="sm" variant="secondary" onClick={scan} disabled={busy === "scan" || !perms.can("fraud.manage")}>
             {busy === "scan" ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <ScanSearch className="mr-2 h-3.5 w-3.5" />}
-            Run fraud scan
+            Scan
+          </Button>
+          <Button size="sm" onClick={fixAll} disabled={busy === "fix" || !perms.can("fraud.manage")}>
+            {busy === "fix" ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="mr-2 h-3.5 w-3.5" />}
+            Fix All
           </Button>
         </div>
       </header>
@@ -301,6 +310,11 @@ function SecurityPage() {
               <p className="mt-1 text-xs text-muted-foreground">
                 {f.subject_type} · {f.subject_label ?? f.subject_id} · {when(f.detected_at)}
               </p>
+              {f.evidence && (
+                <div className="mt-2 rounded bg-muted/50 p-2 text-[10px] font-mono text-muted-foreground">
+                  <pre className="whitespace-pre-wrap">{JSON.stringify(f.evidence, null, 2)}</pre>
+                </div>
+              )}
               <ul className="mt-2 list-disc pl-5 text-[11px] text-muted-foreground">
                 {(f.signals ?? []).map((s, i) => <li key={i}>{s}</li>)}
               </ul>
