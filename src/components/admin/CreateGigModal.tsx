@@ -90,14 +90,14 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md rounded-[2rem] p-8 max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="mb-6 sticky top-0 bg-background pb-2 z-10">
+      <DialogContent className="max-w-md rounded-[2rem] p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogHeader className="p-8 pb-4 border-b bg-card z-10">
           <DialogTitle className="text-2xl font-black text-emerald-900 dark:text-emerald-400">
             Create New Gig
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 pt-4 space-y-6">
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
               Date <span className="text-rose-500">*</span>
@@ -239,7 +239,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
             </Select>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-6 border-t mt-6 sticky bottom-0 bg-card p-8 pt-4">
             <Button
               type="button"
               variant="outline"

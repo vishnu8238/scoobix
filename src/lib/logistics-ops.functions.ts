@@ -12,58 +12,63 @@ const HEADERS = {
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
   .handler(async () => {
-    // 1. Get a few restaurants and users to link to
-    const [restRes, userRes, zonesRes] = await Promise.all([
-      fetch(`${INSFORGE_URL}/api/database/records/restaurants?limit=10`, { headers: HEADERS }),
-      fetch(`${INSFORGE_URL}/api/database/records/users?role=eq.customer&limit=10`, { headers: HEADERS }),
-      fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS })
-    ]);
-
-    let restaurants = restRes.ok ? await restRes.json() : [];
-    let customers = userRes.ok ? await userRes.json() : [];
-    const zones = zonesRes.ok ? await zonesRes.json() : [];
-
-    // Fallback: If no restaurants or customers, create demo ones
+    console.log("[SEED] Starting idempotent demo seeding...");
+    
+    // 1. Ensure a demo restaurant exists
+    const restSearch = await fetch(`${INSFORGE_URL}/api/database/records/restaurants?metadata->>demo_tag=eq.logistics_test_v2&limit=1`, { headers: HEADERS });
+    let restaurants = restSearch.ok ? await restSearch.json() : [];
+    
     if (!restaurants.length) {
-      console.log("[SEED] No restaurants found, creating demo restaurant...");
+      console.log("[SEED] Creating demo restaurant...");
       const demoRest = {
         id: newUuid(),
-        name: "Demo Kitchen (Logistics)",
+        name: "Scoobix Demo Kitchen",
+        address: "123 Logistics Hub, Vadodara",
         status: "ACTIVE",
         metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
-      await fetch(`${INSFORGE_URL}/api/database/records/restaurants`, {
+      const createRest = await fetch(`${INSFORGE_URL}/api/database/records/restaurants`, {
         method: "POST", headers: HEADERS, body: JSON.stringify(demoRest)
       });
-      restaurants = [demoRest];
-    }
-    
-    if (!customers.length) {
-      console.log("[SEED] No customers found, creating demo customer...");
-      const demoCust = {
-        id: newUuid(),
-        name: "Demo Logistics Customer",
-        role: "customer",
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
-      };
-      await fetch(`${INSFORGE_URL}/api/database/records/users`, {
-        method: "POST", headers: HEADERS, body: JSON.stringify(demoCust)
-      });
-      customers = [demoCust];
+      if (createRest.ok) restaurants = [demoRest];
     }
 
+    // 2. Ensure a demo customer exists
+    const userSearch = await fetch(`${INSFORGE_URL}/api/database/records/users?metadata->>demo_tag=eq.logistics_test_v2&limit=1`, { headers: HEADERS });
+    let customers = userSearch.ok ? await userSearch.json() : [];
+    
+    if (!customers.length) {
+      console.log("[SEED] Creating demo customer...");
+      const demoCust = {
+        id: newUuid(),
+        name: "Demo Customer",
+        role: "customer",
+        email: "demo.customer@scoobix.test",
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+      };
+      const createCust = await fetch(`${INSFORGE_URL}/api/database/records/users`, {
+        method: "POST", headers: HEADERS, body: JSON.stringify(demoCust)
+      });
+      if (createCust.ok) customers = [demoCust];
+    }
+
+    // 3. Get a zone
+    const zonesRes = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS });
+    const zones = zonesRes.ok ? await zonesRes.json() : [];
     const zoneId = zones[0]?.id;
+
+    if (!restaurants.length || !customers.length) {
+      throw new Error("Failed to create prerequisite demo data (restaurant/customer)");
+    }
+
     const statuses = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
     let seeded = 0;
     let existing = 0;
 
     for (let i = 0; i < 5; i++) {
-      const restaurant = restaurants[i % restaurants.length];
-      const customer = customers[i % customers.length];
-      const status = statuses[i % statuses.length];
+      const demoRef = `demo_order_v2_${i}`;
       
-      // Idempotency check for each specific order variation
-      const demoRef = `demo_order_${i}_v2`;
+      // Idempotency check
       const checkRes = await fetch(`${INSFORGE_URL}/api/database/records/orders?metadata->>demo_ref=eq.${demoRef}&limit=1`, { headers: HEADERS });
       const found = checkRes.ok ? await checkRes.json() : [];
       
@@ -72,23 +77,22 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         continue;
       }
 
-      const id = newUuid();
       const order = {
-        id,
-        customer_id: customer.id,
-        restaurant_id: restaurant.id,
-        status,
+        id: newUuid(),
+        customer_id: customers[0].id,
+        restaurant_id: restaurants[0].id,
+        status: statuses[i % statuses.length],
         zone_id: zoneId,
-        total_price: Math.floor(Math.random() * 1000) + 200,
+        total_price: 250 + (i * 50),
         created_at: new Date().toISOString(),
         metadata: { is_demo: true, demo_tag: "logistics_test_v2", demo_ref: demoRef },
         items: {
-          lines: [{ id: "item1", name: "Demo Burger", price: 150, qty: 1 }],
-          meta: { restaurantName: restaurant.name, addressLabel: "Home", addressLine: "Demo Street 123" }
+          lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
+          meta: { restaurantName: restaurants[0].name, addressLine: "123 Demo St" }
         },
-        delivery_address: "Demo Street 123, Vadodara",
+        delivery_address: "123 Demo Street, Vadodara",
         payment_method: "CASH",
-        payment_status: status === "DELIVERED" ? "COMPLETED" : "PENDING"
+        payment_status: i % 2 === 0 ? "COMPLETED" : "PENDING"
       };
 
       const res = await fetch(`${INSFORGE_URL}/api/database/records/orders`, {
@@ -100,9 +104,6 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       if (res.ok) {
         seeded++;
         publishTableChange("orders", "insert", order);
-      } else {
-        const err = await res.text();
-        console.error(`[SEED] Failed to insert order ${i}:`, err);
       }
     }
 
