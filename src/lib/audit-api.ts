@@ -125,10 +125,10 @@ export type AuditFilter = {
 
 const SELECT =
   "id,actor_id,actor_role,actor_name,action,category,subject_type,subject_id,summary," +
-  "severity,meta,ip,user_agent,device_id,session_id,archived,created_at";
+  "severity,archived,created_at";
 
 export async function listAudit(filter: AuditFilter = {}): Promise<AuditRow[]> {
-  const params: Record<string, string | number> = { select: SELECT, order: "created_at.desc" };
+  const params: Record<string, string | number> = { order: "created_at.desc" };
   if (filter.actorId) params.actor_id = `eq.${filter.actorId}`;
   if (filter.actorRole) params.actor_role = `eq.${filter.actorRole}`;
   if (filter.category && filter.category !== "all") params.category = `eq.${filter.category}`;
