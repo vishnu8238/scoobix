@@ -10,6 +10,8 @@ import { createGig } from "@/lib/gigs-api";
 import { fetchZones, type DeliveryZone } from "@/lib/zones-api";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { seedLogisticsPrerequisites } from "@/lib/logistics-ops.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 interface CreateGigModalProps {
   isOpen: boolean;
@@ -57,30 +59,47 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
 
 
 
+  const seedPrereqs = useServerFn(seedLogisticsPrerequisites);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const loadZones = async () => {
+    setLoadingZones(true);
+    setZonesError(null);
+    try {
+      const data = await fetchZones();
+      if (!data || data.length === 0) {
+        console.log("[GIG_MODAL] No zones found, enabling UI fallbacks for City 1/City 2");
+        setZones([]); // Fallback handled by useMemo
+      } else {
+        setZones(data);
+      }
+    } catch (err: any) {
+      console.error("[GIG_MODAL] Failed to fetch zones:", err);
+      setZonesError("Failed to load cities and zones. Please check your connection or database permissions.");
+    } finally {
+      setLoadingZones(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-      const loadZones = async () => {
-        setLoadingZones(true);
-        setZonesError(null);
-        try {
-          const data = await fetchZones();
-          if (!data || data.length === 0) {
-            console.log("[GIG_MODAL] No zones found, enabling UI fallbacks for City 1/City 2");
-            setZones([]); // Fallback handled by useMemo
-          } else {
-
-            setZones(data);
-          }
-        } catch (err: any) {
-          console.error("[GIG_MODAL] Failed to fetch zones:", err);
-          setZonesError("Failed to load cities and zones. Please check your connection or database permissions.");
-        } finally {
-          setLoadingZones(false);
-        }
-      };
       loadZones();
     }
   }, [isOpen]);
+
+  const handleSeed = async () => {
+    setIsSeeding(true);
+    try {
+      await seedPrereqs();
+      toast.success("Demo City & Zone seeded successfully");
+      await loadZones();
+    } catch (err) {
+      toast.error("Failed to seed demo data");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,7 +169,30 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-8 pt-4 space-y-6">
             
-            {zonesError && (
+          {zones.length === 0 && !loadingZones && (
+            <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 dark:bg-amber-950/20 dark:ring-amber-900/40">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-amber-800 dark:text-amber-300">No zones found in the database.</p>
+                  <p className="mt-1 text-[10px] font-medium text-amber-700/70 dark:text-amber-400/70">
+                    A city and zone are required. Use fallbacks or seed demo data to proceed.
+                  </p>
+                  <button 
+                    onClick={handleSeed}
+                    disabled={isSeeding}
+                    className="mt-3 flex items-center gap-2 rounded-xl bg-amber-600 px-3 py-1.5 text-[10px] font-black text-white hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {isSeeding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
+                    Seed Demo City & Zone
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {zonesError && (
+
               <Alert variant="destructive" className="rounded-2xl bg-destructive/5 border-destructive/20">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="text-xs font-bold">{zonesError}</AlertDescription>
