@@ -46,11 +46,26 @@ export async function fetchZones(params?: Record<string, any>) {
   console.log(`[ZONES_API] Fetching ${TABLE_ZONES} authoritative...`);
   // Use explicit select to ensure we don't hit "undefined_column" on missing columns
   // Note: Only verified columns are selected to avoid production schema errors
-  return listTable<DeliveryZone>(TABLE_ZONES, { 
+  const zones = await listTable<DeliveryZone>(TABLE_ZONES, { 
     select: "id,name,city,status,created_at,updated_at", 
     order: "name.asc", 
     ...params 
   });
+  
+  if (zones.length === 0) {
+    console.log(`[ZONES_API] No ${TABLE_ZONES} found, trying fallback delivery_zones...`);
+    const fallback = await listTable<DeliveryZone>("delivery_zones", { 
+      select: "id,name,city,status,created_at,updated_at", 
+      order: "name.asc", 
+      ...params 
+    });
+    if (fallback.length > 0) {
+      console.log(`[ZONES_API] Found ${fallback.length} zones in delivery_zones.`);
+      return fallback;
+    }
+  }
+  
+  return zones;
 }
 
 export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {
