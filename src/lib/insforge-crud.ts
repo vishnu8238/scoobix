@@ -239,7 +239,7 @@ export function listTable<T = Record<string, unknown>>(
   const qs = JSON.stringify(params || {});
   const cacheKey = `db:${table}:${qs}`;
 
-  const load = () => withRetry(async () => {
+  const load = () => withRetry<T[]>(table, async () => {
     let query = insforge.database.from(table).select(select);
     query = applyParams(query, params);
     const data = await handleResponse<T[]>(query, "GET", table);
@@ -285,7 +285,7 @@ export function createRecord<T = Record<string, unknown>>(
   record: Record<string, unknown>,
 ): Promise<T | null> {
   invalidateTable(table);
-  return withRetry(async () => {
+  return withRetry<T | null>(table, async () => {
     // RLS Defense: Restrictive SELECT policies can make an otherwise-successful 
     // INSERT look like a failure (returning null/empty result).
     // We attempt the insert and select-back.
@@ -321,7 +321,7 @@ export function createRecords<T = Record<string, unknown>>(
 ): Promise<T[] | null> {
   if (!records.length) return Promise.resolve([]);
   invalidateTable(table);
-  return withRetry(async () => {
+  return withRetry<T[] | null>(table, async () => {
     const query = insforge.database.from(table).insert(records).select();
     try {
       const res = await handleResponse<T[]>(query, "POST", table);
@@ -344,7 +344,7 @@ export function patchRecord<T = Record<string, unknown>>(
   patch: Record<string, unknown>,
 ): Promise<T | null> {
   invalidateTable(table);
-  return withRetry(() => {
+  return withRetry<T | null>(table, () => {
     const query = insforge.database.from(table).update(patch).eq("id", id).select().single();
     return handleResponse<T>(query, "PATCH", table);
   }).then((res) => {
@@ -361,7 +361,7 @@ export function patchWhereIn<T = Record<string, unknown>>(
 ): Promise<T | null> {
   if (!ids.length) return Promise.resolve(null);
   invalidateTable(table);
-  return withRetry(() => {
+  return withRetry<T[] | null>(table, () => {
     const query = insforge.database.from(table).update(patch).in("id", ids).select();
     return handleResponse<T[]>(query, "PATCH", table);
   }).then((res) => {
@@ -372,7 +372,7 @@ export function patchWhereIn<T = Record<string, unknown>>(
 
 export function deleteRecord(table: string, id: string): Promise<null> {
   invalidateTable(table);
-  return withRetry(() => {
+  return withRetry<null>(table, () => {
     const query = insforge.database.from(table).delete().eq("id", id);
     return handleResponse<null>(query, "DELETE", table);
   }).then(() => {
