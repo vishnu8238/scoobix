@@ -28,7 +28,7 @@ function AdminZonesDashboard() {
   const [isSubzoneModalOpen, setIsSubzoneModalOpen] = useState(false);
   const [expandedZones, setExpandedZones] = useState<Record<string, boolean>>({});
   
-  const version = useTableVersion(["delivery_zones", "delivery_subzones", "drivers", "orders"]);
+  const version = useTableVersion(["logistics_zones", "subzones", "drivers", "orders"]);
 
   const refresh = useCallback(async () => {
     if (loading && zones.length === 0) return;

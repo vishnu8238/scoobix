@@ -37,7 +37,7 @@ function AdminOperationsDashboard() {
   const [q, setQ] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   
-  const version = useTableVersion(["delivery_zones", "orders", "drivers", "delivery_subzones"]);
+  const version = useTableVersion(["logistics_zones", "orders", "drivers", "subzones"]);
 
   const refresh = useCallback(async () => {
     setLoading(true);

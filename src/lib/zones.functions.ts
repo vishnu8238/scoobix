@@ -13,8 +13,8 @@ export const getZonesWithSubzones = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
       const [zonesRes, subzonesRes] = await Promise.all([
-        fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?select=*&order=name.asc`, { headers: HEADERS }),
-        fetch(`${INSFORGE_URL}/api/database/records/subzones?select=*&order=name.asc`, { headers: HEADERS })
+        fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?select=id,name,city,status,created_at,updated_at&order=name.asc`, { headers: HEADERS }),
+        fetch(`${INSFORGE_URL}/api/database/records/subzones?select=id,zone_id,name,status,created_at,updated_at&order=name.asc`, { headers: HEADERS })
       ]);
       
       if (!zonesRes.ok && zonesRes.status !== 404) {
@@ -70,12 +70,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
           body: JSON.stringify({
             name: zDef.name,
             city: "Vadodara",
-            status: "ACTIVE",
-            pickup_radius_km: 1,
-            max_delivery_distance_km: 4,
-            max_orders_per_rider: 3,
-            assignment_timeout_sec: 60,
-            boundary: { type: "Polygon", coordinates: [] }
+            status: "ACTIVE"
           })
         });
         const newZone = createZ.ok ? await createZ.json() : null;
@@ -98,8 +93,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
             body: JSON.stringify({
               zone_id: zoneId,
               name: szName,
-              status: "ACTIVE",
-              boundary: { type: "Polygon", coordinates: [] }
+              status: "ACTIVE"
             })
           });
           createdSubzones++;

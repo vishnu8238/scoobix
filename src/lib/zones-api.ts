@@ -37,8 +37,13 @@ export type SubzoneRider = {
 // --- API Methods ---
 
 export async function fetchZones(params?: Record<string, any>) {
-  console.log("[ZONES_API] Fetching logistics_zones...");
-  return listTable<DeliveryZone>("logistics_zones", { select: "*", order: "name.asc", ...params });
+  console.log("[ZONES_API] Fetching logistics_zones authoritative...");
+  // Use explicit select to ensure we don't hit "undefined_column" on missing columns
+  return listTable<DeliveryZone>("logistics_zones", { 
+    select: "id,name,city,status,created_at,updated_at", 
+    order: "name.asc", 
+    ...params 
+  });
 }
 
 export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {
@@ -55,7 +60,11 @@ export async function deleteZone(id: string) {
 
 export async function fetchSubzones(zoneId?: string) {
   const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
-  return listTable<Subzone>("subzones", { select: "*", order: "name.asc", ...params });
+  return listTable<Subzone>("subzones", { 
+    select: "id,zone_id,name,status,created_at,updated_at", 
+    order: "name.asc", 
+    ...params 
+  });
 }
 
 export async function createSubzone(subzone: Omit<Subzone, "id">) {
@@ -106,8 +115,9 @@ export async function logAudit(entry: {
   admin_id: string;
 }) {
   return createRecord("audit_logs", {
-    ...entry,
-    timestamp: new Date().toISOString()
+    action: entry.action,
+    actor_id: entry.admin_id,
+    created_at: new Date().toISOString()
   });
 }
 
