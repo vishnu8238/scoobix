@@ -83,11 +83,11 @@ export function getDisplayName(user: any): string {
  * Derives initials from a name (max 2 chars).
  */
 export function getInitials(name: string | null | undefined): string {
-  if (!name) return "U";
-  const cleaned = getDisplayName({ name }).replace(/[^a-zA-Z\s]/g, '');
-  const parts = cleaned.split(' ').filter(n => n.length > 0);
+  if (!name) return "";
+  const cleaned = name.replace(/[^a-zA-Z\s]/g, '').trim();
+  const parts = cleaned.split(/\s+/).filter(n => n.length > 0);
   
-  if (parts.length === 0) return "U";
+  if (parts.length === 0) return "";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();

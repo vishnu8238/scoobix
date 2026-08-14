@@ -55,7 +55,9 @@ function ManagerShell({ pathname }: { pathname: string }) {
     <div className="relative pb-24">
       <header className="px-5 pt-6 pb-2 flex items-center justify-between bg-background/80 backdrop-blur-md sticky top-0 z-30">
         <div className="flex items-center gap-2">
-          <ScoobixMark size={32} />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground mr-1">
+            {getInitials(manager?.name) || "M"}
+          </div>
           <div className="text-left">
             <p className="text-[12px] font-bold leading-none text-foreground">{manager?.name || "Merchant Manager"}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Scoobix Manager</p>

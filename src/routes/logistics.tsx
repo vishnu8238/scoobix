@@ -129,7 +129,7 @@ function LogisticsLayout() {
           <div className="mt-4 pt-4 border-t border-border/40">
              <div className={cn("flex items-center gap-3 px-2 py-2 mb-2", collapsed && "justify-center px-0")}>
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground">
-                  {getInitials(user?.name) || "S"}
+                  {getInitials(user?.name) || "L"}
                 </div>
                 {!collapsed && (
                   <div className="text-left min-w-0">
