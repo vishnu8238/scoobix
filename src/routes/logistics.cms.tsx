@@ -137,6 +137,12 @@ function LogisticsCms() {
         </h2>
         {loading ? (
           <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : stories.length === 0 ? (
+          <div className="py-12 text-center">
+            <Megaphone className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
+            <p className="text-sm font-bold text-muted-foreground">No stories published yet</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Broadcast important fleet updates from the studio above.</p>
+          </div>
         ) : (
           <DataTable 
             columns={["Cover", "Title", "Audience", "Status", "Published", "Actions"]}

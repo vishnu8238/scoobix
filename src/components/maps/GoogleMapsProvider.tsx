@@ -7,7 +7,7 @@ import { getGoogleMapsApiKey } from "@/lib/maps-config.functions";
  * Fetches the API key from the server to bypass VITE_ prefix restrictions
  * and ensure the key is always available from the environment.
  */
-export function GoogleMapsProvider({ children }: { children: ReactNode }) {
+export function GoogleMapsProvider({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,11 +44,12 @@ export function GoogleMapsProvider({ children }: { children: ReactNode }) {
   }
 
   if (!apiKey) {
+    if (fallback) return <>{fallback}</>;
     return (
       <div className="flex h-full w-full flex-col items-center justify-center bg-muted/20 p-6 text-center text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[200px]">
         <p className="font-medium text-destructive">Google Maps API Key Missing</p>
         <p className="text-xs mt-2">
-          Please configure <strong>GOOGLE_MAPS_API_KEY</strong> in Lovable Cloud Secrets.
+          Please configure <strong>GOOGLE_API_KEY</strong> in Lovable Cloud Secrets.
         </p>
       </div>
     );

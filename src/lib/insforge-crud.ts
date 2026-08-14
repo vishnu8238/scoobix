@@ -50,6 +50,14 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (err: any) {
     const status = err instanceof HttpError ? err.status : (err?.status || 0);
+    
+    // Normalize "No such column" or "No such table" errors for better UI signaling
+    const msg = String(err?.message || "").toLowerCase();
+    if (msg.includes("does not exist") || msg.includes("undefined_table") || msg.includes("undefined_column")) {
+      console.error(`[DB_FATAL] Schema mismatch on ${fn.toString().slice(0, 100)}:`, msg);
+      throw err; // Don't retry schema errors
+    }
+
     const retryable = status === 0 || status === 429 || status >= 500;
     if (!retryable) throw err;
     
