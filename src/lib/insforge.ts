@@ -45,7 +45,7 @@ export const ensureAuthHydrated = async () => {
       console.log("[INSFORGE_AUTH] Hydrating session from storage/cookies...");
       
       // 1. First, check if we have a token in the internal token manager
-      let session = insforge.auth.getSession();
+      let session = insforge.auth.tokenManager?.getSession?.();
       
       // 2. If no session, try a light-weight check
       if (!session) {

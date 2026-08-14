@@ -184,7 +184,7 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
     if (!res || (error && (status === 401 || (error.message && error.message.toLowerCase().includes("invalid token"))))) {
       // If we are in a browser, we can check if we actually have an active session
       if (typeof window !== "undefined") {
-        const session = insforge.auth.getSession();
+        const session = insforge.auth.tokenManager?.getSession?.();
         if (session) {
           console.error(`[DB_AUTH_FAILURE] Session exists but ${method} ${table} failed with 401. Possible RLS or token expiry.`);
         }

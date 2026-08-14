@@ -103,26 +103,6 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Pickup Radius (km)</label>
-                  <input 
-                    type="number" step="0.1" required
-                    value={formData.pickup_radius_km}
-                    onChange={e => setFormData(prev => ({ ...prev, pickup_radius_km: parseFloat(e.target.value) }))}
-                    className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Max Delivery (km)</label>
-                  <input 
-                    type="number" step="0.1" required
-                    value={formData.max_delivery_distance_km}
-                    onChange={e => setFormData(prev => ({ ...prev, max_delivery_distance_km: parseFloat(e.target.value) }))}
-                    className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none"
-                  />
-                </div>
-              </div>
 
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Description</label>
@@ -135,50 +115,6 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Zone Boundary (Click Map to Drop Pin)</label>
-              <div className="flex-1 min-h-[300px] rounded-3xl overflow-hidden ring-1 ring-border/60">
-                 <GoogleMap 
-                   className="h-full w-full" 
-                   interactive 
-                   polygons={formData.boundary.coordinates?.[0]?.length ? [{
-                     id: "editor",
-                     points: formData.boundary.coordinates[0].map((c: any) => ({ lat: c[1], lng: c[0] })),
-                     color: "var(--color-primary)"
-                   }] : []}
-                   onPolygonEdit={(_, points) => {
-                     const newCoords = points.map(p => [p.lng, p.lat]);
-                     if (newCoords.length > 0) {
-                        newCoords.push([...newCoords[0]]);
-                     }
-                     setFormData(prev => ({ 
-                       ...prev, 
-                       boundary: { type: "Polygon", coordinates: [newCoords] } 
-                     }));
-                   }}
-                   onPick={(coords) => {
-                     if (formData.boundary.coordinates?.[0]?.length > 0) return; 
-                     const lat = coords.lat;
-                     const lng = coords.lng;
-                     const offset = 0.005; 
-                     const newCoords = [
-                       [lng - offset, lat - offset],
-                       [lng + offset, lat - offset],
-                       [lng + offset, lat + offset],
-                       [lng - offset, lat + offset],
-                       [lng - offset, lat - offset]
-                     ];
-                     setFormData(prev => ({ 
-                       ...prev, 
-                       boundary: { type: "Polygon", coordinates: [newCoords] } 
-                     }));
-                   }}
-                 />
-              </div>
-              <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
-                <MapPin className="h-3 w-3" /> Click on the map to set the zone center and generate a default boundary.
-              </p>
-            </div>
           </div>
         </form>
 
@@ -296,45 +232,6 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
             </select>
           </div>
 
-          <div className="h-[200px] rounded-2xl overflow-hidden ring-1 ring-border/60">
-             <GoogleMap 
-               className="h-full w-full" 
-               interactive 
-               polygons={formData.boundary.coordinates?.[0]?.length ? [{
-                 id: "editor",
-                 points: formData.boundary.coordinates[0].map((c: any) => ({ lat: c[1], lng: c[0] })),
-                 color: "var(--color-primary)"
-               }] : []}
-               onPolygonEdit={(_, points) => {
-                 const newCoords = points.map(p => [p.lng, p.lat]);
-                 if (newCoords.length > 0) {
-                    newCoords.push([...newCoords[0]]);
-                 }
-                 setFormData(prev => ({ 
-                   ...prev, 
-                   boundary: { type: "Polygon", coordinates: [newCoords] } 
-                 }));
-               }}
-               onPick={(coords) => {
-                 if (formData.boundary.coordinates?.[0]?.length) return;
-                 const lat = coords.lat;
-                 const lng = coords.lng;
-                 const offset = 0.005;
-                 const newCoords = [
-                   [lng - offset, lat - offset],
-                   [lng + offset, lat - offset],
-                   [lng + offset, lat + offset],
-                   [lng - offset, lat + offset],
-                   [lng - offset, lat - offset]
-                 ];
-                 setFormData(prev => ({ 
-                   ...prev, 
-                   boundary: { type: "Polygon", coordinates: [newCoords] } 
-                 }));
-               }}
-             />
-          </div>
-          <p className="text-[10px] text-muted-foreground italic">Click map to set subzone boundary.</p>
 
           <div className="flex justify-end gap-3 pt-4">
             <button 
