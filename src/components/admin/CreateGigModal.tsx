@@ -90,10 +90,18 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
       }
     } catch (err: any) {
       console.error("[GIG_MODAL] Fetch error:", err);
-      const isAuthError = err.status === 401 || err.message?.includes("Unauthorized");
+      const isAuthError = err.status === 401 || err.message?.includes("Unauthorized") || err.message?.includes("token");
       setZonesError(isAuthError 
-        ? "Session expired or unauthorized. Please refresh the page."
+        ? "Session expired or unauthorized. Please refresh the page and ensure you have logistics access."
         : `Database Error: ${err.message || "Failed to load cities and zones."}`);
+      
+      // Also record diagnostics on error
+      setDiagnostics({ 
+        op: "fetch_zones", 
+        error: err.message, 
+        status: err.status,
+        timestamp: new Date().toISOString()
+      });
     } finally {
       setLoadingZones(false);
     }
