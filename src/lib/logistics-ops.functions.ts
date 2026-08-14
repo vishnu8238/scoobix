@@ -93,15 +93,22 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
   });
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
-  .handler(async () => {
-    console.log("[SEED] Starting idempotent demo seeding...");
+  .middleware([requireInsForgeAuth])
+  .handler(async ({ context }) => {
+    const { insforge } = context;
+    console.log("[SEED] Starting idempotent demo seeding via SDK...");
     
     const city1Id = "c1110000-0000-0000-0000-000000000001";
     const zone1Id = "z1110000-0000-0000-0000-000000000001";
 
     // 1. Ensure a demo restaurant exists
-    const restSearch = await fetch(`${INSFORGE_URL}/api/database/records/restaurants?metadata->>demo_tag=eq.logistics_test_v2&limit=1`, { headers: HEADERS });
-    let restaurants = restSearch.ok ? await restSearch.json() : [];
+    const { data: restaurantsFound } = await insforge.database
+      .from("restaurants")
+      .select("*")
+      .filter("metadata->>demo_tag", "eq", "logistics_test_v3")
+      .limit(1);
+    
+    let restaurants = restaurantsFound || [];
     
     if (!restaurants.length) {
       console.log("[SEED] Creating demo restaurant...");
@@ -112,23 +119,26 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         status: "ACTIVE",
         zone_id: zone1Id,
         city_id: city1Id,
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+        metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
       };
-      const createRest = await fetch(`${INSFORGE_URL}/api/database/records/restaurants`, {
-        method: "POST", 
-        headers: { ...HEADERS, "Prefer": "return=representation" }, 
-        body: JSON.stringify(demoRest)
-      });
-      if (createRest.ok) {
-        const created = await createRest.json();
-        restaurants = Array.isArray(created) ? created : [created];
-        if (restaurants.length === 0) restaurants = [demoRest];
-      }
+      const { data: created } = await insforge.database
+        .from("restaurants")
+        .insert([demoRest])
+        .select()
+        .single();
+      
+      if (created) restaurants = [created];
+      else restaurants = [demoRest];
     }
 
     // 2. Ensure a demo customer exists
-    const userSearch = await fetch(`${INSFORGE_URL}/api/database/records/users?metadata->>demo_tag=eq.logistics_test_v2&limit=1`, { headers: HEADERS });
-    let customers = userSearch.ok ? await userSearch.json() : [];
+    const { data: usersFound } = await insforge.database
+      .from("users")
+      .select("*")
+      .filter("metadata->>demo_tag", "eq", "logistics_test_v3")
+      .limit(1);
+    
+    let customers = usersFound || [];
     
     if (!customers.length) {
       console.log("[SEED] Creating demo customer...");
@@ -137,26 +147,32 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         name: "Demo Customer",
         role: "customer",
         email: "demo.customer@scoobix.test",
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+        metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
       };
-      const createCust = await fetch(`${INSFORGE_URL}/api/database/records/users`, {
-        method: "POST", 
-        headers: { ...HEADERS, "Prefer": "return=representation" }, 
-        body: JSON.stringify(demoCust)
-      });
-      if (createCust.ok) {
-        const created = await createCust.json();
-        customers = Array.isArray(created) ? created : [created];
-        if (customers.length === 0) customers = [demoCust];
-      }
+      const { data: created } = await insforge.database
+        .from("users")
+        .insert([demoCust])
+        .select()
+        .single();
+      
+      if (created) customers = [created];
+      else customers = [demoCust];
     }
 
     // 3. Get a zone (prefer the one we seeded)
-    const zonesRes = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?id=eq.${zone1Id}`, { headers: HEADERS });
-    let zones = zonesRes.ok ? await zonesRes.json() : [];
+    const { data: zonesFound } = await insforge.database
+      .from("logistics_zones")
+      .select("id")
+      .eq("id", zone1Id)
+      .limit(1);
+    
+    let zones = zonesFound || [];
     if (!zones.length) {
-      const allZones = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS });
-      zones = allZones.ok ? await allZones.json() : [];
+      const { data: allZones } = await insforge.database
+        .from("logistics_zones")
+        .select("id")
+        .limit(1);
+      zones = allZones || [];
     }
     const zoneId = zones[0]?.id;
 
@@ -169,13 +185,16 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
     let existing = 0;
 
     for (let i = 0; i < 5; i++) {
-      const demoRef = `demo_order_v2_${i}`;
+      const demoRef = `demo_order_v3_${i}`;
       
       // Idempotency check
-      const checkRes = await fetch(`${INSFORGE_URL}/api/database/records/orders?metadata->>demo_ref=eq.${demoRef}&limit=1`, { headers: HEADERS });
-      const found = checkRes.ok ? await checkRes.json() : [];
+      const { data: found } = await insforge.database
+        .from("orders")
+        .select("id")
+        .filter("metadata->>demo_ref", "eq", demoRef)
+        .limit(1);
       
-      if (found.length > 0) {
+      if (found && found.length > 0) {
         existing++;
         continue;
       }
@@ -188,7 +207,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         zone_id: zoneId,
         total_price: 250 + (i * 50),
         created_at: new Date().toISOString(),
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2", demo_ref: demoRef },
+        metadata: { is_demo: true, demo_tag: "logistics_test_v3", demo_ref: demoRef },
         items: {
           lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
           meta: { restaurantName: restaurants[0].name, addressLine: "123 Demo St" }
@@ -198,19 +217,16 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         payment_status: i % 2 === 0 ? "COMPLETED" : "PENDING"
       };
 
-      const res = await fetch(`${INSFORGE_URL}/api/database/records/orders`, {
-        method: "POST",
-        headers: { ...HEADERS, "Prefer": "return=representation" },
-        body: JSON.stringify(order)
-      });
+      const { error: insertError } = await insforge.database
+        .from("orders")
+        .insert([order]);
 
-      if (res.ok) {
+      if (!insertError) {
         seeded++;
         publishTableChange("orders", "insert", order);
       } else {
-        const errText = await res.text();
-        console.error(`[SEED] Failed to insert order ${demoRef}:`, errText);
-        throw new Error(`Database error: ${errText}`);
+        console.error(`[SEED] Failed to insert order ${demoRef}:`, insertError.message);
+        throw new Error(`Database error: ${insertError.message}`);
       }
     }
 
