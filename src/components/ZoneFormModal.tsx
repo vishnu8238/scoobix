@@ -37,7 +37,9 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         max_delivery_distance_km: Number(formData.max_delivery_distance_km) || 4,
         boundary: (formData.boundary?.coordinates?.[0]?.length >= 3) 
           ? formData.boundary 
-          : { type: "Polygon", coordinates: [] }
+          : { type: "Polygon", coordinates: [] },
+        center_lat: formData.boundary?.coordinates?.[0]?.[0]?.[1] || 12.9716,
+        center_lng: formData.boundary?.coordinates?.[0]?.[0]?.[0] || 77.5946
       };
       const result = await createNewZone(submission as any);
       if (result && !result.id) {
@@ -115,6 +117,30 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
               </div>
             </div>
 
+            <div className="h-[400px] rounded-3xl overflow-hidden ring-1 ring-border/60">
+              <GoogleMap 
+                className="h-full w-full"
+                interactive={true}
+                center={formData.boundary?.coordinates?.[0]?.[0] ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : undefined}
+                onPolygonEdit={(id, points) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    boundary: {
+                      type: "Polygon",
+                      coordinates: [points.map(p => [p.lng, p.lat])]
+                    }
+                  }));
+                }}
+                polygons={formData.boundary?.coordinates?.[0]?.length >= 3 ? [{
+                  id: "new-zone",
+                  points: formData.boundary.coordinates[0].map((c: any) => ({ lat: c[1], lng: c[0] })),
+                  color: "rgba(16, 185, 129, 0.5)"
+                }] : []}
+              />
+              <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md p-3 rounded-2xl text-[10px] font-bold text-white text-center">
+                Click and drag polygon vertices to define the zone boundary.
+              </div>
+            </div>
           </div>
         </form>
 
