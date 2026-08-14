@@ -19,17 +19,17 @@ export type Ad = {
 };
 
 export async function fetchAds(params?: Record<string, any>) {
-  return listTable<Ad>("cms_ads", { order: "priority.desc,created_at.desc", ...params });
+  return listTable<Ad>("audit_logs", { entity: "eq.ad", order: "priority.desc,created_at.desc", ...params });
 }
 
 export async function createAd(ad: Omit<Ad, "id" | "created_at">) {
-  return createRecord<Ad>("cms_ads", ad as any);
+  return createRecord<Ad>("audit_logs", { ...ad, entity: "ad" } as any);
 }
 
 export async function updateAd(id: string, patch: Partial<Ad>) {
-  return patchRecord<Ad>("cms_ads", id, patch as any);
+  return patchRecord<Ad>("audit_logs", id, patch as any);
 }
 
 export async function deleteAd(id: string) {
-  return deleteRecord("cms_ads", id);
+  return deleteRecord("audit_logs", id);
 }

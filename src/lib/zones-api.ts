@@ -104,7 +104,7 @@ export async function logAudit(entry: {
   reason?: string;
   admin_id: string;
 }) {
-  return createRecord("loyalty_audit_logs", {
+  return createRecord("audit_logs", {
     ...entry,
     timestamp: new Date().toISOString()
   });
