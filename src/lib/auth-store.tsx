@@ -153,6 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.warn("[AUTH_TRACE] Profile name sync failed:", e)
           );
         }
+      } catch (err) {
+        console.error("[AUTH_TRACE] Profile resolution failed:", err);
+      }
 
       // 2. Roles Resolution
       const roles: Role[] = ["customer"];
