@@ -125,6 +125,9 @@ export const APP_BY_ROLE: Record<Role, ScoobixApp> = {
   admin: APPS.admin,
   manager: APPS.manager,
   logistics: APPS.logistics,
+  dispatcher: APPS.logistics,
+  zone_manager: APPS.logistics,
+  logistics_admin: APPS.logistics,
 };
 
 export function appForPath(pathname: string): ScoobixApp | null {
