@@ -53,9 +53,18 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     
     // Normalize "No such column" or "No such table" errors for better UI signaling
     const msg = String(err?.message || "").toLowerCase();
-    if (msg.includes("does not exist") || msg.includes("undefined_table") || msg.includes("undefined_column")) {
-      console.error(`[DB_FATAL] Schema mismatch on ${fn.toString().slice(0, 100)}:`, msg);
-      throw err; // Don't retry schema errors
+    const isSchemaError = msg.includes("does not exist") || 
+                         msg.includes("undefined_table") || 
+                         msg.includes("undefined_column") ||
+                         msg.includes("42p01") || // Postgres relation does not exist code
+                         msg.includes("42703");   // Postgres undefined column code
+
+    if (isSchemaError) {
+      console.error(`[DB_FATAL] Schema mismatch on ${table} ${fn.toString().slice(0, 50)}:`, msg);
+      // We wrap the error to ensure the UI can distinguish a missing table from a network error
+      const schemaErr = new HttpError(404, `Database relation error: ${err.message}`);
+      (schemaErr as any).isSchemaError = true;
+      throw schemaErr;
     }
 
     const retryable = status === 0 || status === 429 || status >= 500;

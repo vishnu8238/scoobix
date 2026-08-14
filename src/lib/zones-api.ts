@@ -37,7 +37,8 @@ export type SubzoneRider = {
 // --- API Methods ---
 
 export async function fetchZones(params?: Record<string, any>) {
-  return listTable<DeliveryZone>("logistics_zones", { order: "name.asc", ...params });
+  console.log("[ZONES_API] Fetching logistics_zones...");
+  return listTable<DeliveryZone>("logistics_zones", { select: "*", order: "name.asc", ...params });
 }
 
 export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {
@@ -54,7 +55,7 @@ export async function deleteZone(id: string) {
 
 export async function fetchSubzones(zoneId?: string) {
   const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
-  return listTable<Subzone>("subzones", { order: "name.asc", ...params });
+  return listTable<Subzone>("subzones", { select: "*", order: "name.asc", ...params });
 }
 
 export async function createSubzone(subzone: Omit<Subzone, "id">) {
