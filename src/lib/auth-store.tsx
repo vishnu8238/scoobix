@@ -152,16 +152,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Authoritative Merged Object for Identity Resolution
         const combinedUserData = { 
           ...sessionUser, 
-          // Inject database profile fields directly into top-level for resolver
-          profile: profile, // Ensure profile is nested for the "profile.full_name" lookup
-          full_name: profile?.full_name || profile?.display_name || profile?.name,
-          display_name: profile?.display_name || profile?.full_name,
-          db_name: profile?.name,
-          // Preserve SDK nested structures
+          profile: profile, // Database profile
           user_metadata: sessionUser.user_metadata,
-          provider_metadata: (sessionUser as any).provider_metadata,
           identities: sessionUser.identities,
-          raw: sessionUser
         };
         const sessionNameCandidate = getDisplayName(combinedUserData);
         console.log("[AUTH_TRACE] Identity Resolved:", sessionNameCandidate, "Profile Found:", !!profile);
@@ -173,17 +166,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: authId,
             email: userEmail,
             email_normalized: userEmail,
-            name: sessionNameCandidate,
+            name: sessionNameCandidate !== "User" ? sessionNameCandidate : null,
             role: "customer",
             is_active: true,
           });
         } else if (profile && sessionNameCandidate !== "User" && profile.name !== sessionNameCandidate) {
-          // If we have a better name from session/OAuth than what's in the DB
-          // we update the DB profile name to stay in sync with the social identity.
-          console.log("[AUTH_TRACE] Updating DB Name from", profile.name, "to", sessionNameCandidate);
+          // Sync DB name if OAuth/Metadata is higher quality than stale DB name
+          console.log("[AUTH_TRACE] Syncing profile name from", profile.name, "to", sessionNameCandidate);
           const { patchRecord } = await import("./insforge-crud");
           await patchRecord("users", authId, { name: sessionNameCandidate }).catch(e => 
-            console.warn("[AUTH_TRACE] Profile name sync failed:", e)
+            console.warn("[AUTH_TRACE] Profile sync skipped:", e.message)
           );
         }
       } catch (err) {
@@ -241,16 +233,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const displayName = getDisplayName({ 
         ...sessionUser, 
-        full_name: profile?.full_name || profile?.display_name || profile?.name,
-        display_name: profile?.display_name || profile?.full_name,
+        profile: profile,
         user_metadata: sessionUser.user_metadata, 
-        provider_metadata: (sessionUser as any).provider_metadata,
         identities: sessionUser.identities,
-        profile: sessionUser.profile,
-        raw: sessionUser
       });
 
-      console.log("[AUTH_TRACE] Final Display Name:", displayName);
+      console.log("[AUTH_TRACE] Final Resolved Name:", displayName);
 
       setUser({
         id: authId,

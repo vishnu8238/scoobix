@@ -46,51 +46,53 @@ export function getDisplayName(user: any): string {
     return isGeneric(cleaned) ? null : cleaned;
   };
 
-  // Authoritative metadata sources order (matching requirements)
+  // Authoritative identity resolution order (strict requirements)
   const candidates = [
-    // 1. authenticated InsForge profile fields
-    { val: user.profile?.full_name, src: 'profile.full_name' },
+    // 1. InsForge profile fields from the database (highest priority)
     { val: user.profile?.display_name, src: 'profile.display_name' },
+    { val: user.profile?.full_name, src: 'profile.full_name' },
     { val: user.profile?.name, src: 'profile.name' },
-    { val: user.full_name, src: 'db.full_name' },
-    { val: user.display_name, src: 'db.display_name' },
-    { val: user.name, src: 'db.name' },
-
-    // 2. user_metadata / full raw metadata fields (Google OAuth common location)
-    { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
+    { val: user.profile?.first_name && user.profile?.last_name 
+        ? `${user.profile.first_name} ${user.profile.last_name}` 
+        : user.profile?.first_name || user.profile?.last_name || null, src: 'profile.name_parts' },
+    
+    // 2. InsForge auth user metadata (Google OAuth common location)
     { val: user.user_metadata?.name, src: 'metadata.name' },
+    { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
     { val: user.user_metadata?.display_name, src: 'metadata.display_name' },
+    { val: user.user_metadata?.given_name && user.user_metadata?.family_name 
+        ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}` 
+        : user.user_metadata?.given_name || user.user_metadata?.family_name || null, src: 'metadata.name_parts' },
+    
+    // Legacy/Alternative metadata locations
     { val: user.provider_metadata?.name, src: 'provider_metadata.name' },
     { val: user.provider_metadata?.full_name, src: 'provider_metadata.full_name' },
-    { val: user.provider_metadata?.display_name, src: 'provider_metadata.display_name' },
 
-    // 3. identities[] provider_data fields (Direct Google mapping)
-    { val: user.identities?.[0]?.identity_data?.full_name, src: 'identity.full_name' },
-    { val: user.identities?.[0]?.identity_data?.name, src: 'identity.name' },
-    { val: user.identities?.[0]?.identity_data?.display_name, src: 'identity.display_name' },
-    { val: user.identities?.[0]?.identity_data?.given_name && user.identities?.[0]?.identity_data?.family_name 
-        ? `${user.identities[0].identity_data.given_name} ${user.identities[0].identity_data.family_name}` 
-        : null, src: 'identity.names_combined' },
-    { val: user.identities?.[0]?.identity_data?.custom_claims?.name, src: 'identity.claims.name' },
+    // 3. OAuth identity payload / provider_data (Direct Google mapping)
+    { val: user.identities?.find((i: any) => i.identity_data?.full_name)?.identity_data?.full_name, src: 'identity.full_name' },
+    { val: user.identities?.find((i: any) => i.identity_data?.name)?.identity_data?.name, src: 'identity.name' },
+    { val: user.identities?.find((i: any) => i.identity_data?.given_name)?.identity_data?.given_name && 
+      user.identities?.find((i: any) => i.identity_data?.family_name)?.identity_data?.family_name 
+        ? `${user.identities.find((i: any) => i.identity_data?.given_name).identity_data.given_name} ${user.identities.find((i: any) => i.identity_data?.family_name).identity_data.family_name}` 
+        : null, src: 'identity.name_parts' },
+    { val: user.identities?.find((i: any) => i.identity_data?.custom_claims?.name)?.identity_data?.custom_claims?.name, src: 'identity.claims.name' },
   ];
 
   for (const { val, src } of candidates) {
     const res = normalize(val);
     if (res) {
-      // Safe production diagnostic: only source and boolean check
-      if (typeof window !== "undefined") {
-        const isDev = (import.meta as any).env?.DEV;
-        if (isDev || (window as any).DIAGNOSE_IDENTITY) {
-          console.log(`[IDENTITY_DIAGNOSTIC] Name Resolved | Source: ${src} | Valid: true`);
-        }
+      if (typeof window !== "undefined" && (window as any).DIAGNOSE_IDENTITY) {
+        console.log(`[IDENTITY_DIAGNOSTIC] Name Resolved | Source: ${src} | Name: ${res}`);
       }
       return res;
     }
   }
 
   // 4. Last resort: non-empty email prefix
-  const email = user.email || user.user_metadata?.email || user.profile?.email || user.identities?.[0]?.identity_data?.email;
-  if (email && typeof email === 'string') {
+  const email = user.email || user.user_metadata?.email || user.profile?.email || 
+                user.identities?.find((i: any) => i.identity_data?.email)?.identity_data?.email;
+  
+  if (email && typeof email === 'string' && email.includes('@')) {
     const prefix = email.split('@')[0];
     const res = normalize(prefix);
     if (res) return res;
