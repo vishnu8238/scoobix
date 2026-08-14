@@ -1,11 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Search, Plus, Loader2, Calendar, RefreshCw, Upload, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { 
+  Search, 
+  Plus, 
+  Loader2, 
+  Calendar, 
+  RefreshCw, 
+  Upload, 
+  Download, 
+  ChevronLeft, 
+  ChevronRight,
+  Filter,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  Clock,
+  MapPin,
+  TrendingUp,
+  Settings
+} from "lucide-react";
 import { fetchGigs, type Gig } from "@/lib/gigs-api";
 import { format, addDays, startOfToday } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
@@ -13,11 +33,17 @@ export const Route = createFileRoute("/logistics/gigs")({
 });
 
 function LogisticsGigs() {
+  const [activeTab, setActiveTab] = useState<"fleet" | "slots" | "capacity">("fleet");
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [selectedDate, setSelectedDate] = useState(startOfToday());
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Filters for Slots/Capacity
+  const [city, setCity] = useState("all");
+  const [entityType, setEntityType] = useState("all");
+  const [zone, setZone] = useState("all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -31,14 +57,16 @@ function LogisticsGigs() {
   const dates = Array.from({ length: 7 }).map((_, i) => addDays(startOfToday(), i - 1));
 
   const filteredGigs = gigs.filter(g => 
-    g.title.toLowerCase().includes(q.toLowerCase())
+    g.title?.toLowerCase().includes(q.toLowerCase())
   );
 
   return (
     <div className="min-h-screen space-y-8 bg-slate-50/50 p-8 dark:bg-transparent">
       <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">Fleet Gig Management</h1>
+          <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">
+            {activeTab === "fleet" ? "Fleet Gig Management" : activeTab === "slots" ? "Slots Details" : "Capacity Change"}
+          </h1>
           <p className="mt-1 text-sm font-bold text-muted-foreground/60">Manage delivery slots and rider incentives for the fleet</p>
         </div>
         
@@ -63,100 +91,268 @@ function LogisticsGigs() {
             >
               <Plus className="h-4 w-4" /> Create New Gig
             </button>
-            <button className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white transition-all hover:bg-slate-800 active:scale-95 dark:bg-slate-100 dark:text-slate-900">
-              <Upload className="h-4 w-4" /> Upload Excel
-            </button>
           </div>
         </div>
       </header>
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-2">
-          <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
-            <ChevronLeft className="h-4 w-4" />
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-2xl bg-muted/30 p-1 w-fit ring-1 ring-border/40">
+        {[
+          { id: "fleet", label: "Fleet Gigs" },
+          { id: "slots", label: "Slots Details" },
+          { id: "capacity", label: "Capacity Change" }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={cn(
+              "px-6 py-2 rounded-xl text-xs font-black transition-all",
+              activeTab === tab.id ? "bg-card text-primary shadow-sm ring-1 ring-border/60" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {tab.label}
           </button>
-          
-          <div className="flex items-center gap-2 rounded-2xl bg-emerald-50/50 p-1 ring-1 ring-emerald-100 dark:bg-emerald-950/20 dark:ring-emerald-900/30">
-            {dates.map((date) => (
-              <button
-                key={date.toISOString()}
-                onClick={() => setSelectedDate(date)}
-                className={cn(
-                  "flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black transition-all",
-                  format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-                    : "text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-400"
-                )}
-              >
-                <Calendar className="h-3.5 w-3.5" />
-                {format(date, "EEE, dd MMM, yyyy")}
-              </button>
-            ))}
-          </div>
-          
-          <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-10 items-center rounded-xl bg-card px-3 ring-1 ring-border/60 focus-within:ring-primary/40">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input 
-              value={q} 
-              onChange={(e) => setQ(e.target.value)} 
-              placeholder="Search gigs..."
-              className="ml-2 w-48 bg-transparent text-xs font-bold outline-none"
-            />
-          </div>
-          <div className="flex h-10 items-center gap-2 rounded-xl bg-card px-3 font-mono text-xs font-black ring-1 ring-border/60">
-            {format(selectedDate, "dd-MM-yyyy")}
-            <Calendar className="h-3.5 w-3.5 opacity-40" />
-          </div>
-        </div>
+        ))}
       </div>
 
-      <section>
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-emerald-100 p-2 dark:bg-emerald-950/50">
-              <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+      {activeTab === "fleet" ? (
+        <>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2">
+              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              
+              <div className="flex items-center gap-2 rounded-2xl bg-emerald-50/50 p-1 ring-1 ring-emerald-100 dark:bg-emerald-950/20 dark:ring-emerald-900/30">
+                {dates.map((date) => (
+                  <button
+                    key={date.toISOString()}
+                    onClick={() => setSelectedDate(date)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black transition-all",
+                      format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
+                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
+                        : "text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-400"
+                    )}
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    {format(date, "EEE, dd MMM, yyyy")}
+                  </button>
+                ))}
+              </div>
+              
+              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              Gigs for {format(selectedDate, "EEEE").toUpperCase()}
-            </h2>
-          </div>
-          <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-            {filteredGigs.length} Gigs
-          </div>
-        </div>
 
-        {loading ? (
-          <div className="flex min-h-[400px] items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : filteredGigs.length === 0 ? (
-          <div className="flex min-h-[400px] flex-col items-center justify-center rounded-[3rem] bg-card/50 ring-1 ring-border/40">
-            <div className="mb-4 rounded-full bg-muted p-6">
-              <Calendar className="h-12 w-12 text-muted-foreground/30" />
+            <div className="flex items-center gap-3">
+              <div className="relative flex h-10 items-center rounded-xl bg-card px-3 ring-1 ring-border/60 focus-within:ring-primary/40">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <input 
+                  value={q} 
+                  onChange={(e) => setQ(e.target.value)} 
+                  placeholder="Search gigs..."
+                  className="ml-2 w-48 bg-transparent text-xs font-bold outline-none"
+                />
+              </div>
             </div>
-            <p className="text-lg font-black text-slate-900 dark:text-white">No gigs available</p>
-            <p className="text-sm font-bold text-muted-foreground/60">Try selecting another date or adjusting your search.</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredGigs.map((gig) => (
-              <GigCard key={gig.id} gig={gig} />
-            ))}
-          </div>
-        )}
-      </section>
+
+          <section>
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-emerald-100 p-2 dark:bg-emerald-950/50">
+                  <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                  Gigs for {format(selectedDate, "EEEE").toUpperCase()}
+                </h2>
+              </div>
+              <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                {filteredGigs.length} Gigs
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex min-h-[400px] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredGigs.length === 0 ? (
+              <div className="flex min-h-[400px] flex-col items-center justify-center rounded-[3rem] bg-card/50 ring-1 ring-border/40">
+                <div className="mb-4 rounded-full bg-muted p-6">
+                  <Calendar className="h-12 w-12 text-muted-foreground/30" />
+                </div>
+                <p className="text-lg font-black text-slate-900 dark:text-white">No gigs available</p>
+                <p className="text-sm font-bold text-muted-foreground/60">Try selecting another date or adjusting your search.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filteredGigs.map((gig) => (
+                  <GigCard key={gig.id} gig={gig} />
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      ) : activeTab === "slots" ? (
+        <SlotsDetailsView 
+          city={city} setCity={setCity}
+          entityType={entityType} setEntityType={setEntityType}
+          zone={zone} setZone={setZone}
+          date={selectedDate}
+        />
+      ) : (
+        <CapacityChangeView 
+          city={city} setCity={setCity}
+          entityType={entityType} setEntityType={setEntityType}
+          zone={zone} setZone={setZone}
+          date={selectedDate}
+        />
+      )}
 
       <CreateGigModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSuccess={load}
       />
+    </div>
+  );
+}
+
+function SlotsDetailsView({ city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-wrap gap-4 items-center">
+        <FilterSelect label="City" value={city} onChange={setCity} options={["City 1", "City 2"]} />
+        <FilterSelect label="Entity Type" value={entityType} onChange={setEntityType} options={["Rider", "Truck"]} />
+        <FilterSelect label="Zone" value={zone} onChange={setZone} options={["Zone 1", "Zone 2", "Zone 3"]} />
+        <FilterSelect label="Carrier" value="all" onChange={() => {}} options={["Main", "Third Party"]} />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Date</label>
+          <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs">
+            {format(date, "dd-MM-yyyy")}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[2.5rem] bg-card p-1 shadow-soft ring-1 ring-border/60 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border/40">
+                {["Capacity ID", "Start Time", "End Time", "Total Capacity", "Available", "Booked %", "Min Earnings", "Max Earnings"].map(h => (
+                  <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3].map(i => (
+                <tr key={i} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
+                  <td className="px-6 py-4 font-mono text-[10px] font-black text-primary">#CAP-00{i}</td>
+                  <td className="px-6 py-4 text-xs font-bold">09:00</td>
+                  <td className="px-6 py-4 text-xs font-bold">18:00</td>
+                  <td className="px-6 py-4 text-xs font-bold">100</td>
+                  <td className="px-6 py-4 text-xs font-bold text-emerald-600">85</td>
+                  <td className="px-6 py-4 text-xs font-bold">15%</td>
+                  <td className="px-6 py-4 text-xs font-black">₹300</td>
+                  <td className="px-6 py-4 text-xs font-black">₹800</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CapacityChangeView({ city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+  const [mode, setMode] = useState<"view" | "create">("view");
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-4 items-center">
+          <FilterSelect label="City" value={city} onChange={setCity} options={["City 1", "City 2"]} />
+          <FilterSelect label="Entity Type" value={entityType} onChange={setEntityType} options={["Rider", "Truck"]} />
+          <FilterSelect label="Entity Name" value="all" onChange={() => {}} options={["Full Fleet"]} />
+          <FilterSelect label="Carrier" value="all" onChange={() => {}} options={["Main"]} />
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setMode("view")}
+            className={cn("px-4 py-2 rounded-xl text-xs font-black transition", mode === "view" ? "bg-primary text-white shadow-glow" : "bg-card hover:bg-muted")}
+          >
+            View
+          </button>
+          <button 
+            onClick={() => setMode("create")}
+            className={cn("px-4 py-2 rounded-xl text-xs font-black transition", mode === "create" ? "bg-primary text-white shadow-glow" : "bg-card hover:bg-muted")}
+          >
+            Create
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-[2.5rem] bg-card p-8 shadow-soft ring-1 ring-border/60">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="font-display text-lg font-extrabold">{mode === "create" ? "Bulk Capacity Update" : "Current Capacity Configuration"}</h3>
+          <button className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-[10px] font-black text-white hover:bg-slate-800 transition active:scale-95">Get Slots</button>
+        </div>
+
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs">0{i}</div>
+                <div>
+                  <p className="text-xs font-black">Slot 0{i}:00 - 0{i+2}:00</p>
+                  <p className="text-[10px] font-medium text-muted-foreground">Base Capacity: 100</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">Adjustment %</span>
+                  <input 
+                    type="number" 
+                    defaultValue="10" 
+                    className="w-20 h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 text-xs font-black text-center outline-none focus:ring-primary/40"
+                    disabled={mode === "view"}
+                  />
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Capacity</span>
+                  <span className="h-10 px-4 flex items-center font-black text-emerald-600">110</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {mode === "create" && (
+          <div className="mt-8 flex justify-end gap-3 border-t border-border/40 pt-6">
+            <button className="px-6 py-2.5 rounded-xl text-xs font-black bg-muted hover:bg-muted/80 transition active:scale-95">Reset</button>
+            <button onClick={() => toast.success("Capacity updated successfully")} className="px-8 py-2.5 rounded-xl text-xs font-black bg-primary text-white shadow-glow hover:opacity-90 transition active:scale-95">Save Changes</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FilterSelect({ label, value, onChange, options }: any) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{label}</label>
+      <select 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)}
+        className="h-10 pl-3 pr-8 bg-card rounded-xl ring-1 ring-border/60 text-xs font-bold outline-none focus:ring-primary/40"
+      >
+        <option value="all">All {label}s</option>
+        {options.map((o: any) => <option key={o} value={o.toLowerCase()}>{o}</option>)}
+      </select>
     </div>
   );
 }
