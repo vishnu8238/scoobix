@@ -20,7 +20,10 @@ if (!(globalThis as any).__INSFORGE_CLIENT__) {
     baseUrl: INSFORGE_URL,
     anonKey: INSFORGE_ANON_KEY,
     auth: {
-      detectOAuthCallback: true
+      detectOAuthCallback: true,
+      persistSession: true,
+      storageKey: 'scoobix_auth_token',
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined
     }
   });
 }

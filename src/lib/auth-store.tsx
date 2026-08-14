@@ -91,15 +91,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       console.log("[AUTH_TRACE] Resolving user session...");
+      
+      // Ensure the SDK has had a moment to hydrate from storage if it just loaded
+      if (typeof window !== "undefined") {
+        const { ensureAuthHydrated } = await import("./insforge");
+        await ensureAuthHydrated();
+      }
+
       const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => ({ data: null, error: e }));
       
       if (currentUserError || !userData?.user) {
          console.log("[AUTH_TRACE] No active session found.", currentUserError?.message);
          
          // iOS Safeguard: If we have an error that explicitly mentions refresh token, it's a hard unauth
-         if (currentUserError?.message?.includes("refresh token")) {
-           console.warn("[AUTH_TRACE] Refresh token invalid/missing. Clearing session.");
+         if (currentUserError?.message?.includes("refresh token") || currentUserError?.message?.includes("session_not_found")) {
+           console.warn("[AUTH_TRACE] Session/Refresh token invalid. Clearing storage.");
            await insforge.auth.signOut().catch(() => {});
+           if (typeof window !== "undefined") {
+             localStorage.removeItem('scoobix_auth_token');
+           }
          }
          
          setUser(null);
