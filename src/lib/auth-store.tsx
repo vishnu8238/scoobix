@@ -116,6 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0 }).catch(() => []);
         profile = profiles[0];
 
+        // If table profile is missing or lacks a name, but we have a session name, update it
+        const sessionNameCandidate = getDisplayName({ ...sessionUser, auth: sessionUser.auth, user_metadata: sessionUser.user_metadata, profile: sessionUser.profile });
+        
         if (!profile && userEmail) {
           console.log("[AUTH_TRACE] Creating new profile for:", userEmail);
           const { createRecord } = await import("./insforge-crud");
@@ -123,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: authId,
             email: userEmail,
             email_normalized: userEmail,
-            name: sessionUser.name || "User",
+            name: sessionNameCandidate !== "User" ? sessionNameCandidate : "User",
             role: "customer",
             is_active: true,
           });
