@@ -299,19 +299,17 @@ export function createRecord<T = Record<string, unknown>>(
   return withRetry<T | null>(table, async () => {
     // RLS Defense: Restrictive SELECT policies can make an otherwise-successful 
     // INSERT look like a failure (returning null/empty result).
-    // We attempt the insert and select-back.
     const query = insforge.database.from(table).insert([record]).select().single();
     try {
       const res = await handleResponse<T>(query, "POST", table);
+      if (!res) {
+        throw new Error("Insert returned empty result");
+      }
       announce(table, "insert", (res as Record<string, unknown>) || record);
       return res;
     } catch (err: any) {
-      // Signature of PostgREST RLS SELECT failure: 
-      // Insert succeeds but select-back fails (often 406 Not Acceptable or 404 on .single())
-      // If the error message is empty or {} it's often a permission/RLS quirk.
       console.warn(`[DB_RLS_GUARD] createRecord for ${table} returned an error.`, err);
       
-      // If we have no status or a 406/404, we check if this is likely a SELECT-back failure.
       const status = err.status || 0;
       if (status === 406 || status === 404 || status === 0) {
         console.log(`[DB_RLS_GUARD] Optimistically treating ${status} as a SELECT-back failure for ${table}. Returning input.`);

@@ -19,15 +19,40 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS })
     ]);
 
-    const restaurants = restRes.ok ? await restRes.json() : [];
-    const customers = userRes.ok ? await userRes.json() : [];
+    let restaurants = restRes.ok ? await restRes.json() : [];
+    let customers = userRes.ok ? await userRes.json() : [];
     const zones = zonesRes.ok ? await zonesRes.json() : [];
 
-    if (!restaurants.length || !customers.length) {
-      throw new Error("Need at least one restaurant and one customer to seed orders.");
+    // Fallback: If no restaurants or customers, create demo ones
+    if (!restaurants.length) {
+      console.log("[SEED] No restaurants found, creating demo restaurant...");
+      const demoRest = {
+        id: newUuid(),
+        name: "Demo Kitchen",
+        status: "ACTIVE",
+        metadata: { is_demo: true }
+      };
+      await fetch(`${INSFORGE_URL}/api/database/records/restaurants`, {
+        method: "POST", headers: HEADERS, body: JSON.stringify(demoRest)
+      });
+      restaurants = [demoRest];
     }
-    const zoneId = zones[0]?.id;
+    
+    if (!customers.length) {
+      console.log("[SEED] No customers found, creating demo customer...");
+      const demoCust = {
+        id: newUuid(),
+        name: "Demo Customer",
+        role: "customer",
+        metadata: { is_demo: true }
+      };
+      await fetch(`${INSFORGE_URL}/api/database/records/users`, {
+        method: "POST", headers: HEADERS, body: JSON.stringify(demoCust)
+      });
+      customers = [demoCust];
+    }
 
+    const zoneId = zones[0]?.id;
     const statuses = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
     const orders = [];
 
@@ -45,7 +70,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         zone_id: zoneId,
         total_price: Math.floor(Math.random() * 1000) + 200,
         created_at: new Date().toISOString(),
-        metadata: { is_demo: true, demo_tag: "logistics_test_v1" },
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2" },
         items: {
           lines: [{ id: "item1", name: "Demo Burger", price: 150, qty: 1 }],
           meta: { restaurantName: restaurant.name, addressLabel: "Home", addressLine: "Demo Street 123" }

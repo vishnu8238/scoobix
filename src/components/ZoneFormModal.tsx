@@ -30,16 +30,18 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
     e.preventDefault();
     setLoading(true);
     try {
+      const boundary = (formData.boundary?.coordinates?.[0]?.length >= 3) 
+        ? formData.boundary 
+        : { type: "Polygon", coordinates: [] };
+
       // Ensure boundary is valid and numbers are proper
       const submission = {
         ...formData,
         pickup_radius_km: Number(formData.pickup_radius_km) || 1,
         max_delivery_distance_km: Number(formData.max_delivery_distance_km) || 4,
-        boundary: (formData.boundary?.coordinates?.[0]?.length >= 3) 
-          ? formData.boundary 
-          : { type: "Polygon", coordinates: [] },
-        center_lat: formData.boundary?.coordinates?.[0]?.[0]?.[1] || 22.3072,
-        center_lng: formData.boundary?.coordinates?.[0]?.[0]?.[0] || 73.1812
+        boundary,
+        center_lat: boundary.coordinates?.[0]?.[0]?.[1] || 22.3072,
+        center_lng: boundary.coordinates?.[0]?.[0]?.[0] || 73.1812
       };
       const result = await createNewZone(submission as any);
       if (result && !result.id) {
