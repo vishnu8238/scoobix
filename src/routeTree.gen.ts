@@ -72,7 +72,6 @@ import { Route as ManagerCalendarRouteImport } from './routes/manager.calendar'
 import { Route as ManagerAnalyticsRouteImport } from './routes/manager.analytics'
 import { Route as LogisticsZonesRouteImport } from './routes/logistics.zones'
 import { Route as LogisticsWalletsRouteImport } from './routes/logistics.wallets'
-import { Route as LogisticsWalletRouteImport } from './routes/logistics.wallet'
 import { Route as LogisticsVerificationRouteImport } from './routes/logistics.verification'
 import { Route as LogisticsUsersRouteImport } from './routes/logistics.users'
 import { Route as LogisticsTrendingRouteImport } from './routes/logistics.trending'
@@ -102,9 +101,7 @@ import { Route as LogisticsDispatchRouteImport } from './routes/logistics.dispat
 import { Route as LogisticsDiscoverRouteImport } from './routes/logistics.discover'
 import { Route as LogisticsCouponsRouteImport } from './routes/logistics.coupons'
 import { Route as LogisticsCmsRouteImport } from './routes/logistics.cms'
-import { Route as LogisticsCampaignsRouteImport } from './routes/logistics.campaigns'
 import { Route as LogisticsBulkOrdersRouteImport } from './routes/logistics.bulk-orders'
-import { Route as LogisticsBulkRouteImport } from './routes/logistics.bulk'
 import { Route as LogisticsAuditRouteImport } from './routes/logistics.audit'
 import { Route as LogisticsAdsRouteImport } from './routes/logistics.ads'
 import { Route as LogisticsAccessRouteImport } from './routes/logistics.access'
@@ -488,11 +485,6 @@ const LogisticsWalletsRoute = LogisticsWalletsRouteImport.update({
   path: '/wallets',
   getParentRoute: () => LogisticsRoute,
 } as any)
-const LogisticsWalletRoute = LogisticsWalletRouteImport.update({
-  id: '/wallet',
-  path: '/wallet',
-  getParentRoute: () => LogisticsRoute,
-} as any)
 const LogisticsVerificationRoute = LogisticsVerificationRouteImport.update({
   id: '/verification',
   path: '/verification',
@@ -638,19 +630,9 @@ const LogisticsCmsRoute = LogisticsCmsRouteImport.update({
   path: '/cms',
   getParentRoute: () => LogisticsRoute,
 } as any)
-const LogisticsCampaignsRoute = LogisticsCampaignsRouteImport.update({
-  id: '/campaigns',
-  path: '/campaigns',
-  getParentRoute: () => LogisticsRoute,
-} as any)
 const LogisticsBulkOrdersRoute = LogisticsBulkOrdersRouteImport.update({
   id: '/bulk-orders',
   path: '/bulk-orders',
-  getParentRoute: () => LogisticsRoute,
-} as any)
-const LogisticsBulkRoute = LogisticsBulkRouteImport.update({
-  id: '/bulk',
-  path: '/bulk',
   getParentRoute: () => LogisticsRoute,
 } as any)
 const LogisticsAuditRoute = LogisticsAuditRouteImport.update({
@@ -1061,9 +1043,7 @@ export interface FileRoutesByFullPath {
   '/logistics/access': typeof LogisticsAccessRoute
   '/logistics/ads': typeof LogisticsAdsRoute
   '/logistics/audit': typeof LogisticsAuditRoute
-  '/logistics/bulk': typeof LogisticsBulkRoute
   '/logistics/bulk-orders': typeof LogisticsBulkOrdersRoute
-  '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/cms': typeof LogisticsCmsRoute
   '/logistics/coupons': typeof LogisticsCouponsRoute
   '/logistics/discover': typeof LogisticsDiscoverRoute
@@ -1093,7 +1073,6 @@ export interface FileRoutesByFullPath {
   '/logistics/trending': typeof LogisticsTrendingRoute
   '/logistics/users': typeof LogisticsUsersRoute
   '/logistics/verification': typeof LogisticsVerificationRoute
-  '/logistics/wallet': typeof LogisticsWalletRoute
   '/logistics/wallets': typeof LogisticsWalletsRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -1220,9 +1199,7 @@ export interface FileRoutesByTo {
   '/logistics/access': typeof LogisticsAccessRoute
   '/logistics/ads': typeof LogisticsAdsRoute
   '/logistics/audit': typeof LogisticsAuditRoute
-  '/logistics/bulk': typeof LogisticsBulkRoute
   '/logistics/bulk-orders': typeof LogisticsBulkOrdersRoute
-  '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/cms': typeof LogisticsCmsRoute
   '/logistics/coupons': typeof LogisticsCouponsRoute
   '/logistics/discover': typeof LogisticsDiscoverRoute
@@ -1252,7 +1229,6 @@ export interface FileRoutesByTo {
   '/logistics/trending': typeof LogisticsTrendingRoute
   '/logistics/users': typeof LogisticsUsersRoute
   '/logistics/verification': typeof LogisticsVerificationRoute
-  '/logistics/wallet': typeof LogisticsWalletRoute
   '/logistics/wallets': typeof LogisticsWalletsRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -1386,9 +1362,7 @@ export interface FileRoutesById {
   '/logistics/access': typeof LogisticsAccessRoute
   '/logistics/ads': typeof LogisticsAdsRoute
   '/logistics/audit': typeof LogisticsAuditRoute
-  '/logistics/bulk': typeof LogisticsBulkRoute
   '/logistics/bulk-orders': typeof LogisticsBulkOrdersRoute
-  '/logistics/campaigns': typeof LogisticsCampaignsRoute
   '/logistics/cms': typeof LogisticsCmsRoute
   '/logistics/coupons': typeof LogisticsCouponsRoute
   '/logistics/discover': typeof LogisticsDiscoverRoute
@@ -1418,7 +1392,6 @@ export interface FileRoutesById {
   '/logistics/trending': typeof LogisticsTrendingRoute
   '/logistics/users': typeof LogisticsUsersRoute
   '/logistics/verification': typeof LogisticsVerificationRoute
-  '/logistics/wallet': typeof LogisticsWalletRoute
   '/logistics/wallets': typeof LogisticsWalletsRoute
   '/logistics/zones': typeof LogisticsZonesRoute
   '/manager/analytics': typeof ManagerAnalyticsRoute
@@ -1553,9 +1526,7 @@ export interface FileRouteTypes {
     | '/logistics/access'
     | '/logistics/ads'
     | '/logistics/audit'
-    | '/logistics/bulk'
     | '/logistics/bulk-orders'
-    | '/logistics/campaigns'
     | '/logistics/cms'
     | '/logistics/coupons'
     | '/logistics/discover'
@@ -1585,7 +1556,6 @@ export interface FileRouteTypes {
     | '/logistics/trending'
     | '/logistics/users'
     | '/logistics/verification'
-    | '/logistics/wallet'
     | '/logistics/wallets'
     | '/logistics/zones'
     | '/manager/analytics'
@@ -1712,9 +1682,7 @@ export interface FileRouteTypes {
     | '/logistics/access'
     | '/logistics/ads'
     | '/logistics/audit'
-    | '/logistics/bulk'
     | '/logistics/bulk-orders'
-    | '/logistics/campaigns'
     | '/logistics/cms'
     | '/logistics/coupons'
     | '/logistics/discover'
@@ -1744,7 +1712,6 @@ export interface FileRouteTypes {
     | '/logistics/trending'
     | '/logistics/users'
     | '/logistics/verification'
-    | '/logistics/wallet'
     | '/logistics/wallets'
     | '/logistics/zones'
     | '/manager/analytics'
@@ -1877,9 +1844,7 @@ export interface FileRouteTypes {
     | '/logistics/access'
     | '/logistics/ads'
     | '/logistics/audit'
-    | '/logistics/bulk'
     | '/logistics/bulk-orders'
-    | '/logistics/campaigns'
     | '/logistics/cms'
     | '/logistics/coupons'
     | '/logistics/discover'
@@ -1909,7 +1874,6 @@ export interface FileRouteTypes {
     | '/logistics/trending'
     | '/logistics/users'
     | '/logistics/verification'
-    | '/logistics/wallet'
     | '/logistics/wallets'
     | '/logistics/zones'
     | '/manager/analytics'
@@ -2431,13 +2395,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsWalletsRouteImport
       parentRoute: typeof LogisticsRoute
     }
-    '/logistics/wallet': {
-      id: '/logistics/wallet'
-      path: '/wallet'
-      fullPath: '/logistics/wallet'
-      preLoaderRoute: typeof LogisticsWalletRouteImport
-      parentRoute: typeof LogisticsRoute
-    }
     '/logistics/verification': {
       id: '/logistics/verification'
       path: '/verification'
@@ -2641,25 +2598,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsCmsRouteImport
       parentRoute: typeof LogisticsRoute
     }
-    '/logistics/campaigns': {
-      id: '/logistics/campaigns'
-      path: '/campaigns'
-      fullPath: '/logistics/campaigns'
-      preLoaderRoute: typeof LogisticsCampaignsRouteImport
-      parentRoute: typeof LogisticsRoute
-    }
     '/logistics/bulk-orders': {
       id: '/logistics/bulk-orders'
       path: '/bulk-orders'
       fullPath: '/logistics/bulk-orders'
       preLoaderRoute: typeof LogisticsBulkOrdersRouteImport
-      parentRoute: typeof LogisticsRoute
-    }
-    '/logistics/bulk': {
-      id: '/logistics/bulk'
-      path: '/bulk'
-      fullPath: '/logistics/bulk'
-      preLoaderRoute: typeof LogisticsBulkRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/audit': {
@@ -3331,9 +3274,7 @@ interface LogisticsRouteChildren {
   LogisticsAccessRoute: typeof LogisticsAccessRoute
   LogisticsAdsRoute: typeof LogisticsAdsRoute
   LogisticsAuditRoute: typeof LogisticsAuditRoute
-  LogisticsBulkRoute: typeof LogisticsBulkRoute
   LogisticsBulkOrdersRoute: typeof LogisticsBulkOrdersRoute
-  LogisticsCampaignsRoute: typeof LogisticsCampaignsRoute
   LogisticsCmsRoute: typeof LogisticsCmsRoute
   LogisticsCouponsRoute: typeof LogisticsCouponsRoute
   LogisticsDiscoverRoute: typeof LogisticsDiscoverRoute
@@ -3363,7 +3304,6 @@ interface LogisticsRouteChildren {
   LogisticsTrendingRoute: typeof LogisticsTrendingRoute
   LogisticsUsersRoute: typeof LogisticsUsersRoute
   LogisticsVerificationRoute: typeof LogisticsVerificationRoute
-  LogisticsWalletRoute: typeof LogisticsWalletRoute
   LogisticsWalletsRoute: typeof LogisticsWalletsRoute
   LogisticsZonesRoute: typeof LogisticsZonesRoute
   LogisticsIndexRoute: typeof LogisticsIndexRoute
@@ -3373,9 +3313,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsAccessRoute: LogisticsAccessRoute,
   LogisticsAdsRoute: LogisticsAdsRoute,
   LogisticsAuditRoute: LogisticsAuditRoute,
-  LogisticsBulkRoute: LogisticsBulkRoute,
   LogisticsBulkOrdersRoute: LogisticsBulkOrdersRoute,
-  LogisticsCampaignsRoute: LogisticsCampaignsRoute,
   LogisticsCmsRoute: LogisticsCmsRoute,
   LogisticsCouponsRoute: LogisticsCouponsRoute,
   LogisticsDiscoverRoute: LogisticsDiscoverRoute,
@@ -3405,7 +3343,6 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsTrendingRoute: LogisticsTrendingRoute,
   LogisticsUsersRoute: LogisticsUsersRoute,
   LogisticsVerificationRoute: LogisticsVerificationRoute,
-  LogisticsWalletRoute: LogisticsWalletRoute,
   LogisticsWalletsRoute: LogisticsWalletsRoute,
   LogisticsZonesRoute: LogisticsZonesRoute,
   LogisticsIndexRoute: LogisticsIndexRoute,
