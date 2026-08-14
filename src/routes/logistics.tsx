@@ -31,7 +31,7 @@ function LogisticsLayoutGuard() {
 const NAV = [
   { to: "/logistics", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/logistics/operations", label: "Live Operations", icon: Gauge },
-  { to: "/logistics/live", label: "Logistics Map", icon: MapIcon },
+  { to: "/logistics/map", label: "Logistics Map", icon: MapIcon },
   { to: "/logistics/gigs", label: "Gig Management", icon: Sparkles },
   { to: "/logistics/verification", label: "Verification & KYC", icon: ShieldCheck },
   { to: "/logistics/support", label: "Support Desk", icon: LifeBuoy },
@@ -46,19 +46,19 @@ const NAV = [
 
   { to: "/logistics/restaurants", label: "Restaurants", icon: Store, section: "Merchant" },
   { to: "/logistics/managers", label: "Merchant Managers", icon: Building2, section: "Merchant" },
-  { to: "/logistics/bulk", label: "Bulk Orders", icon: Building2, section: "Merchant" },
+  { to: "/logistics/bulk-orders", label: "Bulk Orders", icon: Building2, section: "Merchant" },
 
   { to: "/logistics/access", label: "Access Management", icon: ShieldCheck, section: "Admin" },
   { to: "/logistics/audit", label: "Audit Logs", icon: History, section: "Admin" },
   { to: "/logistics/users", label: "Users", icon: Users, section: "Admin" },
   { to: "/logistics/security", label: "Security & Audit", icon: ShieldCheck, section: "Admin" },
   
-  { to: "/logistics/campaigns", label: "Marketing", icon: Megaphone, section: "Growth" },
+  { to: "/logistics/marketing", label: "Marketing", icon: Megaphone, section: "Growth" },
   { to: "/logistics/coupons", label: "Coupons", icon: Tag, section: "Growth" },
   { to: "/logistics/ads", label: "Ads", icon: Megaphone, section: "Growth" },
   
   { to: "/logistics/payments", label: "Payments", icon: CreditCard, section: "FinOps" },
-  { to: "/logistics/wallet", label: "Wallets", icon: Wallet, section: "FinOps" },
+  { to: "/logistics/wallets", label: "Wallets", icon: Wallet, section: "FinOps" },
   { to: "/logistics/reports", label: "Reports", icon: BarChart3, section: "FinOps" },
   { to: "/logistics/performance", label: "Performance", icon: Gauge, section: "Admin" },
 ];
