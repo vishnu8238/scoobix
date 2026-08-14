@@ -61,6 +61,7 @@ export async function deleteZone(id: string) {
 
 export async function fetchSubzones(zoneId?: string) {
   const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
+  // Use explicit select to ensure we don't hit "undefined_column" on missing columns
   return listTable<Subzone>("subzones", { 
     select: "id,zone_id,name,status,created_at,updated_at", 
     order: "name.asc", 
