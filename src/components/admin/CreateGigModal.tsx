@@ -50,10 +50,11 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   const filteredZones = useMemo(() => {
     const list = zones.filter(z => z.city === formData.city).sort((a, b) => a.name.localeCompare(b.name));
     if (list.length === 0 && (formData.city === "City 1" || formData.city === "City 2")) {
-      return [{ id: "zone-1-fallback", name: "Zone 1", city: formData.city }];
+      return [{ id: "z1111111-1111-4111-a111-111111111111", name: "Zone 1", city: formData.city }];
     }
     return list;
   }, [zones, formData.city]);
+
 
 
   useEffect(() => {
@@ -104,7 +105,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         start_time: startTime,
         end_time: endTime,
         status: "SCHEDULED",
-        zone_id: formData.zone === "zone-1-fallback" ? "z1111111-1111-4111-a111-111111111111" : formData.zone,
+        zone_id: formData.zone,
         city_id: formData.city,
         capacity: Number(formData.neededPeople),
         completion_pct: Number(formData.completionPercentage)
