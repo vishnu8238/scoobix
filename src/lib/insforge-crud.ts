@@ -50,6 +50,14 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (err: any) {
     const status = err instanceof HttpError ? err.status : (err?.status || 0);
+    
+    // Normalize "No such column" or "No such table" errors for better UI signaling
+    const msg = String(err?.message || "").toLowerCase();
+    if (msg.includes("does not exist") || msg.includes("undefined_table") || msg.includes("undefined_column")) {
+      console.error(`[DB_FATAL] Schema mismatch on ${fn.toString().slice(0, 100)}:`, msg);
+      throw err; // Don't retry schema errors
+    }
+
     const retryable = status === 0 || status === 429 || status >= 500;
     if (!retryable) throw err;
     
@@ -214,11 +222,12 @@ export function listTable<T = Record<string, unknown>>(
   const qs = JSON.stringify(params || {});
   const cacheKey = `db:${table}:${qs}`;
 
-  const load = () => withRetry(() => {
+  const load = () => withRetry(async () => {
     let query = insforge.database.from(table).select(select);
     query = applyParams(query, params);
-    return handleResponse<T[]>(query, "GET", table);
-  }).then(v => Array.isArray(v) ? v : [])
+    const data = await handleResponse<T[]>(query, "GET", table);
+    return Array.isArray(data) ? data : [];
+  })
     .catch(err => {
       console.error(`[DB_ERROR] Table ${table} load failed:`, err);
       // Surface real errors as rejection

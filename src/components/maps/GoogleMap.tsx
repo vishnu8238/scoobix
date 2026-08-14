@@ -5,6 +5,7 @@ import {
   useMap,
   MapMouseEvent,
 } from "@vis.gl/react-google-maps";
+import { MapPin } from "lucide-react";
 import type { LatLng } from "@/lib/geo";
 import { interpolate } from "@/lib/geo";
 import { GoogleMapsProvider } from "./GoogleMapsProvider";
@@ -278,7 +279,17 @@ function GoogleMapInner({
 
 export function GoogleMap(props: Props) {
   return (
-    <GoogleMapsProvider>
+    <GoogleMapsProvider fallback={
+      <div className={`flex flex-col items-center justify-center bg-muted/20 text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[200px] ${props.className}`} style={{ height: props.height }}>
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">
+          <MapPin className="h-6 w-6" />
+        </div>
+        <p className="font-display text-lg font-extrabold text-foreground">Interactive map restricted</p>
+        <p className="max-w-[280px] text-xs mt-2 leading-relaxed">
+          Google Maps is currently unavailable. Showing data in list view where applicable.
+        </p>
+      </div>
+    }>
       <GoogleMapInner {...props} />
     </GoogleMapsProvider>
   );

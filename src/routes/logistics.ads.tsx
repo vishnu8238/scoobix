@@ -58,7 +58,11 @@ function LogisticsAds() {
         {loading ? (
           <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
         ) : ads.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">No ads configured.</p>
+          <div className="py-16 text-center">
+            <Megaphone className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
+            <p className="text-sm font-bold text-muted-foreground">No active campaigns</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Create your first fleet advertisement to boost visibility.</p>
+          </div>
         ) : (
           <DataTable 
             columns={["Banner", "Title", "Placement", "Audience", "Priority", "Status", "Actions"]}

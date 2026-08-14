@@ -81,6 +81,12 @@ function LogisticsDisputes() {
 
         {loading ? (
           <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="py-12 text-center">
+            <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
+            <p className="text-sm font-bold text-muted-foreground">No disputes found</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Operational records are currently empty.</p>
+          </div>
         ) : (
           <DataTable 
             columns={["ID", "Subject", "Ref Type", "Priority", "Status", "Created", "Actions"]}
