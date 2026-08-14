@@ -43,10 +43,10 @@ export type SubzoneRider = {
 // --- API Methods ---
 
 export async function fetchZones(params?: Record<string, any>) {
-  console.log("[ZONES_API] Fetching logistics_zones authoritative...");
+  console.log(`[ZONES_API] Fetching ${TABLE_ZONES} authoritative...`);
   // Use explicit select to ensure we don't hit "undefined_column" on missing columns
   // Note: Only verified columns are selected to avoid production schema errors
-  return listTable<DeliveryZone>("logistics_zones", { 
+  return listTable<DeliveryZone>(TABLE_ZONES, { 
     select: "id,name,city,status,created_at,updated_at", 
     order: "name.asc", 
     ...params 
@@ -54,21 +54,21 @@ export async function fetchZones(params?: Record<string, any>) {
 }
 
 export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {
-  return createRecord<DeliveryZone>("logistics_zones", zone as any);
+  return createRecord<DeliveryZone>(TABLE_ZONES, zone as any);
 }
 
 export async function updateZone(id: string, patch: Partial<DeliveryZone>) {
-  return patchRecord<DeliveryZone>("logistics_zones", id, patch as any);
+  return patchRecord<DeliveryZone>(TABLE_ZONES, id, patch as any);
 }
 
 export async function deleteZone(id: string) {
-  return deleteRecord("logistics_zones", id);
+  return deleteRecord(TABLE_ZONES, id);
 }
 
 export async function fetchSubzones(zoneId?: string) {
   const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
   // Use explicit select to ensure we don't hit "undefined_column" on missing columns
-  return listTable<Subzone>("subzones", { 
+  return listTable<Subzone>(TABLE_SUBZONES, { 
     select: "id,zone_id,name,status,created_at,updated_at", 
     order: "name.asc", 
     ...params 
@@ -76,20 +76,18 @@ export async function fetchSubzones(zoneId?: string) {
 }
 
 export async function createSubzone(subzone: Omit<Subzone, "id">) {
-  return createRecord<Subzone>("subzones", subzone as any);
+  return createRecord<Subzone>(TABLE_SUBZONES, subzone as any);
 }
 
 export async function updateSubzone(id: string, patch: Partial<Subzone>) {
-  return patchRecord<Subzone>("subzones", id, patch as any);
+  return patchRecord<Subzone>(TABLE_SUBZONES, id, patch as any);
 }
 
 export async function deleteSubzone(id: string) {
-  return deleteRecord("subzones", id);
+  return deleteRecord(TABLE_SUBZONES, id);
 }
 
 export async function assignRiderToZone(zoneId: string, riderId: string) {
-  // Use the verified drivers table if needed, though we saw 401/42501 in probe
-  // For now, mapping to verified table name intent
   return createRecord("driver_zones", { zone_id: zoneId, rider_id: riderId });
 }
 
@@ -98,19 +96,19 @@ export async function removeRiderFromZone(zoneId: string, riderId: string) {
 }
 
 export async function fetchZoneRiders(zoneId: string) {
-  return listTable<any>("drivers", { zone_id: `eq.${zoneId}` });
+  return listTable<any>(TABLE_DRIVERS, { zone_id: `eq.${zoneId}` });
 }
 
 export async function fetchSubzoneRiders(subzoneId: string) {
-  return listTable<any>("drivers", { subzone_id: `eq.${subzoneId}` });
+  return listTable<any>(TABLE_DRIVERS, { subzone_id: `eq.${subzoneId}` });
 }
 
 export async function assignRiderToSubzone(subzoneId: string, riderId: string) {
-  return patchRecord("drivers", riderId, { subzone_id: subzoneId });
+  return patchRecord(TABLE_DRIVERS, riderId, { subzone_id: subzoneId });
 }
 
 export async function removeRiderFromSubzone(riderId: string) {
-  return patchRecord("drivers", riderId, { subzone_id: null });
+  return patchRecord(TABLE_DRIVERS, riderId, { subzone_id: null });
 }
 
 export async function logAudit(entry: {
@@ -122,7 +120,7 @@ export async function logAudit(entry: {
   reason?: string;
   admin_id: string;
 }) {
-  return createRecord("audit_logs", {
+  return createRecord(TABLE_AUDIT, {
     action: entry.action,
     actor_id: entry.admin_id,
     created_at: new Date().toISOString()
@@ -134,8 +132,8 @@ export async function logAudit(entry: {
 export async function getZoneStats(zoneId?: string) {
   // In production this would be a complex join or view. 
   // For MVP we can aggregate from relevant tables.
-  const riders = await listTable<any>("drivers", zoneId ? { zone_id: `eq.${zoneId}` } : {});
-  const orders = await listTable<any>("orders", { status: "in.(ACCEPTED,PREPARING,READY,PICKED_UP)" });
+  const riders = await listTable<any>(TABLE_DRIVERS, zoneId ? { zone_id: `eq.${zoneId}` } : {});
+  const orders = await listTable<any>(TABLE_ORDERS, { status: "in.(ACCEPTED,PREPARING,READY,PICKED_UP)" });
   
   return {
     totalRiders: riders.length,
@@ -153,7 +151,7 @@ export async function fetchZoneOrderBreakdown(zoneId: string, range: string = "t
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   
-  const orders = await listTable<any>("orders", { 
+  const orders = await listTable<any>(TABLE_ORDERS, { 
     zone_id: `eq.${zoneId}`,
     created_at: `gte.${startOfDay.toISOString()}`
   });
@@ -186,8 +184,8 @@ export async function fetchZoneDemandAnalytics(zoneId: string, subzoneId?: strin
   const params: any = { zone_id: `eq.${zoneId}` };
   if (subzoneId) params.subzone_id = `eq.${subzoneId}`;
   
-  const orders = await listTable<any>("orders", params);
-  const riders = await listTable<any>("drivers", params);
+  const orders = await listTable<any>(TABLE_ORDERS, params);
+  const riders = await listTable<any>(TABLE_DRIVERS, params);
   
   const activeRiders = riders.filter(r => r.online_status).length;
   const availableRiders = riders.filter(r => r.online_status && !r.current_order_id).length;
