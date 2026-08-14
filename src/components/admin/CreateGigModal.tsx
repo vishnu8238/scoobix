@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, AlertCircle, Loader2 } from "lucide-react";
+import { Calendar, AlertCircle, Loader2, Info, Database } from "lucide-react";
 import { format } from "date-fns";
 import { createGig } from "@/lib/gigs-api";
 import { fetchZones, type DeliveryZone } from "@/lib/zones-api";
