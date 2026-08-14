@@ -110,14 +110,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                errorMsg.includes("invalid_grant");
 
          if (isRefreshError) {
-           console.warn("[AUTH_TRACE] Session/Refresh token invalid. Performing clean sign-out.");
-           await insforge.auth.signOut().catch(() => {});
+           console.warn("[AUTH_TRACE] Refresh token invalid/missing. Clearing session.");
+           // We don't call signOut() here because it might attempt a network request that fails,
+           // instead we manually clear known SDK storage keys and local session flags.
            if (typeof window !== "undefined") {
              localStorage.removeItem('scoobix_auth_token');
-             // Also clear PKCE verifiers if they exist (common cause of iOS failures)
+             // Clear all InsForge related storage to ensure a clean slate
              for (let i = 0; i < localStorage.length; i++) {
                const key = localStorage.key(i);
-               if (key?.startsWith('sb-') && key?.endsWith('-code-verifier')) {
+               if (key && (key.includes('insforge') || (key.startsWith('sb-') && key.endsWith('-code-verifier')))) {
                  localStorage.removeItem(key);
                }
              }

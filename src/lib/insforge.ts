@@ -42,16 +42,16 @@ export const ensureAuthHydrated = async () => {
     try {
       if (typeof window === "undefined") return;
 
-      console.log("[INSFORGE_AUTH] Hydrating session from storage...");
+      console.log("[INSFORGE_AUTH] Hydrating session from storage/cookies...");
       
       // 1. First, check if we have a token in the internal token manager
       let session = insforge.auth.getSession();
       
-      // 2. If no session, try a light-weight refresh/check
+      // 2. If no session, try a light-weight check
       if (!session) {
-        const { data, error } = await insforge.auth.getCurrentUser();
+        const { data, error } = await insforge.auth.getCurrentUser().catch(() => ({ data: null, error: { message: 'Network error' } }));
         if (error) {
-          console.warn("[INSFORGE_AUTH] Hydration check:", error.message);
+          console.warn("[INSFORGE_AUTH] No session found during hydration:", error.message);
           cachedAccessToken = null;
           return;
         }
