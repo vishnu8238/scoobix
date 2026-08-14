@@ -236,6 +236,32 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
             </div>
           )}
 
+          {schemaData && (
+            <div className="rounded-2xl bg-indigo-900/5 p-4 ring-1 ring-indigo-900/10 dark:bg-indigo-900/20 mt-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Schema Diagnostics</p>
+              <div className="space-y-3">
+                {Object.entries(schemaData).map(([table, info]: [string, any]) => (
+                  <div key={table} className="text-[10px]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{table}</span>
+                      <span className={info.exists ? "text-emerald-600 font-black" : "text-rose-500 font-black"}>
+                        {info.exists ? `FOUND (${info.count} rows)` : "MISSING"}
+                      </span>
+                    </div>
+                    {info.columns && (
+                      <p className="text-[9px] text-slate-500 leading-tight">
+                        <span className="font-bold">Columns:</span> {info.columns.join(", ")}
+                      </p>
+                    )}
+                    {info.error && !info.exists && (
+                      <p className="text-[9px] text-rose-500 italic">{info.error}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {zones.length === 0 && !loadingZones && (
             <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 dark:bg-amber-950/20 dark:ring-amber-900/40">
               <div className="flex items-start gap-3">
