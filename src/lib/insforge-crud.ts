@@ -215,9 +215,9 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
 export function listTable<T = Record<string, unknown>>(
   table: string,
   params?: Record<string, string | number | undefined>,
-  opts?: { ttl?: number; fresh?: boolean; public?: boolean },
+  opts?: { ttl?: number; fresh?: boolean; public?: boolean; select?: string },
 ): Promise<T[]> {
-  const select = String(params?.select ?? "*");
+  const select = opts?.select ?? String(params?.select ?? "*");
   const qs = JSON.stringify(params || {});
   const cacheKey = `db:${table}:${qs}`;
 

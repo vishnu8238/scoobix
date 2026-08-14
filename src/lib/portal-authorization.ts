@@ -47,7 +47,7 @@ export async function checkPortalAccess(
         portal: `eq.${portal.toLowerCase()}`,
         limit: 1 
       },
-      { ttl: 0, fresh: true }
+      { ttl: 0, fresh: true, select: "id,status" }
     );
 
     if (rows.length === 0) {
@@ -55,7 +55,7 @@ export async function checkPortalAccess(
       const allUserAccess = await listTable<PortalAccessRow>(
         "portal_access",
         { email_normalized: `eq.${normalizedEmail}` },
-        { ttl: 0, fresh: true }
+        { ttl: 0, fresh: true, select: "portal" }
       ).catch(() => []);
       
       console.log(`[AUTH_DEBUG] No match for ${normalizedEmail} on portal ${portal}. Portals found for user:`, allUserAccess.map(r => r.portal));
@@ -68,7 +68,7 @@ export async function checkPortalAccess(
           portal: `eq.${portal.toLowerCase()}`,
           limit: 1 
         },
-        { ttl: 0, fresh: true }
+        { ttl: 0, fresh: true, select: "id,status" }
       );
       
       if (legacyRows.length > 0) {
