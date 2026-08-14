@@ -279,6 +279,14 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
                     {isSeeding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
                     Seed Demo City & Zone
                   </button>
+                  <button 
+                    onClick={handleProbe}
+                    disabled={isProbing}
+                    className="mt-3 ml-2 flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-1.5 text-[10px] font-black text-white hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {isProbing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Info className="h-3 w-3" />}
+                    Probe DB Schema
+                  </button>
                 </div>
               </div>
             </div>
