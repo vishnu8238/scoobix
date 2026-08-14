@@ -157,7 +157,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           identities: sessionUser.identities,
         };
         const sessionNameCandidate = getDisplayName(combinedUserData);
-        console.log("[AUTH_TRACE] Identity Resolved:", sessionNameCandidate, "Profile Found:", !!profile);
+        console.log(`[AUTH_TRACE] Identity Source Probe: ID=${authId} ResolvedName="${sessionNameCandidate}" MetadataExists=${!!sessionUser.user_metadata} IdentitiesCount=${sessionUser.identities?.length || 0}`);
+        
+        if (typeof window !== "undefined") {
+          (window as any).__LAST_RESOLVED_NAME = sessionNameCandidate;
+          (window as any).__AUTH_USER_DATA = JSON.parse(JSON.stringify(combinedUserData));
+        }
 
         if (!profile && userEmail) {
           console.log("[AUTH_TRACE] Creating new profile for:", userEmail);
