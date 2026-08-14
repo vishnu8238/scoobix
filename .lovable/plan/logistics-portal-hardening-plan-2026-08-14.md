@@ -1,40 +1,29 @@
+---
+name: Logistics Portal Hardening
+description: Fixes for Gig Persistence, Partner Creation, Demo Seeding, and Zone Geometry in the Logistics Portal.
+type: feature
+---
+
 # Logistics Portal Hardening Plan
 
-Definitive fix for production defects in Gig Management, Partner Enrollment, Order Management, and Zone/Map geometry.
+## 1. Gig Management Fixes
+- **Authorization & Invalidation:** Ensure `createGig` in `src/lib/gigs-api.ts` correctly handles the InsForge return and invalidates the cache.
+- **Date Normalization:** Use precise ISO strings with milliseconds in `CreateGigModal.tsx` and `logistics.gigs.tsx` to match database storage and filtering.
+- **State Selection:** After creation, the UI should ideally auto-select the gig's date (already handled by `onSuccess` calling `load` in parent).
 
-## User Review Required
+## 2. Delivery Partner Creation
+- **Schema Alignment:** Ensure `AddPartnerModal.tsx` matches the authoritative InsForge `users` and `drivers` schemas.
+- **Two-Step Creation:** The modal already handles creating a `user` then a `driver`, but needs robust error handling to avoid orphaned users if the driver step fails.
 
-> [!IMPORTANT]
-> - **Schema Alignment**: I will derive `center_lat`/`center_lng` from the GeoJSON boundary for zones to ensure map markers work.
-> - **Demo Data**: "Seed Demo Orders" will be protected by a role check and tagged with `is_demo: true` to avoid polluting production data.
-> - **Build Fix**: I have already removed residual Supabase files and expanded the `Role` enum to support granular logistics levels.
+## 3. Demo Orders Seeding
+- **Idempotent Path:** Update `seedDemoOrders` in `src/lib/logistics-ops.functions.ts` to skip if restaurants/customers are missing by creating "demo" versions of them first.
+- **Status Coverage:** Ensure all statuses (PLACED, ON_THE_WAY, etc.) are represented.
 
-- Which specific cities/zones should be seeded for the initial Gig Management test?
-- Do you have specific contact phone formats required for the Add Partner form?
+## 4. Zone & Map Repair
+- **Geometry Fix:** Update `createNewZone` in `src/lib/zones.functions.ts` to properly transform `boundary` data and ensure it's never undefined.
+- **Google Maps Recovery:** Ensure `ZoneFormModal.tsx` and its `GoogleMap` component handle missing API keys or load errors gracefully.
+- **Subzone Availability:** Confirm created zones are immediately selectable in subzone creation.
 
-## Proposed Changes
-
-### 1. Gig Management Fixes
-- **Modal Logic**: Update `CreateGigModal` to only reset/close on a 201 Created response.
-- **Timezone Safety**: Force `start_time` and `end_time` to UTC ISO strings to prevent date selection mismatches.
-- **State Update**: Call `invalidateQueries` or local `load()` after success to ensure the new gig appears immediately.
-
-### 2. Delivery Partners (Enrollment)
-- **New Component**: Create `AddPartnerModal` with fields for Name, Email, Phone, Vehicle Type, and Status.
-- **CRUD Logic**: Use `createRecord` in `src/lib/insforge-crud.ts` to persist the new partner.
-- **Counters**: Update the LOGIN/LOGOUT/IDLE chips by refetching the partner list.
-
-### 3. Orders Demo & Management
-- **Seeding Service**: Implement a `seedDemoOrders` server function that generates 5-10 orders across all statuses.
-- **Management UI**: Overhaul `/logistics/orders/$orderId` to use `patchOrder` for status transitions.
-- **Audit Logging**: Add a basic audit log entry for every status change to track dispatcher actions.
-
-### 4. Zones & Map Geometry
-- **Payload Alignment**: Fix the `undefined` object error in `createNewZone` by strictly typing the Zod schema.
-- **Interactive Drawing**: Enhance `ZoneFormModal` to allow polygon creation via map clicks, deriving the center point automatically.
-- **Hierarchy**: Ensure Subzones correctly link to `zone_id` and render within their parent's boundary.
-
-## Technical Details
-- **InsForge SDK**: Using `insforge.auth` for session management and `insforge.database` for CRUD.
-- **Types**: Expanding `src/lib/types.ts` to include `dispatcher`, `zone_manager`, and `logistics_admin`.
-- **API**: Standardizing all Logistics API calls in `src/lib/zones.functions.ts` and `src/lib/gigs-api.ts`.
+## 5. Verification
+- **Build Cleanliness:** Run `bunx tsgo --noEmit`.
+- **Targeted Tests:** Assert gig persistence and zone geometry via Playwright.
