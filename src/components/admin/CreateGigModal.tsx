@@ -11,6 +11,7 @@ import { fetchZones, type DeliveryZone } from "@/lib/zones-api";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { seedLogisticsPrerequisites } from "@/lib/logistics-ops.functions";
+import { probeInsForgeSchema } from "@/lib/schema-probe.functions";
 import { useServerFn } from "@tanstack/react-start";
 
 interface CreateGigModalProps {
