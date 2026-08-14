@@ -1,0 +1,33 @@
+import { execSync } from 'child_process';
+
+console.log('--- PRE-BUILD SCAN: Checking for forbidden @supabase/supabase-js references ---');
+
+try {
+  // Search for the forbidden string in src/ and package.json
+  // -l returns only filenames, -r is recursive
+  // We use grep -r because it's standard and available.
+  // We exclude the script itself and node_modules.
+  const cmd = "grep -rnE '@supabase/supabase-js' src/ package.json --exclude=scripts/prebuild.js";
+  
+  try {
+    const results = execSync(cmd).toString().trim();
+    
+    if (results) {
+      console.error('\x1b[31m[ERROR] FORBIDDEN REFERENCES FOUND:\x1b[0m');
+      console.error(results);
+      console.error('\n\x1b[33mThe build is blocked because @supabase/supabase-js references were found.\x1b[0m');
+      console.error('\x1b[33mPlease remove all Supabase dependencies and code before proceeding.\x1b[0m');
+      process.exit(1);
+    }
+  } catch (e) {
+    // grep returns exit code 1 if no matches are found, which is what we want.
+    if (e.status === 1) {
+      console.log('\x1b[32m[PASS] No @supabase/supabase-js references found.\x1b[0m');
+      process.exit(0);
+    }
+    throw e;
+  }
+} catch (error) {
+  console.error('[ERROR] Pre-build scan failed:', error.message);
+  process.exit(1);
+}
