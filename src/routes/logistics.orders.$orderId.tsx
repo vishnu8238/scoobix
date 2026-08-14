@@ -66,7 +66,7 @@ function LogisticsOrderDetailsPage() {
   const handleUpdateStatus = async (newStatus: OrderStatus) => {
     setIsUpdating(true);
     try {
-      await updateOrderStatus({ orderId, status: newStatus });
+      await updateOrderStatus({ data: { orderId, status: newStatus } });
       await logAudit({
         category: "admin",
         subjectType: "order",
