@@ -10,7 +10,21 @@ export function getDisplayName(user: any): string {
   const isGeneric = (name: any) => {
     if (typeof name !== 'string') return true;
     const n = name.trim().toLowerCase();
-    return !n || n === 'user' || n === 'null' || n === 'undefined' || n === 'manager' || n === 'admin' || n === 'partner' || n === 'rider' || n === 'scoobix';
+    // Filter out common generic placeholders and email prefixes that are not real names
+    return (
+      !n || 
+      n === 'user' || 
+      n === 'null' || 
+      n === 'undefined' || 
+      n === 'manager' || 
+      n === 'admin' || 
+      n === 'partner' || 
+      n === 'rider' || 
+      n === 'scoobix' || 
+      n === 'scoobix.info' ||
+      n.includes('merchant manager') ||
+      n.includes('administrator')
+    );
   };
 
   const normalize = (val: any): string | null => {
