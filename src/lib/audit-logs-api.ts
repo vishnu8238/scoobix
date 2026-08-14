@@ -14,5 +14,5 @@ export type AuditLog = {
 };
 
 export async function fetchAuditLogs(params?: Record<string, any>) {
-  return listTable<AuditLog>("audit_logs", { order: "timestamp.desc", ...params });
+  return listTable<AuditLog>("audit_logs", { select: "*", order: "timestamp.desc", ...params });
 }
