@@ -11,6 +11,7 @@ async function probe() {
   console.log("--- InsForge Schema Probe ---");
   for (const table of tables) {
     try {
+      // Probing without a token to see which tables are truly public vs protected
       const { data, error, status } = await insforge.database.from(table).select("*").limit(1);
       if (error) {
         console.log(`[${table}] Status: ${status} | Error: ${error.message}`);
