@@ -163,11 +163,11 @@ import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAccessRouteImport } from './routes/admin.access'
 import { Route as ManagerLeadIdRouteImport } from './routes/manager.lead.$id'
 import { Route as LogisticsOrdersOrderIdRouteImport } from './routes/logistics.orders.$orderId'
+import { Route as LogisticsGigsGigIdRouteImport } from './routes/logistics.gigs.$gigId'
 import { Route as LogisticsDriversDriverIdRouteImport } from './routes/logistics.drivers.$driverId'
 import { Route as AppGroupSessionIdRouteImport } from './routes/app.group.$sessionId'
 import { Route as AdminOrdersOrderIdRouteImport } from './routes/admin.orders.$orderId'
 import { Route as AdminDriversDriverIdRouteImport } from './routes/admin.drivers.$driverId'
-import { Route as LogisticsGigsRouteImport } from './routes/logistics.gigs.'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -939,6 +939,11 @@ const LogisticsOrdersOrderIdRoute = LogisticsOrdersOrderIdRouteImport.update({
   path: '/$orderId',
   getParentRoute: () => LogisticsOrdersRoute,
 } as any)
+const LogisticsGigsGigIdRoute = LogisticsGigsGigIdRouteImport.update({
+  id: '/$gigId',
+  path: '/$gigId',
+  getParentRoute: () => LogisticsGigsRoute,
+} as any)
 const LogisticsDriversDriverIdRoute =
   LogisticsDriversDriverIdRouteImport.update({
     id: '/$driverId',
@@ -959,11 +964,6 @@ const AdminDriversDriverIdRoute = AdminDriversDriverIdRouteImport.update({
   id: '/$driverId',
   path: '/$driverId',
   getParentRoute: () => AdminDriversRoute,
-} as any)
-const LogisticsGigsRoute = LogisticsGigsRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LogisticsGigsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -1119,11 +1119,11 @@ export interface FileRoutesByFullPath {
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
-  '/logistics/gigs/': typeof LogisticsGigsRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/logistics/drivers/$driverId': typeof LogisticsDriversDriverIdRoute
+  '/logistics/gigs/$gigId': typeof LogisticsGigsGigIdRoute
   '/logistics/orders/$orderId': typeof LogisticsOrdersOrderIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
@@ -1200,6 +1200,7 @@ export interface FileRoutesByTo {
   '/logistics/disputes': typeof LogisticsDisputesRoute
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/duplicates': typeof LogisticsDuplicatesRoute
+  '/logistics/gigs': typeof LogisticsGigsRouteWithChildren
   '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/managers': typeof LogisticsManagersRoute
   '/logistics/map': typeof LogisticsMapRoute
@@ -1273,11 +1274,11 @@ export interface FileRoutesByTo {
   '/manager': typeof ManagerIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
-  '/logistics/gigs': typeof LogisticsGigsRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/logistics/drivers/$driverId': typeof LogisticsDriversDriverIdRoute
+  '/logistics/gigs/$gigId': typeof LogisticsGigsGigIdRoute
   '/logistics/orders/$orderId': typeof LogisticsOrdersOrderIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
@@ -1435,11 +1436,11 @@ export interface FileRoutesById {
   '/manager/': typeof ManagerIndexRoute
   '/partner/': typeof PartnerIndexRoute
   '/rider/': typeof RiderIndexRoute
-  '/logistics/gigs/': typeof LogisticsGigsRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
   '/admin/orders/$orderId': typeof AdminOrdersOrderIdRoute
   '/app/group/$sessionId': typeof AppGroupSessionIdRoute
   '/logistics/drivers/$driverId': typeof LogisticsDriversDriverIdRoute
+  '/logistics/gigs/$gigId': typeof LogisticsGigsGigIdRoute
   '/logistics/orders/$orderId': typeof LogisticsOrdersOrderIdRoute
   '/manager/lead/$id': typeof ManagerLeadIdRoute
 }
@@ -1598,11 +1599,11 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/partner/'
     | '/rider/'
-    | '/logistics/gigs/'
     | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/logistics/drivers/$driverId'
+    | '/logistics/gigs/$gigId'
     | '/logistics/orders/$orderId'
     | '/manager/lead/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -1679,6 +1680,7 @@ export interface FileRouteTypes {
     | '/logistics/disputes'
     | '/logistics/drivers'
     | '/logistics/duplicates'
+    | '/logistics/gigs'
     | '/logistics/live'
     | '/logistics/managers'
     | '/logistics/map'
@@ -1752,11 +1754,11 @@ export interface FileRouteTypes {
     | '/manager'
     | '/partner'
     | '/rider'
-    | '/logistics/gigs'
     | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/logistics/drivers/$driverId'
+    | '/logistics/gigs/$gigId'
     | '/logistics/orders/$orderId'
     | '/manager/lead/$id'
   id:
@@ -1913,11 +1915,11 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/partner/'
     | '/rider/'
-    | '/logistics/gigs/'
     | '/admin/drivers/$driverId'
     | '/admin/orders/$orderId'
     | '/app/group/$sessionId'
     | '/logistics/drivers/$driverId'
+    | '/logistics/gigs/$gigId'
     | '/logistics/orders/$orderId'
     | '/manager/lead/$id'
   fileRoutesById: FileRoutesById
@@ -3018,6 +3020,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsOrdersOrderIdRouteImport
       parentRoute: typeof LogisticsOrdersRoute
     }
+    '/logistics/gigs/$gigId': {
+      id: '/logistics/gigs/$gigId'
+      path: '/$gigId'
+      fullPath: '/logistics/gigs/$gigId'
+      preLoaderRoute: typeof LogisticsGigsGigIdRouteImport
+      parentRoute: typeof LogisticsGigsRoute
+    }
     '/logistics/drivers/$driverId': {
       id: '/logistics/drivers/$driverId'
       path: '/$driverId'
@@ -3045,13 +3054,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/drivers/$driverId'
       preLoaderRoute: typeof AdminDriversDriverIdRouteImport
       parentRoute: typeof AdminDriversRoute
-    }
-    '/logistics/gigs/': {
-      id: '/logistics/gigs/'
-      path: '/'
-      fullPath: '/logistics/gigs/'
-      preLoaderRoute: typeof LogisticsGigsRouteImport
-      parentRoute: typeof LogisticsGigsRoute
     }
   }
 }
@@ -3226,11 +3228,11 @@ const LogisticsDriversRouteWithChildren =
   LogisticsDriversRoute._addFileChildren(LogisticsDriversRouteChildren)
 
 interface LogisticsGigsRouteChildren {
-  LogisticsGigsRoute: typeof LogisticsGigsRoute
+  LogisticsGigsGigIdRoute: typeof LogisticsGigsGigIdRoute
 }
 
 const LogisticsGigsRouteChildren: LogisticsGigsRouteChildren = {
-  LogisticsGigsRoute: LogisticsGigsRoute,
+  LogisticsGigsGigIdRoute: LogisticsGigsGigIdRoute,
 }
 
 const LogisticsGigsRouteWithChildren = LogisticsGigsRoute._addFileChildren(
