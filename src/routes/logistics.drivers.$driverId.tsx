@@ -111,15 +111,17 @@ function LogisticsDriverProfilePage() {
                 {activeSubTab === "documents" && <DocumentsTab driverId={driverId} />}
                 {activeSubTab === "vehicle" && <DetailGrid items={[
                   { label: "Vehicle Type", value: driver.vehicle_type || "—" },
+                  { label: "Vehicle Model", value: driver.vehicle_model || "—" },
                   { label: "Vehicle Number", value: driver.vehicle_number || "—" },
                   { label: "RC Status", value: "Verified", tone: "success" }
                 ]} />}
                 {activeSubTab === "bank" && <DetailGrid items={[
-                  { label: "Account Holder", value: driver.name || "—" },
+                  { label: "Account Holder", value: driver.bank_holder || driver.name || "—" },
                   { label: "Bank Name", value: driver.bank_name || "—" },
-                  { label: "Account Number", value: driver.account_number || "—" },
-                  { label: "IFSC Code", value: driver.ifsc_code || "—" }
+                  { label: "Account Number", value: driver.bank_account || "—" },
+                  { label: "IFSC Code", value: driver.bank_ifsc || "—" }
                 ]} />}
+
               </div>
             </div>
           )}
