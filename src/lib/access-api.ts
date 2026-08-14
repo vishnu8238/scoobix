@@ -3,7 +3,7 @@ import { logAudit } from "@/lib/audit-api";
 import { PortalAccessRow, PortalType, PortalStatus } from "@/lib/portal-authorization";
 
 export async function listPortalAccess(params?: Record<string, any>) {
-  return listTable<PortalAccessRow>("portal_access", { order: "created_at.desc", ...params });
+  return listTable<PortalAccessRow>("portal_access", { select: "*", order: "created_at.desc", ...params });
 }
 
 export async function createPortalAccess(data: {

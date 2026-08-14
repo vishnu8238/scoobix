@@ -19,7 +19,7 @@ export type Ad = {
 };
 
 export async function fetchAds(params?: Record<string, any>) {
-  return listTable<Ad>("audit_logs", { entity: "eq.ad", order: "priority.desc,created_at.desc", ...params });
+  return listTable<Ad>("audit_logs", { select: "*", entity: "eq.ad", order: "priority.desc,created_at.desc", ...params });
 }
 
 export async function createAd(ad: Omit<Ad, "id" | "created_at">) {

@@ -15,7 +15,7 @@ export type Dispute = {
 };
 
 export async function fetchDisputes(params?: Record<string, any>) {
-  return listTable<Dispute>("audit_logs", { entity: "eq.dispute", order: "created_at.desc", ...params });
+  return listTable<Dispute>("audit_logs", { select: "*", entity: "eq.dispute", order: "created_at.desc", ...params });
 }
 
 export async function updateDisputeStatus(id: string, status: Dispute["status"], resolution?: string, actor?: string) {
@@ -40,5 +40,5 @@ export type GroomingSelfie = {
 };
 
 export async function fetchSelfies(params?: Record<string, any>) {
-  return listTable<GroomingSelfie>("grooming_selfies", { order: "created_at.desc", ...params });
+  return listTable<GroomingSelfie>("grooming_selfies", { select: "*", order: "created_at.desc", ...params });
 }
