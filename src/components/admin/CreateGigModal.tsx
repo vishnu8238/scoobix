@@ -24,6 +24,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   const [loadingZones, setLoadingZones] = useState(false);
   const [zonesError, setZonesError] = useState<string | null>(null);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
@@ -73,6 +74,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         console.warn("[GIG_MODAL] Authoritative zones table is empty. Triggering automatic seed...");
         const seedResult = await seedPrereqs();
         console.log("[GIG_MODAL] Auto-seed result:", seedResult);
+        setDiagnostics(seedResult);
         
         // Re-fetch after seeding
         const freshData = await fetchZones();
@@ -88,10 +90,18 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
       }
     } catch (err: any) {
       console.error("[GIG_MODAL] Fetch error:", err);
-      const isAuthError = err.status === 401 || err.message?.includes("Unauthorized");
+      const isAuthError = err.status === 401 || err.message?.includes("Unauthorized") || err.message?.includes("token");
       setZonesError(isAuthError 
-        ? "Session expired or unauthorized. Please refresh the page."
+        ? "Session expired or unauthorized. Please refresh the page and ensure you have logistics access."
         : `Database Error: ${err.message || "Failed to load cities and zones."}`);
+      
+      // Also record diagnostics on error
+      setDiagnostics({ 
+        op: "fetch_zones", 
+        error: err.message, 
+        status: err.status,
+        timestamp: new Date().toISOString()
+      });
     } finally {
       setLoadingZones(false);
     }
@@ -107,6 +117,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     setIsSeeding(true);
     try {
       const result = await seedPrereqs();
+      setDiagnostics(result);
       if (result.errors && result.errors.length > 0) {
         toast.error(`Seed partially failed: ${result.errors[0]}`);
       } else {
@@ -189,6 +200,25 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-8 pt-4 space-y-6">
             
+          {diagnostics && (
+            <div className="rounded-2xl bg-slate-900/5 p-4 ring-1 ring-slate-900/10 dark:bg-slate-900/20">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Seed Diagnostics</p>
+              <div className="space-y-1">
+                {diagnostics.diagnostics?.map((d: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold text-slate-700 dark:text-slate-300">{d.table} ({d.op})</span>
+                    <span className={d.error ? "text-rose-500 font-black" : "text-emerald-600 font-black"}>
+                      {d.status} {d.error ? ` - ${d.error}` : "OK"}
+                    </span>
+                  </div>
+                ))}
+                {diagnostics.errors?.length > 0 && (
+                  <p className="text-[10px] font-bold text-rose-500 mt-2">Errors: {diagnostics.errors.join(", ")}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {zones.length === 0 && !loadingZones && (
             <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 dark:bg-amber-950/20 dark:ring-amber-900/40">
               <div className="flex items-start gap-3">
