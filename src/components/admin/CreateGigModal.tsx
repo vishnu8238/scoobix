@@ -42,11 +42,11 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   // We prioritize 'City 1' and 'City 2' as fallback options if no data is returned
   const cities = useMemo(() => {
     const list = Array.from(new Set(zones.map(z => z.city))).filter(Boolean).sort();
-    if (list.length === 0 && !loadingZones && !zonesError) {
+    if (list.length === 0 && !loadingZones) {
       return ["City 1", "City 2"];
     }
     return list;
-  }, [zones, loadingZones, zonesError]);
+  }, [zones, loadingZones]);
   
   // Filtered zones based on selected city
   const filteredZones = useMemo(() => {
