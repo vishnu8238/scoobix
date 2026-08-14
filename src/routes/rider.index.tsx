@@ -76,7 +76,7 @@ function RiderHome() {
     [orders],
   );
 
-  const firstName = (user?.name || "").split(" ")[0];
+  const firstName = (user?.name || "User").split(" ")[0];
 
   // Documents must be approved before a rider can accept deliveries.
   const verified = Boolean((driver as { docs_verified?: boolean } | null)?.docs_verified);

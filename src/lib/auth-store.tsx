@@ -187,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({
         id: authId,
         name: displayName,
-        email: sessionUser.email || "",
+        email: userEmail || "",
         phone: profile?.phone || "",
         avatar: profile?.avatar_url || sessionUser.avatar_url || "",
         role: hasAccess ? currentPortal : "customer",
