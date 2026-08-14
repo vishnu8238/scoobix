@@ -135,9 +135,10 @@ function LogisticsLayout() {
                   <div className="text-left min-w-0">
                     <p 
                       data-testid="sidebar-user-name"
+                      data-identity-source={user?.name ? "resolved" : "pending"}
                       className="text-[12px] font-bold leading-none text-foreground truncate"
                     >
-                      {user?.name || "..."}
+                      {user?.name || (user?.email ? user.email.split('@')[0] : "...")}
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-1 truncate">{user?.email}</p>
                   </div>
