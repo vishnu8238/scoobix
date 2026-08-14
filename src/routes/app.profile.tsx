@@ -13,9 +13,11 @@ function AppProfile() {
       <PageHeader title="Profile" back />
       <div className="p-4 space-y-6">
         <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100">
-          <div className="h-16 w-16 rounded-full bg-gray-200" />
+          <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 font-bold text-xl uppercase">
+            {user?.name?.[0] || 'U'}
+          </div>
           <div>
-            <h2 className="text-lg font-bold">{user?.name}</h2>
+            <h2 className="text-lg font-bold">{user?.name || "User"}</h2>
             <p className="text-sm text-gray-500">{user?.email}</p>
           </div>
         </div>

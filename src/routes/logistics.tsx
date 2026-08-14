@@ -7,6 +7,7 @@ import {
   Navigation, History, LogOut 
 } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
+import { useAuth } from "@/lib/auth-store";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";

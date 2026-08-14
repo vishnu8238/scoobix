@@ -180,9 +180,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log("[AUTH_TRACE] Final Roles:", uniqueRoles, "Current Portal:", currentPortal, "Has Access:", hasAccess);
 
+      const displayName = profile?.full_name || profile?.name || sessionUser.full_name || sessionUser.name || (userEmail ? userEmail.split('@')[0] : "User");
+
       setUser({
         id: authId,
-        name: profile?.name || sessionUser.name || "User",
+        name: displayName,
         email: sessionUser.email || "",
         phone: profile?.phone || "",
         avatar: profile?.avatar_url || sessionUser.avatar_url || "",
