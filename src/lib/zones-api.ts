@@ -37,46 +37,46 @@ export type SubzoneRider = {
 // --- API Methods ---
 
 export async function fetchZones(params?: Record<string, any>) {
-  return listTable<DeliveryZone>("delivery_zones", { order: "name.asc", ...params });
+  return listTable<DeliveryZone>("logistics_zones", { order: "name.asc", ...params });
 }
 
 export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {
-  return createRecord<DeliveryZone>("delivery_zones", zone as any);
+  return createRecord<DeliveryZone>("logistics_zones", zone as any);
 }
 
 export async function updateZone(id: string, patch: Partial<DeliveryZone>) {
-  return patchRecord<DeliveryZone>("delivery_zones", id, patch as any);
+  return patchRecord<DeliveryZone>("logistics_zones", id, patch as any);
 }
 
 export async function deleteZone(id: string) {
-  return deleteRecord("delivery_zones", id);
+  return deleteRecord("logistics_zones", id);
 }
 
 export async function fetchSubzones(zoneId?: string) {
   const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
-  return listTable<Subzone>("delivery_subzones", { order: "name.asc", ...params });
+  return listTable<Subzone>("subzones", { order: "name.asc", ...params });
 }
 
 export async function createSubzone(subzone: Omit<Subzone, "id">) {
-  return createRecord<Subzone>("delivery_subzones", subzone as any);
+  return createRecord<Subzone>("subzones", subzone as any);
 }
 
 export async function updateSubzone(id: string, patch: Partial<Subzone>) {
-  return patchRecord<Subzone>("delivery_subzones", id, patch as any);
+  return patchRecord<Subzone>("subzones", id, patch as any);
 }
 
 export async function deleteSubzone(id: string) {
-  return deleteRecord("delivery_subzones", id);
+  return deleteRecord("subzones", id);
 }
 
 export async function assignRiderToZone(zoneId: string, riderId: string) {
-  return createRecord("delivery_zone_riders", { zone_id: zoneId, rider_id: riderId });
+  // Use the verified drivers table if needed, though we saw 401/42501 in probe
+  // For now, mapping to verified table name intent
+  return createRecord("driver_zones", { zone_id: zoneId, rider_id: riderId });
 }
 
 export async function removeRiderFromZone(zoneId: string, riderId: string) {
-  // PostgREST delete with composite filter is tricky via basic helper, but we'll try
-  // In a real app we might need a dedicated RPC or specific filter string
-  return deleteRecord("delivery_zone_riders", `zone_id=eq.${zoneId}&rider_id=eq.${riderId}` as any);
+  return deleteRecord("driver_zones", `zone_id=eq.${zoneId}&rider_id=eq.${riderId}` as any);
 }
 
 export async function fetchZoneRiders(zoneId: string) {
