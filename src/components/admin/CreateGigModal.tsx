@@ -67,16 +67,31 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     setLoadingZones(true);
     setZonesError(null);
     try {
+      console.log("[GIG_MODAL] Querying authoritative zones...");
       const data = await fetchZones();
       if (!data || data.length === 0) {
-        console.log("[GIG_MODAL] No zones found, enabling UI fallbacks for City 1/City 2");
-        setZones([]); // Fallback handled by useMemo
+        console.warn("[GIG_MODAL] Authoritative zones table is empty. Triggering automatic seed...");
+        const seedResult = await seedPrereqs();
+        console.log("[GIG_MODAL] Auto-seed result:", seedResult);
+        
+        // Re-fetch after seeding
+        const freshData = await fetchZones();
+        if (!freshData || freshData.length === 0) {
+           console.log("[GIG_MODAL] DB still empty after seed, using UI fallbacks.");
+           setZones([]);
+        } else {
+           setZones(freshData);
+        }
       } else {
+        console.log(`[GIG_MODAL] Found ${data.length} zones.`);
         setZones(data);
       }
     } catch (err: any) {
-      console.error("[GIG_MODAL] Failed to fetch zones:", err);
-      setZonesError("Failed to load cities and zones. Please check your connection or database permissions.");
+      console.error("[GIG_MODAL] Fetch error:", err);
+      const isAuthError = err.status === 401 || err.message?.includes("Unauthorized");
+      setZonesError(isAuthError 
+        ? "Session expired or unauthorized. Please refresh the page."
+        : `Database Error: ${err.message || "Failed to load cities and zones."}`);
     } finally {
       setLoadingZones(false);
     }
@@ -91,11 +106,15 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   const handleSeed = async () => {
     setIsSeeding(true);
     try {
-      await seedPrereqs();
-      toast.success("Demo City & Zone seeded successfully");
+      const result = await seedPrereqs();
+      if (result.errors && result.errors.length > 0) {
+        toast.error(`Seed partially failed: ${result.errors[0]}`);
+      } else {
+        toast.success(`Seeded ${result.zones} zones successfully`);
+      }
       await loadZones();
-    } catch (err) {
-      toast.error("Failed to seed demo data");
+    } catch (err: any) {
+      toast.error(`Seed failed: ${err.message || "Unknown error"}`);
     } finally {
       setIsSeeding(false);
     }
