@@ -22,7 +22,7 @@ export const Route = createFileRoute("/logistics")({
 
 function LogisticsLayoutGuard() {
   return (
-    <RoleGuard allow={["logistics", "admin"]}>
+    <RoleGuard allow={["logistics", "admin", "dispatcher"]}>
       <LogisticsLayout />
     </RoleGuard>
   );
