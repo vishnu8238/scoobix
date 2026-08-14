@@ -158,7 +158,7 @@ function AdminLayout() {
                   {getInitials(user?.name) || "A"}
                 </div>
                 <div className="text-left">
-                  <p className="text-[12px] font-bold leading-none text-foreground">{user?.name}</p>
+                  <p className="text-[12px] font-bold leading-none text-foreground">{user?.name || "..."}</p>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{user?.role === 'admin' ? 'Master Admin' : 'Operator'}</p>
                 </div>
               </div>
