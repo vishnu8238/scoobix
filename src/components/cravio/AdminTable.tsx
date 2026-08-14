@@ -105,6 +105,10 @@ const TONE: Record<string, string> = {
   Cancelled: "bg-rose-100 text-rose-700",
   Suspended: "bg-rose-100 text-rose-700",
   Offline: "bg-zinc-200 text-zinc-700",
+  Rejected: "bg-rose-100 text-rose-700",
+  active: "bg-emerald-100 text-emerald-700",
+  suspended: "bg-rose-100 text-rose-700",
+  rejected: "bg-rose-100 text-rose-700",
 };
 
 export function StatusBadge({ label }: { label: string }) {

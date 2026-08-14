@@ -447,7 +447,7 @@ function TicketDetail({
           </select>
           <button
             disabled={!mergeTarget}
-            onClick={async () => { await mergeTickets(ticket, mergeTarget, actor); toast.success("Tickets merged"); setMergeTarget(""); onChanged(); onClose(); }}
+            onClick={async () => { await mergeTickets(ticket.id, mergeTarget, actor); toast.success("Tickets merged"); setMergeTarget(""); onChanged(); onClose(); }}
             className="flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
           >
             <Merge className="h-3.5 w-3.5" /> Merge
@@ -457,7 +457,7 @@ function TicketDetail({
 
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {files.map((f) => (
+          {files.map((f: string) => (
             <a key={f} href={f} target="_blank" rel="noreferrer">
               <img src={f} alt="Ticket attachment" loading="lazy" decoding="async" className="h-20 w-20 rounded-xl object-cover" />
             </a>
