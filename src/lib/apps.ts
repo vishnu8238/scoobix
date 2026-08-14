@@ -8,7 +8,7 @@ import type { Role } from "./types";
  * links. There is NO portal switcher — a signed-in user only ever sees the
  * surface that matches their role.
  */
-export type AppId = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics";
+export type AppId = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
 export type ScoobixApp = {
   id: AppId;

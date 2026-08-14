@@ -4,7 +4,7 @@ import { insforge, getAccessToken } from "./insforge";
 import { listTable } from "./insforge-crud";
 import { getDisplayName } from "./identity-utils";
 
-export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics";
+export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
 export type User = {
   id: string;
