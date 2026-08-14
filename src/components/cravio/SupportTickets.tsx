@@ -185,10 +185,10 @@ function NewTicketForm({
       priority,
       attachments: attachment?.image_url ? [attachment.image_url] : [],
       documents: docAttachment?.image_url ? [docAttachment.image_url] : [],
-      contactName,
-      contactPhone,
-      contactEmail,
-      orderId: orderId.trim() || null,
+      contact_name: contactName,
+      contact_phone: contactPhone,
+      contact_email: contactEmail,
+      order_id: orderId.trim() || undefined,
     });
     setSaving(false);
     if (!created) { toast.error("Could not create ticket. Try again."); return; }

@@ -1,46 +1,43 @@
+---
+title: Logistics Dashboard Expansion
+description: Implementing feature parity for the Logistics portal with focus on Gigs, Operations, Disputes, and CMS.
+---
+
 # Logistics Dashboard Expansion Plan
 
-Implement a complete operational feature set for the Logistics portal, reproducing the functional behavior and information architecture from reference screenshots while maintaining Scoobix's design system and InsForge-only runtime.
-
-## User Impact
-Logistics administrators will gain full control over gigs, fleet capacity, driver onboarding/KYC, operational disputes, and driver communication through a unified, high-fidelity dashboard.
-
-## Technical Details
-- **Architecture**: TanStack Start v1 with InsForge-backed server functions and CRUD.
-- **Real-time**: Leverages `useTableVersion` and `useChannelVersion` for live state updates without manual refreshing.
-- **Security**: Hardened RLS policies and portal access guards (Logistics/Admin only).
+The goal is to implement the full operational feature set for the Scoobix Logistics portal, resolving current 404s and achieving parity with the reference UI specifications.
 
 ## Proposed Changes
 
-### 1. Navigation & Shell Expansion (`src/routes/logistics.tsx`)
-- Enhance the sidebar with collapsible navigation and global search.
-- Add notification count badges and active-state indicators for all new routes.
+### 1. Routes and Navigation
+- **Repair Gig Details**: Fix the accidentally created `src/routes/logistics.gigs..tsx` (already moved to `src/routes/logistics.gigs.$gigId.tsx`) and implement the full detail view including slot capacity management.
+- **Implement Operations**: Build `src/routes/logistics.operations.tsx` with live status counters and filtering logic.
+- **Implement Disputes**: Build `src/routes/logistics.disputes.tsx` with a queue managed by ID and Ref Type.
+- **Implement CMS Studio**: Build `src/routes/logistics.cms.tsx` for story publishing and driver communication.
 
-### 2. Gigs & Capacity Management (`src/routes/logistics.gigs.tsx`)
-- **Gig/Slot Details**: A new detail view showing allocation, assigned riders, and audit history.
-- **Capacity Workflow**: Implementation of the "Capacity Change" modal with reason tracking and validation.
-- **Rider Slot View**: Search and view specific rider slot memberships.
+### 2. Components and UI
+- **Gigs Detail View**:
+  - Capacity Change modal: Allow logistics staff to adjust slot limits in real-time.
+  - Rider list for specific slots: Re-use/adapt `GigParticipant` types from `gigs-api.ts`.
+- **Rider Profiles (Logistics Edition)**:
+  - Tabbed interface: Profile, KYC Docs, Live Stats, Wallet/Earnings, and Performance history.
+  - Verification integration: Surface KYC status and allow direct review from the profile.
+- **Support & Audit**:
+  - Refine `src/components/cravio/SupportTickets.tsx` property mappings.
+  - Ensure all logistics action buttons (Suspend, Reject, Verify) are correctly hooked to the backend via `portal-authorization.ts` and `insforge-crud.ts`.
 
-### 3. Verification & QC Center (`src/routes/logistics.verification.tsx`)
-- **QC Details**: Expanded document checklist with "Approve/Reject/Correction" actions.
-- **Document Previews**: High-fidelity previews for DL/RC documents using InsForge Storage.
-- **Audit Integration**: Direct links to `kyc_audit_logs`.
+### 3. Data layer
+- **Sync Overrides**: Ensure `src/routes/logistics.drivers.tsx` status overrides sync with the `drivers` table verification state, rather than just local KV storage, to ensure multi-session consistency.
 
-### 4. Fleet Operations & Support (`src/routes/logistics.support.tsx`, `src/routes/logistics.disputes.tsx`)
-- **Disputes Queue**: Status-driven workflow (Pending → Investigating → Resolved) with evidence attachments.
-- **Grooming Selfies**: A dedicated review gallery for rider selfies with bulk approval options.
-- **Support Detail**: Enhanced ticket conversation view with internal notes and escalation paths.
+## Technical Details
 
-### 5. Delivery Partner Profiles (`src/routes/logistics.drivers.$driverId.tsx`)
-- **Tabbed Interface**: Overview, Performance, Documents, Vehicle, and Audit History.
-- **Performance Metrics**: Real-time delivery success rates and rating trends.
-
-### 6. Communication & CMS (`src/routes/logistics.cms.tsx`)
-- **Stories Hub**: A tool for publishing updates/stories to riders and partners.
-- **Targeting**: Ability to scope communications by city or partner role.
+- **Framework**: TanStack Start v1 / React 19.
+- **Data**: InsForge SDK via `insforge-crud.ts`.
+- **Realtime**: Use `useTableVersion` and `useLiveTable` for the operations and gig feeds.
+- **Security**: All views gated by `RoleGuard` (logistics/admin).
 
 ## Verification Plan
-1. **Build Check**: Run `bun run build` to ensure no TypeScript or pathing errors.
-2. **Smoke Tests**: Verify navigation and loading states for every new route.
-3. **Identity Check**: Ensure `getDisplayName` correctly resolves administrator names in headers.
-4. **Publish**: Deploy to scoobix.lovable.app.
+
+- **Route Check**: Verify `/logistics/operations`, `/logistics/disputes`, and `/logistics/cms` resolve to their respective components.
+- **Functional Check**: Verify the "Capacity Change" workflow updates the `rider_gigs` record and reflects in the UI.
+- **Auth Check**: Verify that a non-logistics staff user is correctly blocked from these routes.

@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { Star, Plus, Check, X, Ban, ExternalLink } from "lucide-react";
+import { Star, Plus, Check, X, Ban, ExternalLink, Loader2, AlertCircle, ShieldCheck, Mail, Phone, Car } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLiveTable } from "@/lib/realtime-hooks";
-import { kvGet, kvSet } from "@/lib/kv-store";
+import { patchRecord } from "@/lib/insforge-crud";
+import { syncSubjectStatus } from "@/lib/verification-api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/drivers")({
@@ -20,32 +21,33 @@ type DriverRow = {
   rating?: number | null;
   total_deliveries?: number | null;
   online_status?: boolean | null;
+  verification_status?: string | null;
+  docs_verified?: boolean | null;
+  phone?: string | null;
 };
 type UserRow = { id: string; name?: string | null; email?: string | null };
-
-const STATUS_KEY = "driver_status";
 
 function LogisticsDrivers() {
   const { rows: drivers } = useLiveTable<DriverRow>("drivers", { params: { limit: 300 }, minMs: 10000, maxMs: 60000 });
   const { rows: users } = useLiveTable<UserRow>("users", { params: { limit: 500 }, minMs: 30000, maxMs: 120000 });
-  const [overrides, setOverrides] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    void kvGet<Record<string, string>>(STATUS_KEY).then((v) => { if (v) setOverrides(v); });
-  }, []);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const nameFor = (d: DriverRow) => {
     const u = users.find((x) => x.id === d.user_id);
     return u?.name ?? (u?.email ?? "").split("@")[0] ?? `Driver ${d.id.slice(0, 6)}`;
   };
 
-  const set = (id: string, label: string, msg: string) => {
-    setOverrides((p) => {
-      const next = { ...p, [id]: label };
-      void kvSet(STATUS_KEY, next);
-      return next;
+  const set = async (id: string, label: string, msg: string) => {
+    setBusy(id);
+    const ok = await patchRecord("drivers", id, { 
+      verification_status: label.toLowerCase(),
+      docs_verified: label.toLowerCase() === "active"
     });
-    toast.success(msg);
+    if (ok) {
+      await syncSubjectStatus("rider", id).catch(() => null);
+      toast.success(msg);
+    }
+    setBusy(null);
   };
 
   return (
@@ -62,21 +64,40 @@ function LogisticsDrivers() {
 
       <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
         <DataTable
-          columns={["ID", "Name", "Vehicle", "Rating", "Deliveries", "Status", "Actions"]}
+          columns={["ID", "Name", "Contact", "Vehicle", "Rating", "Deliveries", "Status", "Actions"]}
           rows={drivers.map((d) => {
             const name = nameFor(d);
-            const status = overrides[d.id] ?? (d.online_status ? "Online" : "Offline");
+            const user = users.find(u => u.id === d.user_id);
+            const status = d.verification_status || (d.online_status ? "Online" : "Offline");
             return [
-              <span key={d.id+"id"} className="font-bold text-primary">{d.id.slice(0, 8)}</span>,
+              <div key={d.id+"id"} className="flex items-center gap-2">
+                <span className="font-bold text-primary">{d.id.slice(0, 8)}</span>
+                {d.docs_verified && <ShieldCheck className="h-3 w-3 text-emerald-500" />}
+              </div>,
               <span key={d.id+"n"} className="font-bold">{name}</span>,
-              <span key={d.id+"v"} className="text-muted-foreground">{d.vehicle_type ?? "—"}{d.vehicle_number ? ` · ${d.vehicle_number}` : ""}</span>,
+              <div key={d.id+"c"} className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1"><Mail className="h-2.5 w-2.5" /> {user?.email || "—"}</div>
+                <div className="flex items-center gap-1"><Phone className="h-2.5 w-2.5" /> {d.phone || "—"}</div>
+              </div>,
+              <div key={d.id+"v"} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-1 text-xs font-bold text-foreground">
+                  <Car className="h-3 w-3 text-primary" /> {d.vehicle_type || "No vehicle"}
+                </div>
+                {d.vehicle_number && <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{d.vehicle_number}</div>}
+              </div>,
               <span key={d.id+"r"} className="flex items-center gap-1 font-bold"><Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" /> {Number(d.rating ?? 0).toFixed(2)}</span>,
               d.total_deliveries ?? 0,
               <StatusBadge key={d.id+"s"} label={status} />,
               <div key={d.id+"a"} className="flex items-center gap-1.5">
-                <Act tone="primary" icon={Check} label="Approve" onClick={() => set(d.id, "Active",    `${name} approved`)} />
-                <Act tone="warn"    icon={Ban}   label="Suspend" onClick={() => set(d.id, "Suspended", `${name} suspended`)} />
-                <Act tone="danger"  icon={X}     label="Reject"  onClick={() => set(d.id, "Rejected",  `${name} rejected`)} />
+                {busy === d.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <>
+                    <Act tone="primary" icon={Check} label="Approve" onClick={() => set(d.id, "Active",    `${name} approved`)} />
+                    <Act tone="warn"    icon={Ban}   label="Suspend" onClick={() => set(d.id, "Suspended", `${name} suspended`)} />
+                    <Act tone="danger"  icon={X}     label="Reject"  onClick={() => set(d.id, "Rejected",  `${name} rejected`)} />
+                  </>
+                )}
                 <Link to="/logistics/drivers/$driverId" params={{ driverId: d.id }} className="grid h-7 w-7 place-items-center rounded-full bg-indigo-100 text-indigo-700 transition active:scale-90" title="Manage Profile">
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Link>
