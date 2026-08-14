@@ -122,7 +122,9 @@ export const createNewZone = createServerFn({ method: "POST" })
       ...data,
       max_orders_per_rider: 3,
       assignment_timeout_sec: 60,
-      boundary: (data.boundary?.coordinates?.[0]?.length >= 3) 
+      center_lat: (data.boundary?.type === "Point") ? data.boundary.coordinates[1] : (data.boundary?.type === "Polygon" ? data.boundary.coordinates[0][0][1] : null),
+      center_lng: (data.boundary?.type === "Point") ? data.boundary.coordinates[0] : (data.boundary?.type === "Polygon" ? data.boundary.coordinates[0][0][0] : null),
+      boundary: (data.boundary?.type === "Polygon" && data.boundary.coordinates?.[0]?.length >= 3) 
         ? data.boundary 
         : { type: "Polygon", coordinates: [] }
     };
