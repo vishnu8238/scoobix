@@ -24,7 +24,12 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  return listTable<Gig>("gigs", { select: "*", order: "created_at.desc", ...params });
+  // Use explicit select to ensure we don't hit "undefined_column" on missing columns
+  return listTable<Gig>("gigs", { 
+    select: "id,status,zone_id,created_at", 
+    order: "created_at.desc", 
+    ...params 
+  });
 }
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
