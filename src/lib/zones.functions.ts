@@ -62,7 +62,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
         zoneId = zoneData[0].id;
         skipped++;
       } else {
-        const createZ = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones`, {
+        const createZ = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}`, {
           method: "POST",
           headers: {
             ...HEADERS,
