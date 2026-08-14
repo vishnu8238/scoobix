@@ -181,7 +181,7 @@ function NewTicketForm({
       description: description.trim(),
       category,
       role,
-      createdBy: userId,
+      created_by: userId,
       priority,
       attachments: attachment?.image_url ? [attachment.image_url] : [],
       documents: docAttachment?.image_url ? [docAttachment.image_url] : [],
@@ -380,7 +380,7 @@ function TicketCard({
 
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {files.map((f) => (
+              {files.map((f: string) => (
                 <a key={f} href={f} target="_blank" rel="noreferrer">
                   <img src={f} alt="Ticket attachment" loading="lazy" decoding="async" className="h-16 w-16 rounded-xl object-cover" />
                 </a>
@@ -401,7 +401,7 @@ function TicketCard({
                   <p className="mt-0.5">{m.message}</p>
                   {msgFiles.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {msgFiles.map((f) => (
+                      {msgFiles.map((f: string) => (
                         <a key={f} href={f} target="_blank" rel="noreferrer">
                           <img src={f} alt="Reply attachment" loading="lazy" decoding="async" className="h-14 w-14 rounded-lg object-cover" />
                         </a>
