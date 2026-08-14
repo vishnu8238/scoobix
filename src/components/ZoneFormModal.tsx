@@ -34,7 +34,14 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         ? formData.boundary 
         : { type: "Polygon", coordinates: [] };
 
-      // Ensure boundary is valid and numbers are proper
+      // Validate boundary coordinates for zones (must be closed)
+      if (boundary.coordinates.length > 0) {
+        const coords = boundary.coordinates[0];
+        if (JSON.stringify(coords[0]) !== JSON.stringify(coords[coords.length - 1])) {
+          coords.push(coords[0]);
+        }
+      }
+
       const submission = {
         ...formData,
         pickup_radius_km: Number(formData.pickup_radius_km) || 1,
@@ -43,7 +50,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         center_lat: boundary.coordinates?.[0]?.[0]?.[1] || 22.3072,
         center_lng: boundary.coordinates?.[0]?.[0]?.[0] || 73.1812
       };
-      const result = await createNewZone(submission as any);
+      const result = await createNewZone({ data: submission as any });
       if (result && !result.id) {
         throw new Error("Creation returned an invalid result");
       }
@@ -176,6 +183,7 @@ type SubzoneFormProps = {
   zoneId?: string;
   zones?: DeliveryZone[];
   initialData?: Partial<Subzone>;
+  zoneBoundary?: any;
 };
 
 export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, initialData }: SubzoneFormProps) {
@@ -198,7 +206,7 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
       return;
     }
     try {
-      await createNewSubzone(formData as any);
+      await createNewSubzone({ data: formData as any });
       toast.success("Subzone created successfully");
       onSuccess();
       onClose();

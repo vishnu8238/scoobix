@@ -285,9 +285,29 @@ export function GoogleMap(props: Props) {
           <MapPin className="h-6 w-6" />
         </div>
         <p className="font-display text-lg font-extrabold text-foreground">Interactive map restricted</p>
-        <p className="max-w-[280px] text-xs mt-2 leading-relaxed">
-          Google Maps is currently unavailable. Showing data in list view where applicable.
+        <p className="max-w-[280px] text-xs mt-2 leading-relaxed px-4 text-center">
+          Google Maps is currently unavailable. You can still define zones by searching for addresses or entering coordinates.
         </p>
+        {props.onPick && (
+          <div className="mt-4 grid grid-cols-2 gap-2 px-4 w-full max-w-sm">
+             <input 
+               type="number" step="any" placeholder="Latitude" 
+               className="rounded-xl bg-background p-2 text-xs border border-border outline-none focus:ring-1 focus:ring-primary"
+               onChange={(e) => {
+                 const lat = parseFloat(e.target.value);
+                 if (!isNaN(lat) && props.center?.lng) props.onPick?.({ lat, lng: props.center.lng });
+               }}
+             />
+             <input 
+               type="number" step="any" placeholder="Longitude" 
+               className="rounded-xl bg-background p-2 text-xs border border-border outline-none focus:ring-1 focus:ring-primary"
+               onChange={(e) => {
+                 const lng = parseFloat(e.target.value);
+                 if (!isNaN(lng) && props.center?.lat) props.onPick?.({ lat: props.center.lat, lng });
+               }}
+             />
+          </div>
+        )}
       </div>
     }>
       <GoogleMapInner {...props} />
