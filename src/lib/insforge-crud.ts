@@ -45,7 +45,7 @@ function metricName(method: string, table: string) {
  * Retry ONLY when it can help: network failures, 429 and 5xx. A 4xx is a bad
  * request — retrying just doubles the cost and the latency.
  */
-async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+async function withRetry<T>(table: string, fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err: any) {
@@ -53,15 +53,24 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     
     // Normalize "No such column" or "No such table" errors for better UI signaling
     const msg = String(err?.message || "").toLowerCase();
-    if (msg.includes("does not exist") || msg.includes("undefined_table") || msg.includes("undefined_column")) {
-      console.error(`[DB_FATAL] Schema mismatch on ${fn.toString().slice(0, 100)}:`, msg);
-      throw err; // Don't retry schema errors
+    const isSchemaError = msg.includes("does not exist") || 
+                         msg.includes("undefined_table") || 
+                         msg.includes("undefined_column") ||
+                         msg.includes("42p01") || // Postgres relation does not exist code
+                         msg.includes("42703");   // Postgres undefined column code
+
+    if (isSchemaError) {
+      console.error(`[DB_FATAL] Schema mismatch on ${table}:`, msg);
+      // We wrap the error to ensure the UI can distinguish a missing table from a network error
+      const schemaErr = new HttpError(404, `Database relation error: ${err.message}`);
+      (schemaErr as any).isSchemaError = true;
+      throw schemaErr;
     }
 
     const retryable = status === 0 || status === 429 || status >= 500;
     if (!retryable) throw err;
     
-    console.warn(`[DB_RETRY] Retrying request after ${status || "network"} error`);
+    console.warn(`[DB_RETRY] Retrying ${table} after ${status || "network"} error`);
     await new Promise((r) => setTimeout(r, 500));
     return await fn();
   }
@@ -230,7 +239,7 @@ export function listTable<T = Record<string, unknown>>(
   const qs = JSON.stringify(params || {});
   const cacheKey = `db:${table}:${qs}`;
 
-  const load = () => withRetry(async () => {
+  const load = () => withRetry<T[]>(table, async () => {
     let query = insforge.database.from(table).select(select);
     query = applyParams(query, params);
     const data = await handleResponse<T[]>(query, "GET", table);
@@ -276,7 +285,7 @@ export function createRecord<T = Record<string, unknown>>(
   record: Record<string, unknown>,
 ): Promise<T | null> {
   invalidateTable(table);
-  return withRetry(async () => {
+  return withRetry<T | null>(table, async () => {
     // RLS Defense: Restrictive SELECT policies can make an otherwise-successful 
     // INSERT look like a failure (returning null/empty result).
     // We attempt the insert and select-back.
@@ -312,7 +321,7 @@ export function createRecords<T = Record<string, unknown>>(
 ): Promise<T[] | null> {
   if (!records.length) return Promise.resolve([]);
   invalidateTable(table);
-  return withRetry(async () => {
+  return withRetry<T[] | null>(table, async () => {
     const query = insforge.database.from(table).insert(records).select();
     try {
       const res = await handleResponse<T[]>(query, "POST", table);
@@ -335,7 +344,7 @@ export function patchRecord<T = Record<string, unknown>>(
   patch: Record<string, unknown>,
 ): Promise<T | null> {
   invalidateTable(table);
-  return withRetry(() => {
+  return withRetry<T | null>(table, () => {
     const query = insforge.database.from(table).update(patch).eq("id", id).select().single();
     return handleResponse<T>(query, "PATCH", table);
   }).then((res) => {
@@ -352,7 +361,7 @@ export function patchWhereIn<T = Record<string, unknown>>(
 ): Promise<T | null> {
   if (!ids.length) return Promise.resolve(null);
   invalidateTable(table);
-  return withRetry(() => {
+  return withRetry<T[] | null>(table, () => {
     const query = insforge.database.from(table).update(patch).in("id", ids).select();
     return handleResponse<T[]>(query, "PATCH", table);
   }).then((res) => {
@@ -363,7 +372,7 @@ export function patchWhereIn<T = Record<string, unknown>>(
 
 export function deleteRecord(table: string, id: string): Promise<null> {
   invalidateTable(table);
-  return withRetry(() => {
+  return withRetry<null>(table, () => {
     const query = insforge.database.from(table).delete().eq("id", id);
     return handleResponse<null>(query, "DELETE", table);
   }).then(() => {

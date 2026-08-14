@@ -12,7 +12,7 @@ export type Story = {
 };
 
 export async function fetchStories(params?: Record<string, any>) {
-  return listTable<Story>("audit_logs", { entity: "eq.story", order: "created_at.desc", ...params });
+  return listTable<Story>("audit_logs", { select: "*", entity: "eq.story", order: "created_at.desc", ...params });
 }
 
 export async function createStory(story: Omit<Story, "id" | "created_at">) {

@@ -24,7 +24,7 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  return listTable<Gig>("gigs", { order: "created_at.desc", ...params });
+  return listTable<Gig>("gigs", { select: "*", order: "created_at.desc", ...params });
 }
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {

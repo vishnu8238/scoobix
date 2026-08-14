@@ -13,16 +13,28 @@ export const getZonesWithSubzones = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
       const [zonesRes, subzonesRes] = await Promise.all([
-        fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?order=name.asc`, { headers: HEADERS }),
-        fetch(`${INSFORGE_URL}/api/database/records/subzones?order=name.asc`, { headers: HEADERS })
+        fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?select=*&order=name.asc`, { headers: HEADERS }),
+        fetch(`${INSFORGE_URL}/api/database/records/subzones?select=*&order=name.asc`, { headers: HEADERS })
       ]);
       
+      if (!zonesRes.ok && zonesRes.status !== 404) {
+        const txt = await zonesRes.text();
+        console.warn(`[ZONES_FETCH_WARN] logistics_zones status ${zonesRes.status}:`, txt);
+      }
+      if (!subzonesRes.ok && subzonesRes.status !== 404) {
+        const txt = await subzonesRes.text();
+        console.warn(`[ZONES_FETCH_WARN] subzones status ${subzonesRes.status}:`, txt);
+      }
+
       const zones = zonesRes.ok ? await zonesRes.json() : [];
       const subzones = subzonesRes.ok ? await subzonesRes.json() : [];
       
-      return { zones: Array.isArray(zones) ? zones : [], subzones: Array.isArray(subzones) ? subzones : [] };
+      return { 
+        zones: Array.isArray(zones) ? zones : [], 
+        subzones: Array.isArray(subzones) ? subzones : [] 
+      };
     } catch (err) {
-      console.error("Failed to fetch zones:", err);
+      console.error("Failed to fetch zones server-side:", err);
       return { zones: [], subzones: [] };
     }
   });
