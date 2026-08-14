@@ -246,7 +246,12 @@ export function listTable<T = Record<string, unknown>>(
       const data = await handleResponse<T[]>(query, "GET", table);
       return Array.isArray(data) ? data : [];
     } catch (err: any) {
-      if (err.isSchemaError) return [];
+      // Definitively handle missing table errors in production
+      const msg = String(err.message || "").toLowerCase();
+      if (err.isSchemaError || msg.includes("42p01") || msg.includes("does not exist")) {
+        console.warn(`[DB_SCHEMA_WARN] Table "${table}" does not exist. Returning empty array.`);
+        return [] as T[];
+      }
       throw err;
     }
   });
