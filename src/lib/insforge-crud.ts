@@ -222,11 +222,12 @@ export function listTable<T = Record<string, unknown>>(
   const qs = JSON.stringify(params || {});
   const cacheKey = `db:${table}:${qs}`;
 
-  const load = () => withRetry(() => {
+  const load = () => withRetry(async () => {
     let query = insforge.database.from(table).select(select);
     query = applyParams(query, params);
-    return handleResponse<T[]>(query, "GET", table);
-  }).then(v => Array.isArray(v) ? v : [])
+    const data = await handleResponse<T[]>(query, "GET", table);
+    return Array.isArray(data) ? data : [];
+  })
     .catch(err => {
       console.error(`[DB_ERROR] Table ${table} load failed:`, err);
       // Surface real errors as rejection
