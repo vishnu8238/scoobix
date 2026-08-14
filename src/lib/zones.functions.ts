@@ -24,7 +24,7 @@ export const getZonesWithSubzones = createServerFn({ method: "GET" })
       }
       if (!subzonesRes.ok && subzonesRes.status !== 404) {
         const txt = await subzonesRes.text();
-        console.warn(`[ZONES_FETCH_WARN] subzones status ${subzonesRes.status}:`, txt);
+        console.warn(`[ZONES_FETCH_WARN] ${TABLE_SUBZONES} status ${subzonesRes.status}:`, txt);
       }
 
       const zones = zonesRes.ok ? await zonesRes.json() : [];
