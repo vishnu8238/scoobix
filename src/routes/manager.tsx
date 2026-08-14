@@ -57,7 +57,7 @@ function ManagerShell({ pathname }: { pathname: string }) {
         <div className="flex items-center gap-2">
           <ScoobixMark size={32} />
           <div className="text-left">
-            <p className="text-[12px] font-bold leading-none text-foreground">{manager?.name || "Merchant Manager"}</p>
+            <p className="text-[12px] font-bold leading-none text-foreground">{manager?.name || (manager?.email ? manager.email.split('@')[0] : "Merchant Manager")}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Scoobix Manager</p>
           </div>
         </div>
