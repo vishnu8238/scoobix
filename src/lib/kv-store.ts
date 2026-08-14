@@ -27,16 +27,20 @@ export async function kvGet<T>(key: string): Promise<T | null> {
 
 export async function kvSet(key: string, value: unknown): Promise<void> {
   const payload = JSON.stringify(value);
-  let id = idCache.get(key);
-  if (!id) {
-    const rows = await listTable<KVRow>("app_settings", { key: `eq.${key}`, limit: 1 });
-    id = rows[0]?.id;
-    if (id) idCache.set(key, id);
-  }
-  if (id) {
-    await patchRecord("app_settings", id, { value: payload });
-  } else {
-    const created = await createRecord<KVRow>("app_settings", { key, value: payload });
-    if (created?.id) idCache.set(key, created.id);
+  try {
+    let id = idCache.get(key);
+    if (!id) {
+      const rows = await listTable<KVRow>("app_settings", { key: `eq.${key}`, limit: 1 });
+      id = rows[0]?.id;
+      if (id) idCache.set(key, id);
+    }
+    if (id) {
+      await patchRecord("app_settings", id, { value: payload });
+    } else {
+      const created = await createRecord<KVRow>("app_settings", { key, value: payload });
+      if (created?.id) idCache.set(key, created.id);
+    }
+  } catch (err) {
+    console.warn(`[KV_STORE] Silent failure for key "${key}" (likely unauthenticated):`, err);
   }
 }
