@@ -14,6 +14,5 @@ export type AuditLog = {
 };
 
 export async function fetchAuditLogs(params?: Record<string, any>) {
-  // We use the same table as zones-api.ts:logAudit
-  return listTable<AuditLog>("loyalty_audit_logs", { order: "timestamp.desc", ...params });
+  return listTable<AuditLog>("audit_logs", { order: "timestamp.desc", ...params });
 }
