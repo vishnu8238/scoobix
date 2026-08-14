@@ -75,10 +75,13 @@ function ConsolidatedLogin() {
     }
   };
 
-  if (loading) {
+  if (loading && !error) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-background">
+      <div className="flex min-h-svh flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground animate-pulse">
+          Resolving Access...
+        </p>
       </div>
     );
   }
@@ -93,12 +96,19 @@ function ConsolidatedLogin() {
         <p className="text-sm text-muted-foreground">Select a portal to continue</p>
       </div>
 
-      {error && (
+      {(error || (authState === "auth_error" && authError)) && (
         <div className="mb-6 w-full overflow-hidden rounded-2xl bg-destructive/10 ring-1 ring-destructive/20 p-4 text-left flex items-start gap-3">
           <ShieldCheck className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-          <div>
+          <div className="flex-1">
             <p className="text-xs font-bold text-destructive uppercase tracking-wider">Authentication Error</p>
-            <p className="mt-1 text-[13px] font-medium text-destructive/90">{error}</p>
+            <p className="mt-1 text-[13px] font-medium text-destructive/90">{error || authError}</p>
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-[10px] font-bold uppercase text-primary mt-2"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
           </div>
         </div>
       )}
