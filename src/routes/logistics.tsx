@@ -66,6 +66,7 @@ const NAV = [
 ];
 
 function LogisticsLayout() {
+  const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -100,15 +101,56 @@ function LogisticsLayout() {
               );
             })}
           </nav>
+
+          <div className="mt-4 pt-4 border-t border-border/40">
+             <div className="flex items-center gap-3 px-2 py-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground">
+                  {(user?.name || "L").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-[12px] font-bold leading-none text-foreground truncate">{user?.name || "Logistics Staff"}</p>
+                </div>
+              </div>
+            <SignOutButton />
+          </div>
         </aside>
 
         {/* Main content */}
         <main className="flex-1 flex flex-col h-svh overflow-hidden">
+          {/* Header */}
+          <header className="mb-2 flex items-center justify-between px-5 pt-6 md:px-10 md:pt-8">
+            <div className="relative w-full max-w-md hidden md:block">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                placeholder="Search logistics…"
+                className="h-11 w-full rounded-2xl bg-card pl-11 pr-4 text-sm font-medium shadow-soft outline-none ring-1 ring-border/60 transition focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <div className="flex items-center gap-3 ml-auto">
+              <button className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-card shadow-soft ring-1 ring-border/60">
+                <Bell className="h-4 w-4 text-foreground" />
+              </button>
+            </div>
+          </header>
+          
           <div className="flex-1 min-h-0 animate-fade-up px-5 py-6 md:px-10 md:py-8 has-[.h-full]:p-0">
             <Outlet />
           </div>
         </main>
       </div>
     </div>
+  );
+}
+
+function SignOutButton() {
+  const { signOut } = useAuth();
+  return (
+    <button
+      onClick={() => signOut()}
+      className="inline-flex w-full items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition hover:bg-muted/80 hover:text-foreground"
+    >
+      <LogOut className="h-3.5 w-3.5" />
+      Sign out
+    </button>
   );
 }
