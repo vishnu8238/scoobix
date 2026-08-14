@@ -82,7 +82,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
       if (!zoneId) continue;
 
       for (const szName of zDef.subzones) {
-        const szCheck = await fetch(`${INSFORGE_URL}/api/database/records/subzones?name=ilike.${encodeURIComponent(szName)}&zone_id=eq.${zoneId}`, { headers: HEADERS });
+        const szCheck = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}?name=ilike.${encodeURIComponent(szName)}&zone_id=eq.${zoneId}`, { headers: HEADERS });
         const szData = szCheck.ok ? await szCheck.json() : [];
 
         if (szData && szData.length > 0) {
