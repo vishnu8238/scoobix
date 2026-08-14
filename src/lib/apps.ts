@@ -8,7 +8,7 @@ import type { Role } from "./types";
  * links. There is NO portal switcher — a signed-in user only ever sees the
  * surface that matches their role.
  */
-export type AppId = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics";
+export type AppId = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
 export type ScoobixApp = {
   id: AppId;
@@ -31,7 +31,7 @@ export type ScoobixApp = {
   platform: "mobile" | "web";
 };
 
-export const APPS: Record<AppId, ScoobixApp> = {
+export const APPS: Record<string, ScoobixApp> = {
   customer: {
     id: "customer",
     role: "customer",
@@ -125,6 +125,9 @@ export const APP_BY_ROLE: Record<Role, ScoobixApp> = {
   admin: APPS.admin,
   manager: APPS.manager,
   logistics: APPS.logistics,
+  dispatcher: APPS.logistics,
+  zone_manager: APPS.logistics,
+  logistics_admin: APPS.logistics,
 };
 
 export function appForPath(pathname: string): ScoobixApp | null {
