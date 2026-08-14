@@ -126,6 +126,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           raw: sessionUser // Keep the raw object in case it has vendor-specific fields
         };
         const sessionNameCandidate = getDisplayName(combinedUserData);
+        console.log("[AUTH_TRACE] Identity Resolution Candidate:", sessionNameCandidate, "Source Data:", {
+          profile_name: profile?.name,
+          session_metadata: sessionUser.user_metadata,
+          google_profile: sessionUser.profile,
+          identities: sessionUser.identities
+        });
         
         if (!profile && userEmail) {
           console.log("[AUTH_TRACE] Creating new profile for:", userEmail);
@@ -134,10 +140,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: authId,
             email: userEmail,
             email_normalized: userEmail,
-            name: sessionNameCandidate !== "User" ? sessionNameCandidate : "User",
+            name: sessionNameCandidate,
             role: "customer",
             is_active: true,
           });
+        } else if (profile && sessionNameCandidate !== "User" && profile.name !== sessionNameCandidate) {
+          // If we have a better name from session/OAuth than what's in the DB (or if DB has "User")
+          // and we're not generic, we can consider updating it, but for now we'll just ensure 
+          // the React state uses the best resolved name.
+          console.log("[AUTH_TRACE] DB Name:", profile.name, "Better Candidate:", sessionNameCandidate);
         }
       } catch (err) {
         console.error("[AUTH_TRACE] Profile resolution failed:", err);
