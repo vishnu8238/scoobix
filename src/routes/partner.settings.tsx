@@ -10,7 +10,7 @@ function PartnerSettings() {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Partner Settings</h1>
-      <p>User: {user?.name}</p>
+      <p>Profile: {user?.name}</p>
     </div>
   );
 }
