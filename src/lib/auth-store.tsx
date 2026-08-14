@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log("[AUTH_TRACE] Resolving user session...");
       
-      // Ensure the SDK has had a moment to hydrate from storage if it just loaded
+      // Ensure the SDK has had a moment to hydrate from storage
       if (typeof window !== "undefined") {
         const { ensureAuthHydrated } = await import("./insforge");
         await ensureAuthHydrated();
@@ -101,14 +101,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => ({ data: null, error: e }));
       
       if (currentUserError || !userData?.user) {
-         console.log("[AUTH_TRACE] No active session found.", currentUserError?.message);
+         const errorMsg = currentUserError?.message || "";
+         console.log("[AUTH_TRACE] No active session found.", errorMsg);
          
-         // iOS Safeguard: If we have an error that explicitly mentions refresh token, it's a hard unauth
-         if (currentUserError?.message?.includes("refresh token") || currentUserError?.message?.includes("session_not_found")) {
-           console.warn("[AUTH_TRACE] Session/Refresh token invalid. Clearing storage.");
+         // iOS Safeguard: Clear storage on definitive refresh/session failures
+         const isRefreshError = errorMsg.includes("refresh token") || 
+                               errorMsg.includes("session_not_found") ||
+                               errorMsg.includes("invalid_grant");
+
+         if (isRefreshError) {
+           console.warn("[AUTH_TRACE] Session/Refresh token invalid. Performing clean sign-out.");
            await insforge.auth.signOut().catch(() => {});
            if (typeof window !== "undefined") {
              localStorage.removeItem('scoobix_auth_token');
+             // Also clear PKCE verifiers if they exist (common cause of iOS failures)
+             for (let i = 0; i < localStorage.length; i++) {
+               const key = localStorage.key(i);
+               if (key?.startsWith('sb-') && key?.endsWith('-code-verifier')) {
+                 localStorage.removeItem(key);
+               }
+             }
            }
          }
          
