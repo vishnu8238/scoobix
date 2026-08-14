@@ -102,17 +102,6 @@ export function getDisplayName(user: any): string {
   return "User";
 }
 
-  // 2. Fallback to Email Prefix (last resort before "User")
-  const email = user.email || user.auth?.email || user.user_metadata?.email || user.profile?.email || user.identities?.[0]?.identity_data?.email;
-  if (email && typeof email === 'string') {
-    const prefix = email.split('@')[0];
-    const res = normalize(prefix);
-    if (res) return res;
-  }
-
-  return "User";
-}
-
 /**
  * Derives initials from a name (max 2 chars).
  */
