@@ -109,7 +109,7 @@ function LogisticsLayout() {
                   {getInitials(user?.name)}
                 </div>
                 <div className="text-left min-w-0">
-                  <p className="text-[12px] font-bold leading-none text-foreground truncate">{user?.name || "Logistics Staff"}</p>
+                  <p className="text-[12px] font-bold leading-none text-foreground truncate">{user?.name}</p>
                 </div>
               </div>
             <SignOutButton />
