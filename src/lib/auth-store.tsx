@@ -204,10 +204,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...sessionUser, 
         ...profile, 
         user_metadata: sessionUser.user_metadata, 
+        provider_metadata: (sessionUser as any).provider_metadata,
         profile: sessionUser.profile,
         identities: sessionUser.identities,
         raw: sessionUser
       });
+
       console.log("[AUTH_TRACE] Resolved display name:", displayName);
 
       setUser({
