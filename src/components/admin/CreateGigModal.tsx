@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "lucide-react";
+import { Calendar, AlertCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { createGig, type Gig } from "@/lib/gigs-api";
+import { createGig } from "@/lib/gigs-api";
+import { fetchZones, type DeliveryZone } from "@/lib/zones-api";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CreateGigModalProps {
   isOpen: boolean;
@@ -17,6 +19,10 @@ interface CreateGigModalProps {
 
 export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalProps) {
   const [loading, setLoading] = useState(false);
+  const [loadingZones, setLoadingZones] = useState(false);
+  const [zonesError, setZonesError] = useState<string | null>(null);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  
   const [formData, setFormData] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
     startHour: "00",
@@ -30,10 +36,38 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     zone: ""
   });
 
+  // Unique cities from loaded zones
+  const cities = Array.from(new Set(zones.map(z => z.city))).filter(Boolean).sort();
+  
+  // Filtered zones based on selected city
+  const filteredZones = zones.filter(z => z.city === formData.city).sort((a, b) => a.name.localeCompare(b.name));
+
+  useEffect(() => {
+    if (isOpen) {
+      const loadZones = async () => {
+        setLoadingZones(true);
+        setZonesError(null);
+        try {
+          const data = await fetchZones();
+          if (!data || data.length === 0) {
+            setZonesError("No zones found in the database. A city and zone are required to create a gig.");
+          } else {
+            setZones(data);
+          }
+        } catch (err: any) {
+          console.error("[GIG_MODAL] Failed to fetch zones:", err);
+          setZonesError("Failed to load cities and zones. Please check your connection or database permissions.");
+        } finally {
+          setLoadingZones(false);
+        }
+      };
+      loadZones();
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
     if (!formData.city || !formData.zone) {
       toast.error("City and Zone are required");
       return;
@@ -77,12 +111,10 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
           city: "",
           zone: ""
         });
-      } else {
-        throw new Error("Creation returned no record");
       }
     } catch (error: any) {
       console.error("Failed to create gig:", error);
-      toast.error(error.message || "Failed to create gig. Check permissions.");
+      toast.error(error.message || "Failed to create gig.");
     } finally {
       setLoading(false);
     }
@@ -99,98 +131,153 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-8 pt-4 space-y-6">
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              Date <span className="text-rose-500">*</span>
-            </Label>
-            <div className="relative">
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold focus:ring-primary/20"
-                required
-              />
-              <Calendar className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 pointer-events-none" />
-            </div>
-          </div>
+            
+            {zonesError && (
+              <Alert variant="destructive" className="rounded-2xl bg-destructive/5 border-destructive/20">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs font-bold">{zonesError}</AlertDescription>
+              </Alert>
+            )}
 
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Start Time <span className="text-rose-500">*</span>
+                Date <span className="text-rose-500">*</span>
               </Label>
-              <div className="flex items-center gap-2">
+              <div className="relative">
                 <Input
-                  placeholder="HH"
-                  value={formData.startHour}
-                  onChange={(e) => setFormData({ ...formData, startHour: e.target.value.slice(0, 2) })}
-                  className="h-12 rounded-2xl border-border/60 bg-muted/30 text-center font-bold"
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold focus:ring-primary/20"
                   required
                 />
-                <span className="font-bold text-muted-foreground">:</span>
+                <Calendar className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Start Time <span className="text-rose-500">*</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="HH"
+                    value={formData.startHour}
+                    onChange={(e) => setFormData({ ...formData, startHour: e.target.value.slice(0, 2) })}
+                    className="h-12 rounded-2xl border-border/60 bg-muted/30 text-center font-bold"
+                    required
+                  />
+                  <span className="font-bold text-muted-foreground">:</span>
+                  <Input
+                    placeholder="MM"
+                    value={formData.startMinute}
+                    onChange={(e) => setFormData({ ...formData, startMinute: e.target.value.slice(0, 2) })}
+                    className="h-12 rounded-2xl border-border/60 bg-muted/30 text-center font-bold"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  End Time <span className="text-rose-500">*</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="HH"
+                    value={formData.endHour}
+                    onChange={(e) => setFormData({ ...formData, endHour: e.target.value.slice(0, 2) })}
+                    className="h-12 rounded-2xl border-border/60 bg-muted/30 text-center font-bold"
+                    required
+                  />
+                  <span className="font-bold text-muted-foreground">:</span>
+                  <Input
+                    placeholder="MM"
+                    value={formData.endMinute}
+                    onChange={(e) => setFormData({ ...formData, endMinute: e.target.value.slice(0, 2) })}
+                    className="h-12 rounded-2xl border-border/60 bg-muted/30 text-center font-bold"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  City <span className="text-rose-500">*</span>
+                </Label>
+                <Select 
+                  value={formData.city} 
+                  onValueChange={(v) => setFormData({ ...formData, city: v, zone: "" })}
+                  disabled={loadingZones || !!zonesError}
+                >
+                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold">
+                    {loadingZones ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading...</span>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Select City" />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {cities.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Zone <span className="text-rose-500">*</span>
+                </Label>
+                <Select 
+                  value={formData.zone}
+                  disabled={!formData.city || loadingZones || !!zonesError}
+                  onValueChange={(v) => setFormData({ ...formData, zone: v })}
+                >
+                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold">
+                    <SelectValue placeholder={formData.city ? "Select Zone" : "Select city first"} />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {filteredZones.map(zone => (
+                      <SelectItem key={zone.id} value={zone.id}>{zone.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Estimated Payout (₹) <span className="text-rose-500">*</span>
+                </Label>
                 <Input
-                  placeholder="MM"
-                  value={formData.startMinute}
-                  onChange={(e) => setFormData({ ...formData, startMinute: e.target.value.slice(0, 2) })}
-                  className="h-12 rounded-2xl border-border/60 bg-muted/30 text-center font-bold"
+                  placeholder="e.g. 300"
+                  value={formData.payout}
+                  onChange={(e) => setFormData({ ...formData, payout: e.target.value })}
+                  className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Needed People <span className="text-rose-500">*</span>
+                </Label>
+                <Input
+                  placeholder="1"
+                  type="number"
+                  value={formData.neededPeople}
+                  onChange={(e) => setFormData({ ...formData, neededPeople: e.target.value })}
+                  className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold"
                   required
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                End Time <span className="text-rose-500">*</span>
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="HH"
-                  value={formData.endHour}
-                  onChange={(e) => setFormData({ ...formData, endHour: e.target.value.slice(0, 2) })}
-                  className="h-12 rounded-2xl border-border/60 bg-muted/30 text-center font-bold"
-                  required
-                />
-                <span className="font-bold text-muted-foreground">:</span>
-                <Input
-                  placeholder="MM"
-                  value={formData.endMinute}
-                  onChange={(e) => setFormData({ ...formData, endMinute: e.target.value.slice(0, 2) })}
-                  className="h-12 rounded-2xl border-border/60 bg-muted/30 text-center font-bold"
-                  required
-                />
-              </div>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Estimated Payout (₹) <span className="text-rose-500">*</span>
-              </Label>
-              <Input
-                placeholder="e.g. 300"
-                value={formData.payout}
-                onChange={(e) => setFormData({ ...formData, payout: e.target.value })}
-                className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Needed People <span className="text-rose-500">*</span>
-              </Label>
-              <Input
-                placeholder="1"
-                type="number"
-                value={formData.neededPeople}
-                onChange={(e) => setFormData({ ...formData, neededPeople: e.target.value })}
-                className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 Percentage to complete gig <span className="text-rose-500">*</span>
@@ -204,45 +291,9 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                City <span className="text-rose-500">*</span>
-              </Label>
-              <Select onValueChange={(v) => setFormData({ ...formData, city: v })}>
-                <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold">
-                  <SelectValue placeholder="Select city" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl">
-                  <SelectItem value="city1">City 1</SelectItem>
-                  <SelectItem value="city2">City 2</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              Zone <span className="text-rose-500">*</span>
-            </Label>
-            <Select 
-              disabled={!formData.city}
-              onValueChange={(v) => setFormData({ ...formData, zone: v })}
-            >
-              <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/30 font-bold">
-                <SelectValue placeholder={formData.city ? "Select zone" : "Select city first"} />
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl">
-                <SelectItem value="zone1">Zone 1</SelectItem>
-                <SelectItem value="zone2">Zone 2</SelectItem>
-                <SelectItem value="zone3">Zone 3</SelectItem>
-                <SelectItem value="zone4">Zone 4</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          </div>
-
-          <div className="flex gap-3 p-8 pt-4 border-t bg-card shrink-0">
+          <DialogFooter className="flex flex-row gap-3 p-8 pt-4 border-t bg-card shrink-0">
             <Button
               type="button"
               variant="outline"
@@ -253,12 +304,12 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
             </Button>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || loadingZones || !!zonesError}
               className="h-12 flex-1 rounded-2xl bg-emerald-900 font-black text-white hover:bg-emerald-800 transition-all active:scale-[0.98]"
             >
               {loading ? "Creating..." : "+ Create Gig"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
