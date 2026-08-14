@@ -68,14 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authState, setAuthState] = useState<AuthState>("initializing");
   const [authError, setAuthError] = useState<string | null>(null);
+  const loadingStartTime = useRef<number>(Date.now());
   const lastRequestedPortal = useRef<Role | null>(null);
 
   const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
     const timeoutId = setTimeout(() => {
+      console.error("[AUTH_WATCHDOG] Auth resolution timed out after 15s");
       setLoading(false);
-      setAuthState((prev) => (prev === "session_resolving" || prev === "authorization_resolving" ? "auth_error" : prev));
-      setAuthError((prev) => prev || "Authentication timed out. Please try again.");
-    }, 20000);
+      setAuthState((prev) => (prev === "session_resolving" || prev === "authorization_resolving" || prev === "initializing" ? "auth_error" : prev));
+      setAuthError((prev) => prev || "Authentication connection timed out. Please check your internet and try again.");
+    }, 15000);
 
     try {
       if (isInitialMountOrSignIn) {
