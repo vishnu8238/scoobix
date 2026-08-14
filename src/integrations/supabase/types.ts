@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string | null
+          actor_id: string | null
+          actor_name: string | null
+          actor_role: string | null
+          archived: boolean | null
+          category: string | null
+          created_at: string | null
+          device_id: string | null
+          id: string
+          ip: string | null
+          meta: Json | null
+          session_id: string | null
+          severity: string | null
+          subject_id: string | null
+          subject_type: string | null
+          summary: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          archived?: boolean | null
+          category?: string | null
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          ip?: string | null
+          meta?: Json | null
+          session_id?: string | null
+          severity?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+          summary?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          archived?: boolean | null
+          category?: string | null
+          created_at?: string | null
+          device_id?: string | null
+          id?: string
+          ip?: string | null
+          meta?: Json | null
+          session_id?: string | null
+          severity?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+          summary?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       dispatch_history: {
         Row: {
           assigned_by: string | null
@@ -116,6 +176,66 @@ export type Database = {
           user_id?: string | null
           vehicle_number?: string | null
           vehicle_type?: string | null
+        }
+        Relationships: []
+      }
+      fraud_reports: {
+        Row: {
+          created_at: string | null
+          detected_at: string | null
+          evidence: Json | null
+          fingerprint: string | null
+          id: string
+          kind: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          risk_score: number | null
+          severity: string | null
+          signals: string[] | null
+          status: string | null
+          subject_id: string | null
+          subject_label: string | null
+          subject_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detected_at?: string | null
+          evidence?: Json | null
+          fingerprint?: string | null
+          id?: string
+          kind?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_score?: number | null
+          severity?: string | null
+          signals?: string[] | null
+          status?: string | null
+          subject_id?: string | null
+          subject_label?: string | null
+          subject_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detected_at?: string | null
+          evidence?: Json | null
+          fingerprint?: string | null
+          id?: string
+          kind?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_score?: number | null
+          severity?: string | null
+          signals?: string[] | null
+          status?: string | null
+          subject_id?: string | null
+          subject_label?: string | null
+          subject_type?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -657,6 +777,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_events: {
+        Row: {
+          acknowledged: boolean | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string | null
+          detail: string | null
+          device_id: string | null
+          id: string
+          ip: string | null
+          meta: Json | null
+          role: string | null
+          severity: string | null
+          title: string | null
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string | null
+          detail?: string | null
+          device_id?: string | null
+          id?: string
+          ip?: string | null
+          meta?: Json | null
+          role?: string | null
+          severity?: string | null
+          title?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string | null
+          detail?: string | null
+          device_id?: string | null
+          id?: string
+          ip?: string | null
+          meta?: Json | null
+          role?: string | null
+          severity?: string | null
+          title?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       subzones: {
         Row: {
