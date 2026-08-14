@@ -47,7 +47,11 @@ function LogisticsGigs() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchGigs();
+    const today = format(selectedDate, "yyyy-MM-dd");
+    const data = await fetchGigs({ 
+      start_time: `gte.${today}T00:00:00Z`,
+      end_time: `lte.${today}T23:59:59Z`
+    });
     setGigs(data);
     setLoading(false);
   }, []);
