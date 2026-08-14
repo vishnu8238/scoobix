@@ -38,8 +38,8 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         boundary: (formData.boundary?.coordinates?.[0]?.length >= 3) 
           ? formData.boundary 
           : { type: "Polygon", coordinates: [] },
-        center_lat: formData.boundary?.coordinates?.[0]?.[0]?.[1] || 12.9716,
-        center_lng: formData.boundary?.coordinates?.[0]?.[0]?.[0] || 77.5946
+        center_lat: formData.boundary?.coordinates?.[0]?.[0]?.[1] || 22.3072,
+        center_lng: formData.boundary?.coordinates?.[0]?.[0]?.[0] || 73.1812
       };
       const result = await createNewZone(submission as any);
       if (result && !result.id) {

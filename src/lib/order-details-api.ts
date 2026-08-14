@@ -25,7 +25,7 @@ export async function fetchCompleteOrderDetails(orderId: string): Promise<OrderD
     order.restaurant_id ? listTable("restaurants", { id: `eq.${order.restaurant_id}`, limit: 1 }).then(r => r[0]) : null,
     order.customer_id ? listTable("users", { id: `eq.${order.customer_id}`, limit: 1 }).then(u => u[0]) : null,
     order.driver_id ? listTable("drivers", { id: `eq.${order.driver_id}`, limit: 1 }).then(d => d[0]) : null,
-    subjectTrail("order", orderId),
+    subjectTrail("order", orderId).catch(() => []),
   ]);
 
   return {

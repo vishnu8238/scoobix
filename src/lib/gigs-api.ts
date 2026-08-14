@@ -1,4 +1,5 @@
 import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
+import { publishTableChange } from "./realtime-bus";
 import { newUuid } from "./orders-api";
 
 export type Gig = {
@@ -36,7 +37,12 @@ export async function fetchGigs(params?: Record<string, any>) {
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   const id = newUuid();
-  return createRecord<Gig>("gigs", { ...gig, id } as any);
+  const res = await createRecord<Gig>("gigs", { ...gig, id } as any);
+  if (res) {
+    // Immediate announce for local UI updates
+    publishTableChange("gigs", "insert", res as any);
+  }
+  return res;
 }
 
 export async function updateGig(id: string, patch: Partial<Gig>) {

@@ -12,10 +12,11 @@ interface GigCardProps {
   maxEnrollment?: number;
 }
 
-export function GigCard({ gig, onEdit, enrollmentCount = 0, maxEnrollment = 50 }: GigCardProps) {
+export function GigCard({ gig, onEdit, enrollmentCount = 0 }: GigCardProps) {
   const start = parseISO(gig.start_time);
   const end = parseISO(gig.end_time);
   const duration = differenceInHours(end, start);
+  const maxEnrollment = gig.capacity || 50;
   const progress = (enrollmentCount / maxEnrollment) * 100;
 
   return (
@@ -50,11 +51,11 @@ export function GigCard({ gig, onEdit, enrollmentCount = 0, maxEnrollment = 50 }
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-600 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-900/50">
             <MapPin className="h-3 w-3" />
-            City: 1
+            City: {gig.city_id || "1"}
           </div>
           <div className="flex items-center gap-1.5 rounded-lg bg-purple-50 px-2 py-1 text-[10px] font-bold text-purple-600 ring-1 ring-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:ring-purple-900/50">
             <MapPin className="h-3 w-3" />
-            Zone: {gig.zone_id?.slice(0, 2) || "All"}
+            Zone: {gig.zone_id || "All"}
           </div>
         </div>
       </div>
@@ -73,9 +74,9 @@ export function GigCard({ gig, onEdit, enrollmentCount = 0, maxEnrollment = 50 }
       <div className="mb-6 space-y-2">
         <div className="flex justify-between text-[10px] font-bold">
           <span className="text-muted-foreground/80">Eligible % for completion</span>
-          <span className="text-primary">98%</span>
+          <span className="text-primary">{gig.completion_pct || 98}%</span>
         </div>
-        <Progress value={98} className="h-1.5 bg-muted" />
+        <Progress value={gig.completion_pct || 98} className="h-1.5 bg-muted" />
       </div>
 
       <div className="mt-auto space-y-4">

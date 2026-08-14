@@ -13,17 +13,20 @@ const HEADERS = {
 export const seedDemoOrders = createServerFn({ method: "POST" })
   .handler(async () => {
     // 1. Get a few restaurants and users to link to
-    const [restRes, userRes] = await Promise.all([
+    const [restRes, userRes, zonesRes] = await Promise.all([
       fetch(`${INSFORGE_URL}/api/database/records/restaurants?limit=3`, { headers: HEADERS }),
-      fetch(`${INSFORGE_URL}/api/database/records/users?role=eq.customer&limit=3`, { headers: HEADERS })
+      fetch(`${INSFORGE_URL}/api/database/records/users?role=eq.customer&limit=3`, { headers: HEADERS }),
+      fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS })
     ]);
 
     const restaurants = restRes.ok ? await restRes.json() : [];
     const customers = userRes.ok ? await userRes.json() : [];
+    const zones = zonesRes.ok ? await zonesRes.json() : [];
 
     if (!restaurants.length || !customers.length) {
       throw new Error("Need at least one restaurant and one customer to seed orders.");
     }
+    const zoneId = zones[0]?.id;
 
     const statuses = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
     const orders = [];
@@ -39,6 +42,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         customer_id: customer.id,
         restaurant_id: restaurant.id,
         status,
+        zone_id: zoneId,
         total_price: Math.floor(Math.random() * 1000) + 200,
         created_at: new Date().toISOString(),
         metadata: { is_demo: true, demo_tag: "logistics_test_v1" },
