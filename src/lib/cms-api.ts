@@ -12,13 +12,13 @@ export type Story = {
 };
 
 export async function fetchStories(params?: Record<string, any>) {
-  return listTable<Story>("cms_stories", { order: "created_at.desc", ...params });
+  return listTable<Story>("audit_logs", { entity: "eq.story", order: "created_at.desc", ...params });
 }
 
 export async function createStory(story: Omit<Story, "id" | "created_at">) {
-  return createRecord<Story>("cms_stories", story as any);
+  return createRecord<Story>("audit_logs", { ...story, entity: "story" } as any);
 }
 
 export async function updateStory(id: string, patch: Partial<Story>) {
-  return patchRecord<Story>("cms_stories", id, patch as any);
+  return patchRecord<Story>("audit_logs", id, patch as any);
 }

@@ -24,15 +24,15 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  return listTable<Gig>("rider_gigs", { order: "created_at.desc", ...params });
+  return listTable<Gig>("gigs", { order: "created_at.desc", ...params });
 }
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
-  return createRecord<Gig>("rider_gigs", gig as any);
+  return createRecord<Gig>("gigs", gig as any);
 }
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
-  return patchRecord<Gig>("rider_gigs", id, patch as any);
+  return patchRecord<Gig>("gigs", id, patch as any);
 }
 
 export async function fetchGigParticipants(gigId: string) {

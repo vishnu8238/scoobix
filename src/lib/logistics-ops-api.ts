@@ -15,7 +15,7 @@ export type Dispute = {
 };
 
 export async function fetchDisputes(params?: Record<string, any>) {
-  return listTable<Dispute>("operational_disputes", { order: "created_at.desc", ...params });
+  return listTable<Dispute>("audit_logs", { entity: "eq.dispute", order: "created_at.desc", ...params });
 }
 
 export async function updateDisputeStatus(id: string, status: Dispute["status"], resolution?: string, actor?: string) {
@@ -25,7 +25,7 @@ export async function updateDisputeStatus(id: string, status: Dispute["status"],
     patch.resolved_by = actor;
     if (resolution) patch.resolution_notes = resolution;
   }
-  return patchRecord("operational_disputes", id, patch);
+  return patchRecord("audit_logs", id, patch);
 }
 
 export type GroomingSelfie = {
