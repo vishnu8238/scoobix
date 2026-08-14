@@ -43,7 +43,7 @@ function AdminUsers() {
   const rows = users
     .map((u) => ({
       id: u.id,
-      name: u.name,
+      name: u.name || "—",
       email: u.email ?? "—",
       phone: u.phone ?? "—",
       role: (u.role ?? "customer").toLowerCase(),
