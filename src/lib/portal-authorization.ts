@@ -51,6 +51,15 @@ export async function checkPortalAccess(
     );
 
     if (rows.length === 0) {
+      // Diagnostic check: list all entries for this email to see what portals/formats exist
+      const allUserAccess = await listTable<PortalAccessRow>(
+        "portal_access",
+        { email_normalized: `eq.${normalizedEmail}` },
+        { ttl: 0, fresh: true }
+      ).catch(() => []);
+      
+      console.log(`[AUTH_DEBUG] No match for ${normalizedEmail} on portal ${portal}. Portals found for user:`, allUserAccess.map(r => r.portal));
+
       // Fallback for legacy rows that might only have 'email' and not 'email_normalized'
       const legacyRows = await listTable<PortalAccessRow>(
         "portal_access",
@@ -64,11 +73,10 @@ export async function checkPortalAccess(
       
       if (legacyRows.length > 0) {
         console.log(`[AUTH_DEBUG] Legacy row found for ${normalizedEmail} on ${portal}. Repairing...`);
-        // Repair the record in the background
         const legacy = legacyRows[0];
         void patchRecord("portal_access", legacy.id, { 
           email_normalized: normalizedEmail,
-          email: normalizedEmail // Ensure base email is also normalized
+          email: normalizedEmail
         }).catch(err => console.error("[AUTH_DEBUG] Failed to repair legacy row:", err));
         
         if (legacy.status === "disabled") return { ok: false, reason: "disabled" };
@@ -79,15 +87,13 @@ export async function checkPortalAccess(
     }
     
     const record = rows[0];
+    console.log(`[AUTH_DEBUG] Found access record for ${normalizedEmail} on ${portal}. Status: ${record.status}`);
     if (record.status === "disabled") return { ok: false, reason: "disabled" };
     
     return { ok: true, status: "active" };
   } catch (err: any) {
     console.error(`[AUTH_DEBUG] Portal access lookup failed for ${portal}:`, err);
-    // DIAGNOSTIC (Dev/Test only): Surface more info if we're in a non-production environment
-    const isDev = window.location.hostname.includes("localhost") || window.location.hostname.includes("preview");
-    const diag = isDev ? ` | Error: ${err.message || 'Database error'}` : "";
-    return { ok: false, reason: "lookup_failed", message: `Authorization lookup failed${diag}` };
+    return { ok: false, reason: "lookup_failed", message: `Authorization lookup failed: ${err.message || 'Database error'}` };
   }
 }
 

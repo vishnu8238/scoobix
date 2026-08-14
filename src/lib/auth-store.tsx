@@ -86,9 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthError(null);
       }
       
+      console.log("[AUTH_TRACE] Resolving user session...");
       const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => ({ data: null, error: e }));
       
       if (currentUserError || !userData?.user) {
+         console.log("[AUTH_TRACE] No active session found.");
          setUser(null);
          setAuthState("unauthenticated");
          return;
@@ -96,6 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const sessionUser = userData.user;
       const authId = sessionUser.id;
+      const userEmail = sessionUser.email?.toLowerCase().trim();
+      
+      console.log("[AUTH_TRACE] Session found for:", userEmail);
       
       const { setCacheAuthScope } = await import("./request-cache");
       setCacheAuthScope(authId);
@@ -104,58 +109,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const currentPortal = getRequestedPortal() as Role;
       lastRequestedPortal.current = currentPortal;
 
-      let profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }).catch(() => []);
-      let profile = profiles[0];
+      // 1. User Profile Lookup/Creation
+      let profile = null;
+      try {
+        const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0 }).catch(() => []);
+        profile = profiles[0];
 
-      if (!profile) {
-        try {
+        if (!profile && userEmail) {
+          console.log("[AUTH_TRACE] Creating new profile for:", userEmail);
           const { createRecord } = await import("./insforge-crud");
           profile = await createRecord("users", {
             id: authId,
-            email: sessionUser.email,
-            email_normalized: sessionUser.email.toLowerCase(),
+            email: userEmail,
+            email_normalized: userEmail,
             name: sessionUser.name || "User",
             role: "customer",
             is_active: true,
           });
-        } catch (err) {
-          console.error("[AUTH_ERROR] Profile creation failed:", err);
         }
+      } catch (err) {
+        console.error("[AUTH_TRACE] Profile resolution failed:", err);
       }
 
+      // 2. Roles Resolution
       const roles: Role[] = ["customer"];
       const { checkPortalAccess } = await import("./portal-authorization");
       
       const SUPER_ADMINS = ["scoobix.info@gmail.com"];
-      const userEmail = sessionUser.email?.toLowerCase().trim();
       const isSuperAdmin = SUPER_ADMINS.includes(userEmail) || profile?.role === "admin";
 
       if (isSuperAdmin) {
+        console.log("[AUTH_TRACE] Super Admin access granted.");
         roles.push("admin", "logistics", "partner", "rider", "manager");
       } else if (userEmail) {
+        console.log("[AUTH_TRACE] Checking portal access for:", userEmail);
         const otherPortals: Role[] = ["partner", "rider", "manager", "logistics", "admin"];
         const results = await Promise.all(
           otherPortals.map(async (p) => {
-            const access = await checkPortalAccess(userEmail, p as any).catch(() => ({ ok: false }));
-            return access.ok ? p : null;
+            try {
+              const access = await checkPortalAccess(userEmail, p as any);
+              if (access.ok) console.log(`[AUTH_TRACE] Access GRANTED for ${p}`);
+              return access.ok ? p : null;
+            } catch (e) {
+              console.warn(`[AUTH_TRACE] Access check failed for ${p}:`, e);
+              return null;
+            }
           })
         );
         results.forEach(r => { if (r) roles.push(r); });
       }
 
+      // 3. Legacy Table Checks (Backwards compatibility)
       if (profile?.id) {
-        const [partner, rider, manager] = await Promise.all([
-          listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
-          listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
-          listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
-        ]);
-        if (partner.length > 0 && !roles.includes("partner")) roles.push("partner");
-        if (rider.length > 0 && !roles.includes("rider")) roles.push("rider");
-        if (manager.length > 0 && !roles.includes("manager")) roles.push("manager");
+        try {
+          const [partner, rider, manager] = await Promise.all([
+            listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
+            listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
+            listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
+          ]);
+          if (partner.length > 0 && !roles.includes("partner")) roles.push("partner");
+          if (rider.length > 0 && !roles.includes("rider")) roles.push("rider");
+          if (manager.length > 0 && !roles.includes("manager")) roles.push("manager");
+        } catch (err) {
+          console.warn("[AUTH_TRACE] Legacy role check failed:", err);
+        }
       }
 
-      const hasAccess = currentPortal === "customer" || roles.includes(currentPortal);
+      const uniqueRoles = Array.from(new Set(roles));
+      const hasAccess = currentPortal === "customer" || uniqueRoles.includes(currentPortal);
       
+      console.log("[AUTH_TRACE] Final Roles:", uniqueRoles, "Current Portal:", currentPortal, "Has Access:", hasAccess);
+
       setUser({
         id: authId,
         name: profile?.name || sessionUser.name || "User",
@@ -163,12 +187,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone: profile?.phone || "",
         avatar: profile?.avatar_url || sessionUser.avatar_url || "",
         role: hasAccess ? currentPortal : "customer",
-        roles: Array.from(new Set(roles)),
+        roles: uniqueRoles,
         membershipsResolved: true,
         pendingPortal: currentPortal,
       });
 
       if (!hasAccess && (currentPortal as string) !== "customer") {
+        console.warn("[AUTH_TRACE] Access denied to portal:", currentPortal);
         const access = await checkPortalAccess(userEmail, currentPortal as any).catch((e) => ({ ok: false, reason: "lookup_failed", message: e.message }));
         if ((access as any).reason === "lookup_failed") {
           setAuthState("auth_error");
@@ -204,14 +229,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     resolveUser(true);
+    
+    // Explicitly check for insforge_code in the URL to detect if we're in a callback loop
+    const params = new URLSearchParams(window.location.search);
+    const hasCode = params.has("insforge_code") || params.has("code");
+    
     const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
-      if (event === 'signedIn') resolveUser(true);
-      else if (event === 'signedOut') {
+      console.log(`[AUTH_TRACE] SDK State Change: ${event}`);
+      if (event === 'signedIn') {
+        resolveUser(true);
+      } else if (event === 'signedOut') {
         setUser(null);
         setAuthState("unauthenticated");
         setLoading(false);
       }
     });
+    
     return () => unsubscribe();
   }, [resolveUser]);
 
