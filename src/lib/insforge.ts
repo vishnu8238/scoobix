@@ -15,18 +15,14 @@ if (!INSFORGE_URL || !INSFORGE_ANON_KEY) {
 
 // Maintain singleton instance with explicit persistence for iOS/mobile stability
 if (!(globalThis as any).__INSFORGE_CLIENT__) {
-  const options = {
+  // Use authoritative SDK options
+  (globalThis as any).__INSFORGE_CLIENT__ = createClient({
     baseUrl: INSFORGE_URL,
     anonKey: INSFORGE_ANON_KEY,
     auth: {
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      // If the SDK supports storage injection, we use it. 
-      // Otherwise, the SDK defaults to localStorage in browsers.
-      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+      detectOAuthCallback: true
     }
-  };
-  (globalThis as any).__INSFORGE_CLIENT__ = createClient(options);
+  });
 }
 
 export const insforge = (globalThis as any).__INSFORGE_CLIENT__;
