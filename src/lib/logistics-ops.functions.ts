@@ -20,7 +20,8 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     const city1Id = "c1110000-0000-0000-0000-000000000001";
     const zone1Id = "z1110000-0000-0000-0000-000000000001";
     
-    const tables = ["logistics_zones", "delivery_zones"];
+    // Comprehensive list of possible table names to check
+    const tables = ["logistics_zones", "delivery_zones", "zones"];
     let result = { 
       cities: 0, 
       zones: 0, 
@@ -47,19 +48,33 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     for (const table of tables) {
       try {
         console.log(`[SEED_PREREQ] Probing ${table} via SDK...`);
+        // Use a very permissive select to see what columns exist if it fails
         const { data: found, error: probeError, status: probeStatus } = await insforge.database
           .from(table)
-          .select("id")
+          .select("*")
           .eq("id", zone1Id)
           .limit(1);
         
-        result.diagnostics.push({ table, op: "probe", status: probeStatus, error: probeError?.message });
-
         if (probeError) {
           console.warn(`[SEED_PREREQ] Probe failed for ${table}:`, probeError.message);
+          result.diagnostics.push({ 
+            table, 
+            op: "probe", 
+            status: probeStatus, 
+            error: probeError.message,
+            code: (probeError as any).code
+          });
+          
+          // If it's a 42P01 (relation does not exist), just skip it
+          if ((probeError as any).code === "42P01" || probeError.message.includes("does not exist")) {
+            continue;
+          }
+          
           result.errors.push(`${table} probe failed: ${probeError.message}`);
           continue;
         }
+
+        result.diagnostics.push({ table, op: "probe", status: probeStatus, success: true, count: found?.length });
 
         if (found && found.length > 0) {
           console.log(`[SEED_PREREQ] Record exists in ${table}.`);
@@ -73,19 +88,26 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
           .select()
           .single();
 
-        result.diagnostics.push({ table, op: "insert", status: insertStatus, error: insertError?.message });
-
         if (insertError) {
           console.warn(`[SEED_PREREQ] Insert failed for ${table}:`, insertError.message);
+          result.diagnostics.push({ 
+            table, 
+            op: "insert", 
+            status: insertStatus, 
+            error: insertError.message,
+            code: (insertError as any).code
+          });
           result.errors.push(`${table} insert failed: ${insertError.message}`);
         } else {
           console.log(`[SEED_PREREQ] Success for ${table}`);
           result.zones++;
+          result.diagnostics.push({ table, op: "insert", status: insertStatus, success: true });
           publishTableChange(table, "insert", zonePayload);
         }
       } catch (e: any) {
         console.error(`[SEED_PREREQ] Critical error for ${table}:`, e);
         result.errors.push(`${table} exception: ${e.message}`);
+        result.diagnostics.push({ table, op: "exception", error: e.message });
       }
     }
 
