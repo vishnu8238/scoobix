@@ -47,10 +47,22 @@ function AuthCallback() {
         // 2. Explicitly exchange the code for a session if present
         if (insforgeCode) {
           console.log("[AUTH_TRACE] Exchanging authorization code for session...");
-          const { error: exchangeError } = await insforge.auth.exchangeCodeForSession(insforgeCode);
+          // Clean the URL hash/query to prevent duplicate exchange on reload
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete("insforge_code");
+          cleanUrl.searchParams.delete("code");
+          window.history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search);
+
+          const { data, error: exchangeError } = await insforge.auth.exchangeCodeForSession(insforgeCode);
           if (exchangeError) {
              console.error("[AUTH_TRACE] Code exchange failed:", exchangeError);
-             // If we already have a user, it might be a double-callback, continue
+             // Verify if we actually have a session despite the error (e.g. concurrent exchange)
+             const session = insforge.auth.getSession();
+             if (!session?.user) {
+               throw new Error(exchangeError.message || "Failed to exchange authorization code.");
+             }
+          } else if (data?.accessToken) {
+            console.log("[AUTH_TRACE] Code exchange successful.");
           }
         }
 
