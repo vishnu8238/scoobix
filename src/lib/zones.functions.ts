@@ -145,7 +145,7 @@ export const createNewZone = createServerFn({ method: "POST" })
     const created = await res.json();
     const row = Array.isArray(created) ? created[0] : created;
     if (row) {
-      publishTableChange("logistics_zones", "insert", row);
+      publishTableChange(TABLE_ZONES, "insert", row);
     }
     return row;
   });
