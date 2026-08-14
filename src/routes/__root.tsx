@@ -61,8 +61,10 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
-        {children}
+      <body className="antialiased">
+        <div id="root">
+          {children}
+        </div>
         <Scripts />
       </body>
     </html>
