@@ -92,7 +92,6 @@ import { Route as LogisticsOperationsRouteImport } from './routes/logistics.oper
 import { Route as LogisticsMarketingRouteImport } from './routes/logistics.marketing'
 import { Route as LogisticsMapRouteImport } from './routes/logistics.map'
 import { Route as LogisticsManagersRouteImport } from './routes/logistics.managers'
-import { Route as LogisticsLiveRouteImport } from './routes/logistics.live'
 import { Route as LogisticsGigsRouteImport } from './routes/logistics.gigs'
 import { Route as LogisticsDuplicatesRouteImport } from './routes/logistics.duplicates'
 import { Route as LogisticsDriversRouteImport } from './routes/logistics.drivers'
@@ -585,11 +584,6 @@ const LogisticsManagersRoute = LogisticsManagersRouteImport.update({
   path: '/managers',
   getParentRoute: () => LogisticsRoute,
 } as any)
-const LogisticsLiveRoute = LogisticsLiveRouteImport.update({
-  id: '/live',
-  path: '/live',
-  getParentRoute: () => LogisticsRoute,
-} as any)
 const LogisticsGigsRoute = LogisticsGigsRouteImport.update({
   id: '/gigs',
   path: '/gigs',
@@ -1052,7 +1046,6 @@ export interface FileRoutesByFullPath {
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/duplicates': typeof LogisticsDuplicatesRoute
   '/logistics/gigs': typeof LogisticsGigsRouteWithChildren
-  '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/managers': typeof LogisticsManagersRoute
   '/logistics/map': typeof LogisticsMapRoute
   '/logistics/marketing': typeof LogisticsMarketingRoute
@@ -1208,7 +1201,6 @@ export interface FileRoutesByTo {
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/duplicates': typeof LogisticsDuplicatesRoute
   '/logistics/gigs': typeof LogisticsGigsRouteWithChildren
-  '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/managers': typeof LogisticsManagersRoute
   '/logistics/map': typeof LogisticsMapRoute
   '/logistics/marketing': typeof LogisticsMarketingRoute
@@ -1371,7 +1363,6 @@ export interface FileRoutesById {
   '/logistics/drivers': typeof LogisticsDriversRouteWithChildren
   '/logistics/duplicates': typeof LogisticsDuplicatesRoute
   '/logistics/gigs': typeof LogisticsGigsRouteWithChildren
-  '/logistics/live': typeof LogisticsLiveRoute
   '/logistics/managers': typeof LogisticsManagersRoute
   '/logistics/map': typeof LogisticsMapRoute
   '/logistics/marketing': typeof LogisticsMarketingRoute
@@ -1535,7 +1526,6 @@ export interface FileRouteTypes {
     | '/logistics/drivers'
     | '/logistics/duplicates'
     | '/logistics/gigs'
-    | '/logistics/live'
     | '/logistics/managers'
     | '/logistics/map'
     | '/logistics/marketing'
@@ -1691,7 +1681,6 @@ export interface FileRouteTypes {
     | '/logistics/drivers'
     | '/logistics/duplicates'
     | '/logistics/gigs'
-    | '/logistics/live'
     | '/logistics/managers'
     | '/logistics/map'
     | '/logistics/marketing'
@@ -1853,7 +1842,6 @@ export interface FileRouteTypes {
     | '/logistics/drivers'
     | '/logistics/duplicates'
     | '/logistics/gigs'
-    | '/logistics/live'
     | '/logistics/managers'
     | '/logistics/map'
     | '/logistics/marketing'
@@ -2533,13 +2521,6 @@ declare module '@tanstack/react-router' {
       path: '/managers'
       fullPath: '/logistics/managers'
       preLoaderRoute: typeof LogisticsManagersRouteImport
-      parentRoute: typeof LogisticsRoute
-    }
-    '/logistics/live': {
-      id: '/logistics/live'
-      path: '/live'
-      fullPath: '/logistics/live'
-      preLoaderRoute: typeof LogisticsLiveRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/gigs': {
@@ -3283,7 +3264,6 @@ interface LogisticsRouteChildren {
   LogisticsDriversRoute: typeof LogisticsDriversRouteWithChildren
   LogisticsDuplicatesRoute: typeof LogisticsDuplicatesRoute
   LogisticsGigsRoute: typeof LogisticsGigsRouteWithChildren
-  LogisticsLiveRoute: typeof LogisticsLiveRoute
   LogisticsManagersRoute: typeof LogisticsManagersRoute
   LogisticsMapRoute: typeof LogisticsMapRoute
   LogisticsMarketingRoute: typeof LogisticsMarketingRoute
@@ -3322,7 +3302,6 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsDriversRoute: LogisticsDriversRouteWithChildren,
   LogisticsDuplicatesRoute: LogisticsDuplicatesRoute,
   LogisticsGigsRoute: LogisticsGigsRouteWithChildren,
-  LogisticsLiveRoute: LogisticsLiveRoute,
   LogisticsManagersRoute: LogisticsManagersRoute,
   LogisticsMapRoute: LogisticsMapRoute,
   LogisticsMarketingRoute: LogisticsMarketingRoute,
