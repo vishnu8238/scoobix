@@ -17,7 +17,7 @@ export function RestaurantCard({ restaurant, order }: { restaurant: any; order: 
           Restaurant Details
         </h3>
         <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-          {restaurant.subzone || "Main Zone"}
+          {restaurant.city || "Main City"}
         </span>
       </div>
       

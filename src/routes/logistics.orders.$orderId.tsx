@@ -67,13 +67,17 @@ function LogisticsOrderDetailsPage() {
     setIsUpdating(true);
     try {
       await updateOrderStatus({ data: { orderId, status: newStatus } });
-      await logAudit({
-        category: "admin",
-        subjectType: "order",
-        subjectId: orderId,
-        action: "STATUS_CHANGE",
-        summary: `Admin manually updated status from ${data.order.status} to ${newStatus}`,
-      });
+      try {
+        await logAudit({
+          category: "admin",
+          subjectType: "order",
+          subjectId: orderId,
+          action: "STATUS_CHANGE",
+          summary: `Admin manually updated status from ${data.order.status} to ${newStatus}`,
+        });
+      } catch (auditErr) {
+        console.warn("Audit logging failed but status was updated", auditErr);
+      }
       toast.success(`Status updated to ${newStatus}`);
       await handleRefresh();
     } catch (e: any) {
