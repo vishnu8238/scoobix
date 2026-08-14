@@ -12,10 +12,13 @@ export function getDisplayName(user: any): string {
     const n = name.trim().toLowerCase();
     
     // Explicitly check for generic strings and substrings
-    if (n === 'user') return true;
-    if (n === 'merchant manager') return true;
-    if (n === 'administrator') return true;
-    if (n === 'scoobix') return true;
+    const genericTerms = [
+      'user', 'merchant manager', 'administrator', 'admin', 'operator',
+      'partner', 'rider', 'logistics', 'customer', 'unknown', 'scoobix',
+      'anonymous', 'guest'
+    ];
+
+    if (genericTerms.includes(n)) return true;
     if (n === 'scoobix.info') return true;
     if (n === 'scoobix.v') return true;
 
@@ -24,65 +27,58 @@ export function getDisplayName(user: any): string {
       !n || 
       n === 'null' || 
       n === 'undefined' || 
-      n === 'manager' || 
-      n === 'admin' || 
-      n === 'partner' || 
-      n === 'rider' || 
       n.startsWith('scoobix.') ||
-      n === 'merchant manager' ||
-      n === 'administrator'
+      n.includes('@')
     );
   };
 
   const normalize = (val: any): string | null => {
     if (typeof val !== 'string') return null;
-    const cleaned = val.trim();
+    const cleaned = val.trim().replace(/\s+/g, ' '); // Normalize whitespace
     
-    // If it's the literal string "User", reject it
-    if (cleaned.toLowerCase() === 'user') return null;
+    if (!cleaned) return null;
 
     // Prevent name fields from just repeating the generic email
-    if (cleaned.toLowerCase().includes('scoobix.info')) return null;
-    if (cleaned.toLowerCase().includes('scoobix.v')) return null;
+    const lower = cleaned.toLowerCase();
+    if (lower.includes('scoobix.info')) return null;
+    if (lower.includes('scoobix.v')) return null;
     
     return isGeneric(cleaned) ? null : cleaned;
   };
 
-  // 1. Authoritative metadata sources from Google/InsForge OAuth
-  // Priority: Provider (Direct Google) > Social Identities > SDK User Metadata > DB Profile Row
+  // Authoritative metadata sources order (matching requirements)
   const candidates = [
-    // 1. provider_metadata (Highest authority - injected from Google OAuth)
+    // 1. authenticated InsForge profile fields
+    { val: user.profile?.full_name, src: 'profile.full_name' },
+    { val: user.profile?.display_name, src: 'profile.display_name' },
+    { val: user.profile?.name, src: 'profile.name' },
+    { val: user.full_name, src: 'db.full_name' },
+    { val: user.display_name, src: 'db.display_name' },
+    { val: user.name, src: 'db.name' },
+
+    // 2. user_metadata / full raw metadata fields (Google OAuth common location)
+    { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
+    { val: user.user_metadata?.name, src: 'metadata.name' },
+    { val: user.user_metadata?.display_name, src: 'metadata.display_name' },
     { val: user.provider_metadata?.name, src: 'provider_metadata.name' },
     { val: user.provider_metadata?.full_name, src: 'provider_metadata.full_name' },
     { val: user.provider_metadata?.display_name, src: 'provider_metadata.display_name' },
 
-    // 2. identities array (Direct provider mapping from SDK)
+    // 3. identities[] provider_data fields (Direct Google mapping)
     { val: user.identities?.[0]?.identity_data?.full_name, src: 'identity.full_name' },
     { val: user.identities?.[0]?.identity_data?.name, src: 'identity.name' },
     { val: user.identities?.[0]?.identity_data?.display_name, src: 'identity.display_name' },
+    { val: user.identities?.[0]?.identity_data?.given_name && user.identities?.[0]?.identity_data?.family_name 
+        ? `${user.identities[0].identity_data.given_name} ${user.identities[0].identity_data.family_name}` 
+        : null, src: 'identity.names_combined' },
     { val: user.identities?.[0]?.identity_data?.custom_claims?.name, src: 'identity.claims.name' },
-
-    // 3. user_metadata (Merged social profile from SDK)
-    { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
-    { val: user.user_metadata?.name, src: 'metadata.name' },
-    { val: user.user_metadata?.display_name, src: 'metadata.display_name' },
-
-    // 4. DB Profile row fields (fetched from public.users/profiles table)
-    { val: user.full_name, src: 'db.full_name' },
-    { val: user.display_name, src: 'db.display_name' },
-    { val: user.name, src: 'db.name' },
-    
-    // 5. SDK Profile (user.profile is common in SDK response)
-    { val: user.profile?.full_name, src: 'profile.full_name' },
-    { val: user.profile?.name, src: 'profile.name' },
-    { val: user.profile?.display_name, src: 'profile.display_name' },
   ];
 
   for (const { val, src } of candidates) {
     const res = normalize(val);
     if (res) {
+      // Safe production diagnostic: only source and boolean check
       if (typeof window !== "undefined") {
-        // Safe production diagnostic: only source and boolean check
         const isDev = (import.meta as any).env?.DEV;
         if (isDev || (window as any).DIAGNOSE_IDENTITY) {
           console.log(`[IDENTITY_DIAGNOSTIC] Name Resolved | Source: ${src} | Valid: true`);
@@ -92,7 +88,7 @@ export function getDisplayName(user: any): string {
     }
   }
 
-  // 2. Fallback to Email Prefix (last resort before "User")
+  // 4. Last resort: non-empty email prefix
   const email = user.email || user.user_metadata?.email || user.profile?.email || user.identities?.[0]?.identity_data?.email;
   if (email && typeof email === 'string') {
     const prefix = email.split('@')[0];
@@ -107,12 +103,12 @@ export function getDisplayName(user: any): string {
  * Derives initials from a name (max 2 chars).
  */
 export function getInitials(name: string | null | undefined): string {
-  if (!name) return "";
-  return name
-    .split(' ')
-    .filter(n => n.length > 0)
-    .map(n => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  if (!name) return "U";
+  const cleaned = getDisplayName({ name }).replace(/[^a-zA-Z\s]/g, '');
+  const parts = cleaned.split(' ').filter(n => n.length > 0);
+  
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
