@@ -18,7 +18,7 @@ function AppProfile() {
             {getInitials(user?.name)}
           </div>
           <div>
-            <h2 className="text-lg font-bold">{user?.name}</h2>
+            <h2 className="text-lg font-bold">{user?.name || "Scoobix Customer"}</h2>
             <p className="text-sm text-gray-500">{user?.email}</p>
           </div>
         </div>

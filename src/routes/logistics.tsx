@@ -133,7 +133,7 @@ function LogisticsLayout() {
                 </div>
                 {!collapsed && (
                   <div className="text-left min-w-0">
-                    <p className="text-[12px] font-bold leading-none text-foreground truncate">{user?.name || "User"}</p>
+                    <p className="text-[12px] font-bold leading-none text-foreground truncate">{user?.name || "Logistics Staff"}</p>
                     <p className="text-[10px] text-muted-foreground mt-1 truncate">{user?.email}</p>
                   </div>
                 )}
