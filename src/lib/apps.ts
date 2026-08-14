@@ -31,7 +31,7 @@ export type ScoobixApp = {
   platform: "mobile" | "web";
 };
 
-export const APPS: Record<AppId, ScoobixApp> = {
+export const APPS: Record<string, ScoobixApp> = {
   customer: {
     id: "customer",
     role: "customer",
