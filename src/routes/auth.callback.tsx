@@ -29,12 +29,12 @@ function AuthCallback() {
         
         // 1. Diagnostics only: check for insforge_code
         const params = new URLSearchParams(window.location.search);
-        const insforgeCode = params.get("insforge_code");
+        const insforgeCode = params.get("insforge_code") || params.get("code");
         const error = params.get("error");
         const errorDescription = params.get("error_description");
 
         console.log("[AUTH_TRACE] Callback params detected:", { 
-          hasInsforgeCode: !!insforgeCode, 
+          hasCode: !!insforgeCode, 
           error: error || "none" 
         });
 
@@ -44,7 +44,17 @@ function AuthCallback() {
           return;
         }
 
-        // 2. Wait for the SDK to process the callback and emit a user
+        // 2. Explicitly exchange the code for a session if present
+        if (insforgeCode) {
+          console.log("[AUTH_TRACE] Exchanging authorization code for session...");
+          const { error: exchangeError } = await insforge.auth.exchangeCodeForSession(insforgeCode);
+          if (exchangeError) {
+             console.error("[AUTH_TRACE] Code exchange failed:", exchangeError);
+             // If we already have a user, it might be a double-callback, continue
+          }
+        }
+
+        // 3. Wait for the SDK to process the callback and emit a user
         // We use a simple loop to wait for the user session to be established by the SDK automatically
         let retryCount = 0;
         const maxRetries = 30; // ~15 seconds total

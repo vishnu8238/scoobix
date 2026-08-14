@@ -34,6 +34,7 @@ type AuthCtx = {
   loading: boolean;
   authState: AuthState;
   authError: string | null;
+  hydrationComplete: boolean;
   login: (provider: 'google', portal?: string, options?: { prompt?: 'select_account' | 'consent' | 'none' }) => Promise<void>;
   logout: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -44,6 +45,7 @@ const AuthContext = createContext<AuthCtx>({
   loading: true,
   authState: "initializing",
   authError: null,
+  hydrationComplete: false,
   login: async () => {},
   logout: async () => {},
   signOut: async () => {},
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authState, setAuthState] = useState<AuthState>("initializing");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [hydrationComplete, setHydrationComplete] = useState(false);
   const loadingStartTime = useRef<number>(Date.now());
   const lastRequestedPortal = useRef<Role | null>(null);
 
@@ -91,7 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => ({ data: null, error: e }));
       
       if (currentUserError || !userData?.user) {
-         console.log("[AUTH_TRACE] No active session found.");
+         console.log("[AUTH_TRACE] No active session found.", currentUserError?.message);
+         
+         // iOS Safeguard: If we have an error that explicitly mentions refresh token, it's a hard unauth
+         if (currentUserError?.message?.includes("refresh token")) {
+           console.warn("[AUTH_TRACE] Refresh token invalid/missing. Clearing session.");
+           await insforge.auth.signOut().catch(() => {});
+         }
+         
          setUser(null);
          setAuthState("unauthenticated");
          return;
@@ -249,7 +259,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthState("auth_error");
     } finally {
       clearTimeout(timeoutId);
-      if (isInitialMountOrSignIn) setLoading(false);
+      if (isInitialMountOrSignIn) {
+        setLoading(false);
+        setHydrationComplete(true);
+      }
     }
   }, []);
 
@@ -275,12 +288,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
       console.log(`[AUTH_TRACE] SDK State Change: ${event}`);
-      if (event === 'signedIn') {
+      if (event === 'signedIn' || event === 'TOKEN_REFRESHED') {
         resolveUser(true);
       } else if (event === 'signedOut') {
         setUser(null);
         setAuthState("unauthenticated");
         setLoading(false);
+        setHydrationComplete(true);
       }
     });
     
@@ -301,7 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, authState, authError, login, logout, signOut: logout,
+      user, loading, authState, authError, hydrationComplete, login, logout, signOut: logout,
     }}>
       {children}
     </AuthContext.Provider>
