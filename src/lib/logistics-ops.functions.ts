@@ -21,7 +21,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     const zone1Id = "z1110000-0000-0000-0000-000000000001";
     
     // Comprehensive list of possible table names to check
-    const tables = ["logistics_zones", "delivery_zones", "zones"];
+    const tables = ["logistics_zones", "delivery_zones", "zones", "cities"];
     let result = { 
       cities: 0, 
       zones: 0, 
