@@ -60,6 +60,7 @@ const NAV = [
   { to: "/logistics/payments", label: "Payments", icon: CreditCard, section: "FinOps" },
   { to: "/logistics/wallet", label: "Wallets", icon: Wallet, section: "FinOps" },
   { to: "/logistics/reports", label: "Reports", icon: BarChart3, section: "FinOps" },
+  { to: "/logistics/performance", label: "Performance", icon: Gauge, section: "Admin" },
 ];
 
 function LogisticsLayout() {
