@@ -126,9 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const roles: Role[] = ["customer"];
       const { checkPortalAccess } = await import("./portal-authorization");
       
-      const SUPER_ADMIN = "scoobix.info@gmail.com";
-      const userEmail = sessionUser.email?.toLowerCase();
-      const isSuperAdmin = userEmail === SUPER_ADMIN || profile?.role === "admin";
+      const SUPER_ADMINS = ["scoobix.info@gmail.com"];
+      const userEmail = sessionUser.email?.toLowerCase().trim();
+      const isSuperAdmin = SUPER_ADMINS.includes(userEmail) || profile?.role === "admin";
 
       if (isSuperAdmin) {
         roles.push("admin", "logistics", "partner", "rider", "manager");
@@ -169,8 +169,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!hasAccess && (currentPortal as string) !== "customer") {
-        const access = await checkPortalAccess(userEmail, currentPortal as any).catch(() => ({ ok: false, reason: "denied" }));
-        setAuthState((access as any).reason === "disabled" ? "disabled" : "denied");
+        const access = await checkPortalAccess(userEmail, currentPortal as any).catch((e) => ({ ok: false, reason: "lookup_failed", message: e.message }));
+        if ((access as any).reason === "lookup_failed") {
+          setAuthState("auth_error");
+          setAuthError((access as any).message || "Database lookup failed during authorization.");
+        } else {
+          setAuthState((access as any).reason === "disabled" ? "disabled" : "denied");
+        }
       } else {
         setAuthState("authenticated");
       }

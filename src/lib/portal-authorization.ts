@@ -84,7 +84,10 @@ export async function checkPortalAccess(
     return { ok: true, status: "active" };
   } catch (err: any) {
     console.error(`[AUTH_DEBUG] Portal access lookup failed for ${portal}:`, err);
-    return { ok: false, reason: "lookup_failed", message: err.message || "Database lookup failed" };
+    // DIAGNOSTIC (Dev/Test only): Surface more info if we're in a non-production environment
+    const isDev = window.location.hostname.includes("localhost") || window.location.hostname.includes("preview");
+    const diag = isDev ? ` | Error: ${err.message || 'Database error'}` : "";
+    return { ok: false, reason: "lookup_failed", message: `Authorization lookup failed${diag}` };
   }
 }
 
