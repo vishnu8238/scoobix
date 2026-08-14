@@ -16,9 +16,16 @@ function LogisticsAuditLogs() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchAuditLogs({ limit: 500 });
-    setLogs(data);
-    setLoading(false);
+    try {
+      const data = await fetchAuditLogs({ limit: 500 });
+      setLogs(data || []);
+    } catch (err: any) {
+      console.error("[AUDIT] Load failed:", err);
+      toast.error(`Failed to load audit logs: ${err.message || "Unknown error"}`);
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void load(); }, [load]);

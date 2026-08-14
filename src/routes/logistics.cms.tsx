@@ -27,9 +27,16 @@ function LogisticsCms() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchStories();
-    setStories(data);
-    setLoading(false);
+    try {
+      const data = await fetchStories();
+      setStories(data || []);
+    } catch (err: any) {
+      console.error("[CMS] Load failed:", err);
+      toast.error(`Failed to load stories: ${err.message || "Unknown error"}`);
+      setStories([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void load(); }, [load, version]);

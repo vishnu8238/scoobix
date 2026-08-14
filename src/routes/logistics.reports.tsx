@@ -36,7 +36,7 @@ function LogisticsReports() {
       />
 
       {!report ? (
-        <EmptyState label={loading ? "Aggregating platform data…" : "No data for this period"} />
+        <EmptyState label={loading ? "Aggregating platform data…" : "No report data available for this selection."} />
       ) : (
         <>
           <KpiGrid kpis={report.kpis} />

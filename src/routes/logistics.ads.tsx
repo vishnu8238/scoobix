@@ -18,9 +18,16 @@ function LogisticsAds() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchAds();
-    setAds(data);
-    setLoading(false);
+    try {
+      const data = await fetchAds();
+      setAds(data || []);
+    } catch (err: any) {
+      console.error("[ADS] Load failed:", err);
+      toast.error(`Failed to load ads: ${err.message || "Unknown error"}`);
+      setAds([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void load(); }, [load, version]);
