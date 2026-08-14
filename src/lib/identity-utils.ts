@@ -5,7 +5,7 @@ import { User } from "./auth-store";
  * Handles nested profiles, metadata, and auth fields recursively.
  */
 export function getDisplayName(user: any): string {
-  if (!user) return "User";
+  if (!user) return "";
 
   const isGeneric = (name: any) => {
     if (typeof name !== 'string') return true;
