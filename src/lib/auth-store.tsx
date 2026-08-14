@@ -229,14 +229,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     resolveUser(true);
+    
+    // Explicitly check for insforge_code in the URL to detect if we're in a callback loop
+    const params = new URLSearchParams(window.location.search);
+    const hasCode = params.has("insforge_code") || params.has("code");
+    
     const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
-      if (event === 'signedIn') resolveUser(true);
-      else if (event === 'signedOut') {
+      console.log(`[AUTH_TRACE] SDK State Change: ${event}`);
+      if (event === 'signedIn') {
+        resolveUser(true);
+      } else if (event === 'signedOut') {
         setUser(null);
         setAuthState("unauthenticated");
         setLoading(false);
       }
     });
+    
     return () => unsubscribe();
   }, [resolveUser]);
 

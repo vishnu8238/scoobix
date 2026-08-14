@@ -75,19 +75,18 @@ function ConsolidatedLogin() {
     }
   };
 
-  if (loading && !localError && !authError) {
+  if (loading && !localError && !authError && authState !== "unauthenticated") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-background gap-4 p-6 text-center">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground animate-pulse">
-            Resolving Access
+            {authState === "authorization_resolving" ? "Verifying Permissions" : "Resolving Access"}
           </p>
         </div>
         
-        {/* Anti-blank-screen insurance: If hydration worked but we are stuck in loading, 
-            show a faint escape hatch after a few seconds */}
-        <div className="mt-12 animate-in fade-in duration-1000 delay-5000 fill-mode-backwards">
+        {/* Anti-blank-screen insurance */}
+        <div className="mt-12 animate-in fade-in duration-1000 delay-7000 fill-mode-backwards">
           <Button 
             variant="ghost" 
             size="sm"

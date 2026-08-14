@@ -40,36 +40,19 @@ export function AdminGuard({ children }: AdminGuardProps) {
   }, [user, authLoading, authState, pathname, authorized]);
 
   useEffect(() => {
-    if (authLoading || authState === "initializing" || authState === "session_resolving") return;
+    if (authLoading || authState === "initializing" || authState === "session_resolving" || authState === "authorization_resolving") return;
 
-    if (!user) return;
+    if (!user || !user.membershipsResolved) return;
 
-    const verify = async () => {
-      // Safety timeout: 10 seconds to verify admin email
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Verification timeout")), 10000)
-      );
-
-      try {
-        const result = await Promise.race([
-          checkAdminEmail({ data: user.email }),
-          timeoutPromise
-        ]) as any;
-
-        if (result.authorized) {
-          setAuthorized(true);
-        } else {
-          setAuthorized(false);
-          setError(result.error || "Unauthorized");
-        }
-      } catch (err) {
-        console.error("Admin verification failed:", err);
-        setAuthorized(false);
-        setError("Security verification failed. Please check your connection and try again.");
-      }
-    };
-
-    verify();
+    // Use the resolved roles from AuthStore instead of re-verifying
+    const isSuperAdmin = user.email === "scoobix.info@gmail.com" || user.roles.includes("admin");
+    
+    if (isSuperAdmin) {
+      setAuthorized(true);
+    } else {
+      setAuthorized(false);
+      setError("This Google account is not authorized for Scoobix Admin.");
+    }
   }, [user, authLoading, authState]);
 
   if ((authLoading || authState === "initializing" || authState === "session_resolving" || (user && authorized === null)) && pathname !== "/login") {

@@ -119,10 +119,11 @@ function AuthCallback() {
         console.log("[AUTH_TRACE] Authorization complete. Redirecting to:", dest);
         
         // Remove callback from history and redirect
+        // We use absolute URL to ensure we hit the portal guard correctly
         window.location.replace(new URL(dest, window.location.origin).href);
         
         // Remove portal intent only after successful redirect initiation
-        setTimeout(() => localStorage.removeItem("scoobix_oauth_portal_intent"), 1000);
+        setTimeout(() => localStorage.removeItem("scoobix_oauth_portal_intent"), 2000);
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
