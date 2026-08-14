@@ -129,11 +129,19 @@ function LogisticsLayout() {
           <div className="mt-4 pt-4 border-t border-border/40">
              <div className={cn("flex items-center gap-3 px-2 py-2 mb-2", collapsed && "justify-center px-0")}>
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground">
-                  {getInitials(user?.name)}
+                  {getInitials(user?.name) || "S"}
                 </div>
                 {!collapsed && (
                   <div className="text-left min-w-0">
-                    <p className="text-[12px] font-bold leading-none text-foreground truncate">{user?.name || (user?.email ? user.email.split('@')[0] : "Logistics Staff")}</p>
+                    <p 
+                      data-testid="sidebar-user-name"
+                      className={cn(
+                        "text-[12px] font-bold leading-none text-foreground truncate",
+                        user?.name === "User" && "text-rose-500 font-black" // Visual regression trigger
+                      )}
+                    >
+                      {user?.name || "Logistics Staff"}
+                    </p>
                     <p className="text-[10px] text-muted-foreground mt-1 truncate">{user?.email}</p>
                   </div>
                 )}

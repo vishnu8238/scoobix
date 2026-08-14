@@ -171,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: authId,
             email: userEmail,
             email_normalized: userEmail,
-            name: sessionNameCandidate !== "User" ? sessionNameCandidate : null,
+            name: (sessionNameCandidate && sessionNameCandidate !== "User") ? sessionNameCandidate : null,
             role: "customer",
             is_active: true,
           });

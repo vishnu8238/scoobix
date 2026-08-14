@@ -155,10 +155,10 @@ function AdminLayout() {
               </button>
               <div className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2 shadow-soft ring-1 ring-border/60">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground">
-                  {getInitials(user?.name)}
+                  {getInitials(user?.name) || "A"}
                 </div>
                 <div className="text-left">
-                  <p className="text-[12px] font-bold leading-none text-foreground">{user?.name || (user?.email ? user.email.split('@')[0] : "Administrator")}</p>
+                  <p className="text-[12px] font-bold leading-none text-foreground">{user?.name || "Administrator"}</p>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{user?.role === 'admin' ? 'Master Admin' : 'Operator'}</p>
                 </div>
               </div>
