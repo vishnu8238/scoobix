@@ -295,7 +295,7 @@ export function GoogleMap(props: Props) {
                className="rounded-xl bg-background p-2 text-xs border border-border outline-none focus:ring-1 focus:ring-primary"
                onChange={(e) => {
                  const lat = parseFloat(e.target.value);
-                 if (!isNaN(lat) && props.center?.lng) props.onPick({ lat, lng: props.center.lng });
+                 if (!isNaN(lat) && props.center?.lng) props.onPick?.({ lat, lng: props.center.lng });
                }}
              />
              <input 
@@ -303,7 +303,7 @@ export function GoogleMap(props: Props) {
                className="rounded-xl bg-background p-2 text-xs border border-border outline-none focus:ring-1 focus:ring-primary"
                onChange={(e) => {
                  const lng = parseFloat(e.target.value);
-                 if (!isNaN(lng) && props.center?.lat) props.onPick({ lat: props.center.lat, lng });
+                 if (!isNaN(lng) && props.center?.lat) props.onPick?.({ lat: props.center.lat, lng });
                }}
              />
           </div>
