@@ -9,6 +9,7 @@ import {
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { APPS, appHead } from "@/lib/apps";
 import { useAuth, getRequestedPortal } from "@/lib/auth-store";
+import { getInitials } from "@/lib/identity-utils";
 
 import { cn } from "@/lib/format";
 import { warmAnalytics } from "@/lib/analytics-jobs";
@@ -150,13 +151,15 @@ function AdminLayout() {
             <div className="flex items-center gap-3">
               <button className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-card shadow-soft ring-1 ring-border/60">
                 <Bell className="h-4 w-4 text-foreground" />
-                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
+                {/* Notification indicator logic could go here */}
               </button>
               <div className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2 shadow-soft ring-1 ring-border/60">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground">AD</div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground">
+                  {getInitials(user?.name)}
+                </div>
                 <div className="text-left">
-                  <p className="text-[12px] font-bold leading-none text-foreground">Anika D.</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Operator</p>
+                  <p className="text-[12px] font-bold leading-none text-foreground">{user?.name || "Administrator"}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{user?.role || "Operator"}</p>
                 </div>
               </div>
             </div>

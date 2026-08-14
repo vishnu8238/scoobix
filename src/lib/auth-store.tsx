@@ -2,6 +2,7 @@ import { createContext, useContext, ReactNode, useState, useEffect, useCallback,
 import { loginWithGoogle, logout as ifLogout } from "./insforge-auth";
 import { insforge, getAccessToken } from "./insforge";
 import { listTable } from "./insforge-crud";
+import { getDisplayName } from "./identity-utils";
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics";
 
@@ -180,9 +181,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log("[AUTH_TRACE] Final Roles:", uniqueRoles, "Current Portal:", currentPortal, "Has Access:", hasAccess);
 
+      const displayName = getDisplayName({ ...sessionUser, ...profile });
+
       setUser({
         id: authId,
-        name: profile?.name || sessionUser.name || "User",
+        name: displayName,
         email: sessionUser.email || "",
         phone: profile?.phone || "",
         avatar: profile?.avatar_url || sessionUser.avatar_url || "",

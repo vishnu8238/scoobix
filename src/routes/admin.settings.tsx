@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Shield, Bell, Globe, CreditCard, Users, LifeBuoy, Save } from "lucide-react";
 import { useCms } from "@/lib/cms-store";
+import { useAuth } from "@/lib/auth-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/settings")({
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/admin/settings")({
 });
 
 function AdminSettings() {
+  const { user } = useAuth();
   const { settings, updateSettings } = useCms();
   const [maintenance, setMaintenance] = useState(false);
   const [notifs, setNotifs] = useState(true);
@@ -150,7 +152,7 @@ function AdminSettings() {
         <Card icon={Users} title="Team">
           <ul className="space-y-3">
             {[
-              { name: "Anika Devi", role: "Owner" },
+              { name: user?.name || "Anika Devi", role: "Owner" },
               { name: "Marcus Hall", role: "Operations Lead" },
               { name: "Priya Shah", role: "Support Manager" },
             ].map((m) => (
