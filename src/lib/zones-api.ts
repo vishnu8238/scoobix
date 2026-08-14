@@ -1,4 +1,5 @@
 import { listTable, createRecord, patchRecord, deleteRecord, createRecords } from "./insforge-crud";
+import { publishTableChange } from "./realtime-bus";
 
 export const TABLE_ZONES = "logistics_zones";
 export const TABLE_SUBZONES = "subzones";
@@ -47,7 +48,8 @@ export async function fetchZones(params?: Record<string, any>) {
   // Use explicit select to ensure we don't hit "undefined_column" on missing columns
   // Note: Only verified columns are selected to avoid production schema errors
   const zones = await listTable<DeliveryZone>(TABLE_ZONES, { 
-    select: "id,name,city,status,created_at,updated_at", 
+    select: "id,name,city,status,boundary,center_lat,center_lng,created_at,updated_at", 
+
     order: "name.asc", 
     ...params 
   });
@@ -55,7 +57,7 @@ export async function fetchZones(params?: Record<string, any>) {
   if (zones.length === 0) {
     console.log(`[ZONES_API] No ${TABLE_ZONES} found, trying fallback delivery_zones...`);
     const fallback = await listTable<DeliveryZone>("delivery_zones", { 
-      select: "id,name,city,status,created_at,updated_at", 
+      select: "id,name,city,status,boundary,center_lat,center_lng,created_at,updated_at", 
       order: "name.asc", 
       ...params 
     });
@@ -69,7 +71,9 @@ export async function fetchZones(params?: Record<string, any>) {
 }
 
 export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {
-  return createRecord<DeliveryZone>(TABLE_ZONES, zone as any);
+  const res = await createRecord<DeliveryZone>(TABLE_ZONES, zone as any);
+  if (res) publishTableChange(TABLE_ZONES, "insert", res as any);
+  return res;
 }
 
 export async function updateZone(id: string, patch: Partial<DeliveryZone>) {
@@ -84,7 +88,8 @@ export async function fetchSubzones(zoneId?: string) {
   const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
   // Use explicit select to ensure we don't hit "undefined_column" on missing columns
   const subzones = await listTable<Subzone>(TABLE_SUBZONES, { 
-    select: "id,zone_id,name,status,created_at,updated_at", 
+    select: "id,zone_id,name,status,boundary,created_at,updated_at", 
+
     order: "name.asc", 
     ...params 
   });
@@ -92,7 +97,7 @@ export async function fetchSubzones(zoneId?: string) {
   if (subzones.length === 0) {
      console.log(`[ZONES_API] No ${TABLE_SUBZONES} found, trying fallback delivery_subzones...`);
      const fallback = await listTable<Subzone>("delivery_subzones", { 
-       select: "id,zone_id,name,status,created_at,updated_at", 
+       select: "id,zone_id,name,status,boundary,created_at,updated_at", 
        order: "name.asc", 
        ...params 
      });
@@ -103,7 +108,9 @@ export async function fetchSubzones(zoneId?: string) {
 }
 
 export async function createSubzone(subzone: Omit<Subzone, "id">) {
-  return createRecord<Subzone>(TABLE_SUBZONES, subzone as any);
+  const res = await createRecord<Subzone>(TABLE_SUBZONES, subzone as any);
+  if (res) publishTableChange(TABLE_SUBZONES, "insert", res as any);
+  return res;
 }
 
 export async function updateSubzone(id: string, patch: Partial<Subzone>) {
