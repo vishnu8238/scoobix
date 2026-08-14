@@ -31,7 +31,7 @@ function LogisticsLayoutGuard() {
 const NAV = [
   { to: "/logistics", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/logistics/operations", label: "Live Operations", icon: Gauge },
-  { to: "/logistics/live", label: "Logistics Map", icon: MapIcon },
+  { to: "/logistics/map", label: "Logistics Map", icon: MapIcon },
   { to: "/logistics/gigs", label: "Gig Management", icon: Sparkles },
   { to: "/logistics/verification", label: "Verification & KYC", icon: ShieldCheck },
   { to: "/logistics/support", label: "Support Desk", icon: LifeBuoy },
