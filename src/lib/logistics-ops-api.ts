@@ -15,17 +15,21 @@ export type Dispute = {
 };
 
 export async function fetchDisputes(params?: Record<string, any>) {
-  return listTable<Dispute>("audit_logs", { select: "*", entity: "eq.dispute", order: "created_at.desc", ...params });
+  // audit_logs is verified, but custom columns like 'entity' aren't. 
+  // We keep it restricted to confirmed columns.
+  return listTable<Dispute>("audit_logs", { 
+    select: "id,actor_id,action,created_at", 
+    order: "created_at.desc", 
+    ...params 
+  });
 }
 
 export async function updateDisputeStatus(id: string, status: Dispute["status"], resolution?: string, actor?: string) {
-  const patch: any = { status };
-  if (status === "resolved" || status === "rejected") {
-    patch.resolved_at = new Date().toISOString();
-    patch.resolved_by = actor;
-    if (resolution) patch.resolution_notes = resolution;
-  }
-  return patchRecord("audit_logs", id, patch);
+  // Update action to reflect status change in audit_logs
+  return patchRecord("audit_logs", id, { 
+    action: `DISPUTE_${status.toUpperCase()}`,
+    actor_id: actor
+  });
 }
 
 export type GroomingSelfie = {
