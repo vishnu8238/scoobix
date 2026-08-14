@@ -45,7 +45,7 @@ function metricName(method: string, table: string) {
  * Retry ONLY when it can help: network failures, 429 and 5xx. A 4xx is a bad
  * request — retrying just doubles the cost and the latency.
  */
-async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+async function withRetry<T>(table: string, fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err: any) {
@@ -60,7 +60,7 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
                          msg.includes("42703");   // Postgres undefined column code
 
     if (isSchemaError) {
-      console.error(`[DB_FATAL] Schema mismatch on ${table} ${fn.toString().slice(0, 50)}:`, msg);
+      console.error(`[DB_FATAL] Schema mismatch on ${table}:`, msg);
       // We wrap the error to ensure the UI can distinguish a missing table from a network error
       const schemaErr = new HttpError(404, `Database relation error: ${err.message}`);
       (schemaErr as any).isSchemaError = true;
@@ -70,7 +70,7 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     const retryable = status === 0 || status === 429 || status >= 500;
     if (!retryable) throw err;
     
-    console.warn(`[DB_RETRY] Retrying request after ${status || "network"} error`);
+    console.warn(`[DB_RETRY] Retrying ${table} after ${status || "network"} error`);
     await new Promise((r) => setTimeout(r, 500));
     return await fn();
   }
