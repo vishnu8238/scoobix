@@ -194,6 +194,12 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
         console.warn(`[DB_AUTH_SILENT] Unauthenticated GET ${table}. Returning empty.`);
         return (Array.isArray(data) ? [] : null) as unknown as T;
       }
+      
+      // If we are on a login page already, don't throw to avoid infinite error loops
+      if (typeof window !== 'undefined' && (window.location.pathname.includes('/login') || window.location.pathname.includes('/auth/callback'))) {
+        return (Array.isArray(data) ? [] : null) as unknown as T;
+      }
+
       throw new HttpError(401, error?.message || "Unauthorized: Invalid or missing token");
     }
     
