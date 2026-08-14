@@ -22,9 +22,16 @@ function LogisticsDisputes() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await fetchDisputes();
-    setDisputes(data);
-    setLoading(false);
+    try {
+      const data = await fetchDisputes();
+      setDisputes(data || []);
+    } catch (err: any) {
+      console.error("[DISPUTES] Load failed:", err);
+      toast.error(`Failed to load disputes: ${err.message || "Unknown error"}`);
+      setDisputes([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void load(); }, [load, version]);

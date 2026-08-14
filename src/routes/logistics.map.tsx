@@ -19,14 +19,28 @@ function LogisticsMap() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("[LOGISTICS_MAP] Loading data...");
       const [z, r] = await Promise.all([
-        fetchZones(),
-        listTable<any>("drivers", { online_status: "eq.true" })
+        fetchZones().catch(err => {
+          console.error("[LOGISTICS_MAP] Zones load failed:", err);
+          return [] as DeliveryZone[];
+        }),
+        listTable<any>("drivers", { online_status: "eq.true" }).catch(err => {
+          console.error("[LOGISTICS_MAP] Riders load failed:", err);
+          return [];
+        })
       ]);
+      
+      console.log(`[LOGISTICS_MAP] Loaded ${z.length} zones and ${r.length} online riders.`);
       setZones(z);
       setRiders(r);
-    } catch {
-      toast.error("Failed to load map data");
+      
+      if (z.length === 0 && r.length === 0) {
+        console.warn("[LOGISTICS_MAP] No data found in zones or online drivers.");
+      }
+    } catch (err: any) {
+      console.error("[LOGISTICS_MAP] Data load failed:", err);
+      toast.error(`Map data load failed: ${err.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }

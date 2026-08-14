@@ -23,11 +23,23 @@ export function ZoneManager() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [z, sz] = await Promise.all([fetchZones(), fetchSubzones()]);
+      console.log("[ZONE_MANAGER] Refreshing data...");
+      const [z, sz] = await Promise.all([
+        fetchZones().catch(err => {
+          console.error("[ZONE_MANAGER] Zones failed:", err);
+          throw err;
+        }), 
+        fetchSubzones().catch(err => {
+          console.error("[ZONE_MANAGER] Subzones failed:", err);
+          return [];
+        })
+      ]);
       setZones(z);
       setSubzones(sz);
-    } catch {
-      toast.error("Failed to load zones");
+      console.log(`[ZONE_MANAGER] Loaded ${z.length} zones, ${sz.length} subzones`);
+    } catch (err: any) {
+      console.error("[ZONE_MANAGER] Refresh failed:", err);
+      toast.error(`Failed to load zones: ${err.message || "Check permissions"}`);
     } finally {
       setLoading(false);
     }
