@@ -116,18 +116,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0, select: "id,name,role,email,phone,avatar_url,full_name,display_name" }).catch(() => []);
         profile = profiles[0];
 
-        // Ensure we capture ALL authoritative metadata for resolution
+        // Authoritative Merged Object for Identity Resolution
         const combinedUserData = { 
           ...sessionUser, 
-          ...profile,
+          // Inject database profile fields directly into top-level for resolver
+          full_name: profile?.full_name || profile?.display_name || profile?.name,
+          display_name: profile?.display_name || profile?.full_name,
+          db_name: profile?.name,
+          // Preserve SDK nested structures
           user_metadata: sessionUser.user_metadata,
           provider_metadata: (sessionUser as any).provider_metadata,
-          profile: sessionUser.profile,
           identities: sessionUser.identities,
-          raw: sessionUser // Keep the raw object in case it has vendor-specific fields
+          profile: sessionUser.profile,
+          raw: sessionUser
         };
         const sessionNameCandidate = getDisplayName(combinedUserData);
-        console.log("[AUTH_TRACE] Identity Resolution Candidate:", sessionNameCandidate, "Source Data Keys:", Object.keys(combinedUserData));
+        console.log("[AUTH_TRACE] Identity Resolved:", sessionNameCandidate, "Profile Found:", !!profile);
 
         
         if (!profile && userEmail) {
@@ -202,15 +206,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const displayName = getDisplayName({ 
         ...sessionUser, 
-        ...profile, 
+        full_name: profile?.full_name || profile?.display_name || profile?.name,
+        display_name: profile?.display_name || profile?.full_name,
         user_metadata: sessionUser.user_metadata, 
         provider_metadata: (sessionUser as any).provider_metadata,
-        profile: sessionUser.profile,
         identities: sessionUser.identities,
+        profile: sessionUser.profile,
         raw: sessionUser
       });
 
-      console.log("[AUTH_TRACE] Resolved display name:", displayName);
+      console.log("[AUTH_TRACE] Final Display Name:", displayName);
 
       setUser({
         id: authId,
