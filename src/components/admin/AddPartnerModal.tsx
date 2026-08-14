@@ -64,25 +64,20 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess }: AddPartnerModalP
         metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       });
 
-        if (driver) {
-          toast.success("Delivery partner added successfully");
-          onSuccess();
-          onClose();
-          setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            vehicle_type: "bike",
-            vehicle_number: "",
-            city: "Vadodara"
-          });
-        } else {
-          throw new Error("Failed to create driver record");
-        }
-      } catch (innerErr) {
-        // Cleanup orphaned user? In postgrest without transactions this is tricky.
-        // For now just rethrow so the user knows driver creation failed.
-        throw innerErr;
+      if (driver) {
+        toast.success("Delivery partner added successfully");
+        onSuccess();
+        onClose();
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          vehicle_type: "bike",
+          vehicle_number: "",
+          city: "Vadodara"
+        });
+      } else {
+        throw new Error("Failed to create driver record");
       }
     } catch (error: any) {
       console.error("Failed to add partner:", error);
