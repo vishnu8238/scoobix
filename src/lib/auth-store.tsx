@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthError(null);
       }
       
-      const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch(e => ({ data: null, error: e }));
+      const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => ({ data: null, error: e }));
       
       if (currentUserError || !userData?.user) {
          setUser(null);
@@ -166,9 +166,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pendingPortal: currentPortal,
       });
 
-      if (!hasAccess && currentPortal !== "customer") {
+      if (!hasAccess && (currentPortal as string) !== "customer") {
         const access = await checkPortalAccess(userEmail, currentPortal as any).catch(() => ({ ok: false, reason: "denied" }));
-        setAuthState(access.reason === "disabled" ? "disabled" : "denied");
+        setAuthState((access as any).reason === "disabled" ? "disabled" : "denied");
       } else {
         setAuthState("authenticated");
       }
