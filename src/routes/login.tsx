@@ -23,7 +23,7 @@ const PORTALS: { id: Role; label: string; icon: any; color: string; desc: string
 ];
 
 function ConsolidatedLogin() {
-  const { login, user, loading, authState, authError } = useAuth();
+  const { login, user, loading, authState, authError, hydrationComplete, logout } = useAuth();
   const navigate = useNavigate();
   const [selectedPortal, setSelectedPortal] = useState<Role>("customer");
   const [localError, setLocalError] = useState<string | null>(null);
@@ -75,7 +75,7 @@ function ConsolidatedLogin() {
     }
   };
 
-  if (loading && !localError && !authError && authState !== "unauthenticated") {
+  if ((loading || !hydrationComplete) && !localError && !authError && authState !== "unauthenticated") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-background gap-4 p-6 text-center">
         <div className="flex flex-col items-center gap-2">
@@ -119,9 +119,11 @@ function ConsolidatedLogin() {
             <Button 
               variant="link" 
               className="p-0 h-auto text-[10px] font-bold uppercase text-primary mt-2"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                void logout().then(() => window.location.reload());
+              }}
             >
-              Retry
+              Reset Session & Retry
             </Button>
           </div>
         </div>

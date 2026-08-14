@@ -13,11 +13,17 @@ if (!INSFORGE_URL || !INSFORGE_ANON_KEY) {
   );
 }
 
-// Maintain singleton instance
+// Maintain singleton instance with explicit persistence for iOS/mobile stability
 if (!(globalThis as any).__INSFORGE_CLIENT__) {
   (globalThis as any).__INSFORGE_CLIENT__ = createClient({
     baseUrl: INSFORGE_URL,
     anonKey: INSFORGE_ANON_KEY,
+    auth: {
+      persistSession: true,
+      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    }
   });
 }
 
