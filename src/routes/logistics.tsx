@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth-store";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
+import { getInitials } from "@/lib/identity-utils";
 
 export const Route = createFileRoute("/logistics")({
   head: () => appHead(APPS.logistics),
@@ -105,7 +106,7 @@ function LogisticsLayout() {
           <div className="mt-4 pt-4 border-t border-border/40">
              <div className="flex items-center gap-3 px-2 py-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground">
-                  {(user?.name || "L").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  {getInitials(user?.name)}
                 </div>
                 <div className="text-left min-w-0">
                   <p className="text-[12px] font-bold leading-none text-foreground truncate">{user?.name || "Logistics Staff"}</p>

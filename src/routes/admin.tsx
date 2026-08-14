@@ -9,6 +9,7 @@ import {
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { APPS, appHead } from "@/lib/apps";
 import { useAuth, getRequestedPortal } from "@/lib/auth-store";
+import { getInitials } from "@/lib/identity-utils";
 
 import { cn } from "@/lib/format";
 import { warmAnalytics } from "@/lib/analytics-jobs";
@@ -154,7 +155,7 @@ function AdminLayout() {
               </button>
               <div className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2 shadow-soft ring-1 ring-border/60">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground">
-                  {(user?.name || "AD").split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  {getInitials(user?.name)}
                 </div>
                 <div className="text-left">
                   <p className="text-[12px] font-bold leading-none text-foreground">{user?.name || "Administrator"}</p>
