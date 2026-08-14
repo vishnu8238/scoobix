@@ -21,12 +21,19 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     const zone1Id = "z1110000-0000-0000-0000-000000000001";
     
     // Comprehensive list of possible table names to check
-    const tables = ["logistics_zones", "delivery_zones", "zones"];
+    const tables = ["logistics_zones", "delivery_zones", "zones", "cities"];
     let result = { 
       cities: 0, 
       zones: 0, 
       errors: [] as string[],
       diagnostics: [] as any[]
+    };
+
+    const cityPayload = {
+      id: city1Id,
+      name: "City 1",
+      status: "ACTIVE",
+      metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
     };
 
     const zonePayload = {
@@ -48,11 +55,13 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     for (const table of tables) {
       try {
         console.log(`[SEED_PREREQ] Probing ${table} via SDK...`);
-        // Use a very permissive select to see what columns exist if it fails
+        const targetId = table === "cities" ? city1Id : zone1Id;
+        const payload = table === "cities" ? cityPayload : zonePayload;
+        
         const { data: found, error: probeError, status: probeStatus } = await insforge.database
           .from(table)
           .select("*")
-          .eq("id", zone1Id)
+          .eq("id", targetId)
           .limit(1);
         
         if (probeError) {
@@ -84,7 +93,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
         console.log(`[SEED_PREREQ] Inserting into ${table} via SDK...`);
         const { data: inserted, error: insertError, status: insertStatus } = await insforge.database
           .from(table)
-          .insert([zonePayload])
+          .insert([payload])
           .select()
           .single();
 
@@ -100,9 +109,10 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
           result.errors.push(`${table} insert failed: ${insertError.message}`);
         } else {
           console.log(`[SEED_PREREQ] Success for ${table}`);
-          result.zones++;
+          if (table === "cities") result.cities++;
+          else result.zones++;
           result.diagnostics.push({ table, op: "insert", status: insertStatus, success: true });
-          publishTableChange(table, "insert", zonePayload);
+          publishTableChange(table, "insert", payload);
         }
       } catch (e: any) {
         console.error(`[SEED_PREREQ] Critical error for ${table}:`, e);
