@@ -104,11 +104,12 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         start_time: startTime,
         end_time: endTime,
         status: "SCHEDULED",
-        zone_id: formData.zone,
+        zone_id: formData.zone === "zone-1-fallback" ? "z1111111-1111-4111-a111-111111111111" : formData.zone,
         city_id: formData.city,
         capacity: Number(formData.neededPeople),
         completion_pct: Number(formData.completionPercentage)
       });
+
 
       if (newGig) {
         toast.success("Gig created successfully");
