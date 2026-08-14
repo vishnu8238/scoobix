@@ -1,7 +1,7 @@
 import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
 
 export type TicketRole = "customer" | "restaurant" | "driver" | "manager" | "admin";
-export type TicketStatus = "open" | "in_progress" | "resolved" | "closed" | "escalated";
+export type TicketStatus = "open" | "in_progress" | "resolved" | "closed" | "escalated" | "reopened";
 export type TicketPriority = "low" | "medium" | "high" | "urgent";
 export type TicketCategory = "orders" | "account" | "payment" | "technical" | "other";
 
@@ -21,6 +21,8 @@ export type SupportTicket = {
   assigned_agent_name?: string;
   created_by?: string;
   order_id?: string;
+  restaurant_id?: string;
+  reference_id?: string;
   attachments?: string[];
   documents?: string[];
   unread_for_owner?: number;
@@ -42,6 +44,7 @@ export type TicketMessage = {
   message: string;
   attachments?: string[];
   is_internal?: boolean;
+  internal?: boolean; // Alias for is_internal
   created_at: string;
 };
 
@@ -50,7 +53,9 @@ export type TicketActivity = {
   ticket_id: string;
   actor_id: string;
   actor_name: string;
+  actor_role?: string;
   action: string;
+  to_value?: string;
   created_at: string;
 };
 
@@ -60,6 +65,7 @@ export type TicketAssignment = {
   agent_id: string;
   agent_name: string;
   assigned_at: string;
+  created_at?: string; // Alias for assigned_at
 };
 
 export type TicketRating = {
@@ -72,7 +78,7 @@ export type TicketRating = {
   created_at: string;
 };
 
-export const TICKET_STATUSES: TicketStatus[] = ["open", "in_progress", "resolved", "closed", "escalated"];
+export const TICKET_STATUSES: TicketStatus[] = ["open", "in_progress", "resolved", "closed", "escalated", "reopened"];
 export const TICKET_PRIORITIES: TicketPriority[] = ["low", "medium", "high", "urgent"];
 export const TICKET_CATEGORIES: TicketCategory[] = ["orders", "account", "payment", "technical", "other"];
 
@@ -82,6 +88,7 @@ export const STATUS_LABEL: Record<string, string> = {
   resolved: "Resolved",
   closed: "Closed",
   escalated: "Escalated",
+  reopened: "Reopened",
 };
 
 export const STATUS_TONE: Record<string, string> = {
@@ -90,6 +97,7 @@ export const STATUS_TONE: Record<string, string> = {
   resolved: "bg-emerald-100 text-emerald-700",
   closed: "bg-zinc-100 text-zinc-700",
   escalated: "bg-rose-100 text-rose-700",
+  reopened: "bg-blue-50 text-blue-600",
 };
 
 export const PRIORITY_LABEL: Record<string, string> = {
@@ -150,19 +158,24 @@ export async function createTicket(data: Partial<SupportTicket>) {
   return createRecord<SupportTicket>("support_tickets", { ...data, ticket_code, status: "open" });
 }
 
-export async function addTicketMessage(data: any) {
+export async function addTicketMessage(data: any, legacyTicketArg?: any) {
+  // Handle legacy 3-arg calls
+  const ticketId = typeof data === 'string' ? data : data.ticketId;
+  const payload = typeof data === 'string' ? legacyTicketArg : data;
+  
   const msg = await createRecord<TicketMessage>("support_ticket_messages", {
-    ticket_id: data.ticketId,
-    author_id: data.authorId,
-    author_name: data.authorName,
-    author_role: data.authorRole,
-    message: data.message,
-    attachments: data.attachments,
-    is_internal: data.is_internal ?? false,
+    ticket_id: ticketId,
+    author_id: payload.authorId || payload.author_id,
+    author_name: payload.authorName || payload.author_name,
+    author_role: payload.authorRole || payload.author_role,
+    message: payload.message || payload.content,
+    attachments: payload.attachments,
+    is_internal: payload.is_internal ?? payload.internal ?? false,
+    internal: payload.is_internal ?? payload.internal ?? false,
   });
   
-  if (msg && !data.is_internal && data.authorRole === "admin") {
-    await patchRecord("support_tickets", data.ticketId, { 
+  if (msg && !(payload.is_internal || payload.internal) && (payload.authorRole === "admin" || payload.author_role === "admin")) {
+    await patchRecord("support_tickets", ticketId, { 
       unread_for_owner: 1,
       first_responded_at: new Date().toISOString()
     });
@@ -170,33 +183,41 @@ export async function addTicketMessage(data: any) {
   return msg;
 }
 
-export async function setTicketStatus(ticket: SupportTicket, status: TicketStatus, actor: any) {
+export async function setTicketStatus(ticket: SupportTicket | string, status: TicketStatus, actor: any) {
+  const id = typeof ticket === 'string' ? ticket : ticket.id;
   const patch: any = { status, updated_at: new Date().toISOString() };
   if (status === "closed" || status === "resolved") patch.closed_at = new Date().toISOString();
-  await patchRecord("support_tickets", ticket.id, patch);
+  await patchRecord("support_tickets", id, patch);
   await createRecord("ticket_activity", {
-    ticket_id: ticket.id,
+    ticket_id: id,
     actor_id: actor.id,
     actor_name: actor.name,
+    actor_role: actor.role,
     action: `Changed status to ${status}`,
+    to_value: status
   });
 }
 
-export async function assignTicket(ticket: SupportTicket, agent: any, actor: any, opts?: any) {
-  await patchRecord("support_tickets", ticket.id, { 
+export async function assignTicket(ticket: SupportTicket | string, agent: any, actor: any, opts?: any) {
+  const id = typeof ticket === 'string' ? ticket : ticket.id;
+  await patchRecord("support_tickets", id, { 
     assigned_agent_id: agent.id, 
     assigned_agent_name: agent.name 
   });
   await createRecord("ticket_assignments", {
-    ticket_id: ticket.id,
+    ticket_id: id,
     agent_id: agent.id,
     agent_name: agent.name,
+    assigned_at: new Date().toISOString(),
+    created_at: new Date().toISOString()
   });
   await createRecord("ticket_activity", {
-    ticket_id: ticket.id,
+    ticket_id: id,
     actor_id: actor.id,
     actor_name: actor.name,
+    actor_role: actor.role,
     action: `Assigned to ${agent.name}`,
+    to_value: agent.id
   });
 }
 
@@ -215,7 +236,9 @@ export async function mergeTickets(sourceId: string, targetId: string, actor: an
     ticket_id: sourceId,
     actor_id: actor.id,
     actor_name: actor.name,
+    actor_role: actor.role,
     action: `Merged into ${targetId}`,
+    to_value: targetId
   });
 }
 
@@ -237,6 +260,7 @@ export function ticketSla(t: SupportTicket) {
     resolutionMins,
     overdue: !firstResp && firstResponseMins > 60,
     breached: t.priority === "urgent" && firstResponseMins > 30,
+    escalateDue: t.priority === "urgent" && !t.escalated
   };
 }
 
@@ -268,7 +292,7 @@ export function ticketAttachments(t: any) {
 }
 
 export function computeSupportAnalytics(tickets: SupportTicket[], ratings: TicketRating[]) {
-  const open = tickets.filter(t => ["open", "in_progress", "escalated"].includes(t.status)).length;
+  const open = tickets.filter(t => ["open", "in_progress", "escalated", "reopened"].includes(t.status)).length;
   const closed = tickets.filter(t => ["resolved", "closed"].includes(t.status)).length;
   const overdue = tickets.filter(t => ticketSla(t).overdue).length;
   const breached = tickets.filter(t => ticketSla(t).breached).length;
@@ -335,12 +359,19 @@ export function computeSupportAnalytics(tickets: SupportTicket[], ratings: Ticke
   };
 }
 
-export async function escalateTicket(ticket: SupportTicket, actor: any) {
-  await patchRecord("support_tickets", ticket.id, { status: "escalated", escalated: true });
+export async function escalateTicket(ticket: SupportTicket | string, actor: any) {
+  const id = typeof ticket === 'string' ? ticket : ticket.id;
+  await patchRecord("support_tickets", id, { status: "escalated", escalated: true });
   await createRecord("ticket_activity", {
-    ticket_id: ticket.id,
+    ticket_id: id,
     actor_id: actor.id,
     actor_name: actor.name,
+    actor_role: actor.role,
     action: "Escalated ticket",
   });
 }
+
+// Missing legacy exports
+export const TICKET_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
+export const TICKET_CATEGORIES_LIST = ["orders", "account", "payment", "technical", "other"] as const;
+export const TICKET_STATUSES_LIST = ["open", "in_progress", "resolved", "closed", "escalated", "reopened"] as const;
