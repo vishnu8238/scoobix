@@ -371,7 +371,6 @@ export async function escalateTicket(ticket: SupportTicket | string, actor: any)
   });
 }
 
-// Missing legacy exports
-export const TICKET_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
-export const TICKET_CATEGORIES_LIST = ["orders", "account", "payment", "technical", "other"] as const;
-export const TICKET_STATUSES_LIST = ["open", "in_progress", "resolved", "closed", "escalated", "reopened"] as const;
+// Missing legacy exports aliases
+export const TICKET_CATEGORIES_LIST = TICKET_CATEGORIES;
+export const TICKET_STATUSES_LIST = TICKET_STATUSES;
