@@ -42,7 +42,7 @@ export const findEligibleRiders = createServerFn({ method: "POST" })
     // Conditions: online, kyc approved, account active, assigned to zone, NO current order
     let driverQuery = `online_status=eq.true&zone_id=eq.${data.zoneId}&kyc_approved=eq.true&account_active=eq.true&current_order_id=is.null`;
     
-    const driversRes = await fetch(`${INSFORGE_URL}/api/database/records/drivers?${driverQuery}`, { headers: HEADERS });
+    const driversRes = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_DRIVERS}?${driverQuery}`, { headers: HEADERS });
     const drivers = await driversRes.json();
 
     if (!Array.isArray(drivers)) return [];
