@@ -135,12 +135,9 @@ function LogisticsLayout() {
                   <div className="text-left min-w-0">
                     <p 
                       data-testid="sidebar-user-name"
-                      className={cn(
-                        "text-[12px] font-bold leading-none text-foreground truncate",
-                        user?.name === "User" && "text-rose-500 font-black" // Visual regression trigger
-                      )}
+                      className="text-[12px] font-bold leading-none text-foreground truncate"
                     >
-                      {user?.name || "Logistics Staff"}
+                      {user?.name}
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-1 truncate">{user?.email}</p>
                   </div>

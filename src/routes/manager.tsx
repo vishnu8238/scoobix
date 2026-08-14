@@ -60,7 +60,7 @@ function ManagerShell({ pathname }: { pathname: string }) {
             {getInitials(manager?.name) || "M"}
           </div>
           <div className="text-left">
-            <p className="text-[12px] font-bold leading-none text-foreground">{manager?.name || "Merchant Manager"}</p>
+            <p className="text-[12px] font-bold leading-none text-foreground">{manager?.name}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Scoobix Manager</p>
           </div>
         </div>

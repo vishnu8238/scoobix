@@ -48,7 +48,7 @@ function LogisticsUsers() {
         <DataTable
           columns={["Name", "Email", "Phone", "Joined", "Status"]}
           rows={filtered.map((u) => [
-            <span key={u.id} className="font-bold">{u.name || (u.email || "").split("@")[0] || "User"}</span>,
+            <span key={u.id} className="font-bold">{u.name}</span>,
             <span key={u.id+"e"} className="text-muted-foreground">{u.email || "—"}</span>,
             <span key={u.id+"p"} className="text-muted-foreground">{u.phone}</span>,
             <span key={u.id+"j"} className="text-[10px] text-muted-foreground">{(u.registration_timestamp ?? "").slice(0, 10)}</span>,
