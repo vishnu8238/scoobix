@@ -142,8 +142,10 @@ function SecurityPage() {
     
     try {
       const res = await fixSecurityIssues({ 
-        actorId: actor.id, 
-        actorRole: actor.role 
+        data: {
+          actorId: actor.id, 
+          actorRole: actor.role 
+        }
       });
       
       toast.success(
