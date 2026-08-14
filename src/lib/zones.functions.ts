@@ -14,8 +14,8 @@ export const getZonesWithSubzones = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
       const [zonesRes, subzonesRes] = await Promise.all([
-        fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?select=id,name,city,status,created_at,updated_at&order=name.asc`, { headers: HEADERS }),
-        fetch(`${INSFORGE_URL}/api/database/records/subzones?select=id,zone_id,name,status,created_at,updated_at&order=name.asc`, { headers: HEADERS })
+        fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}?select=id,name,city,status,created_at,updated_at&order=name.asc`, { headers: HEADERS }),
+        fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}?select=id,zone_id,name,status,created_at,updated_at&order=name.asc`, { headers: HEADERS })
       ]);
       
       if (!zonesRes.ok && zonesRes.status !== 404) {
