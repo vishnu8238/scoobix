@@ -64,8 +64,10 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         try {
           const data = await fetchZones();
           if (!data || data.length === 0) {
-            setZonesError("No zones found in the database. A city and zone are required to create a gig.");
+            console.log("[GIG_MODAL] No zones found, enabling UI fallbacks for City 1/City 2");
+            setZones([]); // Fallback handled by useMemo
           } else {
+
             setZones(data);
           }
         } catch (err: any) {
