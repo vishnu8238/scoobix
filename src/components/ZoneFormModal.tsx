@@ -183,6 +183,7 @@ type SubzoneFormProps = {
   zoneId?: string;
   zones?: DeliveryZone[];
   initialData?: Partial<Subzone>;
+  zoneBoundary?: any;
 };
 
 export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, initialData }: SubzoneFormProps) {
