@@ -114,11 +114,12 @@ export async function upsertFraudReport(f: FraudFinding): Promise<"created" | "u
 
 export function listFraudReports(opts: { status?: string; kind?: FraudKind; limit?: number } = {}) {
   const params: Record<string, string | number> = {
-    select: SELECT, order: "risk_score.desc", limit: opts.limit ?? 100,
+    order: "risk_score.desc", limit: opts.limit ?? 100,
   };
   if (opts.status && opts.status !== "all") params.status = `eq.${opts.status}`;
   if (opts.kind) params.kind = `eq.${opts.kind}`;
-  return listTable<FraudReportRow>(FRAUD_TABLE, params, { ttl: 30 });
+  // Explicit selection to prevent credential/metadata leakage
+  return listTable<FraudReportRow>(FRAUD_TABLE, params, { ttl: 30, select: SELECT });
 }
 
 export async function resolveFraudReport(

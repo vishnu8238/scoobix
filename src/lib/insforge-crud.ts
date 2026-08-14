@@ -215,9 +215,9 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
 export function listTable<T = Record<string, unknown>>(
   table: string,
   params?: Record<string, string | number | undefined>,
-  opts?: { ttl?: number; fresh?: boolean; public?: boolean },
+  opts?: { ttl?: number; fresh?: boolean; public?: boolean; select?: string },
 ): Promise<T[]> {
-  const select = String(params?.select ?? "*");
+  const select = opts?.select ?? String(params?.select ?? "*");
   const qs = JSON.stringify(params || {});
   const cacheKey = `db:${table}:${qs}`;
 
@@ -250,7 +250,7 @@ export function listPage<T = Record<string, unknown>>(
   page: number,
   pageSize: number,
   params?: Record<string, string | number | undefined>,
-  opts?: { ttl?: number; public?: boolean },
+  opts?: { ttl?: number; public?: boolean; select?: string },
 ): Promise<T[]> {
   const size = Math.min(Math.max(pageSize, 1), MAX_ROWS);
   return listTable<T>(table, { ...params, limit: size, offset: Math.max(page, 0) * size }, opts);

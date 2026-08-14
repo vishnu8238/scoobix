@@ -62,12 +62,12 @@ export async function securityOverview() {
   const dayAgo = new Date(Date.now() - 86400_000).toISOString();
   
   const [events, sessions, devices, lockedUsers, failedLogins, deletions] = await Promise.all([
-    listTable<SecurityEventRow>(EVENTS_TABLE, { acknowledged: "eq.false", limit: 50 }).catch(() => []),
-    listTable<SessionRow>(SESSIONS_TABLE, { status: "eq.active", limit: 100 }).catch(() => []),
-    listTable<DeviceRow>(DEVICES_TABLE, { limit: 100 }).catch(() => []),
-    listTable<UserSecurityRow>(USERS_TABLE, { "or": "(account_state.eq.locked,account_state.eq.suspended)", limit: 50 }).catch(() => []),
-    listTable<LoginRow>(LOGIN_TABLE, { success: "eq.false", created_at: `gte.${dayAgo}`, limit: 100 }).catch(() => []),
-    listTable<UserSecurityRow>(USERS_TABLE, { account_state: "eq.pending_deletion", limit: 50 }).catch(() => []),
+    listTable<SecurityEventRow>(EVENTS_TABLE, { acknowledged: "eq.false", limit: 50 }, { select: "id,type,severity,title,detail,created_at" }).catch(() => []),
+    listTable<SessionRow>(SESSIONS_TABLE, { status: "eq.active", limit: 100 }, { select: "id,user_id,created_at" }).catch(() => []),
+    listTable<DeviceRow>(DEVICES_TABLE, { limit: 100 }, { select: "id,trusted,blocked" }).catch(() => []),
+    listTable<UserSecurityRow>(USERS_TABLE, { "or": "(account_state.eq.locked,account_state.eq.suspended)", limit: 50 }, { select: "id,name,account_state" }).catch(() => []),
+    listTable<LoginRow>(LOGIN_TABLE, { success: "eq.false", created_at: `gte.${dayAgo}`, limit: 100 }, { select: "id,email,created_at" }).catch(() => []),
+    listTable<UserSecurityRow>(USERS_TABLE, { account_state: "eq.pending_deletion", limit: 50 }, { select: "id,name,account_state" }).catch(() => []),
   ]);
 
   return {

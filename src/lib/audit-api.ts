@@ -125,10 +125,10 @@ export type AuditFilter = {
 
 const SELECT =
   "id,actor_id,actor_role,actor_name,action,category,subject_type,subject_id,summary," +
-  "severity,meta,ip,user_agent,device_id,session_id,archived,created_at";
+  "severity,archived,created_at";
 
 export async function listAudit(filter: AuditFilter = {}): Promise<AuditRow[]> {
-  const params: Record<string, string | number> = { select: SELECT, order: "created_at.desc" };
+  const params: Record<string, string | number> = { order: "created_at.desc" };
   if (filter.actorId) params.actor_id = `eq.${filter.actorId}`;
   if (filter.actorRole) params.actor_role = `eq.${filter.actorRole}`;
   if (filter.category && filter.category !== "all") params.category = `eq.${filter.category}`;
@@ -138,15 +138,15 @@ export async function listAudit(filter: AuditFilter = {}): Promise<AuditRow[]> {
   if (filter.severity && filter.severity !== "all") params.severity = `eq.${filter.severity}`;
   if (filter.since) params.created_at = `gte.${filter.since}`;
   if (!filter.includeArchived) params.archived = "eq.false";
-  return listPage<AuditRow>(AUDIT_TABLE, filter.page ?? 0, filter.pageSize ?? 50, params, { ttl: 30 });
+  return listPage<AuditRow>(AUDIT_TABLE, filter.page ?? 0, filter.pageSize ?? 50, params, { ttl: 30, select: SELECT });
 }
 
 /** Complete trail for one subject (user, restaurant, rider, order…). */
 export function subjectTrail(subjectType: string, subjectId: string, limit = 100) {
   return listTable<AuditRow>(
     AUDIT_TABLE,
-    { select: SELECT, subject_type: `eq.${subjectType}`, subject_id: `eq.${subjectId}`, order: "created_at.desc", limit },
-    { ttl: 30 },
+    { subject_type: `eq.${subjectType}`, subject_id: `eq.${subjectId}`, order: "created_at.desc", limit },
+    { ttl: 30, select: SELECT },
   );
 }
 
