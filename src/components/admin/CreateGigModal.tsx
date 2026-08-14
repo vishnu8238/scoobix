@@ -90,8 +90,8 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md rounded-[2rem] p-8">
-        <DialogHeader className="mb-6">
+      <DialogContent className="max-w-md rounded-[2rem] p-8 max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="mb-6 sticky top-0 bg-background pb-2 z-10">
           <DialogTitle className="text-2xl font-black text-emerald-900 dark:text-emerald-400">
             Create New Gig
           </DialogTitle>

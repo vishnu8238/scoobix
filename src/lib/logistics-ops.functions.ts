@@ -14,8 +14,8 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
   .handler(async () => {
     // 1. Get a few restaurants and users to link to
     const [restRes, userRes, zonesRes] = await Promise.all([
-      fetch(`${INSFORGE_URL}/api/database/records/restaurants?limit=3`, { headers: HEADERS }),
-      fetch(`${INSFORGE_URL}/api/database/records/users?role=eq.customer&limit=3`, { headers: HEADERS }),
+      fetch(`${INSFORGE_URL}/api/database/records/restaurants?limit=10`, { headers: HEADERS }),
+      fetch(`${INSFORGE_URL}/api/database/records/users?role=eq.customer&limit=10`, { headers: HEADERS }),
       fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS })
     ]);
 
@@ -28,7 +28,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       console.log("[SEED] No restaurants found, creating demo restaurant...");
       const demoRest = {
         id: newUuid(),
-        name: "Demo Kitchen",
+        name: "Demo Kitchen (Logistics)",
         status: "ACTIVE",
         metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
@@ -42,7 +42,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       console.log("[SEED] No customers found, creating demo customer...");
       const demoCust = {
         id: newUuid(),
-        name: "Demo Customer",
+        name: "Demo Logistics Customer",
         role: "customer",
         metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
@@ -54,23 +54,25 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
 
     const zoneId = zones[0]?.id;
     const statuses = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
-    const orders = [];
-
-    // Check for existing demo orders to ensure idempotency
-    const existingDemoRes = await fetch(`${INSFORGE_URL}/api/database/records/orders?metadata->>demo_tag=eq.logistics_test_v2&limit=1`, { headers: HEADERS });
-    const existingDemo = existingDemoRes.ok ? await existingDemoRes.json() : [];
-    
-    if (existingDemo.length > 0) {
-      console.log("[SEED] Demo orders already exist, skipping creation.");
-      return { seeded: 0, message: "Demo orders already exist" };
-    }
+    let seeded = 0;
+    let existing = 0;
 
     for (let i = 0; i < 5; i++) {
-      const id = newUuid();
       const restaurant = restaurants[i % restaurants.length];
       const customer = customers[i % customers.length];
       const status = statuses[i % statuses.length];
       
+      // Idempotency check for each specific order variation
+      const demoRef = `demo_order_${i}_v2`;
+      const checkRes = await fetch(`${INSFORGE_URL}/api/database/records/orders?metadata->>demo_ref=eq.${demoRef}&limit=1`, { headers: HEADERS });
+      const found = checkRes.ok ? await checkRes.json() : [];
+      
+      if (found.length > 0) {
+        existing++;
+        continue;
+      }
+
+      const id = newUuid();
       const order = {
         id,
         customer_id: customer.id,
@@ -79,7 +81,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         zone_id: zoneId,
         total_price: Math.floor(Math.random() * 1000) + 200,
         created_at: new Date().toISOString(),
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2" },
+        metadata: { is_demo: true, demo_tag: "logistics_test_v2", demo_ref: demoRef },
         items: {
           lines: [{ id: "item1", name: "Demo Burger", price: 150, qty: 1 }],
           meta: { restaurantName: restaurant.name, addressLabel: "Home", addressLine: "Demo Street 123" }
@@ -96,7 +98,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       });
 
       if (res.ok) {
-        orders.push(order);
+        seeded++;
         publishTableChange("orders", "insert", order);
       } else {
         const err = await res.text();
@@ -104,5 +106,5 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       }
     }
 
-    return { seeded: orders.length };
+    return { seeded, existing, total: seeded + existing };
   });

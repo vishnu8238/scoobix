@@ -32,7 +32,15 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
     try {
       const boundary = (formData.boundary?.coordinates?.[0]?.length >= 3) 
         ? formData.boundary 
-        : { type: "Polygon", coordinates: [] };
+        : { 
+            type: "Polygon", 
+            coordinates: [[
+              [73.1812, 22.3072], 
+              [73.1912, 22.3072], 
+              [73.1912, 22.3172], 
+              [73.1812, 22.3072]
+            ]] 
+          };
 
       // Validate boundary coordinates for zones (must be closed)
       if (boundary.coordinates.length > 0) {
