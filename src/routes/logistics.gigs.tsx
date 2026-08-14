@@ -48,9 +48,10 @@ function LogisticsGigs() {
   const load = useCallback(async () => {
     setLoading(true);
     const today = format(selectedDate, "yyyy-MM-dd");
+    // Ensure authoritative filtering. start_time is usually an ISO string.
     const data = await fetchGigs({ 
-      start_time: `gte.${today}T00:00:00Z`,
-      end_time: `lte.${today}T23:59:59Z`
+      start_time: `gte.${today}T00:00:00.000Z`,
+      end_time: `lte.${today}T23:59:59.999Z`
     });
     setGigs(data);
     setLoading(false);
