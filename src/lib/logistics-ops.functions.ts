@@ -93,7 +93,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
         console.log(`[SEED_PREREQ] Inserting into ${table} via SDK...`);
         const { data: inserted, error: insertError, status: insertStatus } = await insforge.database
           .from(table)
-          .insert([zonePayload])
+          .insert([payload])
           .select()
           .single();
 
