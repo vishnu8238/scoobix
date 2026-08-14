@@ -140,7 +140,7 @@ function LogisticsOrders() {
                 key={`act${o.id}`} 
                 to="/logistics/orders/$orderId" 
                 params={{ orderId: o.id }}
-                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:underline hover:cursor-pointer"
+                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:underline hover:cursor-pointer transition-all active:scale-95"
               >
                 Manage <ExternalLink className="h-3 w-3" />
               </Link>

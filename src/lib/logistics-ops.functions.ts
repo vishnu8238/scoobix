@@ -97,13 +97,17 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
 
       const res = await fetch(`${INSFORGE_URL}/api/database/records/orders`, {
         method: "POST",
-        headers: HEADERS,
+        headers: { ...HEADERS, "Prefer": "return=representation" },
         body: JSON.stringify(order)
       });
 
       if (res.ok) {
         seeded++;
         publishTableChange("orders", "insert", order);
+      } else {
+        const errText = await res.text();
+        console.error(`[SEED] Failed to insert order ${demoRef}:`, errText);
+        throw new Error(`Database error: ${errText}`);
       }
     }
 
