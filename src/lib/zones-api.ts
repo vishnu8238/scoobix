@@ -83,11 +83,23 @@ export async function deleteZone(id: string) {
 export async function fetchSubzones(zoneId?: string) {
   const params = zoneId ? { zone_id: `eq.${zoneId}` } : {};
   // Use explicit select to ensure we don't hit "undefined_column" on missing columns
-  return listTable<Subzone>(TABLE_SUBZONES, { 
+  const subzones = await listTable<Subzone>(TABLE_SUBZONES, { 
     select: "id,zone_id,name,status,created_at,updated_at", 
     order: "name.asc", 
     ...params 
   });
+
+  if (subzones.length === 0) {
+     console.log(`[ZONES_API] No ${TABLE_SUBZONES} found, trying fallback delivery_subzones...`);
+     const fallback = await listTable<Subzone>("delivery_subzones", { 
+       select: "id,zone_id,name,status,created_at,updated_at", 
+       order: "name.asc", 
+       ...params 
+     });
+     if (fallback.length > 0) return fallback;
+  }
+
+  return subzones;
 }
 
 export async function createSubzone(subzone: Omit<Subzone, "id">) {
