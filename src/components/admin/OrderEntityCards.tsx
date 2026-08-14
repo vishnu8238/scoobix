@@ -76,7 +76,7 @@ export function CustomerCard({ customer, order }: { customer: any; order: any })
             <User className="h-6 w-6 text-muted-foreground" />
           </div>
           <div>
-            <p className="font-bold text-sm">{customer.full_name || customer.name || "Guest User"}</p>
+            <p className="font-bold text-sm">{customer.full_name || customer.name || "Customer"}</p>
             <p className="text-xs text-muted-foreground">{customer.email || "No email"}</p>
           </div>
         </div>
