@@ -30,6 +30,8 @@ export type AuthState =
   | "authenticated" 
   | "unauthenticated" 
   | "authorization_resolving" 
+  | "denied"
+  | "disabled"
   | "auth_error";
 
 type AuthCtx = {
@@ -216,20 +218,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const admissionResult = roles.includes(currentPortal);
       console.log(`[AUTH_DEBUG] [CHECKPOINT: PORTAL_ADMISSION_RESULT] Portal: ${currentPortal}, Admitted: ${admissionResult}, Roles: ${roles.join(",")}`);
 
-      // Determine the final role to set in the store. 
-      // Priority: 1. Current portal if admitted, 2. Logistics if admitted, 3. First available role, 4. Customer.
-      let finalRole: Role = "customer";
-      if (admissionResult) {
-        finalRole = currentPortal;
-      } else if (roles.includes(currentPortal)) {
-        // Double check
-        finalRole = currentPortal;
-      } else if (roles.includes("logistics") && currentPortal === "logistics") {
-        finalRole = "logistics";
-      } else if (roles.length > 0 && roles.includes(currentPortal)) {
-        finalRole = currentPortal;
-      } else if (isSuperAdmin && currentPortal !== "customer") {
-        finalRole = currentPortal;
+      // Final Admission Logic
+      if (currentPortal !== "customer" && !roles.includes(currentPortal)) {
+         console.warn(`[AUTH_TRACE] USER DENIED ADMISSION TO ${currentPortal}`);
+         
+         // Fetch specific reason for better UI
+         const access = await checkPortalAccess(session.user.email, currentPortal as any);
+         
+         setUser({
+           id: profile.id,
+           name: profile.name || "User",
+           email: profile.email || "",
+           phone: profile.phone || "",
+           avatar: profile.avatar_url || "",
+           role: "customer",
+           roles,
+           membershipsResolved: true,
+           pendingPortal: currentPortal,
+         });
+         
+         setAuthState(access.ok ? "authenticated" : (access.reason === "disabled" ? "disabled" : "denied"));
+         return;
       }
 
       setUser({
@@ -238,7 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: profile.email || "",
         phone: profile.phone || "",
         avatar: profile.avatar_url || "",
-        role: finalRole,
+        role: admissionResult ? currentPortal : "customer",
         roles,
         membershipsResolved: true,
         pendingPortal: currentPortal,
