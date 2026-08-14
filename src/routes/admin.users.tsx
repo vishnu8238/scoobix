@@ -43,7 +43,7 @@ function AdminUsers() {
   const rows = users
     .map((u) => ({
       id: u.id,
-      name: u.name ?? (u.email ?? "").split("@")[0] ?? "User",
+      name: u.name || "—",
       email: u.email ?? "—",
       phone: u.phone ?? "—",
       role: (u.role ?? "customer").toLowerCase(),
