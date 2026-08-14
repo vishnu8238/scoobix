@@ -8,6 +8,7 @@ export function getDisplayName(user: User | null | any): string {
   if (!user) return "User";
   
   // 1. Check for name in our AuthStore User object
+  // If it's the literal string "User", we treat it as a missing name and try to resolve better.
   if (typeof user === 'object' && 'name' in user && user.name && user.name !== "User") {
     return user.name;
   }
@@ -22,7 +23,7 @@ export function getDisplayName(user: User | null | any): string {
 
   if (name && name !== "User") return name;
   
-  // 3. Fallback to email prefix
+  // 3. Fallback to email prefix (most descriptive unique ID we have)
   const email = user.email || (user.auth && typeof user.auth.email === 'string' ? user.auth.email : null);
   if (email) {
     const prefix = email.split('@')[0];
