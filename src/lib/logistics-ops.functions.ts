@@ -3,27 +3,30 @@ import { z } from "zod";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { publishTableChange } from "./realtime-bus";
 import { newUuid } from "./orders-api";
-
-const HEADERS = {
-  apikey: INSFORGE_ANON_KEY,
-  Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
-  "Content-Type": "application/json",
-};
+import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";
 
 /**
- * Idempotently seeds City 1, City 2 and Zone 1 prerequisites for Gig creation.
+ * Idempotently seeds City 1 and Zone 1 prerequisites for Gig creation.
  * Uses hardcoded authoritative UUIDs to ensure selector stability.
+ * Authenticated via per-request SDK client.
  */
 export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
-  .handler(async () => {
-    console.log("[SEED_PREREQ] Starting authoritative idempotent city/zone seeding...");
+  .middleware([requireInsForgeAuth])
+  .handler(async ({ context }) => {
+    const { insforge } = context;
+    console.log("[SEED_PREREQ] Starting authoritative idempotent city/zone seeding with SDK...");
     
     // c1110000-0000-0000-0000-000000000001
     const city1Id = "c1110000-0000-0000-0000-000000000001";
     const zone1Id = "z1110000-0000-0000-0000-000000000001";
     
     const tables = ["logistics_zones", "delivery_zones"];
-    let result = { cities: 0, zones: 0, errors: [] as string[] };
+    let result = { 
+      cities: 0, 
+      zones: 0, 
+      errors: [] as string[],
+      diagnostics: [] as any[]
+    };
 
     const zonePayload = {
       id: zone1Id,
@@ -38,43 +41,47 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
       max_delivery_distance_km: 10,
       max_orders_per_rider: 3,
       assignment_timeout_sec: 30,
-      metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+      metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
     };
 
     for (const table of tables) {
       try {
-        console.log(`[SEED_PREREQ] Probing ${table}...`);
-        const check = await fetch(`${INSFORGE_URL}/api/database/records/${table}?id=eq.${zone1Id}`, { headers: HEADERS });
+        console.log(`[SEED_PREREQ] Probing ${table} via SDK...`);
+        const { data: found, error: probeError, status: probeStatus } = await insforge.database
+          .from(table)
+          .select("id")
+          .eq("id", zone1Id)
+          .limit(1);
         
-        if (!check.ok) {
-          const errStatus = check.status;
-          const errText = await check.text();
-          console.warn(`[SEED_PREREQ] Probe failed for ${table} (${errStatus}):`, errText);
-          result.errors.push(`${table} probe failed: ${errStatus}`);
+        result.diagnostics.push({ table, op: "probe", status: probeStatus, error: probeError?.message });
+
+        if (probeError) {
+          console.warn(`[SEED_PREREQ] Probe failed for ${table}:`, probeError.message);
+          result.errors.push(`${table} probe failed: ${probeError.message}`);
           continue;
         }
 
-        const found = await check.json();
         if (found && found.length > 0) {
           console.log(`[SEED_PREREQ] Record exists in ${table}.`);
           continue;
         }
 
-        console.log(`[SEED_PREREQ] Inserting into ${table}...`);
-        const insert = await fetch(`${INSFORGE_URL}/api/database/records/${table}`, {
-          method: "POST",
-          headers: { ...HEADERS, "Prefer": "return=minimal" },
-          body: JSON.stringify(zonePayload)
-        });
+        console.log(`[SEED_PREREQ] Inserting into ${table} via SDK...`);
+        const { data: inserted, error: insertError, status: insertStatus } = await insforge.database
+          .from(table)
+          .insert([zonePayload])
+          .select()
+          .single();
 
-        if (insert.ok) {
+        result.diagnostics.push({ table, op: "insert", status: insertStatus, error: insertError?.message });
+
+        if (insertError) {
+          console.warn(`[SEED_PREREQ] Insert failed for ${table}:`, insertError.message);
+          result.errors.push(`${table} insert failed: ${insertError.message}`);
+        } else {
           console.log(`[SEED_PREREQ] Success for ${table}`);
           result.zones++;
           publishTableChange(table, "insert", zonePayload);
-        } else {
-          const errText = await insert.text();
-          console.warn(`[SEED_PREREQ] Insert failed for ${table}:`, errText);
-          result.errors.push(`${table} insert failed: ${errText}`);
         }
       } catch (e: any) {
         console.error(`[SEED_PREREQ] Critical error for ${table}:`, e);
