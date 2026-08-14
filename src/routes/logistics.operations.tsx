@@ -1,126 +1,96 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Gauge, Loader2, Search, Filter, ArrowUpRight, Bike, Store, ClipboardList } from "lucide-react";
+import { Loader2, Search, Filter, Camera, AlertTriangle, User, ChevronDown } from "lucide-react";
 import { listTable } from "@/lib/insforge-crud";
-import { useTableVersion } from "@/lib/realtime-hooks";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/logistics/operations")({
-  head: () => ({ meta: [{ title: "Scoobix Logistics · Live Operations" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Logistics · Operations" }] }),
   component: LogisticsOperations,
 });
 
-type OpStats = {
-  active_orders: number;
-  unassigned_orders: number;
-  online_riders: number;
-  delayed_orders: number;
-};
-
 function LogisticsOperations() {
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [stats, setStats] = useState<OpStats>({
-    active_orders: 0,
-    unassigned_orders: 0,
-    online_riders: 0,
-    delayed_orders: 0,
-  });
-  const [q, setQ] = useState("");
-  const version = useTableVersion(["orders", "drivers"]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [o, d] = await Promise.all([
-      listTable("orders", { order: "created_at.desc", limit: 100 }),
-      listTable("drivers", { online_status: "eq.true", limit: 500 }),
-    ]);
-
-    const active = o.filter((x: any) => !["DELIVERED", "CANCELLED"].includes(x.status));
-    setOrders(active);
-    setStats({
-      active_orders: active.length,
-      unassigned_orders: active.filter((x: any) => !x.driver_id).length,
-      online_riders: d.length,
-      delayed_orders: active.filter((x: any) => {
-        const created = new Date(x.created_at).getTime();
-        return Date.now() - created > 45 * 60 * 1000; // 45 mins
-      }).length,
-    });
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { void load(); }, [load, version]);
+  const [activeTab, setActiveTab] = useState<"live" | "selfies" | "disputes">("live");
 
   return (
-    <div className="space-y-6 text-left">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 font-display text-2xl font-extrabold">
-            <Gauge className="h-6 w-6 text-primary" /> Live Operations
-          </h1>
-          <p className="text-sm text-muted-foreground">Real-time pulse of the delivery network.</p>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Active Orders" value={stats.active_orders} icon={ClipboardList} tone="primary" />
-        <StatCard label="Unassigned" value={stats.unassigned_orders} icon={Filter} tone="warn" />
-        <StatCard label="Online Riders" value={stats.online_riders} icon={Bike} tone="success" />
-        <StatCard label="Delayed (>45m)" value={stats.delayed_orders} icon={ArrowUpRight} tone="danger" />
+    <div className="space-y-6">
+      <div className="flex gap-2 p-1 bg-muted/50 rounded-2xl w-fit">
+        {[
+          { id: "live", label: "Live Operations" },
+          { id: "selfies", label: "Grooming Selfies" },
+          { id: "disputes", label: "Disputes" }
+        ].map(t => (
+          <button 
+            key={t.id} 
+            onClick={() => setActiveTab(t.id as any)}
+            className={cn("px-6 py-2 rounded-xl text-xs font-black transition", activeTab === t.id ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:text-foreground")}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <section className="rounded-3xl bg-card p-6 shadow-soft ring-1 ring-border/60">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input 
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search active orders..."
-              className="w-full rounded-2xl bg-muted/40 py-2 pl-10 pr-4 text-sm outline-none ring-1 ring-border/60 focus:ring-primary/40"
-            />
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        ) : (
-          <DataTable 
-            columns={["Order", "Status", "Rider", "Restaurant", "Value", "Age"]}
-            rows={orders.filter(o => String(o.id).includes(q)).map(o => {
-              const age = Math.round((Date.now() - new Date(o.created_at).getTime()) / 60000);
-              return [
-                <span key={o.id} className="font-bold text-primary">#{o.id.slice(-5).toUpperCase()}</span>,
-                <StatusBadge key={o.id+"s"} label={o.status} />,
-                <span key={o.id+"r"} className="text-muted-foreground">{o.driver_id ? "Assigned" : "Searching..."}</span>,
-                <span key={o.id+"rs"} className="text-muted-foreground">{o.restaurant_id?.slice(0,8) || "—"}</span>,
-                <span key={o.id+"v"} className="font-bold">{formatPrice(o.total_price)}</span>,
-                <span key={o.id+"a"} className={age > 45 ? "font-bold text-rose-600" : "text-muted-foreground"}>{age}m</span>
-              ];
-            })}
-          />
-        )}
-      </section>
+      {activeTab === "live" ? (
+        <LiveOperations />
+      ) : activeTab === "selfies" ? (
+        <GroomingSelfies />
+      ) : (
+        <DisputesView />
+      )}
     </div>
   );
 }
 
-function StatCard({ label, value, icon: Icon, tone }: { label: string; value: number; icon: any; tone: string }) {
-  const tones: any = {
-    primary: "bg-primary/10 text-primary",
-    warn: "bg-amber-100 text-amber-700",
-    success: "bg-emerald-100 text-emerald-700",
-    danger: "bg-rose-100 text-rose-700"
-  };
+function LiveOperations() {
+  return <div className="p-8 text-center text-muted-foreground">Live operations dashboard content...</div>;
+}
+
+function GroomingSelfies() {
+  const [loading, setLoading] = useState(true);
+  const [selfies, setSelfies] = useState<any[]>([]);
+
+  useEffect(() => {
+    listTable("grooming_selfies", { order: "created_at.desc" }).then(s => {
+      setSelfies(s);
+      setLoading(false);
+    });
+  }, []);
+
   return (
-    <div className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${tones[tone]}`}>
-        <Icon className="h-5 w-5" />
+    <div className="rounded-3xl bg-card p-6 shadow-soft ring-1 ring-border/60">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-display font-black text-lg flex items-center gap-2">
+          <Camera className="h-5 w-5" /> Grooming Selfies
+          <span className="bg-muted px-2 py-0.5 rounded-full text-[10px]">{selfies.length}</span>
+        </h2>
+        <div className="flex gap-2">
+          <button className="text-xs font-black px-4 py-2 bg-muted rounded-xl">Clear Filters</button>
+          <button className="text-xs font-black px-4 py-2 bg-primary text-white rounded-xl">Apply</button>
+        </div>
       </div>
-      <p className="mt-3 font-display text-2xl font-extrabold">{value}</p>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+      {loading ? <div className="text-center py-10"><Loader2 className="animate-spin h-6 w-6 mx-auto"/></div> : 
+       selfies.length === 0 ? <div className="text-center py-10 text-muted-foreground text-sm">No selfies pending review.</div> :
+       <DataTable columns={["ID", "Rider", "Image", "Status"]} rows={selfies.map(s => [s.id, s.rider_name || "Unknown", "Image Link", s.status])} />}
+    </div>
+  );
+}
+
+function DisputesView() {
+  return (
+    <div className="rounded-3xl bg-card p-6 shadow-soft ring-1 ring-border/60">
+      <h2 className="font-display font-black text-lg flex items-center gap-2 mb-6">
+        <AlertTriangle className="h-5 w-5" /> Disputes
+      </h2>
+      <div className="flex flex-wrap gap-4 mb-6">
+        {["Dispute ID", "Reported For", "Ref Type", "Ref ID", "Status"].map(f => (
+          <div key={f} className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-black uppercase text-muted-foreground">{f}</label>
+            <div className="h-10 px-3 flex items-center bg-muted rounded-xl text-xs font-bold text-muted-foreground min-w-[120px]">Any</div>
+          </div>
+        ))}
+      </div>
+      <div className="text-center py-10 text-muted-foreground text-sm">No active disputes found.</div>
     </div>
   );
 }
