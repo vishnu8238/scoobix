@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { History, Search, Loader2, Calendar, User, ShieldAlert } from "lucide-react";
 import { fetchAuditLogs, type AuditLog } from "@/lib/audit-logs-api";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/audit")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Operational Audit Logs" }] }),
