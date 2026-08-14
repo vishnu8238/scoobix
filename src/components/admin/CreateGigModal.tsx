@@ -42,9 +42,9 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     setLoading(true);
     
     try {
-      // Use full ISO strings for consistency
-      const startTime = new Date(`${formData.date}T${formData.startHour}:${formData.startMinute}:00Z`).toISOString();
-      const endTime = new Date(`${formData.date}T${formData.endHour}:${formData.endMinute}:00Z`).toISOString();
+      // Use full ISO strings for consistency, explicitly setting UTC
+      const startTime = new Date(`${formData.date}T${formData.startHour}:${formData.startMinute}:00.000Z`).toISOString();
+      const endTime = new Date(`${formData.date}T${formData.endHour}:${formData.endMinute}:00.000Z`).toISOString();
 
       const newGig = await createGig({
         title: `Gig ${formData.startHour}:${formData.startMinute} - ${formData.endHour}:${formData.endMinute}`,

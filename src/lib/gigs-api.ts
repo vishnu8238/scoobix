@@ -37,10 +37,13 @@ export async function fetchGigs(params?: Record<string, any>) {
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   const id = newUuid();
-  const res = await createRecord<Gig>("gigs", { ...gig, id } as any);
+  // InsForge SDK typically expects an object, not an array for single inserts in createRecord helper
+  const res = await createRecord<Gig>("gigs", { ...gig, id });
   if (res) {
-    // Immediate announce for local UI updates
     publishTableChange("gigs", "insert", res as any);
+  } else {
+    // createRecord returns null on error without throwing, but we want to know if it failed
+    console.error("[GIGS_API] Gig creation returned null. Check table permissions/RLS.");
   }
   return res;
 }
