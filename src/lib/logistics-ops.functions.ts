@@ -29,6 +29,13 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
       diagnostics: [] as any[]
     };
 
+    const cityPayload = {
+      id: city1Id,
+      name: "City 1",
+      status: "ACTIVE",
+      metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
+    };
+
     const zonePayload = {
       id: zone1Id,
       name: "Zone 1",
@@ -48,11 +55,13 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     for (const table of tables) {
       try {
         console.log(`[SEED_PREREQ] Probing ${table} via SDK...`);
-        // Use a very permissive select to see what columns exist if it fails
+        const targetId = table === "cities" ? city1Id : zone1Id;
+        const payload = table === "cities" ? cityPayload : zonePayload;
+        
         const { data: found, error: probeError, status: probeStatus } = await insforge.database
           .from(table)
           .select("*")
-          .eq("id", zone1Id)
+          .eq("id", targetId)
           .limit(1);
         
         if (probeError) {
