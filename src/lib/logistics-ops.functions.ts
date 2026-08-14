@@ -89,6 +89,9 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
   .handler(async () => {
     console.log("[SEED] Starting idempotent demo seeding...");
     
+    const city1Id = "c1110000-0000-0000-0000-000000000001";
+    const zone1Id = "z1110000-0000-0000-0000-000000000001";
+
     // 1. Ensure a demo restaurant exists
     const restSearch = await fetch(`${INSFORGE_URL}/api/database/records/restaurants?metadata->>demo_tag=eq.logistics_test_v2&limit=1`, { headers: HEADERS });
     let restaurants = restSearch.ok ? await restSearch.json() : [];
@@ -100,6 +103,8 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         name: "Scoobix Demo Kitchen",
         address: "123 Logistics Hub, Vadodara",
         status: "ACTIVE",
+        zone_id: zone1Id,
+        city_id: city1Id,
         metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
       };
       const createRest = await fetch(`${INSFORGE_URL}/api/database/records/restaurants`, {
@@ -139,9 +144,13 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       }
     }
 
-    // 3. Get a zone
-    const zonesRes = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS });
-    const zones = zonesRes.ok ? await zonesRes.json() : [];
+    // 3. Get a zone (prefer the one we seeded)
+    const zonesRes = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?id=eq.${zone1Id}`, { headers: HEADERS });
+    let zones = zonesRes.ok ? await zonesRes.json() : [];
+    if (!zones.length) {
+      const allZones = await fetch(`${INSFORGE_URL}/api/database/records/logistics_zones?limit=1`, { headers: HEADERS });
+      zones = allZones.ok ? await allZones.json() : [];
+    }
     const zoneId = zones[0]?.id;
 
     if (!restaurants.length || !customers.length) {
