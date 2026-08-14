@@ -88,7 +88,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
         if (szData && szData.length > 0) {
           skipped++;
         } else {
-          await fetch(`${INSFORGE_URL}/api/database/records/subzones`, {
+          await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}`, {
             method: "POST",
             headers: HEADERS,
             body: JSON.stringify({
