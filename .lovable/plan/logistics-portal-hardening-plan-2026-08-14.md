@@ -1,24 +1,40 @@
 # Logistics Portal Hardening Plan
 
-Fix confirmed production blockers in Orders and Zones workflows while maintaining InsForge-only runtime.
+Implement production-ready fixes for the Scoobix Logistics portal, focusing on reliability, data persistence, and UI responsiveness.
 
-## User Review Required
-- **Maps Fallback**: If Google Maps is unavailable, I will use a list-based creation flow with address search (via searchPlaces) and fallback coordinate entry to ensure zones can always be created.
-- **Demo Data**: The "Seed Demo Orders" will create idempotent demo records tagged with `logistics_test_v2`.
+## User-Facing Changes
+- **Gig Management**: Fixed "Create New Gig" to reliably persist to the database and update the list immediately.
+- **Delivery Partners**: Enabled "Add Partner" form to create valid rider records with proper user association.
+- **Orders Ledger**: Idempotent demo seeding with real feedback on created vs. existing records.
+- **Order Details**: Guaranteed navigation from "Manage" action to the order detail workflow.
+- **Zone Creation**: Robust fallback for zone creation when Google Maps is unavailable, ensuring valid GeoJSON geometry.
 
-## Proposed Changes
+## Technical Details
 
-### 1. Orders & Manage Route
-- **Demo Seeding**: Update `seedDemoOrders` in `src/lib/logistics-ops.functions.ts` to be fully idempotent by checking for existing `logistics_test_v2` tags before creation. Ensure real InsForge errors are logged and surfaced.
-- **Order Details**: Verify `src/routes/logistics.orders.$orderId.tsx` is correctly registered in the route tree and renders the comprehensive management UI (Timeline, Status updates, Rider assignment).
-- **Navigation**: Fix navigation in `src/routes/logistics.orders.tsx` to ensure the "Manage" link correctly transitions to the detail view.
+### 1. Gig Management Reliability
+- **Component**: `src/components/admin/CreateGigModal.tsx` & `src/lib/gigs-api.ts`
+- **Fix**: Wrap `createGig` in a try-catch to throw actionable errors. Ensure `onSuccess` is called after successful insertion. Standardize UTC ISO date/time normalization to prevent timezone shifts in the UI.
 
-### 2. Zones & Map Workflow
-- **Map Resiliency**: Update `GoogleMap` component in `src/components/maps/GoogleMap.tsx` and `GoogleMapsProvider.tsx` to handle missing API keys gracefully without showing "Page can't load Google Maps correctly".
-- **Boundary Validation**: Harden `ZoneFormModal.tsx` to ensure `boundary` (GeoJSON Polygon) is never undefined. Compute `center_lat`/`center_lng` from the first polygon vertex if not provided.
-- **Subzones**: Ensure `SubzoneFormModal.tsx` correctly inherits properties from the parent zone and uses the same boundary management logic.
-- **Real-time Refresh**: Trigger authoritative list refreshes after zone/order creation using existing realtime bus hooks.
+### 2. Delivery Partner Form
+- **Component**: `src/components/admin/AddPartnerModal.tsx`
+- **Fix**: Enhance the form to ensure `users` and `drivers` records are linked correctly. Add explicit field validation and better error feedback for duplicate records.
 
-### 3. Verification & Cleanup
-- **Build Integrity**: Ensure `src/integrations/supabase` is completely removed to pass the `prebuild.js` scan.
-- **Regression Tests**: Run `bunx tsgo --noEmit` and execute Playwright tests for Orders and Zones flows.
+### 3. Idempotent Order Seeding
+- **Function**: `src/lib/logistics-ops.functions.ts`
+- **Fix**: Update `seedDemoOrders` to count and report "Created" vs "Existing" orders. Ensure prerequisites (customers/restaurants) are verified before order insertion.
+
+### 4. Order Management Navigation
+- **Routes**: `src/routes/logistics.orders.tsx` & `src/routes/logistics.orders.$orderId.tsx`
+- **Fix**: Verify the `Link` component in the ledger table correctly targets the `$orderId` route. Ensure the detail route loader handles not-found states gracefully.
+
+### 5. Zone Creation Fallback
+- **Component**: `src/components/ZoneFormModal.tsx` & `src/lib/zones.functions.ts`
+- **Fix**: Implement a coordinate-based fallback in the form. If a user cannot draw a boundary, allow entering center coordinates or generating a default circular polygon. Validate GeoJSON structure before submission to prevent database type errors.
+
+## Verification Plan
+1. **Automated Check**: Run `bun run build` and `bunx tsgo --noEmit` to ensure type safety.
+2. **Runtime Verification**:
+   - Create a new gig and verify it appears in the list.
+   - Seed demo orders and verify the count report.
+   - Navigate to an order detail page.
+   - Create a zone with/without map interaction.
