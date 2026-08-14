@@ -55,19 +55,8 @@ export function ZoneManager() {
   }, [zones, q]);
 
   const handleViewZone = (zone: DeliveryZone) => {
-    const coords = zone.boundary?.coordinates?.[0];
-    if (coords && coords.length > 0) {
-      // Use the first point as center or calculate centroid (simple average for now)
-      const lats = coords.map((c: any) => c[1]);
-      const lngs = coords.map((c: any) => c[0]);
-      const center = {
-        lat: lats.reduce((a: number, b: number) => a + b, 0) / lats.length,
-        lng: lngs.reduce((a: number, b: number) => a + b, 0) / lngs.length
-      };
-      setMapCenter(center);
-      setMapZoom(14);
-      setSelectedZone(zone);
-    }
+    // boundary is missing in production schema
+    setSelectedZone(zone);
   };
 
   const handleEditZone = (zone: DeliveryZone) => {
@@ -75,14 +64,7 @@ export function ZoneManager() {
     setIsModalOpen(true);
   };
 
-  const mapPolygons = useMemo(() => {
-    return zones.map(z => ({
-      id: z.id,
-      points: z.boundary?.coordinates?.[0]?.map((c: any) => ({ lat: c[1], lng: c[0] })) || [],
-      label: z.name,
-      color: selectedZone?.id === z.id ? "var(--color-primary)" : "rgba(16, 185, 129, 0.6)" // Emerald-like for inactive
-    }));
-  }, [zones, selectedZone]);
+  const mapPolygons = useMemo(() => [], []);
 
   return (
     <div className="relative flex flex-col h-full w-full overflow-hidden bg-background">
