@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 1. User Profile Lookup/Creation
       let profile = null;
       try {
-        const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0, select: "id,name,role,email,phone,avatar_url" }).catch(() => []);
+        const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0, select: "id,name,role,email,phone,avatar_url,full_name,display_name" }).catch(() => []);
         profile = profiles[0];
 
         // Ensure we capture ALL authoritative metadata for resolution
