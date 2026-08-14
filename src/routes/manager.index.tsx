@@ -37,7 +37,7 @@ function ManagerDashboard() {
             Merchant Manager
           </p>
           <h1 className="font-display text-2xl font-extrabold tracking-tight">
-            {manager?.name || user?.name}
+            {manager?.name || user?.name || "User"}
           </h1>
           {manager?.region && (
             <p className="text-[12px] text-muted-foreground">{manager.region}</p>

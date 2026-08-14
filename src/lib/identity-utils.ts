@@ -5,14 +5,14 @@ import { User } from "./auth-store";
  * Priority: full_name -> name -> email prefix -> "User"
  */
 export function getDisplayName(user: User | null | any): string {
-  if (!user) return "";
+  if (!user) return "User";
   
-  // If user is from AuthStore (User type)
-  if ('name' in user && user.name) {
+  // 1. Check for name in our AuthStore User object
+  if (typeof user === 'object' && 'name' in user && user.name && user.name !== "User") {
     return user.name;
   }
 
-  // If user is a raw InsForge user object or profile
+  // 2. Resolve from raw InsForge user object or profile
   // Priority: full_name -> name -> display_name -> first_name + last_name
   let name = user.full_name || user.name || user.display_name;
   
@@ -20,15 +20,16 @@ export function getDisplayName(user: User | null | any): string {
     name = user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name;
   }
 
-  if (name) return name;
+  if (name && name !== "User") return name;
   
-  // Fallback to email prefix
-  const email = user.email || (typeof user.auth?.email === 'string' ? user.auth.email : null);
+  // 3. Fallback to email prefix
+  const email = user.email || (user.auth && typeof user.auth.email === 'string' ? user.auth.email : null);
   if (email) {
-    return email.split('@')[0];
+    const prefix = email.split('@')[0];
+    if (prefix) return prefix;
   }
   
-  return "";
+  return "User";
 }
 
 /**
