@@ -55,7 +55,14 @@ export function ZoneManager() {
   }, [zones, q]);
 
   const handleViewZone = (zone: DeliveryZone) => {
-    // boundary is missing in production schema
+    if (zone.center_lat && zone.center_lng) {
+      setMapCenter({ lat: zone.center_lat, lng: zone.center_lng });
+      setMapZoom(14);
+    } else if (zone.boundary?.coordinates?.[0]?.length > 0) {
+      const first = zone.boundary.coordinates[0][0];
+      setMapCenter({ lat: first[1], lng: first[0] });
+      setMapZoom(14);
+    }
     setSelectedZone(zone);
   };
 
@@ -64,7 +71,16 @@ export function ZoneManager() {
     setIsModalOpen(true);
   };
 
-  const mapPolygons = useMemo(() => [], []);
+  const mapPolygons = useMemo(() => {
+    return zones
+      .filter(z => z.boundary?.coordinates?.[0]?.length >= 3)
+      .map(z => ({
+        id: z.id,
+        points: z.boundary.coordinates[0].map((c: any) => ({ lat: c[1], lng: c[0] })),
+        color: z.status === "ACTIVE" ? "rgba(16, 185, 129, 0.4)" : "rgba(239, 68, 68, 0.4)",
+        label: z.name
+      }));
+  }, [zones]);
 
   return (
     <div className="relative flex flex-col h-full w-full overflow-hidden bg-background">
