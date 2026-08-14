@@ -22,6 +22,7 @@ export function getDisplayName(user: any): string {
       n === 'rider' || 
       n === 'scoobix' || 
       n === 'scoobix.info' ||
+      n === 'scoobix.v' ||
       n.startsWith('scoobix.') ||
       n.includes('merchant manager') ||
       n.includes('administrator')
