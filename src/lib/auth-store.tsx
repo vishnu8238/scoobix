@@ -121,17 +121,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...sessionUser, 
           ...profile,
           user_metadata: sessionUser.user_metadata,
+          provider_metadata: (sessionUser as any).provider_metadata,
           profile: sessionUser.profile,
           identities: sessionUser.identities,
           raw: sessionUser // Keep the raw object in case it has vendor-specific fields
         };
         const sessionNameCandidate = getDisplayName(combinedUserData);
-        console.log("[AUTH_TRACE] Identity Resolution Candidate:", sessionNameCandidate, "Source Data:", {
-          profile_name: profile?.name,
-          session_metadata: sessionUser.user_metadata,
-          google_profile: sessionUser.profile,
-          identities: sessionUser.identities
-        });
+        console.log("[AUTH_TRACE] Identity Resolution Candidate:", sessionNameCandidate, "Source Data Keys:", Object.keys(combinedUserData));
+
         
         if (!profile && userEmail) {
           console.log("[AUTH_TRACE] Creating new profile for:", userEmail);
