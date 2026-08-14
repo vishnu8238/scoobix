@@ -15,7 +15,7 @@ export function getDisplayName(user: any): string {
     const n = cleaned.toLowerCase();
     
     // Explicitly forbidden generic terms as full strings
-    const forbidden = ['user', 'unknown', 'guest', 'anonymous', 'null', 'undefined', 'administrator', 'logistics staff', 'merchant manager'];
+    const forbidden = ['user', 'unknown', 'guest', 'anonymous', 'null', 'undefined', 'administrator', 'logistics staff', 'merchant manager', 'logistics'];
     if (forbidden.includes(n)) return null;
 
     // Filter out obvious system email prefixes if they are being used as names
