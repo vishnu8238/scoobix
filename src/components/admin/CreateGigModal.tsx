@@ -26,6 +26,8 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   const [zonesError, setZonesError] = useState<string | null>(null);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [schemaData, setSchemaData] = useState<any>(null);
+  const [isProbing, setIsProbing] = useState(false);
   
   const [formData, setFormData] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
