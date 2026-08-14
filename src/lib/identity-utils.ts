@@ -56,18 +56,14 @@ export function getDisplayName(user: any): string {
         ? `${user.profile.first_name} ${user.profile.last_name}` 
         : user.profile?.first_name || user.profile?.last_name || null, src: 'profile.name_parts' },
     
-    // 2. InsForge auth user metadata (Google OAuth common location)
-    { val: user.user_metadata?.name, src: 'metadata.name' },
+    // 2. InsForge auth user metadata
     { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
+    { val: user.user_metadata?.name, src: 'metadata.name' },
     { val: user.user_metadata?.display_name, src: 'metadata.display_name' },
     { val: user.user_metadata?.given_name && user.user_metadata?.family_name 
         ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}` 
         : user.user_metadata?.given_name || user.user_metadata?.family_name || null, src: 'metadata.name_parts' },
     
-    // Legacy/Alternative metadata locations
-    { val: user.provider_metadata?.name, src: 'provider_metadata.name' },
-    { val: user.provider_metadata?.full_name, src: 'provider_metadata.full_name' },
-
     // 3. OAuth identity payload / provider_data (Direct Google mapping)
     { val: user.identities?.find((i: any) => i.identity_data?.full_name)?.identity_data?.full_name, src: 'identity.full_name' },
     { val: user.identities?.find((i: any) => i.identity_data?.name)?.identity_data?.name, src: 'identity.name' },
@@ -75,7 +71,10 @@ export function getDisplayName(user: any): string {
       user.identities?.find((i: any) => i.identity_data?.family_name)?.identity_data?.family_name 
         ? `${user.identities.find((i: any) => i.identity_data?.given_name).identity_data.given_name} ${user.identities.find((i: any) => i.identity_data?.family_name).identity_data.family_name}` 
         : null, src: 'identity.name_parts' },
-    { val: user.identities?.find((i: any) => i.identity_data?.custom_claims?.name)?.identity_data?.custom_claims?.name, src: 'identity.claims.name' },
+    
+    // Legacy/Alternative metadata locations
+    { val: user.provider_metadata?.full_name, src: 'provider_metadata.full_name' },
+    { val: user.provider_metadata?.name, src: 'provider_metadata.name' },
   ];
 
   for (const { val, src } of candidates) {
