@@ -7,19 +7,10 @@ import { User } from "./auth-store";
 export function getDisplayName(user: any): string {
   if (!user) return "User";
 
-  // Diagnostic logging for development (filtered in production by logger)
-  const trace = (val: string, source: string) => {
-    if (val && !isGeneric(val)) {
-      // console.log(`[IDENTITY_TRACE] Resolved "${val}" from ${source}`);
-      return val;
-    }
-    return null;
-  };
-
   const isGeneric = (name: any) => {
     if (typeof name !== 'string') return true;
     const n = name.trim().toLowerCase();
-    return !n || n === 'user' || n === 'null' || n === 'undefined' || n === 'manager' || n === 'admin' || n === 'partner' || n === 'rider';
+    return !n || n === 'user' || n === 'null' || n === 'undefined' || n === 'manager' || n === 'admin' || n === 'partner' || n === 'rider' || n === 'scoobix';
   };
 
   const normalize = (val: any): string | null => {
@@ -28,50 +19,48 @@ export function getDisplayName(user: any): string {
     return isGeneric(cleaned) ? null : cleaned;
   };
 
-  // 1. Try explicit profile/user_metadata/metadata/auth fields
+  // 1. Deep search through every known InsForge/Google source
+  // We prioritize: Table Profile Name > Nested Metadata/Social Profile > Top-level fields
   const candidates = [
-    // Direct or AuthStore flattened fields
-    { val: user.name, src: 'top.name' },
-    { val: user.full_name, src: 'top.full_name' },
-    { val: user.display_name, src: 'top.display_name' },
+    // Table Profile Name (if passed in the merged object)
+    { val: user.name, src: 'profile_table.name' },
     
-    // InsForge Nested Profile (Common for Google/Social)
+    // InsForge Nested Social Profile (Common for Google OAuth)
     { val: user.profile?.full_name, src: 'profile.full_name' },
     { val: user.profile?.name, src: 'profile.name' },
     { val: user.profile?.display_name, src: 'profile.display_name' },
     { val: user.profile?.first_name && user.profile?.last_name ? `${user.profile.first_name} ${user.profile.last_name}` : user.profile?.first_name, src: 'profile.names' },
     
-    // InsForge User Metadata
+    // InsForge User Metadata / Identities
     { val: user.user_metadata?.full_name, src: 'metadata.full_name' },
     { val: user.user_metadata?.name, src: 'metadata.name' },
     { val: user.user_metadata?.display_name, src: 'metadata.display_name' },
     { val: user.metadata?.full_name, src: 'raw_metadata.full_name' },
     { val: user.metadata?.name, src: 'raw_metadata.name' },
+    
+    // Check identities array (common in social logins)
+    { val: user.identities?.[0]?.identity_data?.full_name, src: 'identity.full_name' },
+    { val: user.identities?.[0]?.identity_data?.name, src: 'identity.name' },
 
-    // Top-level first/last
+    // Top-level / Fallback fields
+    { val: user.full_name, src: 'top.full_name' },
+    { val: user.display_name, src: 'top.display_name' },
     { val: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.first_name, src: 'top.names' },
   ];
 
   for (const { val, src } of candidates) {
     const res = normalize(val);
-    if (res) return trace(res, src)!;
+    if (res) return res;
   }
 
-  // 2. Fallback to Email Prefix
-  const email = user.email || user.auth?.email || user.user_metadata?.email || user.profile?.email;
+  // 2. Fallback to Email Prefix (last resort before "User")
+  const email = user.email || user.auth?.email || user.user_metadata?.email || user.profile?.email || user.identities?.[0]?.identity_data?.email;
   if (email && typeof email === 'string') {
     const prefix = email.split('@')[0];
     const res = normalize(prefix);
-    if (res) return trace(res, 'email_prefix')!;
+    if (res) return res;
   }
 
-  // 3. Final fallback
-  // console.log('[IDENTITY_TRACE] Resolution fell through to "User"', JSON.stringify({
-  //   id: user.id,
-  //   hasProfile: !!user.profile,
-  //   hasMetadata: !!user.user_metadata,
-  //   hasAuth: !!user.auth
-  // }));
   return "User";
 }
 
