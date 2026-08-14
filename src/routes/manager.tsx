@@ -6,6 +6,7 @@ import { cn } from "@/lib/format";
 import { useManager } from "@/lib/manager-api";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { getInitials } from "@/lib/identity-utils";
+import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/manager")({
   head: () => appHead(APPS.manager),
@@ -33,6 +34,7 @@ function ManagerLayout() {
 }
 
 function ManagerShell({ pathname }: { pathname: string }) {
+  const { user } = useAuth();
   const { manager, loading } = useManager();
   const secondary = pathname.startsWith("/manager/") && !PRIMARY.has(pathname);
   
