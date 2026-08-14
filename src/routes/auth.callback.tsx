@@ -47,7 +47,8 @@ function AuthCallback() {
         // 2. Explicitly exchange the code for a session if present
         if (insforgeCode) {
           console.log("[AUTH_TRACE] Exchanging authorization code for session...");
-          // Clean the URL hash/query to prevent duplicate exchange on reload
+          
+          // Immediate URL cleanup to prevent duplicate exchange on reload (iOS Safari fix)
           const cleanUrl = new URL(window.location.href);
           cleanUrl.searchParams.delete("insforge_code");
           cleanUrl.searchParams.delete("code");
@@ -56,11 +57,12 @@ function AuthCallback() {
           const { data, error: exchangeError } = await insforge.auth.exchangeCodeForSession(insforgeCode);
           if (exchangeError) {
              console.error("[AUTH_TRACE] Code exchange failed:", exchangeError);
-             // Verify if we actually have a session despite the error (e.g. concurrent exchange)
+             // Safety check: if exchange fails, see if the SDK background listener already established a session
              const session = insforge.auth.getSession();
              if (!session?.user) {
                throw new Error(exchangeError.message || "Failed to exchange authorization code.");
              }
+             console.log("[AUTH_TRACE] Session already present despite exchange error (likely background resolution).");
           } else if (data?.accessToken) {
             console.log("[AUTH_TRACE] Code exchange successful.");
           }
