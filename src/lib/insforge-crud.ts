@@ -88,10 +88,7 @@ function applyParams(query: any, params?: Record<string, string | number | undef
   for (const [key, val] of Object.entries(params)) {
     if (val === undefined || val === "") continue;
 
-    if (key === "select") {
-      // select is handled at .from(table).select(params.select)
-      continue;
-    }
+    if (key === "select") continue;
 
     if (key === "order") {
       const orders = String(val).split(",");
@@ -145,7 +142,14 @@ function applyParams(query: any, params?: Record<string, string | number | undef
       continue;
     }
 
-    // Filter handling: "field": "op.value"
+    // New format: "field.op": "value"
+    if (key.includes(".")) {
+      const [field, op] = key.split(".");
+      q = q.filter(field, op, val === "null" ? null : val);
+      continue;
+    }
+
+    // Legacy format: "field": "op.value"
     const sVal = String(val);
     const dotIdx = sVal.indexOf(".");
     if (dotIdx > 0) {
@@ -165,7 +169,6 @@ function applyParams(query: any, params?: Record<string, string | number | undef
         q = q.filter(key, op, value === "null" ? null : value);
       }
     } else {
-      // Default to equality
       q = q.eq(key, val);
     }
   }
