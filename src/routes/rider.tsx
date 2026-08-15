@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, Inbox, Navigation, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield, Info } from "lucide-react";
+import { Home, Inbox, Bike, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield, Info } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
@@ -72,7 +72,7 @@ function RiderLayout() {
         <aside className="fixed left-0 top-0 hidden h-full w-64 border-r border-border/60 bg-card p-6 md:block">
           <div className="flex items-center gap-3 px-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">
-              <Navigation className="h-6 w-6" />
+              <Bike className="h-6 w-6" />
             </div>
             <span className="font-display text-xl font-black italic tracking-tight text-primary">SCOOBIX</span>
           </div>
@@ -111,7 +111,7 @@ function RiderLayout() {
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/40 bg-background/80 px-5 backdrop-blur-md">
           <div className="flex items-center gap-3 md:hidden">
              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Navigation className="h-5 w-5" />
+                <Bike className="h-5 w-5" />
              </div>
              <span className="font-display font-black italic tracking-tight text-primary">SCOOBIX</span>
           </div>
