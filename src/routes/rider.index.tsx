@@ -76,8 +76,15 @@ function RiderHome() {
     const done = orders.filter((o) => String(o.status ?? "").toUpperCase() === "DELIVERED" && isToday(o.created_at));
     const total = done.reduce((s, o) => s + (Number(o.delivery_fee ?? 0) || 0), 0);
     const trips = done.length;
-    // Estimate time (mock for Part 1)
-    const timeOnOrders = trips * 25; // mins
+    // Calculate active time based on order timestamps if available
+    const timeOnOrders = done.reduce((acc, o) => {
+      if (o.created_at && (o as any).delivered_at) {
+        const start = new Date(o.created_at).getTime();
+        const end = new Date((o as any).delivered_at).getTime();
+        return acc + Math.round((end - start) / 60000);
+      }
+      return acc + 25; // fallback avg
+    }, 0);
     return { total, trips, timeOnOrders };
   }, [orders]);
 

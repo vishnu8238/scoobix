@@ -8,6 +8,7 @@ import {
   Camera, FileCheck, CreditCard, AlertTriangle, MessageSquare,
   Bike
 } from "lucide-react";
+import { GoogleMap } from "@/components/maps/GoogleMap";
 import { toast } from "sonner";
 import { onTableChange } from "@/lib/realtime-bus";
 import { acceptOrderOffer, rejectOrderOffer, cancelAssignment } from "@/lib/logistics-engine.functions";
@@ -238,11 +239,28 @@ function RiderActive() {
 
       <div className="-mt-6 space-y-4 px-5">
         {/* Map Preview */}
-        <section className="h-48 overflow-hidden rounded-[2rem] bg-muted shadow-card ring-1 ring-border/60">
-           {/* In a real app, this would be a GoogleMap instance */}
-           <div className="flex h-full w-full items-center justify-center bg-zinc-100">
-              <MapPin className="h-8 w-8 text-primary animate-pulse" />
-           </div>
+        <section className="h-64 overflow-hidden rounded-[2rem] bg-muted shadow-card ring-1 ring-border/60">
+           <GoogleMap 
+             className="h-full w-full"
+             center={order.pickup_latitude && order.pickup_longitude ? { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) } : undefined}
+             zoom={13}
+             markers={[
+               ...(order.pickup_latitude && order.pickup_longitude ? [{
+                 id: "pickup",
+                 lat: Number(order.pickup_latitude),
+                 lng: Number(order.pickup_longitude),
+                 kind: "pickup" as const,
+                 label: "Pickup"
+               }] : []),
+               ...(order.delivery_latitude && order.delivery_longitude ? [{
+                 id: "dropoff",
+                 lat: Number(order.delivery_latitude),
+                 lng: Number(order.delivery_longitude),
+                 kind: "drop" as const,
+                 label: "Drop-off"
+               }] : [])
+             ]}
+           />
         </section>
 
         {/* Action Center */}

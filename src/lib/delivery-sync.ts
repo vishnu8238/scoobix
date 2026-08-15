@@ -36,6 +36,7 @@ export async function transitionOrder(
     order_id: orderId,
     actor_id: actor.id,
     actor_type: actor.type.toUpperCase(),
+    old_status: "unknown", // Ideal: fetch previous status, but Part 3 focuses on sync
     new_status: newStatus,
     metadata,
     created_at: now
@@ -45,6 +46,8 @@ export async function transitionOrder(
   const patch: Record<string, any> = {
     status: newStatus,
     updated_at: now,
+    ...(newStatus === "PICKED_UP" ? { picked_up_at: now } : {}),
+    ...(newStatus === "DELIVERED" ? { delivered_at: now } : {}),
     ...metadata
   };
 
@@ -52,8 +55,8 @@ export async function transitionOrder(
   
   // 3. Broadcast specific delivery event for high-priority UI updates
   if (ok) {
-     publishTableChange("delivery_events", "insert", {
-       orderId,
+     publishTableChange("orders", "update", {
+       id: orderId,
        status: newStatus,
        actorId: actor.id,
        timestamp: now,
