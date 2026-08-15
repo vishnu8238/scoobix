@@ -118,16 +118,29 @@ function rowKey(rows: Row[]): string {
 }
 
 async function fetchOnce(table: string, params?: Record<string, string | number | undefined>): Promise<Row[]> {
-  const res = await fetch(paramsUrl(table, params), {
-    headers: {
-      apikey: INSFORGE_ANON_KEY,
-      Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
-      "Content-Type": "application/json",
-    },
-  });
-  if (!res.ok) throw new Error(`realtime ${table} → ${res.status}`);
-  const data = (await res.json()) as Row[];
-  return Array.isArray(data) ? data : [];
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout for safety
+
+  try {
+    const res = await fetch(paramsUrl(table, params), {
+      headers: {
+        apikey: INSFORGE_ANON_KEY,
+        Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal
+    });
+    if (!res.ok) throw new Error(`realtime ${table} → ${res.status}`);
+    const data = (await res.json()) as Row[];
+    return Array.isArray(data) ? data : [];
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      console.warn(`[REALTIME_TIMEOUT] fetchOnce for ${table} timed out`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function pollMs(state: StreamState) {
