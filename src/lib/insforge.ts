@@ -88,15 +88,28 @@ if (typeof window !== "undefined") {
  * Returns the cached value immediately if available.
  */
 export const getAccessToken = async () => {
-  // Always check the current SDK session first, as it might have been updated by middleware or direct calls
-  const currentToken = insforge.auth.session?.accessToken;
-  if (currentToken) return currentToken;
+  // 1. Authoritative check: current SDK session memory
+  const sdkSession = insforge.auth.session;
+  if (sdkSession?.accessToken) return sdkSession.accessToken;
 
-  // If we don't have a token but we're in a browser, ensure we've at least tried to hydrate
+  // 2. Authorization fallback: browser local storage (SDK might have lost its in-memory state)
+  if (typeof window !== "undefined") {
+    try {
+      // The InsForge SDK uses this key format by default
+      const stored = window.localStorage.getItem("insforge.auth.token");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.access_token) return parsed.access_token;
+      }
+    } catch { /* ignore */ }
+  }
+
+  // 3. Last resort: hydrate from server or trigger refresh
   if (!cachedAccessToken && typeof window !== "undefined") {
     await ensureAuthHydrated();
   }
-  return cachedAccessToken || currentToken;
+  
+  return cachedAccessToken || sdkSession?.accessToken || null;
 };
 
 
