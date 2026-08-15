@@ -311,10 +311,11 @@ function OnboardingFlow() {
         "Submitted for admin approval",
       );
 
-      if (!saved) {
-        console.error("[ONBOARDING_SUBMIT] Final persist failed");
+      if (!saved || !saved.id) {
+        console.error("[ONBOARDING_SUBMIT] Final persist failed or returned no ID");
         return;
       }
+
 
       console.info("[ONBOARDING_SUBMIT] Success:", saved.rst_code);
       toast.success(`Submitted · ${saved.rst_code}`, {

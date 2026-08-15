@@ -175,7 +175,7 @@ function RiderLayout() {
         </main>
 
         {/* Mobile Bottom Navigation Bar */}
-        <nav className="glass fixed bottom-[env(safe-area-inset-bottom,12px)] left-1/2 z-40 flex w-[min(480px,calc(100%-1.5rem))] -translate-x-1/2 items-center justify-between rounded-[2.5rem] p-1.5 shadow-float md:hidden border border-border/60">
+        <nav className="glass fixed bottom-[env(safe-area-inset-bottom,12px)] left-1/2 z-40 flex w-[min(540px,calc(100%-1.5rem))] -translate-x-1/2 items-center justify-around rounded-[2.5rem] p-1.5 shadow-float md:hidden border border-border/60">
           {NAV.map((n) => {
             const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
             return (
@@ -185,12 +185,12 @@ function RiderLayout() {
                 aria-label={n.label}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center gap-1 rounded-[1.8rem] py-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  "relative flex flex-1 flex-col items-center gap-1 rounded-[1.8rem] py-2.5 text-[9px] font-black uppercase tracking-tighter transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                   active ? "bg-primary text-primary-foreground shadow-glow scale-105" : "text-muted-foreground hover:bg-muted/50 active:scale-95",
                 )}
               >
                 <n.icon className={cn("h-5 w-5 transition-transform duration-300", active ? "scale-110" : "scale-100")} strokeWidth={active ? 2.8 : 2} />
-                <span className="text-[9px]">{n.label}</span>
+                <span className="text-[8px]">{n.label}</span>
                 {active && (
                   <motion.div 
                     layoutId="activeNavTab"
