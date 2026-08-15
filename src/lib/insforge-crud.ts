@@ -184,12 +184,14 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
     const { error, status, statusText } = res || {};
     
     // Auth Guard: handle unauthenticated states gracefully
-    if (!res || (error && (status === 401 || (error.message && error.message.toLowerCase().includes("invalid token"))))) {
+    if (!res || (error && (status === 401 || (error.message && error.message.toLowerCase().includes("no token"))))) {
       const isBrowser = typeof window !== "undefined";
       const session = isBrowser ? insforge.auth.session : null;
       const hasToken = !!session?.accessToken;
 
-      if (method === "GET" && !hasToken) {
+      if (method === "GET" && !hasToken && !isBrowser) {
+        // Only return empty array if we are CERTAIN this is a non-authenticated SSR read that should have been authenticated
+        // But in Logistics, these are mostly client-side.
         console.warn(`[DB_AUTH_SILENT] No token for GET ${table}. Returning empty.`);
         return [] as unknown as T;
       }

@@ -32,18 +32,19 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
     try {
       const hasMapPoints = formData.boundary?.coordinates?.[0]?.length >= 3;
       
-      const boundary = hasMapPoints
-        ? formData.boundary 
-        : { 
-            type: "Polygon", 
-            coordinates: [[
-              [73.1812, 22.3072], 
-              [73.1912, 22.3072], 
-              [73.1912, 22.3172], 
-              [73.1812, 22.3172],
-              [73.1812, 22.3072]
-            ]] 
-          };
+      // Default boundary if none provided (Main Zone / Vadodara context)
+      const DEFAULT_BOUNDARY = { 
+        type: "Polygon", 
+        coordinates: [[
+          [73.1812, 22.3072], 
+          [73.1912, 22.3072], 
+          [73.1912, 22.3172], 
+          [73.1812, 22.3172],
+          [73.1812, 22.3072]
+        ]] 
+      };
+
+      const boundary = hasMapPoints ? formData.boundary : DEFAULT_BOUNDARY;
 
       // Validate boundary coordinates for zones (must be closed)
       if (boundary.coordinates.length > 0) {
@@ -143,11 +144,29 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
               </div>
             </div>
 
-            <div className="h-[400px] rounded-3xl overflow-hidden ring-1 ring-border/60">
+            <div className="relative h-[400px] rounded-3xl overflow-hidden ring-1 ring-border/60">
               <GoogleMap 
                 className="h-full w-full"
                 interactive={true}
-                center={formData.boundary?.coordinates?.[0]?.[0] ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : undefined}
+                center={formData.boundary?.coordinates?.[0]?.[0] ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : { lat: 22.3072, lng: 73.1812 }}
+                onPick={(c) => {
+                  // Fallback for manual pinning if polygon drawing fails
+                  if (!formData.boundary?.coordinates?.[0]?.length) {
+                    setFormData(prev => ({
+                      ...prev,
+                      boundary: {
+                        type: "Polygon",
+                        coordinates: [[
+                          [c.lng - 0.005, c.lat - 0.005],
+                          [c.lng + 0.005, c.lat - 0.005],
+                          [c.lng + 0.005, c.lat + 0.005],
+                          [c.lng - 0.005, c.lat + 0.005],
+                          [c.lng - 0.005, c.lat - 0.005]
+                        ]]
+                      }
+                    }));
+                  }
+                }}
                 onPolygonEdit={(id, points) => {
                   setFormData(prev => ({
                     ...prev,
@@ -163,9 +182,41 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                   color: "rgba(16, 185, 129, 0.5)"
                 }] : []}
               />
-              <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md p-3 rounded-2xl text-[10px] font-bold text-white text-center">
-                Click and drag polygon vertices to define the zone boundary.
-              </div>
+              {!hasMapPoints && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/40 backdrop-blur-[2px] pointer-events-none">
+                  <div className="bg-zinc-950/90 border border-white/10 p-6 rounded-[2rem] shadow-2xl text-center max-w-[280px] pointer-events-auto">
+                    <MapPin className="h-8 w-8 text-primary mx-auto mb-3" />
+                    <p className="text-sm font-black mb-2">No boundary defined</p>
+                    <p className="text-[10px] text-muted-foreground font-bold mb-4">
+                      Enter coordinates below or use the map if available to define the zone area.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input 
+                        type="number" step="any" placeholder="Lat" 
+                        className="bg-muted px-3 py-2 rounded-xl text-[10px] outline-none ring-1 ring-border/60"
+                        onChange={e => {
+                          const lat = parseFloat(e.target.value);
+                          if (!isNaN(lat)) {
+                            const lng = formData.boundary?.coordinates?.[0]?.[0]?.[0] || 73.1812;
+                            setFormData(prev => ({ ...prev, boundary: { type: "Polygon", coordinates: [[[lng, lat], [lng+0.01, lat], [lng+0.01, lat+0.01], [lng, lat+0.01], [lng, lat]]] } }));
+                          }
+                        }}
+                      />
+                      <input 
+                        type="number" step="any" placeholder="Lng" 
+                        className="bg-muted px-3 py-2 rounded-xl text-[10px] outline-none ring-1 ring-border/60"
+                        onChange={e => {
+                          const lng = parseFloat(e.target.value);
+                          if (!isNaN(lng)) {
+                            const lat = formData.boundary?.coordinates?.[0]?.[0]?.[1] || 22.3072;
+                            setFormData(prev => ({ ...prev, boundary: { type: "Polygon", coordinates: [[[lng, lat], [lng+0.01, lat], [lng+0.01, lat+0.01], [lng, lat+0.01], [lng, lat]]] } }));
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </form>
