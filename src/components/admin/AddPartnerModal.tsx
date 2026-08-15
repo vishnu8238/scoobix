@@ -38,17 +38,22 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess }: AddPartnerModalP
       const userId = newUuid();
       const driverId = newUuid();
 
-      // 1. Create User
+      console.log("[ADD_PARTNER] Creating user and driver records...");
+
+      // 1. Create User (Standardized for Logistics Admission)
       const user = await createRecord("users", {
         id: userId,
         name: formData.name,
-        email: formData.email,
+        email: formData.email.toLowerCase().trim(),
         phone: formData.phone,
         role: "rider",
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+        is_active: true,
+        metadata: { is_demo: true, demo_tag: "logistics_test_v7", created_by_portal: "logistics" }
       });
 
-      if (!user) throw new Error("Failed to create user record. Possibly duplicate email/phone.");
+      if (!user) {
+        throw new Error("User record could not be verified. Email/Phone might be taken or RLS blocked reading back the new row.");
+      }
 
       // 2. Create Driver/Partner
       const driver = await createRecord("drivers", {
@@ -61,7 +66,7 @@ export function AddPartnerModal({ isOpen, onClose, onSuccess }: AddPartnerModalP
         verification_status: "VERIFIED",
         city: formData.city,
         created_at: new Date().toISOString(),
-        metadata: { is_demo: true, demo_tag: "logistics_test_v2" }
+        metadata: { is_demo: true, demo_tag: "logistics_test_v7" }
       });
 
       if (driver) {

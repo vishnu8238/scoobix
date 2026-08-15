@@ -38,7 +38,7 @@ export async function fetchGigs(params?: Record<string, any>) {
     const data = await listTable<Gig>(TABLE, { 
       order: "start_time.asc", 
       ...rest 
-    }, { fresh: true });
+    }, { fresh: true, ttl: 0 });
     
     if (!data || !Array.isArray(data)) {
       console.warn(`[GIGS_API] No array returned from "${TABLE}", returning empty.`);
