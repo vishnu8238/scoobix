@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, Inbox, Bike, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield, Info, Calendar } from "lucide-react";
+import { Home, Inbox, Bike, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield, Info, Calendar, ShoppingBag, History } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
@@ -17,10 +17,10 @@ export const Route = createFileRoute("/rider")({
 
 const NAV = [
   { to: "/rider", label: "Home", icon: Home, exact: true },
-  { to: "/rider/history", label: "Pocket", icon: Wallet },
+  { to: "/rider/history", label: "History", icon: History },
+  { to: "/rider/earnings", label: "Pocket", icon: Wallet },
   { to: "/rider/requests", label: "Gigs", icon: Calendar },
-  { to: "/rider/incentives", label: "Offers", icon: Shield },
-  { to: "/rider/more", label: "Bazaar", icon: Menu },
+  { to: "/rider/bazaar", label: "Bazaar", icon: ShoppingBag },
 ];
 
 function RiderLayout() {
