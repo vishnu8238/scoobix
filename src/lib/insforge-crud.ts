@@ -181,30 +181,17 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
   const t0 = Date.now();
   try {
     const res = await promise;
-    const { data, error, status, statusText } = res || {};
+    const { error, status, statusText } = res || {};
     
     // Auth Guard: handle unauthenticated states gracefully
     if (!res || (error && (status === 401 || (error.message && error.message.toLowerCase().includes("invalid token"))))) {
       const isBrowser = typeof window !== "undefined";
-      
-      // Authoritative token check
       const session = isBrowser ? insforge.auth.session : null;
       const hasToken = !!session?.accessToken;
 
-      if (isBrowser) {
-        if (hasToken) {
-          console.error(`[DB_AUTH_FAILURE] Token exists but ${method} ${table} failed with ${status}. Likely RLS or Scope error.`);
-        }
-      }
-      
-      if (method === "GET") {
-        if (!hasToken) {
-          console.warn(`[DB_AUTH_SILENT] No token for GET ${table}. Returning empty.`);
-          return (Array.isArray(data) ? [] : null) as unknown as T;
-        }
-        
-        // If we have a token but got 401/Invalid Token, it's a real failure, not just a guest state.
-        console.error(`[DB_AUTH_ERROR] Token present but ${method} ${table} failed with ${status}.`);
+      if (method === "GET" && !hasToken) {
+        console.warn(`[DB_AUTH_SILENT] No token for GET ${table}. Returning empty.`);
+        return [] as unknown as T;
       }
 
       const authErr = new HttpError(status || 401, error?.message || "Unauthorized: No token provided");
@@ -225,7 +212,21 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
       throw new HttpError(status ?? 0, error.message || error.error || error.detail || statusText || JSON.stringify(error) || "Unknown database error");
     }
 
-    return data as T;
+    // InsForge Response Normalization: Handle data, rows, result, records, or flat arrays
+    const rawData = res.data;
+    let normalizedData = rawData;
+
+    if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
+      // It's an envelope object
+      normalizedData = rawData.rows || rawData.data || rawData.result || rawData.records || rawData;
+    }
+
+    // If it's a success status but data is null/undefined, return empty array/null instead of throwing
+    if (normalizedData === undefined || normalizedData === null) {
+      return (method === "GET" ? [] : null) as unknown as T;
+    }
+
+    return normalizedData as T;
   } catch (err: any) {
     if (err instanceof HttpError) throw err;
     

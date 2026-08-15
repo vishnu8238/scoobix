@@ -31,14 +31,20 @@ export type GigParticipant = {
 export async function fetchGigs(params?: Record<string, any>) {
   const TABLE = "gigs"; 
   try {
-    // We remove explicit select="*" to avoid potential 406 Not Acceptable errors 
-    // if the table is empty or has RLS conflicts with * selection.
-    // We also bypass cache to ensure authoritative production list verification.
+    // Explicit column list to avoid 406 behavior with select(*) and satisfy RLS
+    const GIG_COLUMNS = "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,city_id,capacity,created_at";
+    
     const { select, ...rest } = params || {};
+    
+    // Authoritative fetch: no date predicate here, we filter in memory
     const data = await listTable<Gig>(TABLE, { 
       order: "start_time.asc", 
       ...rest 
-    }, { fresh: true, ttl: 0 });
+    }, { 
+      fresh: true, 
+      ttl: 0,
+      select: select || GIG_COLUMNS
+    });
     
     if (!data || !Array.isArray(data)) {
       console.warn(`[GIGS_API] No array returned from "${TABLE}", returning empty.`);
@@ -48,7 +54,6 @@ export async function fetchGigs(params?: Record<string, any>) {
     return data;
   } catch (err: any) {
     console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message);
-    // Surface the real error for diagnostics
     throw err;
   }
 }
