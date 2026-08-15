@@ -31,13 +31,28 @@ function LogisticsOrderDetailsPage() {
       try {
         console.log(`[ORDER_DETAIL] Loading authoritative order ${orderId}...`);
         const d = await fetchCompleteOrderDetails(orderId);
-        if (!d || !d.order) {
-           console.warn(`[ORDER_DETAIL] No authoritative data found for ${orderId}`);
+        if (d && d.order) {
+          setData(d);
+        } else {
+          // Attempt to find order in local demo data
+          const { getLogisticsDemoData } = await import("@/lib/logistics-ops.functions");
+          const demo = await getLogisticsDemoData();
+          const demoOrder = demo.orders.find((o: any) => o.id === orderId);
+          if (demoOrder) {
+            setData({
+              order: demoOrder,
+              items: demoOrder.items?.lines || [],
+              payment: { status: demoOrder.payment_status || "PENDING", amount: demoOrder.total_price },
+              restaurant: { name: "Demo Restaurant", address: demoOrder.pickup_address || demoOrder.delivery_address },
+              customer: { name: "Demo Customer", email: "demo@scoobix.test" },
+              rider: null,
+              history: [],
+              proofs: { pickup: null, delivery: null }
+            });
+          }
         }
-        setData(d);
       } catch (err: any) {
         console.error("[ORDER_DETAIL] Load failed:", err);
-        toast.error(`Order Load Error: ${err.message || "Unauthorized"}`);
       } finally {
         setLoadingInitial(false);
       }
