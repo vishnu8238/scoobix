@@ -39,11 +39,12 @@ function LogisticsOrderDetailsPage() {
           const demo = await getLogisticsDemoData();
           const demoOrder = demo.orders.find((o: any) => o.id === orderId);
           if (demoOrder) {
+            const o = demoOrder as any;
             setData({
-              order: demoOrder,
-              items: demoOrder.items?.lines || [],
-              payment: { status: demoOrder.payment_status || "PENDING", amount: demoOrder.total_price },
-              restaurant: { name: "Demo Restaurant", address: demoOrder.pickup_address || demoOrder.delivery_address },
+              order: o,
+              items: o.items?.lines || [],
+              payment: { status: o.payment_status || "PENDING", amount: o.total_price },
+              restaurant: { name: "Demo Restaurant", address: o.pickup_address || o.delivery_address },
               customer: { name: "Demo Customer", email: "demo@scoobix.test" },
               rider: null,
               history: [],
