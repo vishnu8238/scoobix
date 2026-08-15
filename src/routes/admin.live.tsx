@@ -71,7 +71,7 @@ function AdminZonesDashboard() {
     const term = q.toLowerCase();
     return zones.filter(z => 
       z.name.toLowerCase().includes(term) || 
-      z.city.toLowerCase().includes(term)
+      (z.city || "").toLowerCase().includes(term)
     );
   }, [zones, q]);
 
