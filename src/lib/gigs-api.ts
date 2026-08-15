@@ -33,7 +33,7 @@ export async function fetchGigs(params?: Record<string, any>) {
   try {
     const data = await listTable<Gig>(TABLE, { 
       select: "*",
-      order: "created_at.desc", 
+      order: "start_time.asc", 
       ...params 
     }, { fresh: true });
     return data;
@@ -66,11 +66,17 @@ export async function fetchGigParticipants(gigId: string) {
   return listTable<GigParticipant>("gig_participants", { gig_id: `eq.${gigId}`, order: "completed_deliveries.desc" });
 }
 
-/**
- * Rider Gig enrollment
- */
 export async function enrollInGig(gigId: string, riderId: string) {
   const TABLE = "gig_participants";
+  
+  // Check if already enrolled
+  const existing = await listTable<GigParticipant>(TABLE, {
+    gig_id: `eq.${gigId}`,
+    rider_id: `eq.${riderId}`
+  });
+  
+  if (existing && existing.length > 0) return existing[0];
+
   const id = newUuid();
   const participant: Omit<GigParticipant, "id" | "joined_at"> = {
     gig_id: gigId,
@@ -80,4 +86,36 @@ export async function enrollInGig(gigId: string, riderId: string) {
   };
   
   return createRecord<GigParticipant>(TABLE, { ...participant, id });
+}
+
+export async function cancelGigEnrollment(gigId: string, riderId: string) {
+  const TABLE = "gig_participants";
+  const existing = await listTable<GigParticipant>(TABLE, {
+    gig_id: `eq.${gigId}`,
+    rider_id: `eq.${riderId}`
+  });
+  
+  if (existing && existing.length > 0) {
+    return deleteRecord(TABLE, existing[0].id);
+  }
+  return null;
+}
+
+export async function fetchRiderGigs(riderId: string) {
+  const participations = await listTable<GigParticipant>("gig_participants", {
+    rider_id: `eq.${riderId}`
+  });
+  
+  if (!participations.length) return [];
+  
+  const gigIds = participations.map(p => p.gig_id);
+  // Ideally use .in filter if SDK supports it, or individual fetches
+  const gigs = await Promise.all(
+    gigIds.map(id => listTable<Gig>("gigs", { id: `eq.${id}`, limit: 1 }).then(rows => rows[0]))
+  );
+  
+  return gigs.filter(Boolean).map(g => {
+    const p = participations.find(pp => pp.gig_id === g.id);
+    return { ...g, enrollment: p };
+  });
 }
