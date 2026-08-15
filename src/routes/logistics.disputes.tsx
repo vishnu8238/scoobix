@@ -1,11 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Loader2, Search, Filter, CheckCircle2, XCircle, Clock } from "lucide-react";
-import { fetchDisputes, updateDisputeStatus, type Dispute } from "@/lib/logistics-ops-api";
+import { AlertTriangle, Loader2, Search, Filter, CheckCircle2, XCircle, Clock, Eye } from "lucide-react";
+import { listTable, patchRecord } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { useAuth } from "@/lib/auth-store";
 import { toast } from "sonner";
+
+export type Dispute = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  rider_id?: string;
+  subject: string;
+  description: string;
+  status: "pending" | "investigating" | "resolved" | "rejected";
+  priority: "low" | "medium" | "high" | "urgent";
+  created_at: string;
+};
+
 
 export const Route = createFileRoute("/logistics/disputes")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Disputes" }] }),
@@ -23,11 +36,14 @@ function LogisticsDisputes() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchDisputes();
+      const data = await listTable<Dispute>("operational_disputes", { 
+        order: "created_at.desc",
+        limit: 100 
+      });
       setDisputes(data || []);
     } catch (err: any) {
       console.error("[DISPUTES] Load failed:", err);
-      toast.error(`Failed to load disputes: ${err.message || "Unknown error"}`);
+      toast.error(`Failed to load disputes`);
       setDisputes([]);
     } finally {
       setLoading(false);
@@ -37,12 +53,17 @@ function LogisticsDisputes() {
   useEffect(() => { void load(); }, [load, version]);
 
   const handleStatus = async (id: string, status: Dispute["status"]) => {
-    const ok = await updateDisputeStatus(id, status, "Processed by Logistics", user?.name || "Logistics");
+    const ok = await patchRecord("operational_disputes", id, { 
+      status,
+      resolved_at: status === "resolved" ? new Date().toISOString() : undefined,
+      resolved_by: user?.id
+    });
     if (ok) {
       toast.success(`Dispute marked as ${status}`);
       void load();
     }
   };
+
 
   const filtered = disputes.filter(d => {
     const matchStatus = filter === "all" || d.status === filter;
