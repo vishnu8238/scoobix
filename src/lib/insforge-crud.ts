@@ -101,26 +101,26 @@ function applyParams(query: any, params?: Record<string, string | number | undef
         let ascending = true;
         let nullsFirst = false;
 
-        if (t.startsWith("-")) {
+        if (t && t.startsWith("-")) {
           column = t.slice(1);
           ascending = false;
-        } else if (t.startsWith("+")) {
+        } else if (t && t.startsWith("+")) {
           column = t.slice(1);
           ascending = true;
         }
 
-        if (column && column.endsWith(".desc")) {
+        if (column && typeof column === 'string' && column.endsWith(".desc")) {
           column = column.slice(0, -5);
           ascending = false;
-        } else if (column && column.endsWith(".asc")) {
+        } else if (column && typeof column === 'string' && column.endsWith(".asc")) {
           column = column.slice(0, -4);
           ascending = true;
         }
 
-        if (column && column.endsWith(".nullsfirst")) {
+        if (column && typeof column === 'string' && column.endsWith(".nullsfirst")) {
           column = column.slice(0, -11);
           nullsFirst = true;
-        } else if (column && column.endsWith(".nullslast")) {
+        } else if (column && typeof column === 'string' && column.endsWith(".nullslast")) {
           column = column.slice(0, -10);
           nullsFirst = false;
         }
@@ -151,7 +151,7 @@ function applyParams(query: any, params?: Record<string, string | number | undef
     }
 
     // Legacy format: "field": "op.value"
-    const sVal = String(val);
+    const sVal = val !== undefined && val !== null ? String(val) : "";
     const dotIdx = sVal.indexOf(".");
     if (dotIdx > 0) {
       const op = sVal.slice(0, dotIdx);
@@ -169,7 +169,7 @@ function applyParams(query: any, params?: Record<string, string | number | undef
       } else {
         q = q.filter(key, op, value === "null" ? null : value);
       }
-    } else {
+    } else if (key && val !== undefined) {
       q = q.eq(key, val);
     }
   }
@@ -427,7 +427,9 @@ export function patchWhereIn<T = Record<string, unknown>>(
     const query = insforge.database.from(table).update(patch).in("id", ids).select();
     return handleResponse<T[]>(query, "PATCH", table);
   }).then((res) => {
-    for (const id of ids.slice(0, 20)) announce(table, "update", { id, ...patch });
+    if (Array.isArray(ids)) {
+      for (const id of ids.slice(0, 20)) announce(table, "update", { id, ...patch });
+    }
     return res as any;
   });
 }
