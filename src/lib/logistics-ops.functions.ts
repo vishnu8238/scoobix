@@ -409,7 +409,7 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
 
     const demoOrders = [
       {
-        id: "demo-order-1",
+        id: "e433da54-560c-4c50-bf0b-7cd68acf11e6",
         customer_id: custId,
         restaurant_id: restId,
         status: "ON_THE_WAY",
@@ -417,10 +417,12 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         created_at: new Date().toISOString(),
         delivery_address: "123 Demo St, Central Vadodara",
         items: { lines: [{ name: "Demo Pizza", qty: 1, price: 400 }] },
+        payment_status: "PAID",
+        pickup_address: "Scoobix Demo Kitchen, Vadodara",
         metadata: { is_demo: true }
       },
       {
-        id: "demo-order-2",
+        id: "d922ca54-450b-4b50-af0a-6cd58acf00d5",
         customer_id: custId,
         restaurant_id: restId,
         status: "PREPARING",
@@ -428,10 +430,12 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         created_at: new Date().toISOString(),
         delivery_address: "456 Tech Park, Alkapuri",
         items: { lines: [{ name: "Demo Burger Meal", qty: 2, price: 160 }] },
+        payment_status: "PAID",
+        pickup_address: "Scoobix Demo Kitchen, Vadodara",
         metadata: { is_demo: true }
       },
       {
-        id: "demo-order-3",
+        id: "c811ba54-340a-3a50-bf0b-5cd48acf99c4",
         customer_id: custId,
         restaurant_id: restId,
         status: "PLACED",
@@ -439,6 +443,8 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         created_at: new Date().toISOString(),
         delivery_address: "789 Residential View, Gotri",
         items: { lines: [{ name: "Demo Family Pack", qty: 1, price: 850 }] },
+        payment_status: "PENDING",
+        pickup_address: "Scoobix Demo Kitchen, Vadodara",
         metadata: { is_demo: true }
       }
     ];
