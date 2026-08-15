@@ -126,13 +126,17 @@ function LogisticsGigs() {
       
       if (res) {
         // Verification: check if the new ID is in the canonical load
+        // We wait a brief moment for realtime propagation and index refresh
+        await new Promise(r => setTimeout(r, 500));
         const allAfter = await fetchGigs({ limit: 1000 });
         const foundInList = allAfter.some(g => g.id === testId);
         
-        toast.success(foundInList 
-          ? "Production Gig Test Passed: Row persisted and verified in list." 
-          : "Production Gig Test: Row persisted but NOT found in list after refresh."
-        );
+        if (foundInList) {
+          toast.success("Production Gig Test Passed: Row persisted and verified in list.");
+        } else {
+          toast.error("Production Gig Test: Row persisted but NOT found in list after refresh.");
+        }
+
         
         const authUser = await insforge.auth.getCurrentUser();
         setDiagnostics((prev: any) => ({ 
