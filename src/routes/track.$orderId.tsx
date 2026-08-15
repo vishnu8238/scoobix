@@ -71,6 +71,19 @@ function TrackPage() {
     return () => { alive = false; };
   }, [activeDelivery, originForEta?.lat, originForEta?.lng, dropTarget?.lat, dropTarget?.lng]);
 
+  // Tick so the countdown and arrival clock stay current
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!activeDelivery) return;
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [activeDelivery]);
+
+  const fallbackEta = order ? order.etaMins - Math.floor((now - order.placedAt) / 60000) : 0;
+  const etaMins = Math.max(
+    1,
+    liveEta ? liveEta.mins - Math.floor((now - liveEta.at) / 60000) : fallbackEta
+  );
 
 
   if (loading && !order) {
