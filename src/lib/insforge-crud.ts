@@ -306,10 +306,24 @@ export function createRecord<T = Record<string, unknown>>(
     try {
       const res = await handleResponse<T[]>(query, "POST", table);
       console.log(`[DB_INSERT] ${table} raw response:`, JSON.stringify(res));
+      
       const row = Array.isArray(res) ? res[0] : res;
       if (!row) {
-        throw new Error("Insert returned empty result");
+        throw new Error("Insert returned empty result - possibly RLS or missing data");
       }
+
+      // Read-back verification: fetch the row again by ID to ensure it is actually there
+      if (row.id) {
+        console.log(`[DB_INSERT_VERIFY] Performing read-back for ${table}:${row.id}`);
+        const verifyQuery = insforge.database.from(table).select("*").eq("id", row.id).single();
+        const verifyRes = await verifyQuery;
+        if (verifyRes.error || !verifyRes.data) {
+          console.error(`[DB_INSERT_VERIFY_FAILURE] Read-back failed for ${table}:${row.id}`, verifyRes.error);
+          throw new Error(`Insert appeared to succeed but read-back failed: ${verifyRes.error?.message || "Record not found"}`);
+        }
+        console.log(`[DB_INSERT_VERIFY_SUCCESS] Read-back confirmed for ${table}:${row.id}`);
+      }
+
       announce(table, "insert", (row as Record<string, unknown>) || record);
       return row as T;
     } catch (err: any) {
