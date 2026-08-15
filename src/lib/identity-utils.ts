@@ -18,9 +18,6 @@ export function getDisplayName(user: any): string {
     const forbidden = ['user', 'unknown', 'guest', 'anonymous', 'null', 'undefined', 'administrator', 'logistics staff', 'merchant manager', 'logistics'];
     if (forbidden.includes(n)) return null;
 
-    // Filter out obvious system email prefixes if they are being used as names
-    if (n.startsWith('scoobix.') || n.includes('scoobix.info') || n.includes('scoobix.v')) return null;
-    
     // If it looks like an email, it's not a real name
     if (n.includes('@')) return null;
 
