@@ -9,6 +9,8 @@ import { currency } from "@/lib/format";
 import { addressCoords, restaurantCoords, statusToProgress, CITY_CENTER } from "@/lib/geo";
 import { toast } from "sonner";
 import { subscribeToDelivery, subscribeToDriverLocation } from "@/lib/delivery-sync";
+import { initGoogleMaps, routeBetween } from "@/lib/maps-service";
+
 import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/track/$orderId")({
