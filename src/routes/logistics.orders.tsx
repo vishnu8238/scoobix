@@ -10,10 +10,10 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),
-  component: LogisticsOrdersLayout,
+  component: LogisticsOrders,
 });
 
-function LogisticsOrdersLayout() {
+function LogisticsOrders() {
   const routerState = useRouterState();
   const isDetail = routerState.location.pathname !== "/logistics/orders";
 
@@ -21,22 +21,10 @@ function LogisticsOrdersLayout() {
     return <Outlet />;
   }
 
-  return <LogisticsOrders />;
+  return <OrderLedger />;
 }
 
-type OrderRow = {
-  id: string;
-  status?: string;
-  total_price?: number;
-  restaurant_id?: string;
-  customer_id?: string;
-  created_at?: string;
-};
-type NamedRow = { id: string; name?: string };
-
-const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
-
-function LogisticsOrders() {
+function OrderLedger() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [restaurants, setRestaurants] = useState<NamedRow[]>([]);
   const [users, setUsers] = useState<NamedRow[]>([]);
@@ -162,3 +150,16 @@ function LogisticsOrders() {
     </div>
   );
 }
+
+type OrderRow = {
+  id: string;
+  status?: string;
+  total_price?: number;
+  restaurant_id?: string;
+  customer_id?: string;
+  created_at?: string;
+};
+type NamedRow = { id: string; name?: string };
+
+const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
+

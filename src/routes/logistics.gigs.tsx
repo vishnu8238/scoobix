@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
+import { parseISO } from "date-fns";
 import { 
   Search, 
   Plus, 
@@ -52,17 +53,22 @@ function LogisticsGigs() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch total count and data from authoritative sources
+      // 1. Fetch from canonical gigs table
       const all = await fetchGigs({ limit: 1000 });
       setAllGigsCount(all.length);
       
-      const today = new Date(selectedDate.getTime() - (selectedDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const localDateStr = format(selectedDate, "yyyy-MM-dd");
       
-      // Filter client-side to ensure calendar date alignment regardless of backend timezone/params
+      // Authoritative client-side filtering: match ISO date part or formatted local date
       const data = all.filter(g => {
         if (!g.start_time) return false;
-        const gigDate = new Date(g.start_time).toISOString().split('T')[0];
-        return gigDate === today;
+        try {
+          const isoDate = new Date(g.start_time).toISOString().split('T')[0];
+          const gigDate = format(parseISO(g.start_time), "yyyy-MM-dd");
+          return isoDate === localDateStr || gigDate === localDateStr;
+        } catch (e) {
+          return false;
+        }
       });
       
       setGigs(data);
@@ -71,7 +77,7 @@ function LogisticsGigs() {
         lastLoad: new Date().toISOString(),
         total: all.length,
         filtered: data.length,
-        filterDate: today,
+        filterDate: localDateStr,
         firstGig: all[0] ? { title: all[0].title, start: all[0].start_time } : "none"
       });
     } catch (err: any) {
@@ -111,10 +117,24 @@ function LogisticsGigs() {
       const res = await createRecord("gigs", testGig);
       
       if (res) {
-        toast.success("Production Gig Test Passed: Row persisted and verified.");
+        // Verification: check if the new ID is in the canonical load
+        const allAfter = await fetchGigs({ limit: 1000 });
+        const foundInList = allAfter.some(g => g.id === testId);
+        
+        toast.success(foundInList 
+          ? "Production Gig Test Passed: Row persisted and verified in list." 
+          : "Production Gig Test: Row persisted but NOT found in list after refresh."
+        );
+        
+        const authUser = await insforge.auth.getCurrentUser();
         setDiagnostics((prev: any) => ({ 
           ...prev, 
-          testError: { success: true, testRecordId: testId, inserted: true, readBack: true } 
+          testError: { 
+            success: foundInList, 
+            testRecordId: testId, 
+            userId: authUser.data?.user?.id || "unknown",
+            listCount: allAfter.length
+          } 
         }));
         await load();
       } else {
