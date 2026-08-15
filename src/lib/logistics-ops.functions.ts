@@ -32,7 +32,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
       for (const table of tables) {
         try {
           // Check for relation existence and column info if possible
-          const { status, error, data } = await insforge.database.from(table).select("count").limit(1);
+          const { status, error } = await insforge.database.from(table).select("count").limit(1);
           console.log(`[SCHEMA_PROBE] Table "${table}": status=${status} ${error ? `error=${error.message}` : "OK"}`);
           result.schema.push({ 
             table, 
@@ -149,15 +149,14 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
       if (readError) throw readError;
 
       // 4. List check
-      const { data: list, error: listError } = await insforge.database
+      const { data: list } = await insforge.database
         .from(TABLE)
         .select("id")
         .limit(10);
 
       return {
         success: true,
-        project: insforge.auth.api.baseUrl,
-        userId: authUser.data?.id,
+        userId: authUser.data?.user?.id,
         testRecordId: testId,
         inserted: !!inserted,
         readBack: !!readBack,
