@@ -29,26 +29,16 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  // DISCOVERY: Try to find the correct table name
   const TABLE = "gigs"; 
-  console.log(`[GIGS_API] Fetching authoritative data from "${TABLE}"...`, JSON.stringify(params));
-  
   try {
     const data = await listTable<Gig>(TABLE, { 
       select: "*",
       order: "created_at.desc", 
       ...params 
     }, { fresh: true });
-    
-    // Diagnostic log for production visibility
-    console.log(`[GIGS_API] Fetch success from "${TABLE}". Found ${data.length} rows. Project: ${import.meta.env.VITE_SUPABASE_URL || 'Lovable Cloud'}`);
-    if (data.length > 0) {
-      console.log(`[GIGS_API] First row diagnostic: ID=${data[0].id} Title="${data[0].title}" Start="${data[0].start_time}"`);
-    }
-    
     return data;
   } catch (err: any) {
-    console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message, "Status:", err.status);
+    console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message);
     throw err;
   }
 }
@@ -56,19 +46,14 @@ export async function fetchGigs(params?: Record<string, any>) {
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   const TABLE = "gigs";
   const id = newUuid();
-  console.log(`[GIGS_API] Attempting INSERT into "${TABLE}"...`, JSON.stringify({ id, ...gig }));
-  
   try {
     const res = await createRecord<Gig>(TABLE, { ...gig, id });
     if (res) {
-      console.log(`[GIGS_API] Authoritative INSERT success into "${TABLE}". Response:`, JSON.stringify(res));
-      // Read-back is already handled in createRecord, so if we're here, it's verified.
       publishTableChange(TABLE, "insert", res as any);
       return res;
     }
-    throw new Error(`Insert into "${TABLE}" returned null without throwing - check RLS/Table Existence`);
+    throw new Error(`Insert into "${TABLE}" returned null`);
   } catch (error: any) {
-    console.error(`[GIGS_API] Create FATAL ERROR on "${TABLE}":`, error.message, "Status:", error.status);
     throw error;
   }
 }
@@ -79,4 +64,20 @@ export async function updateGig(id: string, patch: Partial<Gig>) {
 
 export async function fetchGigParticipants(gigId: string) {
   return listTable<GigParticipant>("gig_participants", { gig_id: `eq.${gigId}`, order: "completed_deliveries.desc" });
+}
+
+/**
+ * Rider Gig enrollment
+ */
+export async function enrollInGig(gigId: string, riderId: string) {
+  const TABLE = "gig_participants";
+  const id = newUuid();
+  const participant: Omit<GigParticipant, "id" | "joined_at"> = {
+    gig_id: gigId,
+    rider_id: riderId,
+    completed_deliveries: 0,
+    status: "ENROLLED"
+  };
+  
+  return createRecord<GigParticipant>(TABLE, { ...participant, id });
 }
