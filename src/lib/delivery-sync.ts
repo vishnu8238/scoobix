@@ -80,8 +80,28 @@ export function subscribeToDelivery(orderId: string, callback: (event: Partial<D
   });
 }
 
+
+/**
+ * Subscribe to live driver location updates for a specific order.
+ */
+export function subscribeToDriverLocation(orderId: string, callback: (coords: { lat: number; lng: number }) => void) {
+  return subscribeChannel(`order:${orderId}`, (payload) => {
+    // Look for location updates in the metadata or specific event type
+    if (payload.type === 'location_update' && payload.coords) {
+      callback(payload.coords as { lat: number; lng: number });
+    } else if (payload.op === 'update' && payload.row?.driver_lat && payload.row?.driver_lng) {
+      // Fallback: the order row itself was updated with coordinates
+      callback({ 
+        lat: Number(payload.row.driver_lat), 
+        lng: Number(payload.row.driver_lng) 
+      });
+    }
+  });
+}
+
 /**
  * Dispute & Exception Reporting
+
  */
 export async function reportDeliveryIssue(data: {
   orderId: string;
