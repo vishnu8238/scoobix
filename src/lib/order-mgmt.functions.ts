@@ -2,31 +2,27 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { publishTableChange } from "./realtime-bus";
-
-const HEADERS = {
-  apikey: INSFORGE_ANON_KEY,
-  Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
-  "Content-Type": "application/json",
-};
+import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";
 
 export const updateOrderStatus = createServerFn({ method: "POST" })
+  .middleware([requireInsForgeAuth])
   .inputValidator(z.object({
     orderId: z.string(),
     status: z.string(),
     driverId: z.string().optional().nullable()
   }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { insforge } = context;
     const patch: any = { status: data.status };
     if (data.driverId !== undefined) patch.driver_id = data.driverId;
 
-    const res = await fetch(`${INSFORGE_URL}/api/database/records/orders?id=eq.${data.orderId}`, {
-      method: "PATCH",
-      headers: HEADERS,
-      body: JSON.stringify(patch)
-    });
+    const { error } = await insforge.database
+      .from("orders")
+      .update(patch)
+      .eq("id", data.orderId);
 
-    if (!res.ok) {
-      throw new Error(await res.text() || "Failed to update order status");
+    if (error) {
+      throw new Error(error.message || "Failed to update order status");
     }
 
     publishTableChange("orders", "update", { id: data.orderId, ...patch });
