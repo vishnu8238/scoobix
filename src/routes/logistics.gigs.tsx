@@ -226,16 +226,50 @@ function LogisticsGigs() {
               </div>
             )}
             {diagnostics && (
-              <div className="mt-8 rounded-2xl bg-slate-900/5 p-4 text-[10px] font-mono text-slate-500 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
-                <p className="mb-2 font-black uppercase tracking-widest text-slate-400">Production Diagnostics</p>
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                  <div>Table: <span className="text-primary font-bold">gigs</span></div>
-                  <div>Total Rows: <span className="text-primary font-bold">{diagnostics.total ?? 0}</span></div>
-                  <div>Filtered: <span className="text-primary font-bold">{diagnostics.filtered ?? 0}</span></div>
-                  <div>Active Date: <span className="text-primary font-bold">{diagnostics.filterDate}</span></div>
+              <div className="mt-8 rounded-2xl bg-slate-900/5 p-6 text-[10px] font-mono text-slate-500 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                <div className="flex items-center justify-between mb-4 border-b border-border/40 pb-2">
+                  <p className="font-black uppercase tracking-widest text-slate-400">Live Production Diagnostics</p>
+                  <div className="flex items-center gap-2">
+                    <div className={cn("h-2 w-2 rounded-full", diagnostics.error ? "bg-rose-500 animate-pulse" : "bg-emerald-500")} />
+                    <span className="font-bold text-[9px]">{diagnostics.error ? "FAIL" : "SYNCED"}</span>
+                  </div>
                 </div>
+                
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4 lg:grid-cols-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground uppercase text-[8px] font-black">Canonical Table</span>
+                    <span className="text-primary font-bold text-xs">gigs</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground uppercase text-[8px] font-black">Verified Persistence</span>
+                    <span className={cn("font-bold text-xs", diagnostics.total > 0 ? "text-emerald-500" : "text-amber-500")}>
+                      {diagnostics.total ?? 0} Rows Found
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground uppercase text-[8px] font-black">Calendar Filter</span>
+                    <span className="text-foreground font-bold text-xs">{diagnostics.filterDate}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-muted-foreground uppercase text-[8px] font-black">Filtered View</span>
+                    <span className="text-foreground font-bold text-xs">{diagnostics.filtered ?? 0} Gigs Shown</span>
+                  </div>
+                </div>
+
+                {diagnostics.firstGig !== "none" && (
+                  <div className="mt-4 pt-4 border-t border-border/40">
+                    <span className="text-muted-foreground uppercase text-[8px] font-black block mb-1">Latest Entry Read-Back</span>
+                    <div className="text-[9px] text-foreground font-medium opacity-80">
+                      ID: {diagnostics.firstGig.id} | Title: {diagnostics.firstGig.title} | Start: {diagnostics.firstGig.start}
+                    </div>
+                  </div>
+                )}
+
                 {diagnostics.error && (
-                  <div className="mt-2 text-rose-500">Error: {diagnostics.error} ({diagnostics.status})</div>
+                  <div className="mt-4 rounded-xl bg-rose-500/10 p-3 text-rose-500 ring-1 ring-rose-500/20">
+                    <p className="font-black uppercase text-[8px] mb-1">InsForge Protocol Error</p>
+                    {diagnostics.error} ({diagnostics.status})
+                  </div>
                 )}
               </div>
             )}
