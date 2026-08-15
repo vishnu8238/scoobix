@@ -19,7 +19,8 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     const result = { 
       success: false,
       errors: [] as string[],
-      diagnostics: [] as any[]
+      diagnostics: [] as any[],
+      schema: [] as any[]
     };
 
     const CITY_1_ID = "c1110000-0000-0000-0000-000000000001";
