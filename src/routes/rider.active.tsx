@@ -8,7 +8,7 @@ import {
   Camera, FileCheck, CreditCard, AlertTriangle, MessageSquare,
   Bike
 } from "lucide-react";
-import { GoogleMap } from "@/components/cravio/GoogleMap";
+import { GoogleMap } from "@/components/maps/GoogleMap";
 import { toast } from "sonner";
 import { onTableChange } from "@/lib/realtime-bus";
 import { acceptOrderOffer, rejectOrderOffer, cancelAssignment } from "@/lib/logistics-engine.functions";
