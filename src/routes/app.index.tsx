@@ -117,7 +117,9 @@ function Home() {
   };
 
   const allFiltered = useMemo(() => {
-    let list = filterVeg(restaurants, vegMode, pureVegOverrides);
+    let list = filterVeg(restaurants, vegMode, pureVegOverrides).filter(r => 
+      (r.status === 'active' || r.status === 'approved' || (r as any).onboarding_status === 'live')
+    );
     if (activeChips.length) {
       const active = homeChips.filter((c) => activeChips.includes(c.id));
       list = list.filter((r, i) => active.every((opt) => chipMatches(r, opt, i)));

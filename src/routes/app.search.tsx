@@ -97,7 +97,9 @@ function SearchPage() {
   const dishes = useMemo(() => allDishes(), []);
 
   const filteredRestaurants = useMemo(() => {
-    let list = filterVeg(restaurants, vegMode, pureVegOverrides).filter((r) => {
+    let list = filterVeg(restaurants, vegMode, pureVegOverrides).filter(r => 
+      (r.status === 'active' || r.status === 'approved' || (r as any).onboarding_status === 'live')
+    ).filter((r) => {
       if (cuisine !== "All" && !r.cuisine.toLowerCase().includes(cuisine.toLowerCase()) && !r.tags.some((t) => t.toLowerCase() === cuisine.toLowerCase())) return false;
       if (r.rating < minRating) return false;
       if (r.deliveryMins > maxMins) return false;
