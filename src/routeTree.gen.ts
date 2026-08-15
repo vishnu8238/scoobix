@@ -196,11 +196,6 @@ const ManagerRoute = ManagerRouteImport.update({
   path: '/manager',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ManagerRoute = ManagerRouteImport.update({
-  id: '/manager',
-  path: '/manager',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LogisticsRoute = LogisticsRouteImport.update({
   id: '/logistics',
   path: '/logistics',
@@ -1150,7 +1145,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
-  '/manager': typeof ManagerIndexRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/access': typeof AdminAccessRoute
@@ -1293,6 +1287,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/app': typeof AppIndexRoute
   '/logistics': typeof LogisticsIndexRoute
+  '/manager': typeof ManagerIndexRoute
   '/partner': typeof PartnerIndexRoute
   '/rider': typeof RiderIndexRoute
   '/admin/drivers/$driverId': typeof AdminDriversDriverIdRoute
@@ -1636,7 +1631,6 @@ export interface FileRouteTypes {
     | '/'
     | '/customer'
     | '/login'
-    | '/manager'
     | '/privacy'
     | '/terms'
     | '/admin/access'
@@ -1779,6 +1773,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/logistics'
+    | '/manager'
     | '/partner'
     | '/rider'
     | '/admin/drivers/$driverId'
@@ -1960,7 +1955,6 @@ export interface RootRouteChildren {
   CustomerRoute: typeof CustomerRoute
   LoginRoute: typeof LoginRoute
   LogisticsRoute: typeof LogisticsRouteWithChildren
-  ManagerRoute: typeof ManagerRoute
   ManagerRoute: typeof ManagerRouteWithChildren
   PartnerRoute: typeof PartnerRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
@@ -1999,13 +1993,6 @@ declare module '@tanstack/react-router' {
       path: '/partner'
       fullPath: '/partner'
       preLoaderRoute: typeof PartnerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/manager': {
-      id: '/manager'
-      path: '/manager'
-      fullPath: '/manager'
-      preLoaderRoute: typeof ManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manager': {
@@ -3512,7 +3499,6 @@ const rootRouteChildren: RootRouteChildren = {
   CustomerRoute: CustomerRoute,
   LoginRoute: LoginRoute,
   LogisticsRoute: LogisticsRouteWithChildren,
-  ManagerRoute: ManagerRoute,
   ManagerRoute: ManagerRouteWithChildren,
   PartnerRoute: PartnerRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
