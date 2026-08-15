@@ -284,14 +284,13 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
       throw new Error("Failed to create prerequisite demo data (restaurant/customer)");
     }
 
-    const statuses = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
+    const statuses: OrderStatus[] = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
     let seeded = 0;
     let existing = 0;
 
     for (let i = 0; i < 5; i++) {
-      const demoRef = `demo_order_v3_${i}`;
+      const demoRef = `demo_order_v4_${i}`;
       
-      // Idempotency check
       const { data: found } = await insforge.database
         .from("orders")
         .select("id")
@@ -311,26 +310,27 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         zone_id: zoneId,
         total_price: 250 + (i * 50),
         created_at: new Date().toISOString(),
-        metadata: { is_demo: true, demo_tag: "logistics_test_v3", demo_ref: demoRef },
+        metadata: { is_demo: true, demo_tag: "logistics_test_v4", demo_ref: demoRef },
         items: {
           lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
           meta: { restaurantName: restaurants[0].name, addressLine: "123 Demo St" }
         },
         delivery_address: "123 Demo Street, Vadodara",
         payment_method: "CASH",
-        payment_status: i % 2 === 0 ? "COMPLETED" : "PENDING"
+        payment_status: i % 2 === 0 ? "PAID" : "PENDING"
       };
 
-      const { error: insertError } = await insforge.database
+      const { data: inserted, error: insertError } = await insforge.database
         .from("orders")
-        .insert([order]);
+        .insert([order])
+        .select()
+        .single();
 
-      if (!insertError) {
+      if (!insertError && inserted) {
         seeded++;
-        publishTableChange("orders", "insert", order);
+        publishTableChange("orders", "insert", inserted);
       } else {
-        console.error(`[SEED] Failed to insert order ${demoRef}:`, insertError.message);
-        throw new Error(`Database error: ${insertError.message}`);
+        console.error(`[SEED] Failed to insert order ${demoRef}:`, insertError?.message);
       }
     }
 

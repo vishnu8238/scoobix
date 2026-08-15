@@ -158,15 +158,20 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         end_time: new Date(`${todayStr}T${formData.end_time}:00`).toISOString()
       };
       
-      console.log("[CREATE_GIG_MODAL] Submitting payload:", payload);
-      const res = await createGig(payload);
-      console.log("[CREATE_GIG_MODAL] Success response:", res);
+      console.log("[CREATE_GIG_MODAL] Submitting payload via authoritative CRUD:", payload);
+      // Use createRecord directly for authoritative read-after-write verification
+      const res = await createRecord<any>("gigs", payload);
       
-      toast.success("Gig created successfully");
+      if (!res) {
+        throw new Error("Persistence verification failed: record not found after write");
+      }
+      
+      console.log("[CREATE_GIG_MODAL] Verified result:", res);
+      toast.success("Gig created and verified in database");
       onSuccess();
       onClose();
     } catch (err: any) {
-      console.error("[CREATE_GIG_MODAL] Error:", err.message, err.status);
+      console.error("[CREATE_GIG_MODAL] Error:", err.message);
       toast.error(err.message || "Failed to create gig");
     } finally {
       setLoading(false);

@@ -114,10 +114,11 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                   <select 
                     value={formData.status}
                     onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                    className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 outline-none appearance-none"
+                    className="w-full rounded-2xl bg-muted/50 px-4 py-3 text-sm ring-1 ring-border/60 focus:ring-primary/40 outline-none appearance-none"
                   >
                     <option value="ACTIVE">Active</option>
                     <option value="DISABLED">Disabled</option>
+                    <option value="ARCHIVED">Archived</option>
                   </select>
                 </div>
               </div>

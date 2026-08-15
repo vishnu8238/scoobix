@@ -111,8 +111,8 @@ export const createNewZone = createServerFn({ method: "POST" })
     city: z.string().default("Vadodara"),
     description: z.string().optional(),
     status: z.enum(["ACTIVE", "DISABLED", "ARCHIVED"]).default("ACTIVE"),
-    pickup_radius_km: z.number().default(1),
-    max_delivery_distance_km: z.number().default(4),
+    pickup_radius_km: z.number().nullable().optional().default(1),
+    max_delivery_distance_km: z.number().nullable().optional().default(4),
     boundary: z.any().optional()
   }))
   .handler(async ({ data }) => {
