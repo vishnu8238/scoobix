@@ -359,7 +359,7 @@ export function patchRecord<T = Record<string, unknown>>(
 ): Promise<T | null> {
   invalidateTable(table);
   return withRetry<T | null>(table, () => {
-    const query = insforge.database.from(table).update(patch).eq("id", id).select().single();
+    const query = insforge.database.from(table).update(patch).eq("id", id).select();
     return handleResponse<T>(query, "PATCH", table);
   }).then((res) => {
     announce(table, "update", { id, ...patch, ...((res as any) || {}) });
