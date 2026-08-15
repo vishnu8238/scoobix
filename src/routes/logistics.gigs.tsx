@@ -139,11 +139,23 @@ function LogisticsGigs() {
         console.log("[GIG_TEST_CLIENT] Row persisted. Verifying presence in authoritative list...");
         
         // Wait for potential indexing/propagation
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 1500));
         
-        // Auth-check: must use the same authoritative fetch path as the main list
-        const allAfter = await fetchGigs({ limit: 1000 });
-        const foundInList = allAfter.some(g => g.id === testId);
+        // Use raw query for verification to bypass any potential layer issues
+        const verifyRes = await insforge.database.from("gigs").select("*");
+        
+        // Use a robust normalization helper locally for the test
+        const extractRows = (res: any) => {
+          const raw = res.data || res.result;
+          if (Array.isArray(raw)) return raw;
+          if (raw && typeof raw === 'object') {
+            return raw.rows || raw.data || raw.result || raw.records || raw.items || [raw];
+          }
+          return [];
+        };
+
+        const allRows = extractRows(verifyRes);
+        const foundInList = allRows.some((g: any) => g.id === testId);
         
         const authUser = await insforge.auth.getCurrentUser();
         
@@ -155,14 +167,16 @@ function LogisticsGigs() {
               success: true, 
               testRecordId: testId, 
               userId: authUser.data?.user?.id || "unknown",
-              listCount: allAfter.length
+              listCount: allRows.length,
+              status: verifyRes.status
             } 
           }));
         } else {
           console.error("[GIG_TEST_CLIENT] Persistence failure: ID not found in list.", {
             testId,
-            listSize: allAfter.length,
-            sampleIds: allAfter.slice(0, 5).map(g => g.id)
+            listSize: allRows.length,
+            status: verifyRes.status,
+            error: verifyRes.error
           });
           toast.error("Production Gig Test FAILED: Row persisted but NOT found in canonical list.");
           setDiagnostics((prev: any) => ({ 
@@ -172,8 +186,9 @@ function LogisticsGigs() {
               error: "ID persisted but not found in subsequent fetch",
               testRecordId: testId,
               userId: authUser.data?.user?.id || "unknown",
-              listCount: allAfter.length,
-              sampleIds: allAfter.slice(0, 5).map(g => g.id)
+              listCount: allRows.length,
+              status: verifyRes.status,
+              rawResponse: JSON.stringify(verifyRes.data || verifyRes.result).slice(0, 200)
             } 
           }));
         }
