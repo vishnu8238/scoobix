@@ -309,20 +309,23 @@ export function createRecord<T = Record<string, unknown>>(
       
       const row = Array.isArray(res) ? res[0] : res;
       if (!row) {
-        throw new Error("Insert returned empty result - possibly RLS or missing data");
+        throw new Error(`Insert into "${table}" returned empty result - check RLS/Table Existence. Project Host: ${insforge.auth.api.baseUrl}`);
       }
 
       // Read-back verification: fetch the row again by ID to ensure it is actually there
       const rowId = (row as any).id;
       if (rowId) {
-        console.log(`[DB_INSERT_VERIFY] Performing read-back for ${table}:${rowId}`);
+        console.log(`[DB_INSERT_VERIFY] Performing immediate read-back for ${table}:${rowId} using ${insforge.auth.api.baseUrl}`);
+        // Ensure we bypass cache for verification
         const verifyQuery = insforge.database.from(table).select("*").eq("id", rowId).single();
         const verifyRes = await verifyQuery;
+        
         if (verifyRes.error || !verifyRes.data) {
-          console.error(`[DB_INSERT_VERIFY_FAILURE] Read-back failed for ${table}:${rowId}`, verifyRes.error);
-          throw new Error(`Insert appeared to succeed but read-back failed: ${verifyRes.error?.message || "Record not found"}`);
+          const authUser = await insforge.auth.getCurrentUser();
+          console.error(`[DB_INSERT_VERIFY_FAILURE] Read-back failed for ${table}:${rowId}. Auth User: ${authUser.data?.id || 'none'}. Error:`, verifyRes.error);
+          throw new Error(`Insert appeared to succeed but record was NOT found in read-back. Table: ${table}, ID: ${rowId}, Project: ${insforge.auth.api.baseUrl}. This usually means the row was written to a different scope or filtered by RLS.`);
         }
-        console.log(`[DB_INSERT_VERIFY_SUCCESS] Read-back confirmed for ${table}:${rowId}`);
+        console.log(`[DB_INSERT_VERIFY_SUCCESS] Read-back confirmed for ${table}:${rowId}. Data:`, JSON.stringify(verifyRes.data));
       }
 
       announce(table, "insert", (row as Record<string, unknown>) || record);
