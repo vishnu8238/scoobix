@@ -52,6 +52,25 @@ function TrackPage() {
     }
   }, [loading, order, orderId]);
 
+  // Live travel-time estimate from the rider's real position to the drop-off
+  const dropTarget = order ? (userCoords ?? addressCoords(order.addressLine || order.addressLabel || "Default")) : null;
+  const originForEta = driverCoords ?? (order?.restaurantId ? restaurantCoords(order.restaurantId) : null);
+  const activeDelivery = !!order && !["DELIVERED", "CANCELLED", "REJECTED"].includes(order.status);
+
+  useEffect(() => {
+    if (!activeDelivery || !dropTarget || !originForEta) return;
+    let alive = true;
+    (async () => {
+      await initGoogleMaps();
+      const r = await routeBetween(originForEta, dropTarget);
+      if (!alive || !r) return;
+      setLiveEta({ mins: Math.max(1, r.durationMins), km: r.distanceKm, at: Date.now() });
+    })();
+    return () => { alive = false; };
+  }, [activeDelivery, originForEta?.lat, originForEta?.lng, dropTarget?.lat, dropTarget?.lng]);
+
+
+
   if (loading && !order) {
     return (
       <div className="min-h-svh flex flex-col">
