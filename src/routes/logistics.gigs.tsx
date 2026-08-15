@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { 
   Search, 
@@ -25,7 +26,7 @@ import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
+import { performProductionGigTest } from "@/lib/logistics-ops.functions";
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
@@ -85,7 +86,7 @@ function LogisticsGigs() {
     }
   }, [selectedDate]);
 
-  const productionTest = useServerFn(import("@/lib/logistics-ops.functions").then(m => m.performProductionGigTest));
+  const productionTest = useServerFn(performProductionGigTest);
 
   const runGigTest = async () => {
     setIsTesting(true);
