@@ -18,13 +18,24 @@ export async function performAutomatedSecurityAudit(actor: { id: string; role?: 
   let resolvedCount = 0;
   for (const report of openReports) {
     const severity = report.severity || 'low';
+    const kind = report.kind || 'unknown';
     
+    // Explicit remediation rules based on finding kind and severity
+    let resolution: 'confirmed' | 'dismissed' = 'confirmed';
+    let note = 'Automated resolution of platform-wide scan findings';
+
     if (severity === 'low') {
-      // Dismiss low-severity findings as they are often noisy
-      await resolveFraudReport(report.id, 'dismissed', actor, 'Automated dismissal of low-severity findings');
-    } else {
-      await resolveFraudReport(report.id, 'confirmed', actor, 'Automated resolution of platform-wide scan findings');
-      
+      resolution = 'dismissed';
+      note = 'Automated dismissal of low-severity noise';
+    } else if (kind === 'failed_logins' && severity === 'medium') {
+      // Medium severity failed logins are often legitimate user errors; dismiss but monitor
+      resolution = 'dismissed';
+      note = 'Automated monitoring: low-risk failed logins dismissed';
+    }
+
+    await resolveFraudReport(report.id, resolution, actor, note);
+    
+    if (resolution === 'confirmed') {
       // For critical findings against a user, revoke all their sessions
       if (severity === 'critical' && report.subject_type === 'user' && report.subject_id) {
         await revokeAllSessions(report.subject_id, actor, { reason: 'automated_fraud_remediation' });
