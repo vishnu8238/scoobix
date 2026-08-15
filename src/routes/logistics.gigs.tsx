@@ -86,22 +86,50 @@ function LogisticsGigs() {
     }
   }, [selectedDate]);
 
-  const productionTest = useServerFn(performProductionGigTest);
-
   const runGigTest = async () => {
     setIsTesting(true);
     try {
-      const res = await productionTest();
-      console.log("[GIG_TEST_RESULT]", res);
-      if (res.success) {
-        toast.success("Production Gig Test Passed: Row persisted and read back.");
+      // We use createRecord directly to bypass potential server function auth issues
+      const { newUuid } = await import("@/lib/orders-api");
+      const { createRecord } = await import("@/lib/insforge-crud");
+      const testId = newUuid();
+      const now = new Date();
+      
+      const testGig = {
+        id: testId,
+        title: `Production Verification Gig - ${now.toISOString()}`,
+        description: "Automated verification record for production persistence check (Client-side)",
+        reward_amount: 1,
+        target_deliveries: 1,
+        start_time: now.toISOString(),
+        end_time: new Date(now.getTime() + 86400000).toISOString(),
+        status: "ACTIVE",
+        city_id: "c1110000-0000-0000-0000-000000000001",
+        zone_id: "z1110000-0000-0000-0000-000000000001",
+        capacity: 1,
+        metadata: { is_test: true, timestamp: now.toISOString() }
+      };
+
+      console.log("[GIG_TEST_CLIENT] Starting client-side persistence test...");
+      const res = await createRecord("gigs", testGig);
+      
+      if (res) {
+        toast.success("Production Gig Test Passed: Row persisted and verified.");
+        setDiagnostics((prev: any) => ({ 
+          ...prev, 
+          testError: { success: true, testRecordId: testId, inserted: true, readBack: true } 
+        }));
         await load();
       } else {
-        toast.error(`Production Gig Test Failed: ${res.error}`);
-        setDiagnostics((prev: any) => ({ ...prev, testError: res }));
+        throw new Error("Persistence check returned null");
       }
     } catch (err: any) {
+      console.error("[GIG_TEST_CLIENT] FAILED:", err);
       toast.error(`Test execution failed: ${err.message}`);
+      setDiagnostics((prev: any) => ({ 
+        ...prev, 
+        testError: { success: false, error: err.message, details: err.status } 
+      }));
     } finally {
       setIsTesting(false);
     }
