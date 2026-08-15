@@ -97,6 +97,7 @@ function applyParams(query: any, params?: Record<string, string | number | undef
         if (!t) continue;
         
         let column = t;
+        if (!column) continue;
         let ascending = true;
         let nullsFirst = false;
 
@@ -108,18 +109,18 @@ function applyParams(query: any, params?: Record<string, string | number | undef
           ascending = true;
         }
 
-        if (column.endsWith(".desc")) {
+        if (column && column.endsWith(".desc")) {
           column = column.slice(0, -5);
           ascending = false;
-        } else if (column.endsWith(".asc")) {
+        } else if (column && column.endsWith(".asc")) {
           column = column.slice(0, -4);
           ascending = true;
         }
 
-        if (column.endsWith(".nullsfirst")) {
+        if (column && column.endsWith(".nullsfirst")) {
           column = column.slice(0, -11);
           nullsFirst = true;
-        } else if (column.endsWith(".nullslast")) {
+        } else if (column && column.endsWith(".nullslast")) {
           column = column.slice(0, -10);
           nullsFirst = false;
         }
