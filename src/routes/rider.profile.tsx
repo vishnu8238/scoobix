@@ -173,7 +173,7 @@ function RiderProfile() {
               { label: 'Spanish', value: 'Spanish' },
             ]}
             currentValue={prefs?.app_language}
-            onSelect={(val) => {
+            onSelect={(val: string) => {
               updatePref('app_language', val);
               setShowLanguagePicker(false);
             }}
@@ -190,7 +190,7 @@ function RiderProfile() {
               { label: 'None (Visual Only)', value: 'None' },
             ]}
             currentValue={prefs?.alert_sound}
-            onSelect={(val) => {
+            onSelect={(val: string) => {
               updatePref('alert_sound', val);
               setShowAlertPicker(false);
             }}
