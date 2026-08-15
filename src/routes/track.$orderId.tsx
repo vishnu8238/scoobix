@@ -120,7 +120,7 @@ function TrackPage() {
           </div>
         </div>
 
-        {!delivered && (
+        {!delivered && order.status !== "CANCELLED" && (
           <div className="flex items-center gap-3 rounded-3xl bg-card p-4 shadow-soft ring-1 ring-border/60">
             <div className="grid h-12 w-12 place-items-center rounded-full gradient-primary text-primary-foreground font-bold">{order.driver.name.split(" ").map((s) => s[0]).join("").slice(0, 2)}</div>
             <div className="min-w-0 flex-1">
