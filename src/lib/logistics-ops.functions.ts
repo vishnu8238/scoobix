@@ -27,6 +27,24 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     const ZONE_1_ID = "z1110000-0000-0000-0000-000000000001";
 
     try {
+      // Step 0: Authoritative schema discovery
+      const tables = ["gigs", "cities", "zones", "logistics_zones", "delivery_zones", "subzones", "restaurants", "orders", "users"];
+      for (const table of tables) {
+        try {
+          // Check for relation existence and column info if possible
+          const { status, error, data } = await insforge.database.from(table).select("count").limit(1);
+          console.log(`[SCHEMA_PROBE] Table "${table}": status=${status} ${error ? `error=${error.message}` : "OK"}`);
+          result.schema.push({ 
+            table, 
+            status: status || 0, 
+            exists: status === 200 || status === 206 || status === 406, 
+            error: error?.message 
+          });
+        } catch (err: any) {
+          result.schema.push({ table, status: 500, exists: false, error: err.message });
+        }
+      }
+
       // Step 1: Probe 'restaurants' to extract usable City strings for fallback
       const { data: restaurants, error: restError } = await insforge.database
         .from("restaurants")
