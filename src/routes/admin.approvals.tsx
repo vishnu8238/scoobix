@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { listTable, patchRecord } from "@/lib/insforge-crud";
 import { notifyManagerDecision, type ManagedRestaurant } from "@/lib/manager-api";
 import { ManagerOnboardingRegression } from "@/components/admin/ManagerOnboardingRegression";
+import { CustomerRouteRegression } from "@/components/admin/CustomerRouteRegression";
 
 export const Route = createFileRoute("/admin/approvals")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Restaurant approvals" }] }),
@@ -90,8 +91,12 @@ function ApprovalsPage() {
         </div>
       </header>
 
-      <div className="mt-8 mb-12">
+      <div className="mt-8 mb-6">
         <ManagerOnboardingRegression />
+      </div>
+
+      <div className="mb-12">
+        <CustomerRouteRegression />
       </div>
 
       {!loading && list.length === 0 ? (
