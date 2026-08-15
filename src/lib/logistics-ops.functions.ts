@@ -4,6 +4,7 @@ import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { publishTableChange } from "./realtime-bus";
 import { newUuid } from "./orders-api";
 import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";
+import type { OrderStatus } from "./types";
 
 /**
  * Idempotently seeds City 1 and Zone 1 prerequisites for Gig creation.

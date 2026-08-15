@@ -47,20 +47,22 @@ export type MenuItem = {
   description?: string;
 };
 
+export type OrderStatus =
+  | "PLACED"
+  | "ACCEPTED"
+  | "PREPARING"
+  | "READY"
+  | "PICKED_UP"
+  | "ON_THE_WAY"
+  | "DELIVERED"
+  | "CANCELLED";
+
 export type OrderRecord = {
   id: string;
   customer_id: string;
   restaurant_id: string;
   driver_id?: string;
-  status:
-    | "PLACED"
-    | "ACCEPTED"
-    | "PREPARING"
-    | "READY"
-    | "PICKED_UP"
-    | "ON_THE_WAY"
-    | "DELIVERED"
-    | "CANCELLED";
+  status: OrderStatus;
   amount: number;
   created_at?: string;
 };
