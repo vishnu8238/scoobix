@@ -43,7 +43,7 @@ function LogisticsGigs() {
   const [q, setQ] = useState("");
   const [selectedDate, setSelectedDate] = useState(startOfToday());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [diagnostics, setDiagnostics] = useState<any>({ initial: true });
   const [isTesting, setIsTesting] = useState(false);
 
   // Filters for Slots/Capacity
@@ -384,7 +384,7 @@ function LogisticsGigs() {
                 ))}
               </div>
             )}
-            {true && (
+            {diagnostics && (
               <div className="mt-8 rounded-2xl bg-slate-900/5 p-6 text-[10px] font-mono text-slate-500 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
                 <div className="flex items-center justify-between mb-4 border-b border-border/40 pb-2">
                   <p className="font-black uppercase tracking-widest text-slate-400">Live Production Diagnostics</p>
