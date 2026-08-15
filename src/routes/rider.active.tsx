@@ -417,18 +417,20 @@ function RiderActive() {
                   <div className="space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Proof of Delivery</p>
                     <ImageUploader 
-                      onUploadComplete={url => setPodImageUrl(url)}
-                      value={podImageUrl || undefined}
+                      type="license"
+                      onChange={ref => setPodRef(ref)}
+                      value={podRef}
                     />
                   </div>
 
                   <button 
                     onClick={handleDeliveryComplete} 
-                    disabled={busy || !podImageUrl}
+                    disabled={busy || !podRef}
                     className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition disabled:opacity-50"
                   >
                     Complete Delivery
                   </button>
+
                 </div>
               )}
            </div>
