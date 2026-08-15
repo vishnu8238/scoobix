@@ -101,6 +101,19 @@ export const getAccessToken = async () => {
         const parsed = JSON.parse(stored);
         if (parsed?.access_token) return parsed.access_token;
       }
+      
+      // Secondary fallback: search all keys for something that looks like an access token
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (key?.includes("auth") || key?.includes("token")) {
+          const val = window.localStorage.getItem(key);
+          if (val && val.includes("access_token")) {
+            const parsed = JSON.parse(val);
+            if (parsed.access_token) return parsed.access_token;
+            if (parsed.session?.access_token) return parsed.session.access_token;
+          }
+        }
+      }
     } catch { /* ignore */ }
   }
 
