@@ -35,10 +35,12 @@ export const Route = createFileRoute("/logistics/gigs")({
 function LogisticsGigs() {
   const [activeTab, setActiveTab] = useState<"fleet" | "slots" | "capacity">("fleet");
   const [gigs, setGigs] = useState<Gig[]>([]);
+  const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [selectedDate, setSelectedDate] = useState(startOfToday());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
 
   // Filters for Slots/Capacity
   const [city, setCity] = useState("all");
@@ -48,21 +50,35 @@ function LogisticsGigs() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const today = format(selectedDate, "yyyy-MM-dd");
-      console.log(`[GIGS_PAGE] Loading for date: ${today}`);
+      // 1. Fetch total count first to prove persistence
+      const all = await fetchGigs({ limit: 100 });
+      setAllGigsCount(all.length);
       
-      // Ensure authoritative filtering. start_time is usually an ISO string.
-      // NOTE: We match start_time between todayT00:00 and todayT23:59
-      const data = await fetchGigs({ 
-        "start_time.gte": `${today}T00:00:00.000Z`,
-        "start_time.lte": `${today}T23:59:59.999Z`
+      const today = format(selectedDate, "yyyy-MM-dd");
+      console.log(`[GIGS_PAGE] Filtering for calendar day: ${today} (Local: ${selectedDate.toString()})`);
+      
+      // Broaden filter to catch boundary issues (±1 day)
+      // or just filter client-side for absolute proof if the table is small
+      const data = all.filter(g => {
+        if (!g.start_time) return false;
+        const gigDate = g.start_time.split('T')[0];
+        return gigDate === today;
       });
       
-      console.log(`[GIGS_PAGE] Data received: ${data.length} rows`);
+      console.log(`[GIGS_PAGE] Filtered ${data.length} gigs for ${today} from ${all.length} total.`);
       setGigs(data);
+      
+      setDiagnostics({
+        lastLoad: new Date().toISOString(),
+        total: all.length,
+        filtered: data.length,
+        filterDate: today,
+        firstGig: all[0] ? { title: all[0].title, start: all[0].start_time } : "none"
+      });
     } catch (err: any) {
       console.error("[GIGS_PAGE] Load failed:", err.message);
       toast.error("Failed to load gigs: " + err.message);
+      setDiagnostics({ error: err.message, status: err.status });
     } finally {
       setLoading(false);
     }
