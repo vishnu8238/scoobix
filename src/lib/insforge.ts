@@ -44,20 +44,16 @@ export const ensureAuthHydrated = async () => {
 
       console.log("[INSFORGE_AUTH] Hydrating session from storage/cookies...");
       
-      // 1. First, check if we have a token in the internal token manager
-      let session = insforge.auth.tokenManager?.getSession?.();
+      // Attempt to restore session
+      const { data, error } = await insforge.auth.getCurrentUser();
       
-      // 2. If no session, try a light-weight check
-      if (!session) {
-        const { data, error } = await insforge.auth.getCurrentUser().catch(() => ({ data: null, error: { message: 'Network error' } }));
-        if (error) {
-          console.warn("[INSFORGE_AUTH] No session found during hydration:", error.message);
-          cachedAccessToken = null;
-          return;
-        }
-        session = data;
+      if (error) {
+        console.warn("[INSFORGE_AUTH] No session found during hydration:", error.message);
+        cachedAccessToken = null;
+        return;
       }
       
+      const session = insforge.auth.getSession();
       if (session?.accessToken) {
         cachedAccessToken = session.accessToken;
         console.log("[INSFORGE_AUTH] Initial hydration complete. Token present.");
@@ -73,8 +69,8 @@ export const ensureAuthHydrated = async () => {
 // Subscribe to auth state changes at module level to keep cache in sync
 if (typeof window !== "undefined") {
   insforge.auth.onAuthStateChange((event: string) => {
-    const tm = insforge.auth.tokenManager;
-    const token = tm?.getAccessToken?.() || tm?.getSession?.()?.accessToken || null;
+    const session = insforge.auth.getSession();
+    const token = session?.accessToken || null;
     console.log(`[INSFORGE_AUTH] Auth event: ${event} | Token present: ${!!token}`);
     cachedAccessToken = token;
   });
