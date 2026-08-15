@@ -99,8 +99,8 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
       const payload = {
         ...formData,
         status: "ACTIVE" as const,
-        start_time: `${todayStr}T${formData.start_time}:00.000Z`,
-        end_time: `${todayStr}T${formData.end_time}:00.000Z`
+        start_time: new Date(`${todayStr}T${formData.start_time}:00`).toISOString(),
+        end_time: new Date(`${todayStr}T${formData.end_time}:00`).toISOString()
       };
       
       console.log("[CREATE_GIG_MODAL] Submitting payload:", payload);

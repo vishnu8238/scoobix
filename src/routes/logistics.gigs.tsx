@@ -35,10 +35,12 @@ export const Route = createFileRoute("/logistics/gigs")({
 function LogisticsGigs() {
   const [activeTab, setActiveTab] = useState<"fleet" | "slots" | "capacity">("fleet");
   const [gigs, setGigs] = useState<Gig[]>([]);
+  const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [selectedDate, setSelectedDate] = useState(startOfToday());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
 
   // Filters for Slots/Capacity
   const [city, setCity] = useState("all");
@@ -48,21 +50,35 @@ function LogisticsGigs() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const today = format(selectedDate, "yyyy-MM-dd");
-      console.log(`[GIGS_PAGE] Loading for date: ${today}`);
+      // 1. Fetch total count first to prove persistence
+      const all = await fetchGigs({ limit: 100 });
+      setAllGigsCount(all.length);
       
-      // Ensure authoritative filtering. start_time is usually an ISO string.
-      // NOTE: We match start_time between todayT00:00 and todayT23:59
-      const data = await fetchGigs({ 
-        "start_time.gte": `${today}T00:00:00.000Z`,
-        "start_time.lte": `${today}T23:59:59.999Z`
+      const today = format(selectedDate, "yyyy-MM-dd");
+      console.log(`[GIGS_PAGE] Filtering for calendar day: ${today} (Local: ${selectedDate.toString()})`);
+      
+      // Broaden filter to catch boundary issues (±1 day)
+      // or just filter client-side for absolute proof if the table is small
+      const data = all.filter(g => {
+        if (!g.start_time) return false;
+        const gigDate = g.start_time.split('T')[0];
+        return gigDate === today;
       });
       
-      console.log(`[GIGS_PAGE] Data received: ${data.length} rows`);
+      console.log(`[GIGS_PAGE] Filtered ${data.length} gigs for ${today} from ${all.length} total.`);
       setGigs(data);
+      
+      setDiagnostics({
+        lastLoad: new Date().toISOString(),
+        total: all.length,
+        filtered: data.length,
+        filterDate: today,
+        firstGig: all[0] ? { title: all[0].title, start: all[0].start_time } : "none"
+      });
     } catch (err: any) {
       console.error("[GIGS_PAGE] Load failed:", err.message);
       toast.error("Failed to load gigs: " + err.message);
+      setDiagnostics({ error: err.message, status: err.status });
     } finally {
       setLoading(false);
     }
@@ -88,7 +104,7 @@ function LogisticsGigs() {
         
         <div className="flex flex-wrap items-center gap-3">
           <GigStats 
-            totalGigs={gigs.length} 
+            totalGigs={allGigsCount ?? gigs.length} 
             needed={1080} 
             enrolled={162} 
             fullyBooked={0} 
@@ -207,6 +223,20 @@ function LogisticsGigs() {
                 {filteredGigs.map((gig) => (
                   <GigCard key={gig.id} gig={gig} />
                 ))}
+              </div>
+            )}
+            {diagnostics && (
+              <div className="mt-8 rounded-2xl bg-slate-900/5 p-4 text-[10px] font-mono text-slate-500 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                <p className="mb-2 font-black uppercase tracking-widest text-slate-400">Production Diagnostics</p>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                  <div>Table: <span className="text-primary font-bold">gigs</span></div>
+                  <div>Total Rows: <span className="text-primary font-bold">{diagnostics.total ?? 0}</span></div>
+                  <div>Filtered: <span className="text-primary font-bold">{diagnostics.filtered ?? 0}</span></div>
+                  <div>Active Date: <span className="text-primary font-bold">{diagnostics.filterDate}</span></div>
+                </div>
+                {diagnostics.error && (
+                  <div className="mt-2 text-rose-500">Error: {diagnostics.error} ({diagnostics.status})</div>
+                )}
               </div>
             )}
           </section>

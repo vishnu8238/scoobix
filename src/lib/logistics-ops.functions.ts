@@ -30,7 +30,6 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
       const { data: restaurants, error: restError } = await insforge.database
         .from("restaurants")
         .select("city")
-        .not("city", "is", null)
         .limit(20);
       
       const foundCities = Array.from(new Set(restaurants?.map(r => r.city) || []));

@@ -302,15 +302,16 @@ export function createRecord<T = Record<string, unknown>>(
   return withRetry<T | null>(table, async () => {
     // RLS Defense: Restrictive SELECT policies can make an otherwise-successful 
     // INSERT look like a failure (returning null/empty result).
-    const query = insforge.database.from(table).insert([record]).select().single();
+    const query = insforge.database.from(table).insert([record]).select();
     try {
-      const res = await handleResponse<T>(query, "POST", table);
-      console.log(`[DB_INSERT] ${table} success:`, JSON.stringify(res));
-      if (!res) {
+      const res = await handleResponse<T[]>(query, "POST", table);
+      console.log(`[DB_INSERT] ${table} raw response:`, JSON.stringify(res));
+      const row = Array.isArray(res) ? res[0] : res;
+      if (!row) {
         throw new Error("Insert returned empty result");
       }
-      announce(table, "insert", (res as Record<string, unknown>) || record);
-      return res;
+      announce(table, "insert", (row as Record<string, unknown>) || record);
+      return row as T;
     } catch (err: any) {
       console.error(`[DB_INSERT_ERROR] ${table} failed:`, err.message, err.status);
       
@@ -358,8 +359,8 @@ export function patchRecord<T = Record<string, unknown>>(
 ): Promise<T | null> {
   invalidateTable(table);
   return withRetry<T | null>(table, () => {
-    const query = insforge.database.from(table).update(patch).eq("id", id).select().single();
-    return handleResponse<T>(query, "PATCH", table);
+    const query = insforge.database.from(table).update(patch).eq("id", id).select();
+    return handleResponse<T[]>(query, "PATCH", table).then(rows => Array.isArray(rows) ? rows[0] : rows);
   }).then((res) => {
     announce(table, "update", { id, ...patch, ...((res as any) || {}) });
     return res as T;
