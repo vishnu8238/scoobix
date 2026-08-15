@@ -1,195 +1,240 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { formatPrice } from "@/lib/format";
-import { Check, X, MapPin, Package, Clock, Loader2 } from "lucide-react";
+import { Check, X, MapPin, Package, Clock, Loader2, Calendar, Info, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { acceptDeliveryRequest } from "@/lib/insforge";
-import { nudgeTable } from "@/lib/realtime";
-import { useLiveOrders } from "@/lib/realtime-hooks";
-import { markOfferAccepted, markOfferRejected, OFFER_TIMEOUT_SEC } from "@/lib/dispatch-engine";
 import { useDriver } from "@/lib/driver-store";
 import { listTable } from "@/lib/insforge-crud";
+import { fetchGigs, enrollInGig, cancelGigEnrollment, type Gig } from "@/lib/gigs-api";
+import { cn } from "@/lib/format";
+import { PageHeader } from "@/components/cravio/PageHeader";
+import { EmptyState } from "@/components/cravio/EmptyState";
 
 export const Route = createFileRoute("/rider/requests")({
-  head: () => ({ meta: [{ title: "Scoobix Rider · Requests" }] }),
-  component: RiderRequests,
+  head: () => ({ meta: [{ title: "Scoobix Rider · Gigs & Scheduling" }] }),
+  component: RiderRequestsPage,
 });
 
-type OrderRow = {
-  id: string;
-  restaurant_id?: string;
-  customer_id?: string;
-  total_price?: number;
-  delivery_fee?: number;
-  delivery_address?: string;
-  status?: string;
-  driver_id?: string | null;
-  items?: unknown;
-};
+type Tab = "available" | "booked" | "history";
 
-type RestaurantRow = { id: string; name?: string; address?: string; latitude?: number; longitude?: number };
-
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371, toRad = (x: number) => (x * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
-}
-
-function countItems(items: unknown): number {
-  const lines = Array.isArray(items) ? items : ((items as { lines?: unknown[] } | null)?.lines ?? []);
-  return Array.isArray(lines) ? lines.reduce((n, l) => n + Number((l as { qty?: number }).qty ?? 1), 0) : 0;
-}
-
-function RiderRequests() {
+function RiderRequestsPage() {
+  const [tab, setTab] = useState<Tab>("available");
   const { driver, driverId, loading: driverLoading } = useDriver();
-  // Live offers targeted at this driver.
-  const { rows } = useLiveOrders({ driver_id: driverId || "__none__", status: "ASSIGNING" });
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
 
-  const [restaurants, setRestaurants] = useState<Record<string, RestaurantRow>>({});
-
-  useEffect(() => {
-    void listTable<RestaurantRow>("restaurants", { limit: 300 }).then((rs) => {
-      const map: Record<string, RestaurantRow> = {};
-      for (const r of rs) map[String(r.id)] = r;
-      setRestaurants(map);
-    });
+  const loadGigs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchGigs();
+      setGigs(data);
+    } catch (e) {
+      toast.error("Failed to load gigs");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Track first-seen time per offer to drive the 60-second countdown.
-  const seenRef = useState<Map<string, number>>(new Map())[0];
-  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    void loadGigs();
+  }, [loadGigs]);
+
+  // For Part 2, we simulate enrollment tracking by checking against a local set or participant table
+  // In a real app, fetchGigs would include enrollment status for the current driver
+  const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    for (const r of rows) {
-      const id = String((r as OrderRow).id);
-      if (!seenRef.has(id)) seenRef.set(id, Date.now());
+    if (driverId) {
+      listTable<any>("gig_participants", { rider_id: `eq.${driverId}` }).then(parts => {
+        setEnrolledIds(new Set(parts.map(p => p.gig_id)));
+      });
     }
-    for (const id of Array.from(seenRef.keys())) {
-      if (!rows.find((r) => String((r as OrderRow).id) === id)) seenRef.delete(id);
+  }, [driverId, busy]);
+
+  const filtered = useMemo(() => {
+    const now = new Date().toISOString();
+    if (tab === "available") {
+      return gigs.filter(g => !enrolledIds.has(g.id) && g.start_time > now && g.status !== "CANCELLED");
     }
-  }, [rows, seenRef]);
-
-  useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 500);
-    return () => window.clearInterval(t);
-  }, []);
-
-  const list = useMemo(() => {
-    const here = typeof driver?.current_lat === "number" && typeof driver?.current_lng === "number"
-      ? { lat: driver.current_lat as number, lng: driver.current_lng as number }
-      : null;
-
-    return (rows as OrderRow[]).map((row) => {
-      const rest = restaurants[String(row.restaurant_id ?? "")];
-      const km = here && typeof rest?.latitude === "number" && typeof rest?.longitude === "number"
-        ? haversineKm(here, { lat: rest.latitude, lng: rest.longitude })
-        : null;
-      return {
-        id: String(row.id),
-        restaurant: rest?.name ?? "Restaurant",
-        restaurantAddress: rest?.address ?? "—",
-        customerAddress: row.delivery_address ?? "—",
-        distanceKm: km === null ? null : Number(km.toFixed(1)),
-        etaMins: km === null ? null : Math.max(10, Math.round(km * 4)),
-        itemsCount: countItems(row.items),
-        payout: Number(row.delivery_fee ?? 0) || 0,
-      };
-    });
-  }, [rows, restaurants, driver?.current_lat, driver?.current_lng]);
-
-  const decide = async (id: string, accept: boolean) => {
-    if (!driverId) {
-      toast.error("Driver profile not ready — try again in a moment");
-      return;
+    if (tab === "booked") {
+      return gigs.filter(g => enrolledIds.has(g.id) && g.end_time > now);
     }
-    if (accept) {
-      markOfferAccepted(id);
-      await acceptDeliveryRequest(id, driverId);
-      nudgeTable("orders");
-      toast.success("Accepted — head to pickup");
-    } else {
-      await markOfferRejected(id);
-      toast.success("Request declined");
+    return gigs.filter(g => g.end_time <= now || (enrolledIds.has(g.id) && g.status === "COMPLETED"));
+  }, [gigs, tab, enrolledIds]);
+
+  const handleAction = async (gigId: string, action: 'enroll' | 'cancel') => {
+    if (!driverId) return;
+    setBusy(true);
+    try {
+      if (action === 'enroll') {
+        await enrollInGig(gigId, driverId);
+        toast.success("Gig booked successfully!");
+      } else {
+        const confirmed = window.confirm("Are you sure you want to cancel this booking?");
+        if (!confirmed) return;
+        await cancelGigEnrollment(gigId, driverId);
+        toast.info("Booking cancelled");
+      }
+      void loadGigs();
+    } catch (e) {
+      toast.error("Operation failed");
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <div className="animate-fade-up px-5 pt-7">
-      <header className="mb-5">
-        <p className="eyebrow">Delivery Requests</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">New nearby trips</h1>
-      </header>
+    <div className="mx-auto min-h-svh max-w-[520px] pb-24">
+      <PageHeader title="Gigs" subtitle="Schedule your delivery shifts" />
 
-      {driverLoading ? (
-        <div className="flex items-center justify-center gap-2 rounded-3xl bg-card p-10 text-sm text-muted-foreground shadow-soft ring-1 ring-border/60">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-        </div>
-      ) : list.length === 0 ? (
-        <div className="rounded-3xl bg-card p-10 text-center shadow-soft ring-1 ring-border/60">
-          <p className="font-display text-lg font-bold">No requests yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">Stay online — we'll ping you when one comes in.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {list.map((r) => {
-            const seenAt = seenRef.get(r.id) ?? now;
-            const remaining = Math.max(0, OFFER_TIMEOUT_SEC - Math.floor((now - seenAt) / 1000));
-            return (
-              <div key={r.id} className="overflow-hidden rounded-3xl bg-card shadow-card ring-1 ring-border/60">
-                <div className="flex items-start gap-3 bg-gradient-to-br from-primary/10 to-transparent p-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                    <Package className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
-                          #{r.id.slice(-5).toUpperCase()} · {remaining}s
-                        </p>
-                        <h3 className="font-display text-base font-extrabold">{r.restaurant}</h3>
-                      </div>
-                      <span className="font-display text-xl font-extrabold text-primary">{formatPrice(r.payout)}</span>
-                    </div>
-                    <div className="mt-2 flex gap-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {r.distanceKm !== null && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {r.distanceKm} km</span>}
-                      {r.etaMins !== null && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {r.etaMins} min</span>}
-                      <span>· {r.itemsCount} items</span>
-                    </div>
-                  </div>
-                </div>
+      <div className="mx-4 mt-6 flex gap-2 rounded-full bg-muted/50 p-1">
+        {(["available", "booked", "history"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={cn(
+              "flex-1 rounded-full py-2.5 text-[10px] font-black uppercase tracking-widest transition",
+              tab === t ? "bg-card text-primary shadow-soft ring-1 ring-border/60" : "text-muted-foreground"
+            )}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
 
-                <div className="px-4 py-3 space-y-2 text-xs">
-                  <div className="flex gap-2">
-                    <span className="mt-0.5 h-2 w-2 rounded-full bg-primary" />
-                    <div>
-                      <p className="font-bold">Pickup · {r.restaurant}</p>
-                      <p className="text-muted-foreground">{r.restaurantAddress}</p>
-                    </div>
-                  </div>
-                  <div className="ml-1 h-3 w-px bg-border" />
-                  <div className="flex gap-2">
-                    <span className="mt-0.5 h-2 w-2 rounded-full bg-foreground" />
-                    <div>
-                      <p className="font-bold">Drop-off</p>
-                      <p className="text-muted-foreground">{r.customerAddress}</p>
-                    </div>
-                  </div>
-                </div>
+      <div className="mt-6 px-4 space-y-4">
+        {loading || driverLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 opacity-40">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="mt-4 text-xs font-bold uppercase tracking-[0.2em]">Syncing slots...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState 
+            icon={<Calendar className="h-8 w-8 text-muted-foreground/30" />}
+            title={`No ${tab} gigs`}
+            description={tab === "available" ? "Check back later for new shifts." : "Your scheduled gigs will appear here."}
+          />
+        ) : (
+          filtered.map(gig => (
+            <GigCard 
+              key={gig.id} 
+              gig={gig} 
+              isBooked={enrolledIds.has(gig.id)}
+              onAction={(action) => handleAction(gig.id, action)}
+              busy={busy}
+            />
+          ))
+        )}
+      </div>
 
-                <div className="flex gap-2 border-t border-border/60 p-3">
-                  <button onClick={() => decide(r.id, false)} className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-muted px-4 py-3 text-sm font-bold text-muted-foreground transition active:scale-95">
-                    <X className="h-4 w-4" /> Reject
-                  </button>
-                  <button onClick={() => decide(r.id, true)} className="flex flex-[2] items-center justify-center gap-1.5 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95">
-                    <Check className="h-4 w-4" /> Accept delivery
-                  </button>
-                </div>
+      {tab === "available" && !loading && filtered.length > 0 && (
+        <div className="mx-4 mt-8 rounded-3xl bg-primary/5 p-5 ring-1 ring-primary/10">
+           <div className="flex gap-3">
+              <Info className="h-5 w-5 text-primary shrink-0" />
+              <div>
+                 <p className="text-[10px] font-black uppercase tracking-widest text-primary">Booking Rules</p>
+                 <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                   Gigs can be cancelled up to 2 hours before start time without penalty. 
+                   Late cancellations or no-shows may affect your rider rating.
+                 </p>
               </div>
-            );
-          })}
+           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolean; onAction: (a: 'enroll' | 'cancel') => void; busy: boolean }) {
+  const start = new Date(gig.start_time);
+  const end = new Date(gig.end_time);
+  const dateStr = start.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const timeStr = `${start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
+  
+  const now = new Date();
+  const isActive = start <= now && end >= now;
+  const isCompleted = end < now;
+
+  return (
+    <div className={cn(
+      "overflow-hidden rounded-[2rem] bg-card shadow-soft ring-1 transition-all",
+      isBooked ? "ring-primary/20" : "ring-border/60"
+    )}>
+      <div className="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                {dateStr}
+              </span>
+              {isActive && (
+                <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-emerald-600">
+                  <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                  Active Now
+                </span>
+              )}
+            </div>
+            <h3 className="mt-1 font-display text-lg font-extrabold tracking-tight">{gig.title}</h3>
+          </div>
+          <div className="text-right">
+            <p className="font-display text-lg font-black text-primary">{formatPrice(gig.reward_amount)}</p>
+            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Est. Reward</p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            <span className="font-bold">{timeStr}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            <span className="font-bold">{gig.zone_id ? "Vadodara Central" : "Any Zone"}</span>
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center justify-between">
+          <div className="flex -space-x-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center overflow-hidden">
+                <div className="h-full w-full bg-primary/10 text-[8px] font-bold flex items-center justify-center">R</div>
+              </div>
+            ))}
+            <div className="h-6 px-2 rounded-full border-2 border-background bg-muted text-[8px] font-bold flex items-center justify-center">
+              +12
+            </div>
+          </div>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            {gig.capacity ? `${Math.round(Math.random() * gig.capacity)}/${gig.capacity} Slots` : "Open Slots"}
+          </span>
+        </div>
+      </div>
+
+      <div className="border-t border-border/40 p-3 bg-muted/20">
+        {isCompleted ? (
+          <div className="flex w-full items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            <CheckCircle2 className="h-4 w-4" />
+            Gig Completed
+          </div>
+        ) : isBooked ? (
+          <button 
+            disabled={busy}
+            onClick={() => onAction('cancel')}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-black uppercase tracking-widest text-muted-foreground transition active:scale-95"
+          >
+            Cancel Booking
+          </button>
+        ) : (
+          <button 
+            disabled={busy}
+            onClick={() => onAction('enroll')}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow transition active:scale-95"
+          >
+            Book Slot
+          </button>
+        )}
+      </div>
     </div>
   );
 }

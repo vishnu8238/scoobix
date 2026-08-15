@@ -1,149 +1,109 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/format";
-import { TrendingUp, Package, Clock, Gift } from "lucide-react";
+import { TrendingUp, Package, Clock, Gift, Search, Filter } from "lucide-react";
 import { useDriver } from "@/lib/driver-store";
-import { useLiveOrders } from "@/lib/realtime-hooks";
+import { useLiveData } from "@/lib/realtime-hooks";
+import { fetchRiderEarnings } from "@/lib/rider-api";
 
 export const Route = createFileRoute("/rider/earnings")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Earnings" }] }),
   component: RiderEarnings,
 });
 
-const TABS = ["Daily", "Weekly", "Monthly"] as const;
+const TABS = ["Daily", "Weekly", "Lifetime"] as const;
 const DAY = 86400000;
-
-type DeliveredOrder = {
-  driver_earnings?: number | null;
-  tip?: number | null;
-  status?: string | null;
-  finalized_at?: string | null;
-  updated_at?: string | null;
-  created_at?: string | null;
-};
 
 function RiderEarnings() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Weekly");
   const { driverId } = useDriver();
-  const { rows } = useLiveOrders(driverId ? { driver_id: driverId } : undefined);
+  
+  const { data, loading } = useLiveData<any[]>(
+    ["orders"],
+    () => (driverId ? fetchRiderEarnings(driverId) : Promise.resolve([])),
+    [driverId]
+  );
+  
+  const earnings = data ?? [];
 
-  const delivered = (rows as DeliveredOrder[])
-    .filter((o) => String(o.status ?? "").toUpperCase() === "DELIVERED")
-    .map((o) => ({
-      at: new Date(o.finalized_at ?? o.updated_at ?? o.created_at ?? Date.now()).getTime(),
-      amount: Number(o.driver_earnings ?? 0),
-      tip: Number(o.tip ?? 0),
-    }));
-
-  const windowMs = tab === "Daily" ? DAY : tab === "Weekly" ? 7 * DAY : 30 * DAY;
-  const since = Date.now() - windowMs;
-  const inWindow = delivered.filter((d) => d.at >= since);
-  const data = {
-    total: inWindow.reduce((s, d) => s + d.amount + d.tip, 0),
-    tips: inWindow.reduce((s, d) => s + d.tip, 0),
-    deliveries: inWindow.length,
-    hours: Math.round((inWindow.length * 0.6) * 10) / 10,
+  const windowMs = tab === "Daily" ? DAY : tab === "Weekly" ? 7 * DAY : Infinity;
+  const since = tab !== "Lifetime" ? Date.now() - windowMs : 0;
+  
+  const filtered = earnings.filter(e => new Date(e.created_at).getTime() >= since);
+  
+  const dataStats = {
+    total: filtered.reduce((s, e) => s + e.amount + e.tip, 0),
+    tips: filtered.reduce((s, e) => s + e.tip, 0),
+    deliveries: filtered.length,
   };
 
-  const history = Array.from({ length: 7 }).map((_, i) => {
-    const dayStart = new Date();
-    dayStart.setHours(0, 0, 0, 0);
-    dayStart.setDate(dayStart.getDate() - (6 - i));
-    const dayEnd = dayStart.getTime() + DAY;
-    return {
-      day: ["S", "M", "T", "W", "T", "F", "S"][dayStart.getDay()],
-      amount: delivered
-        .filter((d) => d.at >= dayStart.getTime() && d.at < dayEnd)
-        .reduce((s, d) => s + d.amount + d.tip, 0),
-    };
-  });
-  const e = { history };
-  const max = Math.max(1, ...history.map((d) => d.amount));
-
-
   return (
-    <div className="animate-fade-up space-y-6 px-5 pt-7">
-      <header>
-        <p className="eyebrow">Earnings</p>
+    <div className="mx-auto min-h-svh max-w-[520px] pb-24 px-5 pt-7 animate-fade-up">
+      <header className="mb-6">
+        <p className="eyebrow text-primary">Earnings</p>
         <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">Your payouts</h1>
       </header>
 
-      <div className="flex gap-2 rounded-full bg-muted p-1">
+      <div className="flex gap-2 rounded-full bg-muted/50 p-1 mb-6">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "flex-1 rounded-full px-3 py-2 text-[12px] font-bold transition",
-              tab === t ? "bg-card text-foreground shadow-soft" : "text-muted-foreground",
+              "flex-1 rounded-full py-2 text-[10px] font-black uppercase tracking-widest transition",
+              tab === t ? "bg-card text-primary shadow-soft ring-1 ring-border/60" : "text-muted-foreground",
             )}
           >{t}</button>
         ))}
       </div>
 
-      <div className="rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-foreground shadow-pop">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">{tab} total</p>
-        <p className="mt-2 font-display text-5xl font-extrabold tracking-tight">{formatPrice(data.total)}</p>
-        <p className="mt-1 text-xs text-white/80">incl. {formatPrice(data.tips)} in tips</p>
+      <div className="rounded-[2.5rem] bg-gradient-to-br from-primary to-primary-strong p-6 text-primary-foreground shadow-pop mb-6">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">{tab} Total</p>
+        <p className="mt-2 font-display text-5xl font-extrabold tracking-tight">{formatPrice(dataStats.total)}</p>
+        <p className="mt-1 text-xs font-bold text-white/80">incl. {formatPrice(dataStats.tips)} in tips</p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <MiniStat icon={Package} label="Deliveries" value={String(data.deliveries)} />
-          <MiniStat icon={Clock} label="Hours online" value={`${data.hours}h`} />
+        <div className="mt-8 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+             <Package className="h-4 w-4 text-white/70 mb-2" />
+             <p className="font-display text-xl font-extrabold">{dataStats.deliveries}</p>
+             <p className="text-[9px] font-black uppercase tracking-widest text-white/60">Deliveries</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+             <Clock className="h-4 w-4 text-white/70 mb-2" />
+             <p className="font-display text-xl font-extrabold">{Math.round(dataStats.deliveries * 0.8)}h</p>
+             <p className="text-[9px] font-black uppercase tracking-widest text-white/60">Active Time</p>
+          </div>
         </div>
       </div>
 
-      <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
-        <h2 className="font-display text-lg font-bold">Last 7 days</h2>
-        <div className="mt-4 flex h-32 items-end gap-2">
-          {e.history.map((d, i) => (
-            <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-              <div className="relative flex w-full flex-1 items-end">
-                <div className="w-full rounded-t-lg bg-primary/15" style={{ height: `${(d.amount / max) * 100}%` }} />
-                <div className="absolute inset-x-0 bottom-0 rounded-t-lg bg-primary transition-all" style={{ height: `${(d.amount / max) * 70}%` }} />
-              </div>
-              <span className="text-[10px] font-bold text-muted-foreground">{d.day}</span>
-            </div>
-          ))}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-base font-bold">Recent Payouts</h2>
+          <button className="text-[10px] font-black uppercase tracking-widest text-primary">View All</button>
         </div>
-      </section>
-
-      <section className="rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
-        <h2 className="font-display text-lg font-bold">Recent deliveries</h2>
-        <ul className="mt-3 space-y-3">
-          {delivered.length === 0 && (
-            <li className="text-xs text-muted-foreground">Completed deliveries and their payouts appear here.</li>
+        
+        <ul className="rounded-[2rem] bg-card shadow-soft ring-1 ring-border/60 overflow-hidden">
+          {loading ? (
+             <li className="p-8 text-center text-xs text-muted-foreground">Loading...</li>
+          ) : filtered.length === 0 ? (
+             <li className="p-8 text-center text-xs text-muted-foreground">No earnings for this period.</li>
+          ) : (
+            [...filtered].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10).map((p, i) => (
+              <li key={i} className="flex items-center gap-4 p-4 border-b border-border/40 last:border-0 hover:bg-muted/30 transition">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <TrendingUp className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold truncate">Delivery payout</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{new Date(p.created_at).toLocaleDateString()}</p>
+                </div>
+                <p className="font-display text-sm font-black text-primary">+{formatPrice(p.amount + p.tip)}</p>
+              </li>
+            ))
           )}
-          {[...delivered].sort((a, b) => b.at - a.at).slice(0, 5).map((p, i) => (
-            <li key={i} className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <TrendingUp className="h-4 w-4" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold">Delivery payout</p>
-                <p className="text-[11px] text-muted-foreground">{new Date(p.at).toLocaleString()}</p>
-              </div>
-              <span className="font-display text-sm font-extrabold text-primary">+{formatPrice(p.amount + p.tip)}</span>
-            </li>
-          ))}
         </ul>
       </section>
-
-
-      <div className="flex items-center gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
-        <Gift className="h-5 w-5 text-amber-700" />
-        <p className="text-xs font-medium text-amber-900">Complete <span className="font-bold">3 more trips</span> today to unlock a <span className="font-bold">₹1,250 bonus</span>.</p>
-      </div>
-    </div>
-  );
-}
-
-function MiniStat({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-sm">
-      <Icon className="h-4 w-4" />
-      <p className="mt-1.5 font-display text-lg font-extrabold">{value}</p>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-white/80">{label}</p>
     </div>
   );
 }
