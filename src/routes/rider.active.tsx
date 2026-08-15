@@ -181,7 +181,7 @@ function RiderActive() {
       await handleStatusChange("DELIVERED", { 
         delivered_at: new Date().toISOString(),
         payment_status: "PAID",
-        pod_image: podImageUrl
+        pod_image: podRef?.image_url
       });
       
       await patchPaymentByOrder(String(order.id), { status: "PAID" });
@@ -199,6 +199,7 @@ function RiderActive() {
     setShowFailedModal(false);
     await handleStatusChange("HEADING_TO_CUSTOMER");
   };
+
 
 
   const currentStatus = String(order?.status ?? "").toUpperCase();
