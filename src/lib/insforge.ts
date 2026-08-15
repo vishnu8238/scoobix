@@ -88,11 +88,15 @@ if (typeof window !== "undefined") {
  * Returns the cached value immediately if available.
  */
 export const getAccessToken = async () => {
+  // Always check the current SDK session first, as it might have been updated by middleware or direct calls
+  const currentToken = insforge.auth.session?.accessToken;
+  if (currentToken) return currentToken;
+
   // If we don't have a token but we're in a browser, ensure we've at least tried to hydrate
   if (!cachedAccessToken && typeof window !== "undefined") {
     await ensureAuthHydrated();
   }
-  return cachedAccessToken;
+  return cachedAccessToken || currentToken;
 };
 
 
