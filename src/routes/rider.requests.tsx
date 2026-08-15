@@ -134,22 +134,24 @@ function RiderRequestsPage() {
               Retry Sync
             </button>
           </div>
-        ) : useMemo(() => {
-          if (tab === "available") return gigs.filter(g => !enrolledIds.has(g.id));
-          if (tab === "booked") return gigs.filter(g => enrolledIds.has(g.id));
-          return gigs.filter(g => new Date(g.end_time) < new Date());
-        }, [gigs, enrolledIds, tab]).length === 0 ? (
-          <EmptyState 
-            icon={<Calendar className="h-8 w-8 text-muted-foreground/30" />}
-            title={`No ${tab} gigs`}
-            description={tab === "available" ? "Check back later for new shifts." : "Your scheduled gigs will appear here."}
-          />
-        ) : (
-          gigs.filter(gig => {
-            if (tab === "available") return !enrolledIds.has(gig.id);
-            if (tab === "booked") return enrolledIds.has(gig.id);
-            return new Date(gig.end_time) < new Date();
-          }).map(gig => (
+        ) : (() => {
+          const filteredGigs = tab === "available" 
+            ? gigs.filter(g => !enrolledIds.has(g.id))
+            : tab === "booked"
+            ? gigs.filter(g => enrolledIds.has(g.id))
+            : gigs.filter(g => new Date(g.end_time) < new Date());
+
+          if (filteredGigs.length === 0) {
+            return (
+              <EmptyState 
+                icon={<Calendar className="h-8 w-8 text-muted-foreground/30" />}
+                title={`No ${tab} gigs`}
+                description={tab === "available" ? "Check back later for new shifts." : "Your scheduled gigs will appear here."}
+              />
+            );
+          }
+
+          return filteredGigs.map(gig => (
             <GigCard 
               key={gig.id} 
               gig={gig} 
@@ -157,8 +159,8 @@ function RiderRequestsPage() {
               onAction={(action) => handleAction(gig.id, action)}
               busy={busy}
             />
-          ))
-        )}
+          ));
+        })()}
       </div>
 
       {tab === "available" && !loading && gigs.filter(g => !enrolledIds.has(g.id)).length > 0 && !isError && (
