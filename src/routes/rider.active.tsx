@@ -200,10 +200,10 @@ function RiderActive() {
         </div>
         <h2 className="font-display text-2xl font-extrabold tracking-tight">Sync Failed</h2>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          {error || driverError}
+          {error}
         </p>
         <button 
-          onClick={() => void load()}
+          onClick={() => void loadData()}
           className="mt-8 rounded-2xl bg-primary px-8 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition-all"
         >
           Retry Sync
@@ -418,7 +418,7 @@ function RiderActive() {
 
         {/* Critical Actions */}
         <div className="grid grid-cols-2 gap-3">
-           <button onClick={() => setShowFailedModal(true)} className="flex items-center justify-center gap-2 rounded-2xl bg-rose-50 p-4 text-[10px] font-black uppercase tracking-widest text-rose-600 ring-1 ring-rose-200">
+           <button onClick={() => toast.info("Support ticket system initializing...")} className="flex items-center justify-center gap-2 rounded-2xl bg-rose-50 p-4 text-[10px] font-black uppercase tracking-widest text-rose-600 ring-1 ring-rose-200">
               <AlertTriangle className="h-3.5 w-3.5" />
               Report Issue
            </button>
