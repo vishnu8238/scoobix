@@ -217,11 +217,21 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
 
     // InsForge Response Normalization: Handle data, rows, result, records, or flat arrays
     const rawData = res.data;
-    let normalizedData = rawData;
+    const rawResult = res.result;
+    
+    // Check both 'data' and 'result' top-level keys
+    let source = rawData !== undefined ? rawData : rawResult;
+    let normalizedData = source;
 
-    if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
-      // It's an envelope object
-      normalizedData = rawData.rows || rawData.data || rawData.result || rawData.records || rawData;
+    if (source && typeof source === 'object' && !Array.isArray(source)) {
+      // It's an envelope object, look for known array keys
+      normalizedData = source.rows || source.data || source.result || source.records || source.items || source;
+    }
+
+    // If normalizedData is still the envelope object and we have a flat array elsewhere, use that.
+    // Some InsForge versions return { status: 200, data: [ ... ] } directly.
+    if (!Array.isArray(normalizedData) && Array.isArray(source)) {
+      normalizedData = source;
     }
 
     // If it's a success status but data is null/undefined, return empty array/null instead of throwing
@@ -327,17 +337,23 @@ export function createRecord<T = Record<string, unknown>>(
       // Read-back verification: fetch the row again by ID to ensure it is actually there
       const rowId = (row as any)?.id || record.id;
       if (rowId) {
-        console.log(`[DB_INSERT_VERIFY] Performing immediate read-back for ${table}:${rowId} using ${insforge.auth.api.baseUrl}`);
-        // Ensure we bypass cache for verification
-        const verifyQuery = insforge.database.from(table).select("*").eq("id", rowId).single();
-        const verifyRes = await verifyQuery;
+        console.log(`[DB_INSERT_VERIFY] Performing immediate read-back for ${table}:${rowId}`);
+        // Ensure we bypass cache for verification and use explicit client
+        const verifyRes = await insforge.database.from(table).select("*").eq("id", rowId);
         
-        if (verifyRes.error || !verifyRes.data) {
+        // Use normalized check
+        let verifiedData = verifyRes.data || verifyRes.result;
+        if (verifiedData && typeof verifiedData === 'object' && !Array.isArray(verifiedData)) {
+           verifiedData = verifiedData.rows || verifiedData.data || verifiedData.result || verifiedData.records || verifiedData;
+        }
+        const verifiedRow = Array.isArray(verifiedData) ? verifiedData[0] : verifiedData;
+        
+        if (verifyRes.error || !verifiedRow) {
           const authUser = await insforge.auth.getCurrentUser();
           console.error(`[DB_INSERT_VERIFY_FAILURE] Read-back failed for ${table}:${rowId}. Auth User: ${authUser.data?.id || 'none'}. Error:`, verifyRes.error);
-          throw new Error(`Insert appeared to succeed but record was NOT found in read-back. Table: ${table}, ID: ${rowId}, Project: ${insforge.auth.api.baseUrl}. This usually means the row was written to a different scope or filtered by RLS.`);
+          throw new Error(`Insert appeared to succeed but record was NOT found in read-back. Table: ${table}, ID: ${rowId}. This usually means the row was written to a different scope or filtered by RLS.`);
         }
-        console.log(`[DB_INSERT_VERIFY_SUCCESS] Read-back confirmed for ${table}:${rowId}. Data:`, JSON.stringify(verifyRes.data));
+        console.log(`[DB_INSERT_VERIFY_SUCCESS] Read-back confirmed for ${table}:${rowId}. Data:`, JSON.stringify(verifiedRow));
       }
 
       announce(table, "insert", (row as Record<string, unknown>) || record);
