@@ -1,9 +1,9 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, Inbox, Navigation, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield } from "lucide-react";
+import { Home, Inbox, Navigation, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield, Info } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-store";
 import { useDriver } from "@/lib/driver-store";
 import { getDisplayName } from "@/lib/identity-utils";
@@ -132,8 +132,8 @@ function RiderLayout() {
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary border-2 border-background" />
             </Link>
             <Link to="/rider/profile" className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 transition active:scale-95 overflow-hidden">
-               {user?.avatar_url ? (
-                 <img src={user.avatar_url} alt={displayName} className="h-full w-full object-cover" />
+               {user?.avatar ? (
+                 <img src={user.avatar} alt={displayName} className="h-full w-full object-cover" />
                ) : (
                  <User className="h-5 w-5" />
                )}
