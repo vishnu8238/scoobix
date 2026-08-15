@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { currency } from "@/lib/format";
 import { addressCoords, restaurantCoords, statusToProgress, CITY_CENTER } from "@/lib/geo";
 import { toast } from "sonner";
-import { subscribeToDelivery } from "@/lib/delivery-sync";
+import { subscribeToDelivery, subscribeToDriverLocation } from "@/lib/delivery-sync";
 import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/track/$orderId")({
@@ -23,13 +23,21 @@ function TrackPage() {
   const { user } = useAuth();
   const { userCoords } = useAppUI();
   const [error, setError] = useState<string | null>(null);
+  const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   
   // Real-time synchronization
   useEffect(() => {
-    if (!user?.id) return;
-    const unsub = subscribeToOrders(user.id);
-    return () => { unsub(); };
-  }, [user?.id, subscribeToOrders]);
+    if (!user?.id || !orderId) return;
+    const unsubOrders = subscribeToOrders(user.id);
+    const unsubLocation = subscribeToDriverLocation(orderId, (coords) => {
+      setDriverCoords(coords);
+    });
+    return () => { 
+      unsubOrders(); 
+      unsubLocation();
+    };
+  }, [user?.id, orderId, subscribeToOrders]);
 
   const order = getOrder(orderId);
 
@@ -98,12 +106,17 @@ function TrackPage() {
           <GoogleMap
             height={260}
             interactive={false}
-            route={{ from: pickup, to: drop }}
-            riderProgress={statusToProgress(order.status)}
+            route={{ 
+              from: pickup, 
+              to: drop
+            }}
+            riderProgress={driverCoords ? undefined : statusToProgress(order.status)}
             riderLabel={order.driver.name}
+
             markers={[
               { id: "r", kind: "restaurant", label: order.restaurantName, ...pickup },
               { id: "c", kind: "customer", label: "Delivery here", ...drop },
+              ...(driverCoords ? [{ id: "d", kind: "rider" as const, label: order.driver.name, ...driverCoords }] : [])
             ]}
           />
           <div className="p-4">
