@@ -100,7 +100,7 @@ const DOC_SLOTS = ["FSSAI licence", "GST certificate", "Owner ID proof"];
 function OnboardingFlow() {
   const navigate = useNavigate();
   const { id } = Route.useSearch();
-  const { manager } = useManager();
+  const { manager, loading: managerLoading } = useManager();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Form>(EMPTY);
   const [record, setRecord] = useState<ManagedRestaurant | null>(null);
@@ -108,6 +108,7 @@ function OnboardingFlow() {
   const [loading, setLoading] = useState(!!id);
   const dup = useDuplicateCheck();
   const [dupOpen, setDupOpen] = useState(false);
+  const { user, hydrationComplete } = useAuth();
 
   useEffect(() => {
     if (!id) return;
