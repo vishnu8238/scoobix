@@ -2,11 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-store";
 import { useDriver } from "@/lib/driver-store";
 import { getDisplayName } from "@/lib/identity-utils";
-import { User, Shield, Globe, Clock, Volume2, Moon, ChevronRight, LogOut, PlayCircle, Star, Settings, ExternalLink } from "lucide-react";
+import { User, Shield, Globe, Clock, Volume2, Moon, ChevronRight, LogOut, PlayCircle, Star, Settings, ExternalLink, X, Check } from "lucide-react";
 import { cn } from "@/lib/format";
 import { useState, useEffect } from "react";
 import { getRiderPreferences, updateRiderPreferences } from "@/lib/rider-api";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const Route = createFileRoute("/rider/profile")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Profile" }] }),
@@ -18,6 +19,10 @@ function RiderProfile() {
   const { driver, driverId } = useDriver();
   const [prefs, setPrefs] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Modal states
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [showAlertPicker, setShowAlertPicker] = useState(false);
 
   const displayName = getDisplayName(user) || "Rider";
 
@@ -100,25 +105,6 @@ function RiderProfile() {
         </Link>
       </div>
 
-      {/* Resource Cards */}
-      <section className="space-y-3 mb-8">
-        <h2 className="px-2 font-display text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Learning & Perks</h2>
-        <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
-          <ResourceItem 
-            title="Videos for you" 
-            icon={PlayCircle} 
-            color="bg-indigo-600" 
-            count="12 new" 
-          />
-          <ResourceItem 
-            title="Emergency Heroes" 
-            icon={Shield} 
-            color="bg-rose-500" 
-            count="Join now" 
-          />
-        </div>
-      </section>
-
       {/* Settings Sections */}
       <section className="space-y-6">
         <div className="space-y-3">
@@ -134,13 +120,13 @@ function RiderProfile() {
               icon={Globe} 
               label="App Language" 
               value={prefs?.app_language} 
-              onClick={() => updatePref('app_language', prefs?.app_language === 'English' ? 'Hindi' : 'English')}
+              onClick={() => setShowLanguagePicker(true)}
             />
             <SettingSelect 
               icon={Volume2} 
               label="Alert Sound" 
               value={prefs?.alert_sound} 
-              onClick={() => updatePref('alert_sound', prefs?.alert_sound === 'Standard' ? 'Loud' : 'Standard')}
+              onClick={() => setShowAlertPicker(true)}
             />
           </div>
         </div>
@@ -173,21 +159,88 @@ function RiderProfile() {
           Sign Out
         </button>
       </section>
+
+      {/* Preference Pickers */}
+      <AnimatePresence>
+        {showLanguagePicker && (
+          <SelectionSheet 
+            title="App Language"
+            onClose={() => setShowLanguagePicker(false)}
+            options={[
+              { label: 'English', value: 'English' },
+              { label: 'Hindi', value: 'Hindi' },
+              { label: 'Arabic', value: 'Arabic' },
+              { label: 'Spanish', value: 'Spanish' },
+            ]}
+            currentValue={prefs?.app_language}
+            onSelect={(val) => {
+              updatePref('app_language', val);
+              setShowLanguagePicker(false);
+            }}
+          />
+        )}
+        {showAlertPicker && (
+          <SelectionSheet 
+            title="Alert Sound"
+            onClose={() => setShowAlertPicker(false)}
+            options={[
+              { label: 'Standard', value: 'Standard' },
+              { label: 'Loud & Persistent', value: 'Loud' },
+              { label: 'Subtle', value: 'Subtle' },
+              { label: 'None (Visual Only)', value: 'None' },
+            ]}
+            currentValue={prefs?.alert_sound}
+            onSelect={(val) => {
+              updatePref('alert_sound', val);
+              setShowAlertPicker(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function ResourceItem({ title, icon: Icon, color, count }: any) {
+function SelectionSheet({ title, onClose, options, currentValue, onSelect }: any) {
   return (
-    <div className={cn("flex min-w-[200px] items-center gap-4 rounded-3xl p-4 text-white shadow-soft", color)}>
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-        <Icon className="h-6 w-6" />
-      </div>
-      <div>
-        <p className="font-display text-sm font-extrabold tracking-tight">{title}</p>
-        <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">{count}</span>
-      </div>
-    </div>
+    <>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px]"
+      />
+      <motion.div 
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-[520px] rounded-t-[2.5rem] bg-card p-8 pb-[calc(2rem+env(safe-area-inset-bottom))] shadow-float"
+      >
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="font-display text-xl font-black italic tracking-tight">{title}</h3>
+          <button onClick={onClose} className="rounded-full bg-muted p-2 text-muted-foreground"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="space-y-2">
+          {options.map((opt: any) => (
+            <button 
+              key={opt.value}
+              onClick={() => onSelect(opt.value)}
+              className={cn(
+                "flex w-full items-center justify-between rounded-2xl p-4 transition active:scale-[0.98]",
+                currentValue === opt.value ? "bg-primary/10 ring-1 ring-primary/20" : "hover:bg-muted/50"
+              )}
+            >
+              <span className={cn("text-sm font-bold", currentValue === opt.value ? "text-primary" : "text-foreground")}>
+                {opt.label}
+              </span>
+              {currentValue === opt.value && <Check className="h-5 w-5 text-primary" />}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+    </>
   );
 }
 
