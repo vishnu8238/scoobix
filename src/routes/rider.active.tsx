@@ -6,7 +6,7 @@ import {
   ShieldCheck, Wallet, Star, Loader2, PackageOpen, Battery, 
   Zap, Bell, Volume2, Info, XCircle, ChevronRight,
   Camera, FileCheck, CreditCard, AlertTriangle, MessageSquare,
-  Bike
+  Bike, ArrowRight, RefreshCcw
 } from "lucide-react";
 import { GoogleMap } from "@/components/maps/GoogleMap";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { startNavigation } from "@/lib/navigation";
 import { finalizeOrder } from "@/lib/order-completion";
 import { updateOrderState } from "@/lib/rider-api";
 import { cn } from "@/lib/format";
+import { ImageUploader } from "@/components/cravio/ImageUploader";
 
 export const Route = createFileRoute("/rider/active")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Active Delivery" }] }),
@@ -73,8 +74,12 @@ function RiderActive() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [otp, setOtp] = useState("");
+  const [podRef, setPodRef] = useState<any | null>(null);
+  const [showFailedModal, setShowFailedModal] = useState(false);
+  const [eta, setEta] = useState<string | null>(null);
 
-  const riderId = user?.id; // InsForge Auth ID is authoritative
+  const riderId = user?.id;
+
 
   const loadData = useCallback(async () => {
     if (!riderId) {
@@ -85,18 +90,16 @@ function RiderActive() {
     setLoading(true);
     setError(null);
 
-    const TIMEOUT = 8000;
+    const TIMEOUT = 10000;
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT)
     );
 
     try {
-      console.log("[RIDER_ACTIVE] Authoritative sync for rider:", riderId);
-      
       const fetchPromise = listTable<OrderRow>("orders", {
         driver_id: `eq.${riderId}`,
         order: "created_at.desc",
-        limit: 10,
+        limit: 5,
       }, { fresh: true, ttl: 0 });
 
       const rows = await Promise.race([fetchPromise, timeoutPromise]) as OrderRow[];
@@ -139,6 +142,19 @@ function RiderActive() {
     });
   }, [riderId, loadData]);
 
+  // Periodic ETA refresh
+  useEffect(() => {
+    if (!order || !["PICKED_UP", "HEADING_TO_CUSTOMER", "ON_THE_WAY"].includes(String(order.status).toUpperCase())) return;
+    
+    const interval = setInterval(() => {
+      // Logic for ETA calculation would go here, using Google Routes API
+      // Mocking for now to demonstrate UI update
+      setEta(`${Math.floor(Math.random() * 5 + 5)} mins`);
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [order]);
+
   const handleStatusChange = async (newStatus: string, metadata?: any) => {
     if (!order?.id || !riderId || busy) return;
     setBusy(true);
@@ -153,12 +169,6 @@ function RiderActive() {
     }
   };
 
-  const handleAcceptOffer = async () => {
-    // Note: activeOffer state was not being used for the accept button logic in original code
-    // but we keep the handler if needed for future offers implementation.
-    toast.info("Offer acceptance requires active invitation");
-  };
-
   const handleDeliveryComplete = async () => {
     if (!order?.id || !riderId) return;
     if (order.otp_required && otp !== order.otp) {
@@ -166,18 +176,31 @@ function RiderActive() {
       return;
     }
     
-    await handleStatusChange("DELIVERED", { 
-      delivered_at: new Date().toISOString(),
-      payment_status: "PAID"
-    });
-    
-    if (order.id) {
-       await patchPaymentByOrder(String(order.id), { status: "PAID" });
-       await finalizeOrder(String(order.id));
+    setBusy(true);
+    try {
+      await handleStatusChange("DELIVERED", { 
+        delivered_at: new Date().toISOString(),
+        payment_status: "PAID",
+        pod_image: podRef?.image_url
+      });
+      
+      await patchPaymentByOrder(String(order.id), { status: "PAID" });
+      await finalizeOrder(String(order.id));
+      
+      navigate({ to: "/rider/history" });
+    } catch (e) {
+      toast.error("Completion failed. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    
-    navigate({ to: "/rider/history" });
   };
+
+  const handleRetryDelivery = async () => {
+    setShowFailedModal(false);
+    await handleStatusChange("HEADING_TO_CUSTOMER");
+  };
+
+
 
   const currentStatus = String(order?.status ?? "").toUpperCase();
   const isActuallyLoading = loading;
@@ -264,33 +287,53 @@ function RiderActive() {
       </div>
 
       <div className="-mt-6 space-y-4 px-5">
-        {/* Map Preview */}
-        <section className="h-64 overflow-hidden rounded-[2rem] bg-muted shadow-card ring-1 ring-border/60">
+        {/* Map Preview with Pathing */}
+        <section className="h-64 overflow-hidden rounded-[2.5rem] bg-muted shadow-card ring-1 ring-border/60 relative">
            <GoogleMap 
              className="h-full w-full"
              center={order.pickup_latitude && order.pickup_longitude ? { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) } : undefined}
-             zoom={13}
+             zoom={14}
              markers={[
                ...(order.pickup_latitude && order.pickup_longitude ? [{
                  id: "pickup",
                  lat: Number(order.pickup_latitude),
                  lng: Number(order.pickup_longitude),
                  kind: "pickup" as const,
-                 label: "Pickup"
+                 label: restaurant?.name || "Pickup"
                }] : []),
                ...(order.delivery_latitude && order.delivery_longitude ? [{
                  id: "dropoff",
                  lat: Number(order.delivery_latitude),
                  lng: Number(order.delivery_longitude),
                  kind: "drop" as const,
-                 label: "Drop-off"
+                 label: customer?.name || "Drop-off"
                }] : [])
              ]}
+             polylines={
+               order.pickup_latitude && order.delivery_latitude ? [
+                 { 
+                   id: "route",
+                   points: [
+                     { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) },
+                     { lat: Number(order.delivery_latitude), lng: Number(order.delivery_longitude) }
+                   ],
+                   color: "#3B82F6",
+                   weight: 4
+                 }
+               ] : undefined
+             }
            />
+           {eta && (
+             <div className="absolute bottom-4 left-4 rounded-2xl bg-white/90 backdrop-blur-sm px-4 py-2 shadow-pop border border-white/20 animate-in slide-in-from-bottom-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-primary">Est. Arrival</p>
+                <p className="text-sm font-black text-zinc-900">{eta}</p>
+             </div>
+           )}
         </section>
 
+
         {/* Action Center */}
-        <section className="rounded-[2rem] bg-card p-6 shadow-card ring-1 ring-border/60">
+        <section className="rounded-[2.5rem] bg-card p-6 shadow-card ring-1 ring-border/60">
            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -300,7 +343,7 @@ function RiderActive() {
               </div>
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Step {
                 currentStatus === "ASSIGNED" ? 1 :
-                currentStatus === "ACCEPTED" || currentStatus === "HEADING_TO_RESTAURANT" ? 2 :
+                currentStatus === "HEADING_TO_RESTAURANT" || currentStatus === "ACCEPTED" ? 2 :
                 currentStatus === "ARRIVED_AT_RESTAURANT" || currentStatus === "AT_PICKUP" ? 3 :
                 currentStatus === "PICKED_UP" || currentStatus === "HEADING_TO_CUSTOMER" ? 4 : 5
               }/5</span>
@@ -308,14 +351,14 @@ function RiderActive() {
 
            <div className="space-y-3">
               {currentStatus === "ASSIGNED" && (
-                <button onClick={() => handleStatusChange("HEADING_TO_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                <button onClick={() => handleStatusChange("HEADING_TO_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition">
                    Start Trip
                 </button>
               )}
               
               {(currentStatus === "ACCEPTED" || currentStatus === "HEADING_TO_RESTAURANT") && (
                 <>
-                  <button onClick={() => handleStatusChange("ARRIVED_AT_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                  <button onClick={() => handleStatusChange("ARRIVED_AT_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition">
                     I've Arrived at Restaurant
                   </button>
                   <button onClick={() => startNavigation({ address: restaurant?.address || order.pickup_address })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
@@ -338,7 +381,7 @@ function RiderActive() {
                       placeholder="Pickup PIN" 
                       className="flex-1 rounded-2xl bg-muted px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/40"
                     />
-                    <button onClick={() => handleStatusChange("PICKED_UP")} className="flex-[2] rounded-2xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow">
+                    <button onClick={() => handleStatusChange("PICKED_UP")} className="flex-[2] rounded-2xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow transition">
                       Confirm Pickup
                     </button>
                   </div>
@@ -347,11 +390,14 @@ function RiderActive() {
 
               {(currentStatus === "PICKED_UP" || currentStatus === "HEADING_TO_CUSTOMER" || currentStatus === "ON_THE_WAY") && (
                 <>
-                  <button onClick={() => handleStatusChange("ARRIVED_AT_CUSTOMER")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                  <button onClick={() => handleStatusChange("ARRIVED_AT_CUSTOMER")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition">
                     I've Arrived at Customer
                   </button>
                   <button onClick={() => startNavigation({ address: (order.delivery_address as string) || "" })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
                     <Navigation className="h-4 w-4" /> Navigate to Customer
+                  </button>
+                  <button onClick={() => setShowFailedModal(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3 text-xs font-bold uppercase tracking-widest text-rose-600 transition active:scale-95">
+                    <AlertTriangle className="h-4 w-4" /> Unable to Deliver
                   </button>
                 </>
               )}
@@ -367,67 +413,96 @@ function RiderActive() {
                        </div>
                     </div>
                   )}
-                  <button onClick={handleDeliveryComplete} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Proof of Delivery</p>
+                    <ImageUploader 
+                      type="license"
+                      onChange={ref => setPodRef(ref)}
+                      value={podRef}
+                    />
+                  </div>
+
+                  <button 
+                    onClick={handleDeliveryComplete} 
+                    disabled={busy || !podRef}
+                    className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition disabled:opacity-50"
+                  >
                     Complete Delivery
                   </button>
+
                 </div>
               )}
            </div>
         </section>
 
         {/* Order Details */}
-        <section className="rounded-[2rem] bg-card p-6 shadow-card ring-1 ring-border/60">
-           <div className="flex items-center gap-3 mb-6">
-              <Store className="h-5 w-5 text-primary" />
-              <div className="flex-1">
+        <section className="rounded-[2.5rem] bg-card p-6 shadow-card ring-1 ring-border/60">
+           <div className="flex items-center gap-4 mb-6">
+              <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center text-primary">
+                 <Store className="h-6 w-6" />
+              </div>
+              <div className="flex-1 min-w-0">
                  <h3 className="font-display text-lg font-extrabold truncate">{restaurant?.name || "Restaurant"}</h3>
                  <p className="text-xs text-muted-foreground truncate">{restaurant?.address || order.pickup_address}</p>
               </div>
-              <a href={`tel:${restaurant?.phone || '108'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-primary">
+              <a href={`tel:${restaurant?.phone || '108'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-primary shadow-soft active:scale-90 transition">
                  <Phone className="h-4 w-4" />
               </a>
            </div>
 
            <div className="border-t border-border/40 my-6 pt-6">
-              <div className="flex items-center gap-3">
-                 <User className="h-5 w-5 text-zinc-900" />
-                 <div className="flex-1">
-                    <h3 className="font-display text-lg font-extrabold">{customer?.name || "Customer"}</h3>
-                    <p className="text-xs text-muted-foreground truncate">{(order.delivery_address as React.ReactNode) || ""}</p>
+              <div className="flex items-center gap-4">
+                 <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center text-zinc-900">
+                    <User className="h-6 w-6" />
                  </div>
-                 <a href={`tel:${customer?.phone || '100'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-zinc-900">
-                    <Phone className="h-4 w-4" />
-                 </a>
+                 <div className="flex-1 min-w-0">
+                    <h3 className="font-display text-lg font-extrabold">{customer?.name || "Customer"}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{String(order.delivery_address || "")}</p>
+                 </div>
+                 <div className="flex gap-2">
+                    <button className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-primary shadow-soft active:scale-90 transition">
+                       <MessageSquare className="h-4 w-4" />
+                    </button>
+                    <a href={`tel:${customer?.phone || '100'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-zinc-900 shadow-soft active:scale-90 transition">
+                       <Phone className="h-4 w-4" />
+                    </a>
+                 </div>
               </div>
-           </div>
-
-           <div className="rounded-2xl bg-muted/30 p-4">
-              <div className="flex items-center justify-between mb-3">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order Items</span>
-                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">₹{(order.total_price as React.ReactNode) || 0} Total</span>
-              </div>
-              <ul className="space-y-2">
-                 {/* Logic to parse items from order.items */}
-                 <li className="flex items-center justify-between text-xs font-bold">
-                    <span>Standard Delivery Order</span>
-                    <span className="text-muted-foreground">x1</span>
-                 </li>
-              </ul>
            </div>
         </section>
-
-        {/* Critical Actions */}
-        <div className="grid grid-cols-2 gap-3">
-           <button onClick={() => toast.info("Support ticket system initializing...")} className="flex items-center justify-center gap-2 rounded-2xl bg-rose-50 p-4 text-[10px] font-black uppercase tracking-widest text-rose-600 ring-1 ring-rose-200">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Report Issue
-           </button>
-           <button onClick={() => navigate({ to: "/rider/support" })} className="flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 p-4 text-[10px] font-black uppercase tracking-widest text-white">
-              <MessageSquare className="h-3.5 w-3.5" />
-              Support
-           </button>
-        </div>
       </div>
+
+      {/* Failed Delivery Modal */}
+      {showFailedModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-5 animate-in fade-in duration-300">
+          <div className="w-full max-w-sm rounded-[2.5rem] bg-card p-6 shadow-glow ring-1 ring-border/60">
+            <div className="flex items-center justify-between mb-6">
+              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <button onClick={() => setShowFailedModal(false)} className="rounded-full bg-muted p-2"><XCircle className="h-4 w-4" /></button>
+            </div>
+            
+            <h3 className="font-display text-xl font-extrabold text-rose-500 italic uppercase tracking-tight">Delivery Failed</h3>
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              If you're unable to reach the customer, please try calling them again. If there's still no response, report the issue.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3">
+               <button onClick={handleRetryDelivery} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow transition">
+                  <RefreshCcw className="h-4 w-4" /> Retry Delivery
+               </button>
+               <button 
+                 onClick={() => { handleStatusChange("FAILED"); setShowFailedModal(false); }} 
+                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 py-4 text-xs font-black uppercase tracking-widest text-white transition shadow-soft"
+               >
+                  Report Failure
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
