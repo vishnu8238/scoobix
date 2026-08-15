@@ -52,7 +52,7 @@ function RiderLayout() {
         }
       }
 
-      await logEmergencyEvent(driver.id, type, lat, lng);
+      await logEmergencyEvent(driver.id, type, { lat, lng });
       toast.success(`${type} reported. Help is on the way.`);
       setShowSOS(false);
       
