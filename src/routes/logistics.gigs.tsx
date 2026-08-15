@@ -253,8 +253,10 @@ function LogisticsGigs() {
                 <div className="flex items-center justify-between mb-4 border-b border-border/40 pb-2">
                   <p className="font-black uppercase tracking-widest text-slate-400">Live Production Diagnostics</p>
                   <div className="flex items-center gap-2">
-                    <div className={cn("h-2 w-2 rounded-full", diagnostics.error ? "bg-rose-500 animate-pulse" : "bg-emerald-500")} />
-                    <span className="font-bold text-[9px]">{diagnostics.error ? "FAIL" : "SYNCED"}</span>
+                    <div className={cn("h-2 w-2 rounded-full", diagnostics.error || diagnostics.testError ? "bg-rose-500 animate-pulse" : "bg-emerald-500")} />
+                    <span className="font-bold text-[9px]">
+                      {diagnostics.error || diagnostics.testError ? "ISSUE DETECTED" : "SYNCED"}
+                    </span>
                   </div>
                 </div>
                 
@@ -265,7 +267,7 @@ function LogisticsGigs() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground uppercase text-[8px] font-black">Verified Persistence</span>
-                    <span className={cn("font-bold text-xs", diagnostics.total > 0 ? "text-emerald-500" : "text-amber-500")}>
+                    <span className={cn("font-bold text-xs", (diagnostics.total > 0 || (diagnostics.testError && diagnostics.testError.success)) ? "text-emerald-500" : "text-amber-500")}>
                       {diagnostics.total ?? 0} Rows Found
                     </span>
                   </div>
@@ -279,19 +281,34 @@ function LogisticsGigs() {
                   </div>
                 </div>
 
-                {diagnostics.firstGig !== "none" && (
-                  <div className="mt-4 pt-4 border-t border-border/40">
-                    <span className="text-muted-foreground uppercase text-[8px] font-black block mb-1">Latest Entry Read-Back</span>
-                    <div className="text-[9px] text-foreground font-medium opacity-80">
-                      ID: {diagnostics.firstGig.id} | Title: {diagnostics.firstGig.title} | Start: {diagnostics.firstGig.start}
-                    </div>
-                  </div>
-                )}
+                <div className="mt-6 flex items-center gap-3">
+                  <button 
+                    onClick={runGigTest}
+                    disabled={isTesting}
+                    className="flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-1.5 text-[9px] font-black text-white hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {isTesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    Run Persistence Test
+                  </button>
+                  <p className="text-[9px] font-bold text-muted-foreground/60 italic">Performs Auth Discovery → Insert → Read-back verification</p>
+                </div>
 
-                {diagnostics.error && (
-                  <div className="mt-4 rounded-xl bg-rose-500/10 p-3 text-rose-500 ring-1 ring-rose-500/20">
-                    <p className="font-black uppercase text-[8px] mb-1">InsForge Protocol Error</p>
-                    {diagnostics.error} ({diagnostics.status})
+                {diagnostics.testError && (
+                  <div className={cn(
+                    "mt-4 rounded-xl p-3 ring-1",
+                    diagnostics.testError.success ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20" : "bg-rose-500/10 text-rose-500 ring-rose-500/20"
+                  )}>
+                    <p className="font-black uppercase text-[8px] mb-1">Test Result: {diagnostics.testError.success ? "PASSED" : "FAILED"}</p>
+                    <div className="space-y-1">
+                      {diagnostics.testError.success ? (
+                        <p>ID: {diagnostics.testError.testRecordId} | User: {diagnostics.testError.userId} | List: {diagnostics.testError.listCount}</p>
+                      ) : (
+                        <>
+                          <p>Error: {diagnostics.testError.error}</p>
+                          {diagnostics.testError.details && <p className="opacity-70">Details: {diagnostics.testError.details}</p>}
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
