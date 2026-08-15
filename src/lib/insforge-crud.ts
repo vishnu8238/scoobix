@@ -120,7 +120,7 @@ function applyParams(query: any, params?: Record<string, string | number | undef
         if (column && column.endsWith(".nullsfirst")) {
           column = column.slice(0, -11);
           nullsFirst = true;
-        } else if (column.endsWith(".nullslast")) {
+        } else if (column && column.endsWith(".nullslast")) {
           column = column.slice(0, -10);
           nullsFirst = false;
         }
