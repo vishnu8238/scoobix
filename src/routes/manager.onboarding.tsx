@@ -121,6 +121,10 @@ function OnboardingFlow() {
         const r = rows[0];
         if (cancelled || !r) { setLoading(false); return; }
         setRecord(r);
+        const docs = Array.isArray(r.documents) ? (r.documents as Form["documents"]) : [];
+        const hasGallery = docs.some(d => d.label === "Gallery / Guest Image");
+        const coverUrl = r.cover_url || r.cover_image || "";
+        
         setForm({
           ...EMPTY,
           name: r.name ?? "",
@@ -137,9 +141,9 @@ function OnboardingFlow() {
           longitude: r.longitude ?? null,
           opening_time: r.opening_time ?? "10:00",
           closing_time: r.closing_time ?? "23:00",
-          logo_url: r.logo_url ?? r.logo ?? "",
-          cover_url: r.cover_url ?? r.cover_image ?? "",
-          documents: Array.isArray(r.documents) ? (r.documents as Form["documents"]) : [],
+          logo_url: r.logo_url || r.logo || "",
+          cover_url: coverUrl,
+          documents: docs,
           bank_holder: r.bank_holder ?? "",
           bank_account: r.bank_account ?? "",
           bank_ifsc: r.bank_ifsc ?? "",
@@ -150,8 +154,8 @@ function OnboardingFlow() {
           branch_name: (r as { branch_name?: string | null }).branch_name ?? "",
           delivery_radius: String(r.delivery_radius ?? 5),
           commission: String(r.commission ?? 20),
-          has_cover: !!(r.cover_url ?? r.cover_image),
-          has_gallery: Array.isArray(r.documents) && r.documents.some(d => d.label === "Gallery / Guest Image"),
+          has_cover: !!coverUrl,
+          has_gallery: hasGallery,
         });
         setLoading(false);
       } catch (err: any) {
@@ -181,7 +185,7 @@ function OnboardingFlow() {
       opening_time: form.opening_time || null,
       closing_time: form.closing_time || null,
       logo_url: form.logo_url || null,
-      cover_url: form.has_cover ? (form.cover_url || null) : null,
+      cover_url: form.cover_url || null,
       documents: form.documents,
       bank_holder: form.bank_holder.trim() || null,
       bank_account: form.bank_account.trim() || null,
@@ -322,7 +326,7 @@ function OnboardingFlow() {
         description: `Your application has been submitted successfully for admin approval. Owner login: ${form.owner_email} · temporary password ${account.password}`,
         duration: 12000,
       });
-      navigate({ to: "/manager/restaurants" });
+      navigate({ to: "/manager/restaurants", search: { id: saved.id } });
     } catch (err: any) {
       console.error("[ONBOARDING_SUBMIT_FATAL]", err);
       toast.error("A fatal error occurred during submission. Please check your internet connection.");

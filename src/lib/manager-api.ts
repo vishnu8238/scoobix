@@ -336,39 +336,45 @@ export async function saveOnboardingDraft(
   id: string | null,
   values: Record<string, unknown>,
 ): Promise<ManagedRestaurant | null> {
-  // Ensure we never use "pending-refresh" or invalid sentinels in a query
-  const safeId = id && id !== "pending-refresh" && id.includes("-") ? id : null;
+  // UUID validation: ensure we never use "pending-refresh" or invalid sentinels
+  const isUuid = (val: any) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  const safeId = id && isUuid(id) ? id : null;
 
-
-  if (safeId) {
-    await patchRecord("restaurants", safeId, values);
-    const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${safeId}`, limit: 1 });
-    return rows[0] ?? null;
-  }
-  const created = await createRecord<ManagedRestaurant[] | ManagedRestaurant>("restaurants", values);
-  const row = Array.isArray(created) ? created[0] : created;
-  const result = (row as ManagedRestaurant) ?? null;
-
-  // Authoritative UUID resolution from insert response
-  if (result && result.id && result.id !== "pending-refresh") {
-    return result;
-  }
-
-  // Fallback: If result doesn't have a valid ID, fetch the most recent draft for this manager
-  const managerId = values.manager_id as string;
-  if (managerId) {
-    const latest = await listTable<ManagedRestaurant>("restaurants", {
-      manager_id: `eq.${managerId}`,
-      order: "created_at.desc",
-      limit: 1,
-    });
-    if (latest[0] && latest[0].id) {
-      console.info(`[SAVE_DRAFT_FALLBACK] Resolved UUID from manager history: ${latest[0].id}`);
-      return latest[0];
+  try {
+    if (safeId) {
+      console.info(`[MANAGER_API] Updating existing restaurant draft: ${safeId}`);
+      await patchRecord("restaurants", safeId, values);
+      const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${safeId}`, limit: 1 }, { fresh: true });
+      return rows[0] ?? null;
     }
-  }
 
-  return result;
+    console.info(`[MANAGER_API] Creating new restaurant draft`);
+    const created = await createRecord<ManagedRestaurant>("restaurants", values);
+    
+    // Authoritative UUID resolution from createRecord response
+    if (created && isUuid(created.id)) {
+      console.info(`[MANAGER_API] Created record with ID: ${created.id}`);
+      return created;
+    }
+
+    // Fallback: If creation response is ambiguous, look for the most recent record for this manager
+    const managerId = values.manager_id as string;
+    if (managerId) {
+      console.warn(`[MANAGER_API] createRecord returned ambiguous ID, checking manager history...`);
+      const latest = await listTable<ManagedRestaurant>("restaurants", {
+        manager_id: `eq.${managerId}`,
+        order: "created_at.desc",
+        limit: 1,
+      }, { fresh: true });
+      if (latest[0] && isUuid(latest[0].id)) {
+        return latest[0];
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error(`[MANAGER_API] saveOnboardingDraft failed:`, err);
+    throw err;
+  }
 }
 
 export async function logOnboardingEvent(input: {
