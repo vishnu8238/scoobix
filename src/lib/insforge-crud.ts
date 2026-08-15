@@ -186,17 +186,18 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
     // Auth Guard: handle unauthenticated states gracefully
     if (!res || (error && (status === 401 || (error.message && error.message.toLowerCase().includes("no token"))))) {
       const isBrowser = typeof window !== "undefined";
-      const session = isBrowser ? insforge.auth.session : null;
+      
+      // CRITICAL: Always check the SDK session directly here for the most current state
+      const session = insforge.auth.session;
       const hasToken = !!session?.accessToken;
 
-      // Only return empty for GETs if we are in the browser and genuinely have no token.
-      // On the server, we might have been called before middleware attached the token,
-      // or we might be in a background worker context.
       if (method === "GET" && !hasToken && isBrowser) {
-        console.warn(`[DB_AUTH_SILENT] No token for GET ${table}. Returning empty.`);
+        // Log to diagnostics but return empty for smooth UI
+        console.warn(`[DB_AUTH_SILENT] Unauthorized GET ${table} (Client). Returning empty.`);
         return [] as unknown as T;
       }
 
+      // If we are here, either it's a write (must fail) or we're on the server
       const authErr = new HttpError(status || 401, error?.message || "Unauthorized: No token provided");
       (authErr as any).isAuthError = true;
       throw authErr;
