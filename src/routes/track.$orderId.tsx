@@ -106,12 +106,17 @@ function TrackPage() {
           <GoogleMap
             height={260}
             interactive={false}
-            route={{ from: pickup, to: drop }}
-            riderProgress={statusToProgress(order.status)}
+            route={{ 
+              from: pickup, 
+              to: drop,
+              rider: driverCoords ?? undefined
+            }}
+            riderProgress={driverCoords ? undefined : statusToProgress(order.status)}
             riderLabel={order.driver.name}
             markers={[
               { id: "r", kind: "restaurant", label: order.restaurantName, ...pickup },
               { id: "c", kind: "customer", label: "Delivery here", ...drop },
+              ...(driverCoords ? [{ id: "d", kind: "rider" as const, label: order.driver.name, ...driverCoords }] : [])
             ]}
           />
           <div className="p-4">
