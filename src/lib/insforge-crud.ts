@@ -196,9 +196,18 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
       }
       
       if (method === "GET") {
-        console.warn(`[DB_AUTH_SILENT] Unauthenticated GET ${table}. Returning empty.`);
-        return (Array.isArray(data) ? [] : null) as unknown as T;
+        // Authoritative token check
+        const session = insforge.auth.getSession();
+        if (!session?.accessToken) {
+          console.warn(`[DB_AUTH_SILENT] No token for GET ${table}. Returning empty.`);
+          return (Array.isArray(data) ? [] : null) as unknown as T;
+        }
+        
+        // If we have a token but got 401/Invalid Token, it's a real failure, not just a guest state.
+        console.error(`[DB_AUTH_ERROR] Token present but ${method} ${table} failed with ${status}.`);
       }
+
+
       
       const authErr = new HttpError(status || 401, error?.message || "Unauthorized: No token provided");
       (authErr as any).isAuthError = true;
