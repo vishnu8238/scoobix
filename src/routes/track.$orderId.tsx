@@ -79,9 +79,11 @@ function TrackPage() {
       const r = await routeBetween(originForEta, dropTarget);
       if (!alive || !r) return;
       setLiveEta({ mins: Math.max(1, r.durationMins), km: r.distanceKm, at: Date.now() });
+      setRoutePath(r.coords ?? []);
     })();
     return () => { alive = false; };
   }, [activeDelivery, originForEta?.lat, originForEta?.lng, dropTarget?.lat, dropTarget?.lng]);
+
 
   // Tick so the countdown and arrival clock stay current
   const [now, setNow] = useState(() => Date.now());
