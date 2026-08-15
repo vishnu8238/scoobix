@@ -19,9 +19,10 @@ export const Route = createFileRoute("/track/$orderId")({
 function TrackPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate();
-  const { getOrder, cancelOrder, subscribeToOrders } = useOrders();
+  const { getOrder, cancelOrder, subscribeToOrders, loading } = useOrders();
   const { user } = useAuth();
   const { userCoords } = useAppUI();
+  const [error, setError] = useState<string | null>(null);
   
   // Real-time synchronization
   useEffect(() => {
@@ -32,17 +33,44 @@ function TrackPage() {
 
   const order = getOrder(orderId);
 
-  const canCancel = order && !["PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"].includes(order.status);
+  // Handle errors or missing orders
+  useEffect(() => {
+    if (!loading && !order && orderId) {
+      setError("We couldn't find that order.");
+    } else {
+      setError(null);
+    }
+  }, [loading, order, orderId]);
 
-  if (!order) {
+  if (loading && !order) {
+    return (
+      <div className="min-h-svh flex flex-col">
+        <header className="sticky top-0 z-30 glass px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
+          <div className="h-10 w-10 rounded-full bg-secondary animate-pulse" />
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center p-10 space-y-4">
+          <div className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading order details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
     return (
       <div className="min-h-svh">
         <header className="sticky top-0 z-30 glass px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
           <button onClick={() => navigate({ to: "/app/orders" })} className="grid h-10 w-10 place-items-center rounded-full bg-secondary"><ArrowLeft className="h-4 w-4" /></button>
         </header>
-        <div className="p-10 text-center">
-          <p className="text-sm">We couldn't find that order.</p>
-          <Link to="/app/orders" className="mt-3 inline-block text-primary font-semibold">Go to orders</Link>
+        <div className="p-10 text-center flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4">
+            <X className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h2 className="text-lg font-bold mb-1">Order Not Found</h2>
+          <p className="text-sm text-muted-foreground max-w-[240px]">{error || "This order may have been deleted or is inaccessible."}</p>
+          <Button variant="link" onClick={() => navigate({ to: "/app/orders" })} className="mt-4 font-bold text-primary">
+            Back to my orders
+          </Button>
         </div>
       </div>
     );
@@ -51,6 +79,8 @@ function TrackPage() {
   const delivered = order.status === "DELIVERED";
   const pickup = order.restaurantId ? restaurantCoords(order.restaurantId) : CITY_CENTER;
   const drop = userCoords ?? addressCoords(order.addressLine || order.addressLabel || "Default");
+  const canCancel = !["PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED", "REJECTED"].includes(order.status);
+
 
 
   return (
