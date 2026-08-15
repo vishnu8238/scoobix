@@ -285,33 +285,45 @@ function RiderActive() {
       </div>
 
       <div className="-mt-6 space-y-4 px-5">
-        {/* Map Preview */}
-        <section className="h-64 overflow-hidden rounded-[2rem] bg-muted shadow-card ring-1 ring-border/60">
+        {/* Map Preview with Pathing */}
+        <section className="h-64 overflow-hidden rounded-[2.5rem] bg-muted shadow-card ring-1 ring-border/60 relative">
            <GoogleMap 
              className="h-full w-full"
              center={order.pickup_latitude && order.pickup_longitude ? { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) } : undefined}
-             zoom={13}
+             zoom={14}
              markers={[
                ...(order.pickup_latitude && order.pickup_longitude ? [{
                  id: "pickup",
                  lat: Number(order.pickup_latitude),
                  lng: Number(order.pickup_longitude),
                  kind: "pickup" as const,
-                 label: "Pickup"
+                 label: restaurant?.name || "Pickup"
                }] : []),
                ...(order.delivery_latitude && order.delivery_longitude ? [{
                  id: "dropoff",
                  lat: Number(order.delivery_latitude),
                  lng: Number(order.delivery_longitude),
                  kind: "drop" as const,
-                 label: "Drop-off"
+                 label: customer?.name || "Drop-off"
                }] : [])
              ]}
+             polyline={
+               order.pickup_latitude && order.delivery_latitude ? [
+                 { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) },
+                 { lat: Number(order.delivery_latitude), lng: Number(order.delivery_longitude) }
+               ] : undefined
+             }
            />
+           {eta && (
+             <div className="absolute bottom-4 left-4 rounded-2xl bg-white/90 backdrop-blur-sm px-4 py-2 shadow-pop border border-white/20 animate-in slide-in-from-bottom-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-primary">Est. Arrival</p>
+                <p className="text-sm font-black text-zinc-900">{eta}</p>
+             </div>
+           )}
         </section>
 
         {/* Action Center */}
-        <section className="rounded-[2rem] bg-card p-6 shadow-card ring-1 ring-border/60">
+        <section className="rounded-[2.5rem] bg-card p-6 shadow-card ring-1 ring-border/60">
            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -321,7 +333,7 @@ function RiderActive() {
               </div>
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Step {
                 currentStatus === "ASSIGNED" ? 1 :
-                currentStatus === "ACCEPTED" || currentStatus === "HEADING_TO_RESTAURANT" ? 2 :
+                currentStatus === "HEADING_TO_RESTAURANT" || currentStatus === "ACCEPTED" ? 2 :
                 currentStatus === "ARRIVED_AT_RESTAURANT" || currentStatus === "AT_PICKUP" ? 3 :
                 currentStatus === "PICKED_UP" || currentStatus === "HEADING_TO_CUSTOMER" ? 4 : 5
               }/5</span>
@@ -329,14 +341,14 @@ function RiderActive() {
 
            <div className="space-y-3">
               {currentStatus === "ASSIGNED" && (
-                <button onClick={() => handleStatusChange("HEADING_TO_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                <button onClick={() => handleStatusChange("HEADING_TO_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition">
                    Start Trip
                 </button>
               )}
               
               {(currentStatus === "ACCEPTED" || currentStatus === "HEADING_TO_RESTAURANT") && (
                 <>
-                  <button onClick={() => handleStatusChange("ARRIVED_AT_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                  <button onClick={() => handleStatusChange("ARRIVED_AT_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition">
                     I've Arrived at Restaurant
                   </button>
                   <button onClick={() => startNavigation({ address: restaurant?.address || order.pickup_address })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
@@ -359,7 +371,7 @@ function RiderActive() {
                       placeholder="Pickup PIN" 
                       className="flex-1 rounded-2xl bg-muted px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/40"
                     />
-                    <button onClick={() => handleStatusChange("PICKED_UP")} className="flex-[2] rounded-2xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow">
+                    <button onClick={() => handleStatusChange("PICKED_UP")} className="flex-[2] rounded-2xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow transition">
                       Confirm Pickup
                     </button>
                   </div>
@@ -368,11 +380,14 @@ function RiderActive() {
 
               {(currentStatus === "PICKED_UP" || currentStatus === "HEADING_TO_CUSTOMER" || currentStatus === "ON_THE_WAY") && (
                 <>
-                  <button onClick={() => handleStatusChange("ARRIVED_AT_CUSTOMER")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                  <button onClick={() => handleStatusChange("ARRIVED_AT_CUSTOMER")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition">
                     I've Arrived at Customer
                   </button>
                   <button onClick={() => startNavigation({ address: (order.delivery_address as string) || "" })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
                     <Navigation className="h-4 w-4" /> Navigate to Customer
+                  </button>
+                  <button onClick={() => setShowFailedModal(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3 text-xs font-bold uppercase tracking-widest text-rose-600 transition active:scale-95">
+                    <AlertTriangle className="h-4 w-4" /> Unable to Deliver
                   </button>
                 </>
               )}
@@ -388,7 +403,20 @@ function RiderActive() {
                        </div>
                     </div>
                   )}
-                  <button onClick={handleDeliveryComplete} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Proof of Delivery</p>
+                    <ImageUploader 
+                      onUploadComplete={url => setPodImageUrl(url)}
+                      value={podImageUrl || undefined}
+                    />
+                  </div>
+
+                  <button 
+                    onClick={handleDeliveryComplete} 
+                    disabled={busy || !podImageUrl}
+                    className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition disabled:opacity-50"
+                  >
                     Complete Delivery
                   </button>
                 </div>
@@ -397,30 +425,76 @@ function RiderActive() {
         </section>
 
         {/* Order Details */}
-        <section className="rounded-[2rem] bg-card p-6 shadow-card ring-1 ring-border/60">
-           <div className="flex items-center gap-3 mb-6">
-              <Store className="h-5 w-5 text-primary" />
-              <div className="flex-1">
+        <section className="rounded-[2.5rem] bg-card p-6 shadow-card ring-1 ring-border/60">
+           <div className="flex items-center gap-4 mb-6">
+              <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center text-primary">
+                 <Store className="h-6 w-6" />
+              </div>
+              <div className="flex-1 min-w-0">
                  <h3 className="font-display text-lg font-extrabold truncate">{restaurant?.name || "Restaurant"}</h3>
                  <p className="text-xs text-muted-foreground truncate">{restaurant?.address || order.pickup_address}</p>
               </div>
-              <a href={`tel:${restaurant?.phone || '108'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-primary">
+              <a href={`tel:${restaurant?.phone || '108'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-primary shadow-soft active:scale-90 transition">
                  <Phone className="h-4 w-4" />
               </a>
            </div>
 
            <div className="border-t border-border/40 my-6 pt-6">
-              <div className="flex items-center gap-3">
-                 <User className="h-5 w-5 text-zinc-900" />
-                 <div className="flex-1">
-                    <h3 className="font-display text-lg font-extrabold">{customer?.name || "Customer"}</h3>
-                    <p className="text-xs text-muted-foreground truncate">{(order.delivery_address as React.ReactNode) || ""}</p>
+              <div className="flex items-center gap-4">
+                 <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center text-zinc-900">
+                    <User className="h-6 w-6" />
                  </div>
-                 <a href={`tel:${customer?.phone || '100'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-zinc-900">
-                    <Phone className="h-4 w-4" />
-                 </a>
+                 <div className="flex-1 min-w-0">
+                    <h3 className="font-display text-lg font-extrabold">{customer?.name || "Customer"}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{String(order.delivery_address || "")}</p>
+                 </div>
+                 <div className="flex gap-2">
+                    <button className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-primary shadow-soft active:scale-90 transition">
+                       <MessageSquare className="h-4 w-4" />
+                    </button>
+                    <a href={`tel:${customer?.phone || '100'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-zinc-900 shadow-soft active:scale-90 transition">
+                       <Phone className="h-4 w-4" />
+                    </a>
+                 </div>
               </div>
            </div>
+        </section>
+      </div>
+
+      {/* Failed Delivery Modal */}
+      {showFailedModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-5 animate-in fade-in duration-300">
+          <div className="w-full max-w-sm rounded-[2.5rem] bg-card p-6 shadow-glow ring-1 ring-border/60">
+            <div className="flex items-center justify-between mb-6">
+              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <button onClick={() => setShowFailedModal(false)} className="rounded-full bg-muted p-2"><XCircle className="h-4 w-4" /></button>
+            </div>
+            
+            <h3 className="font-display text-xl font-extrabold text-rose-500 italic uppercase tracking-tight">Delivery Failed</h3>
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              If you're unable to reach the customer, please try calling them again. If there's still no response, report the issue.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3">
+               <button onClick={handleRetryDelivery} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow transition">
+                  <RefreshCcw className="h-4 w-4" /> Retry Delivery
+               </button>
+               <button 
+                 onClick={() => { handleStatusChange("FAILED"); setShowFailedModal(false); }} 
+                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-500 py-4 text-xs font-black uppercase tracking-widest text-white transition shadow-soft"
+               >
+                  Report Failure
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
            <div className="rounded-2xl bg-muted/30 p-4">
               <div className="flex items-center justify-between mb-3">
