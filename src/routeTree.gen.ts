@@ -38,6 +38,7 @@ import { Route as RiderMoreRouteImport } from './routes/rider.more'
 import { Route as RiderIncentivesRouteImport } from './routes/rider.incentives'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
+import { Route as RiderBazaarRouteImport } from './routes/rider.bazaar'
 import { Route as RiderAnalyticsRouteImport } from './routes/rider.analytics'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
 import { Route as RestaurantIdRouteImport } from './routes/restaurant.$id'
@@ -313,6 +314,11 @@ const RiderHistoryRoute = RiderHistoryRouteImport.update({
 const RiderEarningsRoute = RiderEarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderBazaarRoute = RiderBazaarRouteImport.update({
+  id: '/bazaar',
+  path: '/bazaar',
   getParentRoute: () => RiderRoute,
 } as any)
 const RiderAnalyticsRoute = RiderAnalyticsRouteImport.update({
@@ -1108,6 +1114,7 @@ export interface FileRoutesByFullPath {
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/analytics': typeof RiderAnalyticsRoute
+  '/rider/bazaar': typeof RiderBazaarRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
@@ -1264,6 +1271,7 @@ export interface FileRoutesByTo {
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/analytics': typeof RiderAnalyticsRoute
+  '/rider/bazaar': typeof RiderBazaarRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
@@ -1427,6 +1435,7 @@ export interface FileRoutesById {
   '/restaurant/$id': typeof RestaurantIdRoute
   '/rider/active': typeof RiderActiveRoute
   '/rider/analytics': typeof RiderAnalyticsRoute
+  '/rider/bazaar': typeof RiderBazaarRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
@@ -1591,6 +1600,7 @@ export interface FileRouteTypes {
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/analytics'
+    | '/rider/bazaar'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
@@ -1747,6 +1757,7 @@ export interface FileRouteTypes {
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/analytics'
+    | '/rider/bazaar'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
@@ -1909,6 +1920,7 @@ export interface FileRouteTypes {
     | '/restaurant/$id'
     | '/rider/active'
     | '/rider/analytics'
+    | '/rider/bazaar'
     | '/rider/earnings'
     | '/rider/history'
     | '/rider/incentives'
@@ -2156,6 +2168,13 @@ declare module '@tanstack/react-router' {
       path: '/earnings'
       fullPath: '/rider/earnings'
       preLoaderRoute: typeof RiderEarningsRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/bazaar': {
+      id: '/rider/bazaar'
+      path: '/bazaar'
+      fullPath: '/rider/bazaar'
+      preLoaderRoute: typeof RiderBazaarRouteImport
       parentRoute: typeof RiderRoute
     }
     '/rider/analytics': {
@@ -3438,6 +3457,7 @@ const PartnerRouteWithChildren =
 interface RiderRouteChildren {
   RiderActiveRoute: typeof RiderActiveRoute
   RiderAnalyticsRoute: typeof RiderAnalyticsRoute
+  RiderBazaarRoute: typeof RiderBazaarRoute
   RiderEarningsRoute: typeof RiderEarningsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
   RiderIncentivesRoute: typeof RiderIncentivesRoute
@@ -3455,6 +3475,7 @@ interface RiderRouteChildren {
 const RiderRouteChildren: RiderRouteChildren = {
   RiderActiveRoute: RiderActiveRoute,
   RiderAnalyticsRoute: RiderAnalyticsRoute,
+  RiderBazaarRoute: RiderBazaarRoute,
   RiderEarningsRoute: RiderEarningsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
   RiderIncentivesRoute: RiderIncentivesRoute,
