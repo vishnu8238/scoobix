@@ -85,8 +85,14 @@ function ApprovalsPage() {
     <div className="space-y-6">
       <header>
         <h1 className="font-display text-2xl font-extrabold tracking-tight">Restaurant approvals</h1>
-        <p className="text-sm text-muted-foreground">{loading ? "Loading…" : `${list.length} pending applications`}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">{loading ? "Loading…" : `${list.length} pending applications`}</p>
+        </div>
       </header>
+
+      <div className="mt-8 mb-12">
+        <ManagerOnboardingRegression />
+      </div>
 
       {!loading && list.length === 0 ? (
         <div className="rounded-3xl bg-card p-12 text-center shadow-soft ring-1 ring-border/60">
