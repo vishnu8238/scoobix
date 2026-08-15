@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { listTable, patchRecord } from "@/lib/insforge-crud";
 import { notifyManagerDecision, type ManagedRestaurant } from "@/lib/manager-api";
+import { ManagerOnboardingRegression } from "@/components/admin/ManagerOnboardingRegression";
 
 export const Route = createFileRoute("/admin/approvals")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Restaurant approvals" }] }),
