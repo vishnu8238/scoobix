@@ -78,30 +78,44 @@ function RiderActive() {
 
   // --- Sync with backend ---
   const load = useCallback(async () => {
+    if (driverLoading) return;
     if (!driverId) { 
       setOrder(null); 
       setLoading(false); 
       return; 
     }
-    const rows = await listTable<OrderRow>("orders", {
-      driver_id: `eq.${driverId}`,
-      order: "created_at.desc",
-      limit: 5,
-    });
     
-    const active = rows.find((r) => ACTIVE_STATUSES.includes(String(r.status ?? "").toUpperCase())) ?? null;
-    setOrder(active);
-    setLoading(false);
+    setLoading(true);
+    try {
+      const rows = await listTable<OrderRow>("orders", {
+        driver_id: `eq.${driverId}`,
+        order: "created_at.desc",
+        limit: 10,
+      }, { fresh: true, ttl: 0 });
+      
+      const active = (rows || []).find((r) => ACTIVE_STATUSES.includes(String(r.status ?? "").toUpperCase())) ?? null;
+      setOrder(active);
 
-    if (active?.restaurant_id) {
-      const rs = await listTable<any>("restaurants", { id: `eq.${active.restaurant_id}`, limit: 1 });
-      setRestaurant(rs[0] ?? null);
+      if (active?.restaurant_id) {
+        const rs = await listTable<any>("restaurants", { id: `eq.${active.restaurant_id}`, limit: 1 });
+        setRestaurant(rs[0] ?? null);
+      } else {
+        setRestaurant(null);
+      }
+      
+      if (active?.customer_id) {
+        const us = await listTable<any>("users", { id: `eq.${active.customer_id}`, limit: 1 });
+        setCustomer(us[0] ?? null);
+      } else {
+        setCustomer(null);
+      }
+    } catch (err: any) {
+      console.error("[ACTIVE_DELIVERY_LOAD_ERROR]", err);
+      toast.error("Failed to sync delivery state. Please retry.");
+    } finally {
+      setLoading(false);
     }
-    if (active?.customer_id) {
-      const us = await listTable<any>("users", { id: `eq.${active.customer_id}`, limit: 1 });
-      setCustomer(us[0] ?? null);
-    }
-  }, [driverId]);
+  }, [driverId, driverLoading]);
 
   useEffect(() => { void load(); }, [load]);
 
