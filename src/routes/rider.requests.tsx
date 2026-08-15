@@ -126,22 +126,30 @@ function RiderRequestsPage() {
             <div className="h-16 w-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-4">
               <AlertCircle className="h-8 w-8" />
             </div>
-            <p className="text-sm font-bold text-foreground">{error || driverError}</p>
+            <p className="text-sm font-bold text-foreground">{error}</p>
             <button 
-              onClick={() => void loadGigs()}
+              onClick={() => void loadData()}
               className="mt-6 rounded-2xl bg-primary px-8 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow"
             >
               Retry Sync
             </button>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : useMemo(() => {
+          if (tab === "available") return gigs.filter(g => !enrolledIds.has(g.id));
+          if (tab === "booked") return gigs.filter(g => enrolledIds.has(g.id));
+          return gigs.filter(g => new Date(g.end_time) < new Date());
+        }, [gigs, enrolledIds, tab]).length === 0 ? (
           <EmptyState 
             icon={<Calendar className="h-8 w-8 text-muted-foreground/30" />}
             title={`No ${tab} gigs`}
             description={tab === "available" ? "Check back later for new shifts." : "Your scheduled gigs will appear here."}
           />
         ) : (
-          filtered.map(gig => (
+          gigs.filter(gig => {
+            if (tab === "available") return !enrolledIds.has(gig.id);
+            if (tab === "booked") return enrolledIds.has(gig.id);
+            return new Date(gig.end_time) < new Date();
+          }).map(gig => (
             <GigCard 
               key={gig.id} 
               gig={gig} 
@@ -153,7 +161,7 @@ function RiderRequestsPage() {
         )}
       </div>
 
-      {tab === "available" && !loading && filtered.length > 0 && !isError && (
+      {tab === "available" && !loading && gigs.filter(g => !enrolledIds.has(g.id)).length > 0 && !isError && (
         <div className="mx-4 mt-8 rounded-3xl bg-primary/5 p-5 ring-1 ring-primary/10">
            <div className="flex gap-3">
               <Info className="h-5 w-5 text-primary shrink-0" />
