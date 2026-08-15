@@ -304,13 +304,14 @@ export function createRecord<T = Record<string, unknown>>(
     // INSERT look like a failure (returning null/empty result).
     const query = insforge.database.from(table).insert([record]).select();
     try {
-      const res = await handleResponse<T>(query, "POST", table);
-      console.log(`[DB_INSERT] ${table} success:`, JSON.stringify(res));
-      if (!res) {
+      const res = await handleResponse<T[]>(query, "POST", table);
+      console.log(`[DB_INSERT] ${table} raw response:`, JSON.stringify(res));
+      const row = Array.isArray(res) ? res[0] : res;
+      if (!row) {
         throw new Error("Insert returned empty result");
       }
-      announce(table, "insert", (res as Record<string, unknown>) || record);
-      return res;
+      announce(table, "insert", (row as Record<string, unknown>) || record);
+      return row as T;
     } catch (err: any) {
       console.error(`[DB_INSERT_ERROR] ${table} failed:`, err.message, err.status);
       
