@@ -29,40 +29,46 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  console.log("[GIGS_API] Fetching authoritative gigs...", JSON.stringify(params));
+  // DISCOVERY: Try to find the correct table name
+  const TABLE = "gigs"; 
+  console.log(`[GIGS_API] Fetching authoritative data from "${TABLE}"...`, JSON.stringify(params));
+  
   try {
-    const data = await listTable<Gig>("gigs", { 
-      select: "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,subzone_id,city_id,capacity,completion_pct,created_at",
+    const data = await listTable<Gig>(TABLE, { 
+      select: "*",
       order: "created_at.desc", 
       ...params 
     }, { fresh: true });
     
     // Diagnostic log for production visibility
-    console.log(`[GIGS_API] Fetch success. Found ${data.length} gigs. First 2 ids:`, 
-      data.slice(0, 2).map(g => g.id).join(", "));
+    console.log(`[GIGS_API] Fetch success from "${TABLE}". Found ${data.length} rows. Project: ${import.meta.env.VITE_SUPABASE_URL || 'Lovable Cloud'}`);
+    if (data.length > 0) {
+      console.log(`[GIGS_API] First row diagnostic: ID=${data[0].id} Title="${data[0].title}" Start="${data[0].start_time}"`);
+    }
     
     return data;
   } catch (err: any) {
-    console.error("[GIGS_API] Fetch failed:", err.message, err.status);
+    console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message, "Status:", err.status);
     throw err;
   }
 }
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
+  const TABLE = "gigs";
   const id = newUuid();
-  console.log("[GIGS_API] Attempting Gig creation...", JSON.stringify({ id, ...gig }));
+  console.log(`[GIGS_API] Attempting INSERT into "${TABLE}"...`, JSON.stringify({ id, ...gig }));
+  
   try {
-    const res = await createRecord<Gig>("gigs", { ...gig, id });
+    const res = await createRecord<Gig>(TABLE, { ...gig, id });
     if (res) {
-      console.log("[GIGS_API] Create SUCCESS. Authoritative response:", JSON.stringify(res));
-      publishTableChange("gigs", "insert", res as any);
+      console.log(`[GIGS_API] Authoritative INSERT success into "${TABLE}". Response:`, JSON.stringify(res));
+      // Read-back is already handled in createRecord, so if we're here, it's verified.
+      publishTableChange(TABLE, "insert", res as any);
       return res;
     }
-    console.error("[GIGS_API] Create returned null/empty. This usually means an RLS failure on SELECT-back.");
-    // We return the input as a "optimistic" success if createRecord didn't throw
-    return { ...gig, id, created_at: new Date().toISOString() } as unknown as Gig;
+    throw new Error(`Insert into "${TABLE}" returned null without throwing - check RLS/Table Existence`);
   } catch (error: any) {
-    console.error("[GIGS_API] Create FATAL ERROR:", error.message, "Status:", error.status);
+    console.error(`[GIGS_API] Create FATAL ERROR on "${TABLE}":`, error.message, "Status:", error.status);
     throw error;
   }
 }
