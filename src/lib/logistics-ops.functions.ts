@@ -372,7 +372,8 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         city_id: city1Id,
         zone_id: zone1Id,
         capacity: 10,
-        metadata: { is_demo: true }
+        metadata: { is_demo: true },
+        created_at: new Date().toISOString()
       },
       {
         id: "demo-gig-2",
@@ -386,7 +387,8 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         city_id: city1Id,
         zone_id: zone1Id,
         capacity: 15,
-        metadata: { is_demo: true }
+        metadata: { is_demo: true },
+        created_at: new Date().toISOString()
       },
       {
         id: "demo-gig-3",
@@ -400,7 +402,8 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         city_id: city1Id,
         zone_id: zone1Id,
         capacity: 8,
-        metadata: { is_demo: true }
+        metadata: { is_demo: true },
+        created_at: new Date().toISOString()
       }
     ];
 

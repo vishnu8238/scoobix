@@ -99,10 +99,11 @@ function LogisticsGigs() {
         total: all.length,
         filtered: data.length,
         filterDate: localDateStr,
-        firstGig: all[0] ? { id: all[0].id, title: all[0].title, isDemo: !!(all[0].metadata as any)?.is_demo } : "none",
+        firstGig: all[0] ? { id: all[0].id, title: all[0].title, isDemo: !!all[0].metadata?.is_demo } : "none",
         sessionActive: !!insforge.auth.session?.accessToken,
         tokenPrefix: insforge.auth.session?.accessToken ? insforge.auth.session.accessToken.substring(0, 10) : "none"
       });
+
 
     } catch (err: any) {
       console.error("[GIGS_PAGE] Authoritative load failed:", err);
@@ -150,11 +151,12 @@ function LogisticsGigs() {
         target_deliveries: 1,
         start_time: now.toISOString(),
         end_time: new Date(now.getTime() + 86400000).toISOString(),
-        status: "ACTIVE",
+        status: "ACTIVE" as const,
         city_id: "c1110000-0000-0000-0000-000000000001",
         zone_id: "z1110000-0000-0000-0000-000000000001",
         capacity: 1,
-        metadata: { is_test: true, timestamp: now.toISOString() }
+        metadata: { is_test: true, timestamp: now.toISOString() },
+        created_at: now.toISOString()
       };
 
       console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test with table discovery...");
