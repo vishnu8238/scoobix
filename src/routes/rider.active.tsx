@@ -246,7 +246,7 @@ function RiderActive() {
           Accept a new delivery request from the feed or booked gigs to start your journey.
         </p>
         <button 
-          onClick={() => navigate({ to: "/rider" })}
+          onClick={() => navigate({ to: "/rider/requests" })}
           className="mt-8 rounded-2xl bg-primary px-8 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition-all"
         >
           View Requests
