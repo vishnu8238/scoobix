@@ -470,22 +470,79 @@ function OnboardingFlow() {
 
           {step === 3 && (
             <>
-              <div className="grid grid-cols-2 gap-3">
-                <ImageUploader
-                  type="logo"
-                  label="Logo"
-                  value={form.logo_url ? ({ image_url: form.logo_url } as ImageRef) : null}
-                  onChange={(ref) => set({ logo_url: ref?.image_url ?? "" })}
-                />
-                <ImageUploader
-                  type="cover"
-                  label="Cover image"
-                  aspect="aspect-[16/9]"
-                  value={form.cover_url ? ({ image_url: form.cover_url } as ImageRef) : null}
-                  onChange={(ref) => set({ cover_url: ref?.image_url ?? "" })}
-                />
+              <ImageUploader
+                type="logo"
+                label="Restaurant Logo"
+                value={form.logo_url ? ({ image_url: form.logo_url } as ImageRef) : null}
+                onChange={(ref) => set({ logo_url: ref?.image_url ?? "" })}
+              />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between rounded-2xl bg-secondary/30 p-4 ring-1 ring-border/50">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-bold">Cover image</Label>
+                    <p className="text-[11px] text-muted-foreground text-wrap max-w-[200px]">Optional landscape photo for the restaurant header.</p>
+                  </div>
+                  <button
+                    onClick={() => set({ has_cover: !form.has_cover })}
+                    className={cn(
+                      "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                      form.has_cover ? "bg-primary" : "bg-muted-foreground/30"
+                    )}
+                  >
+                    <span className={cn(
+                      "absolute top-1 left-1 h-4 w-4 rounded-full bg-white transition-transform",
+                      form.has_cover ? "translate-x-5" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+                {form.has_cover && (
+                  <ImageUploader
+                    type="cover"
+                    label="Cover image"
+                    aspect="aspect-[16/9]"
+                    value={form.cover_url ? ({ image_url: form.cover_url } as ImageRef) : null}
+                    onChange={(ref) => set({ cover_url: ref?.image_url ?? "" })}
+                  />
+                )}
+
+                <div className="flex items-center justify-between rounded-2xl bg-secondary/30 p-4 ring-1 ring-border/50">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-bold">Guest / Gallery image</Label>
+                    <p className="text-[11px] text-muted-foreground text-wrap max-w-[200px]">Optional photo of the dining area or guest experience.</p>
+                  </div>
+                  <button
+                    onClick={() => set({ has_gallery: !form.has_gallery })}
+                    className={cn(
+                      "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                      form.has_gallery ? "bg-primary" : "bg-muted-foreground/30"
+                    )}
+                  >
+                    <span className={cn(
+                      "absolute top-1 left-1 h-4 w-4 rounded-full bg-white transition-transform",
+                      form.has_gallery ? "translate-x-5" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+                {form.has_gallery && (
+                  <ImageUploader
+                    type="banner"
+                    label="Gallery / Guest Image"
+                    aspect="aspect-[16/10]"
+                    value={form.documents.find(d => d.label === "Gallery / Guest Image") ? ({ image_url: form.documents.find(d => d.label === "Gallery / Guest Image")?.url } as ImageRef) : null}
+                    onChange={(ref) =>
+                      set({
+                        documents: ref?.image_url
+                          ? [...form.documents.filter((d) => d.label !== "Gallery / Guest Image"), { label: "Gallery / Guest Image", url: ref.image_url }]
+                          : form.documents.filter((d) => d.label !== "Gallery / Guest Image"),
+                      })
+                    }
+                  />
+                )}
               </div>
-              <div className="space-y-3">
+
+              <div className="mt-6 space-y-3">
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1">Required documents</Label>
                 {DOC_SLOTS.map((label) => {
                   const doc = form.documents.find((d) => d.label === label);
                   return (
