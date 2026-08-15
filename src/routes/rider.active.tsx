@@ -5,7 +5,8 @@ import {
   Phone, Navigation, MapPin, Store, User, CheckCircle2, 
   ShieldCheck, Wallet, Star, Loader2, PackageOpen, Battery, 
   Zap, Bell, Volume2, Info, XCircle, ChevronRight,
-  Camera, FileCheck, CreditCard, AlertTriangle, MessageSquare
+  Camera, FileCheck, CreditCard, AlertTriangle, MessageSquare,
+  Bike
 } from "lucide-react";
 import { toast } from "sonner";
 import { onTableChange } from "@/lib/realtime-bus";
@@ -304,7 +305,7 @@ function RiderActive() {
                   <button onClick={() => handleStatusChange("ARRIVED_AT_CUSTOMER")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
                     I've Arrived at Customer
                   </button>
-                  <button onClick={() => startNavigation({ address: order.delivery_address })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
+                  <button onClick={() => startNavigation({ address: (order.delivery_address as string) || "" })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
                     <Navigation className="h-4 w-4" /> Navigate to Customer
                   </button>
                 </>
@@ -316,7 +317,7 @@ function RiderActive() {
                     <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Collect Cash</p>
                        <div className="mt-2 flex items-baseline justify-between">
-                          <span className="font-display text-2xl font-black text-emerald-800">{formatPrice(order.total_price)}</span>
+                          <span className="font-display text-2xl font-black text-emerald-800">{formatPrice(Number(order.total_price) || 0)}</span>
                           <CreditCard className="h-5 w-5 text-emerald-600" />
                        </div>
                     </div>
@@ -347,7 +348,7 @@ function RiderActive() {
                  <User className="h-5 w-5 text-zinc-900" />
                  <div className="flex-1">
                     <h3 className="font-display text-lg font-extrabold">{customer?.name || "Customer"}</h3>
-                    <p className="text-xs text-muted-foreground truncate">{order.delivery_address}</p>
+                    <p className="text-xs text-muted-foreground truncate">{(order.delivery_address as React.ReactNode) || ""}</p>
                  </div>
                  <a href={`tel:${customer?.phone || '100'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-zinc-900">
                     <Phone className="h-4 w-4" />
@@ -358,7 +359,7 @@ function RiderActive() {
            <div className="rounded-2xl bg-muted/30 p-4">
               <div className="flex items-center justify-between mb-3">
                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order Items</span>
-                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">₹{order.total_price} Total</span>
+                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">₹{(order.total_price as React.ReactNode) || 0} Total</span>
               </div>
               <ul className="space-y-2">
                  {/* Logic to parse items from order.items */}
