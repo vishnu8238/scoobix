@@ -61,7 +61,8 @@ const ACTIVE_STATUSES = [
 
 function RiderActive() {
   const navigate = useNavigate();
-  const { settings } = useCms();
+  const cms = useCms();
+  const settings = cms?.settings;
   const { driver, driverId, loading: driverLoading, update: updateDriver } = useDriver();
 
   const [order, setOrder] = useState<OrderRow | null>(null);
