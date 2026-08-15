@@ -64,13 +64,14 @@ function RiderActive() {
   const navigate = useNavigate();
   const cms = useCms();
   const settings = cms?.settings;
-  const { driver, driverId, loading: driverLoading, update: updateDriver } = useDriver();
+  const { driver, driverId, loading: driverLoading, error: driverError, update: updateDriver } = useDriver();
 
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [activeOffer, setActiveOffer] = useState<any | null>(null);
   const [restaurant, setRestaurant] = useState<any | null>(null);
   const [customer, setCustomer] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [otp, setOtp] = useState("");
   const [showFailedModal, setShowFailedModal] = useState(false);
@@ -78,7 +79,7 @@ function RiderActive() {
 
   // --- Sync with backend ---
   const load = useCallback(async () => {
-    // Always clear loading if driver resolution fails or completes
+    // If driver is still loading, wait. useDriver has a timeout.
     if (driverLoading) return;
     
     if (!driverId) { 
@@ -88,8 +89,17 @@ function RiderActive() {
     }
     
     setLoading(true);
+    setError(null);
+
+    // Watchdog for active order loading
+    const timeoutId = setTimeout(() => {
+      console.warn("[RIDER_ACTIVE] Order lookup timed out after 10s");
+      setLoading(false);
+      setError("Syncing is taking longer than expected. Please check your connection.");
+    }, 10000);
+
     try {
-      console.log("[RIDER_ACTIVE] Fetching active order for driver:", driverId);
+      console.log("[RIDER_ACTIVE] Fetching active order for driver authoritative check:", driverId);
       const rows = await listTable<OrderRow>("orders", {
         driver_id: `eq.${driverId}`,
         order: "created_at.desc",
@@ -118,8 +128,9 @@ function RiderActive() {
       }
     } catch (err: any) {
       console.error("[RIDER_ACTIVE] Sync error:", err);
-      toast.error("Network error while syncing delivery state.");
+      setError("Failed to sync delivery state. Tap to retry.");
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   }, [driverId, driverLoading]);
@@ -198,11 +209,34 @@ function RiderActive() {
 
   const currentStatus = String(order?.status ?? "").toUpperCase();
 
-  if (driverLoading || loading) {
+  const isActuallyLoading = loading || driverLoading;
+  const isError = !!(error || driverError);
+
+  if (isActuallyLoading) {
     return (
       <div className="flex min-h-[60svh] flex-col items-center justify-center py-20 opacity-40">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em]">Syncing delivery state...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex min-h-[80svh] flex-col items-center justify-center p-8 text-center">
+        <div className="h-20 w-20 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-6">
+          <AlertTriangle className="h-10 w-10" />
+        </div>
+        <h2 className="font-display text-2xl font-extrabold tracking-tight">Sync Failed</h2>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+          {error || driverError}
+        </p>
+        <button 
+          onClick={() => void load()}
+          className="mt-8 rounded-2xl bg-primary px-8 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition-all"
+        >
+          Retry Sync
+        </button>
       </div>
     );
   }
