@@ -104,7 +104,7 @@ function LogisticsGigs() {
         
         <div className="flex flex-wrap items-center gap-3">
           <GigStats 
-            totalGigs={gigs.length} 
+            totalGigs={allGigsCount ?? gigs.length} 
             needed={1080} 
             enrolled={162} 
             fullyBooked={0} 
@@ -223,6 +223,20 @@ function LogisticsGigs() {
                 {filteredGigs.map((gig) => (
                   <GigCard key={gig.id} gig={gig} />
                 ))}
+              </div>
+            )}
+            {diagnostics && (
+              <div className="mt-8 rounded-2xl bg-slate-900/5 p-4 text-[10px] font-mono text-slate-500 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
+                <p className="mb-2 font-black uppercase tracking-widest text-slate-400">Production Diagnostics</p>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                  <div>Table: <span className="text-primary font-bold">gigs</span></div>
+                  <div>Total Rows: <span className="text-primary font-bold">{diagnostics.total ?? 0}</span></div>
+                  <div>Filtered: <span className="text-primary font-bold">{diagnostics.filtered ?? 0}</span></div>
+                  <div>Active Date: <span className="text-primary font-bold">{diagnostics.filterDate}</span></div>
+                </div>
+                {diagnostics.error && (
+                  <div className="mt-2 text-rose-500">Error: {diagnostics.error} ({diagnostics.status})</div>
+                )}
               </div>
             )}
           </section>
