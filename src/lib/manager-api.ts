@@ -334,14 +334,38 @@ export async function saveOnboardingDraft(
   id: string | null,
   values: Record<string, unknown>,
 ): Promise<ManagedRestaurant | null> {
-  if (id) {
-    await patchRecord("restaurants", id, values);
-    const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 });
+  // Ensure we never use "pending-refresh" in a query
+  const safeId = id && id !== "pending-refresh" ? id : null;
+
+  if (safeId) {
+    await patchRecord("restaurants", safeId, values);
+    const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${safeId}`, limit: 1 });
     return rows[0] ?? null;
   }
   const created = await createRecord<ManagedRestaurant[] | ManagedRestaurant>("restaurants", values);
   const row = Array.isArray(created) ? created[0] : created;
-  return (row as ManagedRestaurant) ?? null;
+  const result = (row as ManagedRestaurant) ?? null;
+
+  // Authoritative UUID resolution from insert response
+  if (result && result.id && result.id !== "pending-refresh") {
+    return result;
+  }
+
+  // Fallback: If result doesn't have a valid ID, fetch the most recent draft for this manager
+  const managerId = values.manager_id as string;
+  if (managerId) {
+    const latest = await listTable<ManagedRestaurant>("restaurants", {
+      manager_id: `eq.${managerId}`,
+      order: "created_at.desc",
+      limit: 1,
+    });
+    if (latest[0] && latest[0].id) {
+      console.info(`[SAVE_DRAFT_FALLBACK] Resolved UUID from manager history: ${latest[0].id}`);
+      return latest[0];
+    }
+  }
+
+  return result;
 }
 
 export async function logOnboardingEvent(input: {

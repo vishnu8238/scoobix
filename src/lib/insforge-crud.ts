@@ -347,7 +347,7 @@ export function createRecord<T = Record<string, unknown>>(
       const status = err.status || 0;
       if (status === 406 || status === 404 || status === 0) {
         console.warn(`[DB_RLS_GUARD] Optimistically treating ${status} as a SELECT-back failure for ${table}. Returning input.`);
-        const fallback = { ...record, id: (record.id || "pending-refresh") } as unknown as T;
+        const fallback = { ...record } as unknown as T;
         announce(table, "insert", record);
         return fallback;
       }
