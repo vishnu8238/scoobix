@@ -91,18 +91,28 @@ export async function fetchGigs(params?: Record<string, any>) {
 
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
-  const TABLE = "gigs";
+  // Authoritative write candidate discovery
+  const TABLE_CANDIDATES = ["gigs", "delivery_gigs"];
   const id = newUuid();
-  try {
-    const res = await createRecord<Gig>(TABLE, { ...gig, id });
-    if (res) {
-      publishTableChange(TABLE, "insert", res as any);
-      return res;
+  
+  let lastError: any = null;
+  for (const table of TABLE_CANDIDATES) {
+    try {
+      console.log(`[GIGS_API] Authoritative write attempt on "${table}"...`);
+      const res = await createRecord<Gig>(table, { ...gig, id });
+      if (res) {
+        publishTableChange(table, "insert", res as any);
+        return res;
+      }
+    } catch (error: any) {
+      console.warn(`[GIGS_API] Write failed for "${table}":`, error.message);
+      lastError = error;
+      // If it's a relation error, try next candidate
+      if (error.status === 404 || error.isRelationError) continue;
+      throw error;
     }
-    throw new Error(`Insert into "${TABLE}" returned null`);
-  } catch (error: any) {
-    throw error;
   }
+  throw lastError || new Error(`Failed to create gig on all candidates: ${TABLE_CANDIDATES.join(", ")}`);
 }
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
