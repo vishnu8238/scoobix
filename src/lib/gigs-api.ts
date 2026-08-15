@@ -17,6 +17,7 @@ export type Gig = {
   city_id?: string;
   completion_pct?: number;
   capacity?: number;
+  metadata?: Record<string, any>;
   created_at: string;
 };
 

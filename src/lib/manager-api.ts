@@ -199,6 +199,7 @@ export async function provisionAccount(input: {
     limit: 1,
   });
   if (existing[0]?.id) {
+    console.info(`[PROVISION_ACCOUNT] Reusing existing user account for ${email}: ${existing[0].id}`);
     await patchRecord("users", existing[0].id, {
       role: input.role,
       name: input.name || undefined,
@@ -206,6 +207,7 @@ export async function provisionAccount(input: {
     });
     return { ok: true, userId: existing[0].id, password, message: "Existing account reused" };
   }
+
 
   let userId: string | undefined;
   try {
@@ -334,8 +336,9 @@ export async function saveOnboardingDraft(
   id: string | null,
   values: Record<string, unknown>,
 ): Promise<ManagedRestaurant | null> {
-  // Ensure we never use "pending-refresh" in a query
-  const safeId = id && id !== "pending-refresh" ? id : null;
+  // Ensure we never use "pending-refresh" or invalid sentinels in a query
+  const safeId = id && id !== "pending-refresh" && id.includes("-") ? id : null;
+
 
   if (safeId) {
     await patchRecord("restaurants", safeId, values);

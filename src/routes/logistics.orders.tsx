@@ -34,13 +34,33 @@ function OrderLedger() {
   const version = useTableVersion(["orders"]);
 
   const load = useCallback(async () => {
-    const [o, r, u] = await Promise.all([
-      listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
-      listTable<NamedRow>("restaurants", { limit: 500 }),
-      listTable<NamedRow>("users", { limit: 1000 }),
-    ]);
-    setOrders(o); setRestaurants(r); setUsers(u); setLoading(false);
+    setLoading(true);
+    try {
+      const [o, r, u] = await Promise.all([
+        listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
+        listTable<NamedRow>("restaurants", { limit: 500 }),
+        listTable<NamedRow>("users", { limit: 1000 }),
+      ]);
+      
+      let finalOrders = o;
+      if (o.length === 0) {
+        const { getLogisticsDemoData } = await import("@/lib/logistics-ops.functions");
+        const demo = await getLogisticsDemoData();
+        if (demo?.orders?.length) {
+          finalOrders = demo.orders as OrderRow[];
+        }
+      }
+
+      setOrders(finalOrders); 
+      setRestaurants(r); 
+      setUsers(u);
+    } catch (e) {
+      console.error("[ORDERS_LOAD_ERROR]", e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
 
   useEffect(() => {
     void load();
@@ -129,7 +149,13 @@ function OrderLedger() {
           <DataTable
             columns={["Order", "Customer", "Restaurant", "Total", "Status", "Time", "Action"]}
             rows={visible.map((o) => [
-              <code key={`code${o.id}`} className="font-mono text-[10px] font-bold text-primary">#{o.id.slice(0, 8)}</code>,
+              <div key={`order_ref_${o.id}`} className="flex flex-col">
+                <code className="font-mono text-[10px] font-bold text-primary">#{o.id.slice(0, 8)}</code>
+                {(o as any).metadata?.is_demo && (
+                  <span className="text-[8px] font-black text-amber-500 uppercase tracking-tighter">Demo Data</span>
+                )}
+              </div>,
+
               <span key={`name${o.id}`} className="font-bold">{userById[String(o.customer_id)] || "—"}</span>,
               <span key={`owner${o.id}`} className="text-muted-foreground">{nameById[String(o.restaurant_id)] || "—"}</span>,
               <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price || 0)}</span>,
