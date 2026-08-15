@@ -112,6 +112,7 @@ function TrackPage() {
             }}
             riderProgress={driverCoords ? undefined : statusToProgress(order.status)}
             riderLabel={order.driver.name}
+
             markers={[
               { id: "r", kind: "restaurant", label: order.restaurantName, ...pickup },
               { id: "c", kind: "customer", label: "Delivery here", ...drop },
