@@ -178,7 +178,7 @@ function applyParams(query: any, params?: Record<string, string | number | undef
   return q;
 }
 
-async function handleResponse<T>(promise: Promise<any>, method: string, table: string): Promise<T> {
+export async function handleResponse<T>(promise: Promise<any>, method: string, table: string): Promise<T> {
   const t0 = Date.now();
   try {
     const res = await promise;
