@@ -4,7 +4,7 @@
  * This module centralizes all delivery-related state transitions and realtime 
  * event handling across Rider, Logistics, Partner, Customer, and Admin portals.
  */
-import { onTableChange, onAnyChange, publishTableChange } from "./realtime-bus";
+import { onTableChange, onAnyChange, publishTableChange, subscribeChannel } from "./realtime-bus";
 import { patchRecord, createRecord, listTable } from "./insforge-crud";
 import { OrderStatus, STATUS_TRANSITIONS } from "./orders-api";
 import { newUuid } from "./orders-api";
