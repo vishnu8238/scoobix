@@ -118,6 +118,26 @@ function ApprovalsPage() {
                 <Info label="Submitted" value={fmtDate(r.created_at)} />
               </div>
 
+              {(r as any).documents && Array.isArray((r as any).documents) && (r as any).documents.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1">Documents</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(r as any).documents.map((doc: any, i: number) => (
+                      <a 
+                        key={i} 
+                        href={doc.url} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 rounded-xl bg-primary-soft px-3 py-1.5 text-[11px] font-bold text-primary transition hover:bg-primary/10"
+                      >
+                        <FileCheck2 className="h-3 w-3" />
+                        {doc.label || "Document"}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="mt-5 flex items-center gap-2">
                 <Button onClick={() => act(r.id, false)} variant="outline" className="flex-1 rounded-full"><X className="mr-1 h-4 w-4" /> Reject</Button>
                 <Button onClick={() => act(r.id, true)} className="flex-1 rounded-full gradient-primary text-primary-foreground shadow-glow"><Check className="mr-1 h-4 w-4" /> Approve</Button>
