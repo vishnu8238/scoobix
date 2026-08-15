@@ -103,10 +103,12 @@ export function ZoneManager() {
 
         <div className="flex flex-1 items-center gap-3">
           <div className="flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 shadow-lg backdrop-blur-md ring-1 ring-black/5 dark:bg-zinc-900/90">
-             <ListFilter className="h-4 w-4 text-muted-foreground" />
-             <select className="bg-transparent text-sm font-bold outline-none">
+             <select 
+               className="bg-transparent text-sm font-bold outline-none"
+               onChange={(e) => setQ(e.target.value === "All Cities" ? "" : e.target.value)}
+             >
                 <option>All Cities</option>
-                {Array.from(new Set(zones.map(z => z.city).filter(Boolean))).map(city => (
+                {Array.from(new Set(zones.map(z => z.city || "Vadodara").filter(Boolean))).map(city => (
                   <option key={city}>{city}</option>
                 ))}
              </select>

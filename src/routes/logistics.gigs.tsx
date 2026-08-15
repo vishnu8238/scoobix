@@ -52,22 +52,19 @@ function LogisticsGigs() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch total count first to prove persistence
-      const all = await fetchGigs({ limit: 1000, "start_time.gte": "2020-01-01T00:00:00Z" });
+      // 1. Fetch total count and data from authoritative sources
+      const all = await fetchGigs({ limit: 1000 });
       setAllGigsCount(all.length);
       
       const today = new Date(selectedDate.getTime() - (selectedDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-      console.log(`[GIGS_PAGE] Filtering for calendar day: ${today} (Local: ${selectedDate.toString()})`);
       
-      // Broaden filter to catch boundary issues (±1 day)
-      // or just filter client-side for absolute proof if the table is small
+      // Filter client-side to ensure calendar date alignment regardless of backend timezone/params
       const data = all.filter(g => {
         if (!g.start_time) return false;
         const gigDate = new Date(g.start_time).toISOString().split('T')[0];
         return gigDate === today;
       });
       
-      console.log(`[GIGS_PAGE] Filtered ${data.length} gigs for ${today} from ${all.length} total.`);
       setGigs(data);
       
       setDiagnostics({

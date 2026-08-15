@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
@@ -10,8 +10,19 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),
-  component: LogisticsOrders,
+  component: LogisticsOrdersLayout,
 });
+
+function LogisticsOrdersLayout() {
+  const routerState = useRouterState();
+  const isDetail = routerState.location.pathname !== "/logistics/orders";
+
+  if (isDetail) {
+    return <Outlet />;
+  }
+
+  return <LogisticsOrders />;
+}
 
 type OrderRow = {
   id: string;
@@ -82,7 +93,7 @@ function LogisticsOrders() {
             onClick={async () => {
               setIsSeeding(true);
               try {
-                const res = await seedDemoOrders({ data: undefined });
+                const res = await seedDemoOrders({ data: {} });
                 if (res.seeded > 0) {
                   toast.success(`Seeded ${res.seeded} new demo orders`);
                 } else if (res.existing > 0) {

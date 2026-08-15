@@ -199,6 +199,7 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
   .middleware([requireInsForgeAuth])
+  .inputValidator(z.object({ data: z.any().optional() }))
   .handler(async ({ context }) => {
     const { insforge } = context;
     console.log("[SEED] Starting idempotent demo seeding via SDK...");
