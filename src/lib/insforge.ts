@@ -26,6 +26,9 @@ if (!(globalThis as any).__INSFORGE_CLIENT__) {
 }
 
 export const insforge = (globalThis as any).__INSFORGE_CLIENT__;
+if (typeof window !== "undefined") {
+  (window as any).insforge = insforge;
+}
 
 /**
  * CACHED ACCESS TOKEN - Single source of truth to avoid async race conditions.
