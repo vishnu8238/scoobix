@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { Home, Inbox, Bike, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield, Info, Calendar, ShoppingBag, History } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
@@ -66,7 +67,7 @@ function RiderLayout() {
 
   return (
     <RoleGuard allow="rider" transitionLabel="Accessing Rider Portal...">
-      <div className="relative min-h-svh bg-background pb-24 md:pb-0 md:pl-64">
+      <div className="relative min-h-svh bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0 md:pl-64">
         
         {/* Desktop Sidebar */}
         <aside className="fixed left-0 top-0 hidden h-full w-64 border-r border-border/60 bg-card p-6 md:block">
