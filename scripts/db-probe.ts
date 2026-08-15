@@ -9,29 +9,33 @@ const insforge = createClient({
 });
 
 async function probe() {
-  const tables = ["cities", "zones", "logistics_zones", "delivery_zones", "subzones", "gigs", "orders", "users"];
+  // Exhaustive list of potential table names for a delivery app
+  const tables = [
+    "cities", "zones", "logistics_zones", "delivery_zones", "subzones", "gigs", "orders", "users",
+    "restaurants", "drivers", "rider_profiles", "staff", "logistics_staff", "partners",
+    "delivery_hubs", "hubs", "areas", "regions", "territories", "slots", "shifts",
+    "profiles", "memberships", "portal_access", "audit_logs", "config", "settings"
+  ];
   const results = {};
 
   for (const table of tables) {
     try {
-      // Try to select just the first row to see column names
       const { data, error, status } = await insforge.database
         .from(table)
         .select("*")
         .limit(1);
       
-      results[table] = {
-        status,
-        exists: status !== 404 && !error?.message?.includes("does not exist"),
-        error: error?.message,
-        columns: data && data.length > 0 ? Object.keys(data[0]) : null,
-        count: data?.length || 0
-      };
-    } catch (e) {
-      results[table] = { error: e.message };
-    }
+      if (status !== 404 && (!error || !error.message.includes("does not exist"))) {
+        results[table] = {
+          exists: true,
+          columns: data && data.length > 0 ? Object.keys(data[0]) : null,
+          count: data?.length || 0
+        };
+      }
+    } catch (e) {}
   }
 
+  console.log("FOUND TABLES:");
   console.log(JSON.stringify(results, null, 2));
 }
 
