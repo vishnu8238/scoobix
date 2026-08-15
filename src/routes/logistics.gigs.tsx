@@ -187,7 +187,7 @@ function LogisticsGigs() {
               userId: authUser.data?.user?.id || "unknown",
               listCount: allRows.length,
               status: verifyRes.status,
-              rawResponse: JSON.stringify(verifyRes.data || verifyRes.result).slice(0, 200)
+              rawResponse: JSON.stringify(verifyRes.data || verifyRes.result || verifyRes.error || verifyRes || {}).slice(0, 200)
             } 
           }));
         }
