@@ -92,6 +92,7 @@ const EMPTY: Form = {
   bank_holder: "", bank_account: "", bank_ifsc: "", bank_name: "",
   gst_number: "", fssai_number: "", pan_number: "", branch_name: "",
   delivery_radius: "5", commission: "20",
+  has_cover: false, has_gallery: false,
 };
 
 const DOC_SLOTS = ["FSSAI licence", "GST certificate", "Owner ID proof"];
