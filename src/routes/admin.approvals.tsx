@@ -32,9 +32,12 @@ function ApprovalsPage() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const rows = await listTable<Row>("restaurants", { limit: 200 });
+      const rows = await listTable<Row>("restaurants", { 
+        status: "in.(pending,submitted)",
+        limit: 200 
+      }, { fresh: true });
       if (cancelled) return;
-      setList(rows.filter((r) => (r.status ?? "").toLowerCase() === "pending"));
+      setList(rows);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -42,25 +45,39 @@ function ApprovalsPage() {
 
   const act = async (id: string, ok: boolean) => {
     const row = list.find((r) => r.id === id);
+    if (!row) return;
+
     setList((p) => p.filter((r) => r.id !== id));
+    
     const status = ok ? "active" : "rejected";
-    const res = await patchRecord("restaurants", id, {
-      status,
-      onboarding_status: ok ? "live" : "rejected",
-      ...(ok ? { approved_at: new Date().toISOString() } : {}),
-    });
-    if (res === null) toast.error("Backend update failed — retry later");
-    else toast.success(ok ? "Restaurant approved" : "Application rejected");
-    if (res !== null && row) {
-      const full = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 });
-      if (full[0]) {
-        await notifyManagerDecision({
-          restaurant: full[0],
-          decision: ok ? "live" : "rejected",
-          note: ok ? "Approved and set live." : "Application rejected by admin.",
+    const onboarding_status = ok ? "live" : "rejected";
+    
+    toast.promise(
+      (async () => {
+        const res = await patchRecord("restaurants", id, {
+          status,
+          onboarding_status,
+          ...(ok ? { approved_at: new Date().toISOString() } : {}),
         });
+
+        if (res === null) throw new Error("Update failed");
+
+        const full = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 });
+        if (full[0]) {
+          await notifyManagerDecision({
+            restaurant: full[0],
+            decision: onboarding_status as any,
+            note: ok ? "Approved and set live." : "Application rejected by admin.",
+          });
+        }
+        return res;
+      })(),
+      {
+        loading: `${ok ? 'Approving' : 'Rejecting'} restaurant...`,
+        success: ok ? "Restaurant approved and set live" : "Application rejected",
+        error: "Backend update failed — retry later",
       }
-    }
+    );
   };
 
   return (
