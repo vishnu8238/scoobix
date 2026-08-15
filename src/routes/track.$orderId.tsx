@@ -156,19 +156,29 @@ function TrackPage() {
           <GoogleMap
             height={260}
             interactive={false}
-            route={{ 
+            route={routePath.length > 1 ? undefined : { 
               from: pickup, 
               to: drop
             }}
             riderProgress={driverCoords ? undefined : statusToProgress(order.status)}
             riderLabel={order.driver.name}
-
+            polylines={[
+              // Remaining road path ahead of the rider
+              ...(routePath.length > 1
+                ? [{ id: "remaining", points: routePath, color: "#94A3B8", weight: 4, dash: true }]
+                : []),
+              // Path already travelled by the rider
+              ...(trail.length > 1
+                ? [{ id: "trail", points: trail, color: "#3B82F6", weight: 5 }]
+                : []),
+            ]}
             markers={[
               { id: "r", kind: "restaurant", label: order.restaurantName, ...pickup },
               { id: "c", kind: "customer", label: "Delivery here", ...drop },
               ...(driverCoords ? [{ id: "d", kind: "rider" as const, label: order.driver.name, ...driverCoords }] : [])
             ]}
           />
+
           <div className="p-4">
             <div className="text-xs font-bold uppercase tracking-wider text-primary">{STATUS_LABEL[order.status]}</div>
             <h2 className="mt-1 font-display text-lg font-bold leading-tight">
