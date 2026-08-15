@@ -31,17 +31,28 @@ export type GigParticipant = {
 export async function fetchGigs(params?: Record<string, any>) {
   const TABLE = "gigs"; 
   try {
+    // We remove explicit select="*" to avoid potential 406 Not Acceptable errors 
+    // if the table is empty or has RLS conflicts with * selection.
+    // We also bypass cache to ensure authoritative production list verification.
+    const { select, ...rest } = params || {};
     const data = await listTable<Gig>(TABLE, { 
-      select: "*",
       order: "start_time.asc", 
-      ...params 
+      ...rest 
     }, { fresh: true });
+    
+    if (!data || !Array.isArray(data)) {
+      console.warn(`[GIGS_API] No array returned from "${TABLE}", returning empty.`);
+      return [];
+    }
+    
     return data;
   } catch (err: any) {
     console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message);
+    // Surface the real error for diagnostics
     throw err;
   }
 }
+
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   const TABLE = "gigs";

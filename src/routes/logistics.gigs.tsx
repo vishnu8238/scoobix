@@ -54,8 +54,11 @@ function LogisticsGigs() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("[GIGS_PAGE] Loading canonical list...");
       // 1. Fetch from canonical gigs table
       const all = await fetchGigs({ limit: 1000 });
+      console.log(`[GIGS_PAGE] Loaded ${all.length} rows.`);
+      
       setAllGigsCount(all.length);
       
       const localDateStr = format(selectedDate, "yyyy-MM-dd");
@@ -64,8 +67,10 @@ function LogisticsGigs() {
       const data = all.filter(g => {
         if (!g.start_time) return false;
         try {
+          // Normalize both to date strings for comparison to avoid TZ boundary issues
           const isoDate = new Date(g.start_time).toISOString().split('T')[0];
-          const gigDate = format(parseISO(g.start_time), "yyyy-MM-dd");
+          const gigDateObj = parseISO(g.start_time);
+          const gigDate = format(gigDateObj, "yyyy-MM-dd");
           return isoDate === localDateStr || gigDate === localDateStr;
         } catch (e) {
           return false;
@@ -79,16 +84,18 @@ function LogisticsGigs() {
         total: all.length,
         filtered: data.length,
         filterDate: localDateStr,
-        firstGig: all[0] ? { title: all[0].title, start: all[0].start_time } : "none"
+        firstGig: all[0] ? { id: all[0].id, title: all[0].title, start: all[0].start_time } : "none",
+        sessionActive: !!insforge.auth.getSession()?.accessToken
       });
     } catch (err: any) {
       console.error("[GIGS_PAGE] Load failed:", err.message);
       toast.error("Failed to load gigs: " + err.message);
-      setDiagnostics({ error: err.message, status: err.status });
+      setDiagnostics({ error: err.message, status: err.status, stack: err.stack });
     } finally {
       setLoading(false);
     }
   }, [selectedDate]);
+
 
   const runGigTest = async () => {
     setIsTesting(true);

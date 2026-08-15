@@ -196,9 +196,12 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
       }
       
       if (method === "GET") {
-        console.warn(`[DB_AUTH_SILENT] Unauthenticated GET ${table}. Returning empty.`);
-        return (Array.isArray(data) ? [] : null) as unknown as T;
+        console.warn(`[DB_AUTH_SILENT] Unauthenticated GET ${table}.`);
+        // If we have no session at all, return empty. But if we have one, let the error flow.
+        const session = insforge.auth.getSession();
+        if (!session?.accessToken) return (Array.isArray(data) ? [] : null) as unknown as T;
       }
+
       
       const authErr = new HttpError(status || 401, error?.message || "Unauthorized: No token provided");
       (authErr as any).isAuthError = true;
