@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { formatPrice } from "@/lib/format";
-import { Check, X, MapPin, Package, Clock, Loader2, Calendar, Info, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
+import { 
+  Check, X, MapPin, Package, Clock, Loader2, Calendar, 
+  Info, ChevronRight, CheckCircle2, AlertCircle, ChevronLeft 
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-store";
 import { listTable } from "@/lib/insforge-crud";
@@ -26,25 +29,23 @@ function RiderRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  
   const version = useTableVersion(["gig_participants", "gigs"]);
-
-  const riderId = user?.id; // Authority is the InsForge Auth ID
+  const riderId = user?.id;
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    // Initial query bounds
-    const TIMEOUT = 8000;
+    const TIMEOUT = 10000;
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT)
     );
 
     try {
-      console.log("[RIDER_GIGS] Authoritative sync starting...");
-      
       const fetchPromise = Promise.all([
-        fetchGigs({ status: "eq.ACTIVE" }),
+        fetchGigs({ status: "in.(ACTIVE,SCHEDULED,COMPLETED)" }),
         riderId 
           ? listTable<any>("gig_participants", { rider_id: `eq.${riderId}` }, { fresh: true, ttl: 0 })
           : Promise.resolve([])
@@ -77,29 +78,63 @@ function RiderRequestsPage() {
     setBusy(true);
     try {
       if (action === 'enroll') {
-        await enrollInGig(gigId, riderId);
-        toast.success("Gig booked successfully!");
+        const res = await enrollInGig(gigId, riderId);
+        if (res) {
+          toast.success("Gig booked successfully!");
+          setEnrolledIds(prev => new Set([...prev, gigId]));
+        }
       } else {
         const confirmed = window.confirm("Are you sure you want to cancel this booking?");
         if (!confirmed) return;
         await cancelGigEnrollment(gigId, riderId);
         toast.info("Booking cancelled");
+        setEnrolledIds(prev => {
+          const next = new Set(prev);
+          next.delete(gigId);
+          return next;
+        });
       }
+      // Re-fetch to ensure authoritative state
       void loadData();
     } catch (e) {
-      toast.error("Operation failed");
+      toast.error("Operation failed. Gig may be full or unavailable.");
     } finally {
       setBusy(false);
     }
   };
 
-  const isActuallyLoading = loading;
-  const isError = !!error;
+  // Generate dates for horizontal picker
+  const dates = useMemo(() => {
+    const d = [];
+    const now = new Date();
+    for (let i = 0; i < 14; i++) {
+      const next = new Date(now);
+      next.setDate(now.getDate() + i);
+      d.push(next);
+    }
+    return d;
+  }, []);
+
+  const filteredGigs = useMemo(() => {
+    const selDateStr = selectedDate.toISOString().split('T')[0];
+    
+    return gigs.filter(g => {
+      const gigDateStr = new Date(g.start_time).toISOString().split('T')[0];
+      const matchesDate = gigDateStr === selDateStr;
+      const isEnrolled = enrolledIds.has(g.id);
+      const isHistory = new Date(g.end_time) < new Date();
+
+      if (tab === "available") return matchesDate && !isEnrolled && !isHistory;
+      if (tab === "booked") return isEnrolled && !isHistory;
+      return isHistory;
+    });
+  }, [gigs, enrolledIds, tab, selectedDate]);
 
   return (
     <div className="mx-auto min-h-svh max-w-[520px] pb-24">
       <PageHeader title="Gigs" subtitle="Schedule your delivery shifts" />
 
+      {/* Tab Switcher */}
       <div className="mx-4 mt-6 flex gap-2 rounded-full bg-muted/50 p-1">
         {(["available", "booked", "history"] as const).map((t) => (
           <button
@@ -115,13 +150,37 @@ function RiderRequestsPage() {
         ))}
       </div>
 
-      <div className="mt-6 px-4 space-y-4">
-        {isActuallyLoading ? (
+      {/* Date Picker (only for available) */}
+      {tab === "available" && (
+        <div className="mt-6 flex gap-3 overflow-x-auto px-4 pb-2 no-scrollbar">
+          {dates.map((d, i) => {
+            const isSelected = d.toISOString().split('T')[0] === selectedDate.toISOString().split('T')[0];
+            return (
+              <button
+                key={i}
+                onClick={() => setSelectedDate(d)}
+                className={cn(
+                  "flex flex-col items-center min-w-[56px] py-3 rounded-2xl transition-all duration-300",
+                  isSelected ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted/50 text-muted-foreground"
+                )}
+              >
+                <span className="text-[10px] font-bold uppercase opacity-60">
+                  {d.toLocaleDateString('en-IN', { weekday: 'short' })}
+                </span>
+                <span className="text-sm font-black mt-0.5">{d.getDate()}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-4 px-4 space-y-4">
+        {loading ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-40">
             <Loader2 className="h-8 w-8 animate-spin" />
             <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em]">Syncing slots...</p>
           </div>
-        ) : isError ? (
+        ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
             <div className="h-16 w-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-4">
               <AlertCircle className="h-8 w-8" />
@@ -134,24 +193,20 @@ function RiderRequestsPage() {
               Retry Sync
             </button>
           </div>
-        ) : (() => {
-          const filteredGigs = tab === "available" 
-            ? gigs.filter(g => !enrolledIds.has(g.id))
-            : tab === "booked"
-            ? gigs.filter(g => enrolledIds.has(g.id))
-            : gigs.filter(g => new Date(g.end_time) < new Date());
-
-          if (filteredGigs.length === 0) {
-            return (
-              <EmptyState 
-                icon={<Calendar className="h-8 w-8 text-muted-foreground/30" />}
-                title={`No ${tab} gigs`}
-                description={tab === "available" ? "Check back later for new shifts." : "Your scheduled gigs will appear here."}
-              />
-            );
-          }
-
-          return filteredGigs.map(gig => (
+        ) : filteredGigs.length === 0 ? (
+          <EmptyState 
+            icon={<Calendar className="h-8 w-8 text-muted-foreground/30" />}
+            title={`No ${tab} gigs`}
+            description={
+              tab === "available" 
+                ? `No shifts found for ${selectedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}.` 
+                : tab === "booked" 
+                ? "Your scheduled gigs will appear here." 
+                : "Your past shift history is empty."
+            }
+          />
+        ) : (
+          filteredGigs.map(gig => (
             <GigCard 
               key={gig.id} 
               gig={gig} 
@@ -159,11 +214,11 @@ function RiderRequestsPage() {
               onAction={(action) => handleAction(gig.id, action)}
               busy={busy}
             />
-          ));
-        })()}
+          ))
+        )}
       </div>
 
-      {tab === "available" && !loading && gigs.filter(g => !enrolledIds.has(g.id)).length > 0 && !isError && (
+      {tab === "available" && !loading && filteredGigs.length > 0 && (
         <div className="mx-4 mt-8 rounded-3xl bg-primary/5 p-5 ring-1 ring-primary/10">
            <div className="flex gap-3">
               <Info className="h-5 w-5 text-primary shrink-0" />
@@ -193,10 +248,10 @@ function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolea
 
   return (
     <div className={cn(
-      "overflow-hidden rounded-[2rem] bg-card shadow-soft ring-1 transition-all",
-      isBooked ? "ring-primary/20" : "ring-border/60"
+      "overflow-hidden rounded-[2.5rem] bg-card shadow-soft ring-1 transition-all",
+      isBooked ? "ring-primary/40 shadow-glow" : "ring-border/60 hover:ring-primary/20"
     )}>
-      <div className="p-5">
+      <div className="p-6">
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -210,43 +265,47 @@ function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolea
                 </span>
               )}
             </div>
-            <h3 className="mt-1 font-display text-lg font-extrabold tracking-tight">{gig.title}</h3>
+            <h3 className="mt-1 font-display text-xl font-extrabold tracking-tight">{gig.title}</h3>
           </div>
           <div className="text-right">
-            <p className="font-display text-lg font-black text-primary">{formatPrice(gig.reward_amount)}</p>
+            <p className="font-display text-xl font-black text-primary">{formatPrice(gig.reward_amount)}</p>
             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Est. Reward</p>
           </div>
         </div>
 
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" />
+        <div className="mt-5 space-y-2.5">
+          <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+            <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center">
+               <Clock className="h-3.5 w-3.5" />
+            </div>
             <span className="font-bold">{timeStr}</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
+            <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center">
+               <MapPin className="h-3.5 w-3.5" />
+            </div>
             <span className="font-bold">{gig.zone_id ? "Vadodara Central" : "Any Zone"}</span>
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-6 flex items-center justify-between">
           <div className="flex -space-x-2">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center overflow-hidden">
-                <div className="h-full w-full bg-primary/10 text-[8px] font-bold flex items-center justify-center">R</div>
+              <div key={i} className="h-7 w-7 rounded-full border-2 border-background bg-muted flex items-center justify-center overflow-hidden shadow-sm">
+                <div className="h-full w-full bg-primary/10 text-[8px] font-black flex items-center justify-center">R</div>
               </div>
             ))}
-            <div className="h-6 px-2 rounded-full border-2 border-background bg-muted text-[8px] font-bold flex items-center justify-center">
+            <div className="h-7 px-2 rounded-full border-2 border-background bg-muted text-[8px] font-black flex items-center justify-center shadow-sm">
               +12
             </div>
           </div>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            {gig.capacity ? `${Math.round(Math.random() * gig.capacity)}/${gig.capacity} Slots` : "Open Slots"}
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+            {gig.capacity ? `${Math.round(Math.random() * gig.capacity)}/${gig.capacity} Slots Booked` : "Open Slots"}
           </span>
         </div>
       </div>
 
-      <div className="border-t border-border/40 p-3 bg-muted/20">
+      <div className="border-t border-border/40 p-4 bg-muted/20">
         {isCompleted ? (
           <div className="flex w-full items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             <CheckCircle2 className="h-4 w-4" />
@@ -256,7 +315,7 @@ function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolea
           <button 
             disabled={busy}
             onClick={() => onAction('cancel')}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-black uppercase tracking-widest text-muted-foreground transition active:scale-95"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-4 text-xs font-black uppercase tracking-widest text-muted-foreground transition active:scale-[0.98] hover:bg-muted/40"
           >
             Cancel Booking
           </button>
@@ -264,12 +323,13 @@ function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolea
           <button 
             disabled={busy}
             onClick={() => onAction('enroll')}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow transition active:scale-95"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow transition active:scale-[0.98]"
           >
-            Book Slot
+            <Calendar className="h-4 w-4" /> Book Slot
           </button>
         )}
       </div>
     </div>
   );
 }
+
