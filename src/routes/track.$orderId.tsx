@@ -27,6 +27,10 @@ function TrackPage() {
   const [error, setError] = useState<string | null>(null);
   const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [liveEta, setLiveEta] = useState<{ mins: number; km: number; at: number } | null>(null);
+  // Path actually taken by the rider so far
+  const [trail, setTrail] = useState<{ lat: number; lng: number }[]>([]);
+  // Remaining road path from the rider to the customer
+  const [routePath, setRoutePath] = useState<{ lat: number; lng: number }[]>([]);
 
 
   
@@ -36,12 +40,20 @@ function TrackPage() {
     const unsubOrders = subscribeToOrders(user.id);
     const unsubLocation = subscribeToDriverLocation(orderId, (coords) => {
       setDriverCoords(coords);
+      setTrail((prev) => {
+        const last = prev[prev.length - 1];
+        // Skip duplicate/near-identical pings (< ~10m) to keep the polyline clean
+        if (last && Math.abs(last.lat - coords.lat) < 0.0001 && Math.abs(last.lng - coords.lng) < 0.0001) return prev;
+        const next = [...prev, coords];
+        return next.length > 300 ? next.slice(next.length - 300) : next;
+      });
     });
     return () => { 
       unsubOrders(); 
       unsubLocation();
     };
   }, [user?.id, orderId, subscribeToOrders]);
+
 
   const order = getOrder(orderId);
 
@@ -67,9 +79,11 @@ function TrackPage() {
       const r = await routeBetween(originForEta, dropTarget);
       if (!alive || !r) return;
       setLiveEta({ mins: Math.max(1, r.durationMins), km: r.distanceKm, at: Date.now() });
+      setRoutePath(r.coords ?? []);
     })();
     return () => { alive = false; };
   }, [activeDelivery, originForEta?.lat, originForEta?.lng, dropTarget?.lat, dropTarget?.lng]);
+
 
   // Tick so the countdown and arrival clock stay current
   const [now, setNow] = useState(() => Date.now());
@@ -142,19 +156,29 @@ function TrackPage() {
           <GoogleMap
             height={260}
             interactive={false}
-            route={{ 
+            route={routePath.length > 1 ? undefined : { 
               from: pickup, 
               to: drop
             }}
             riderProgress={driverCoords ? undefined : statusToProgress(order.status)}
             riderLabel={order.driver.name}
-
+            polylines={[
+              // Remaining road path ahead of the rider
+              ...(routePath.length > 1
+                ? [{ id: "remaining", points: routePath, color: "#94A3B8", weight: 4, dash: true }]
+                : []),
+              // Path already travelled by the rider
+              ...(trail.length > 1
+                ? [{ id: "trail", points: trail, color: "#3B82F6", weight: 5 }]
+                : []),
+            ]}
             markers={[
               { id: "r", kind: "restaurant", label: order.restaurantName, ...pickup },
               { id: "c", kind: "customer", label: "Delivery here", ...drop },
               ...(driverCoords ? [{ id: "d", kind: "rider" as const, label: order.driver.name, ...driverCoords }] : [])
             ]}
           />
+
           <div className="p-4">
             <div className="text-xs font-bold uppercase tracking-wider text-primary">{STATUS_LABEL[order.status]}</div>
             <h2 className="mt-1 font-display text-lg font-bold leading-tight">
