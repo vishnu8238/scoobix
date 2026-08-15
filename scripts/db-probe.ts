@@ -9,33 +9,32 @@ const insforge = createClient({
 });
 
 async function probe() {
-  // Exhaustive list of potential table names for a delivery app
-  const tables = [
-    "cities", "zones", "logistics_zones", "delivery_zones", "subzones", "gigs", "orders", "users",
-    "restaurants", "drivers", "rider_profiles", "staff", "logistics_staff", "partners",
-    "delivery_hubs", "hubs", "areas", "regions", "territories", "slots", "shifts",
-    "profiles", "memberships", "portal_access", "audit_logs", "config", "settings"
-  ];
+  const keywords = ["zone", "area", "city", "region", "delivery", "logistics", "gig", "slot", "shift", "rider", "driver", "partner", "hub", "center"];
   const results = {};
 
-  for (const table of tables) {
+  // Try to list tables using a common Postgres trick if allowed, or just guess
+  // Since we can't run raw SQL, we guess.
+  const commonTables = [
+    "cities", "towns", "locations", "branches",
+    "zones", "delivery_zones", "logistics_zones", "service_zones", "operational_zones",
+    "subzones", "delivery_subzones", "logistics_subzones",
+    "gigs", "delivery_gigs", "logistics_gigs", "tasks", "missions",
+    "slots", "delivery_slots", "gig_slots", "time_slots",
+    "shifts", "rider_shifts", "driver_shifts",
+    "riders", "drivers", "fleet", "staff",
+    "hubs", "delivery_hubs", "centers", "warehouses"
+  ];
+
+  for (const table of commonTables) {
     try {
-      const { data, error, status } = await insforge.database
-        .from(table)
-        .select("*")
-        .limit(1);
-      
+      const { status, error, data } = await insforge.database.from(table).select("*").limit(1);
       if (status !== 404 && (!error || !error.message.includes("does not exist"))) {
-        results[table] = {
-          exists: true,
-          columns: data && data.length > 0 ? Object.keys(data[0]) : null,
-          count: data?.length || 0
-        };
+         results[table] = { status, error: error?.message, count: data?.length };
       }
     } catch (e) {}
   }
 
-  console.log("FOUND TABLES:");
+  console.log("PROBE RESULTS:");
   console.log(JSON.stringify(results, null, 2));
 }
 
