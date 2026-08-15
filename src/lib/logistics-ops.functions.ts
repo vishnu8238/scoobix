@@ -350,3 +350,95 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
 
     return { seeded, existing, total: seeded + existing };
   });
+
+export const getLogisticsDemoData = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const city1Id = "c1110000-0000-0000-0000-000000000001";
+    const zone1Id = "z1110000-0000-0000-0000-000000000001";
+    const restId = "r1110000-0000-0000-0000-000000000001";
+    const custId = "u1110000-0000-0000-0000-000000000001";
+
+    const demoGigs = [
+      {
+        id: "demo-gig-1",
+        title: "Morning Shift - Vadodara Central",
+        description: "Standard morning peak shift. Clearly marked DEMO DATA.",
+        reward_amount: 500,
+        target_deliveries: 15,
+        start_time: `${todayStr}T08:00:00Z`,
+        end_time: `${todayStr}T12:00:00Z`,
+        status: "ACTIVE",
+        city_id: city1Id,
+        zone_id: zone1Id,
+        capacity: 10,
+        metadata: { is_demo: true }
+      },
+      {
+        id: "demo-gig-2",
+        title: "Lunch Peak Express",
+        description: "High volume lunch shift. Clearly marked DEMO DATA.",
+        reward_amount: 350,
+        target_deliveries: 10,
+        start_time: `${todayStr}T12:00:00Z`,
+        end_time: `${todayStr}T15:00:00Z`,
+        status: "ACTIVE",
+        city_id: city1Id,
+        zone_id: zone1Id,
+        capacity: 15,
+        metadata: { is_demo: true }
+      },
+      {
+        id: "demo-gig-3",
+        title: "Evening Logistics Surge",
+        description: "Late night delivery surge incentive. Clearly marked DEMO DATA.",
+        reward_amount: 600,
+        target_deliveries: 20,
+        start_time: `${todayStr}T18:00:00Z`,
+        end_time: `${todayStr}T22:00:00Z`,
+        status: "ACTIVE",
+        city_id: city1Id,
+        zone_id: zone1Id,
+        capacity: 8,
+        metadata: { is_demo: true }
+      }
+    ];
+
+    const demoOrders = [
+      {
+        id: "demo-order-1",
+        customer_id: custId,
+        restaurant_id: restId,
+        status: "ON_THE_WAY",
+        total_price: 450,
+        created_at: new Date().toISOString(),
+        delivery_address: "123 Demo St, Central Vadodara",
+        items: { lines: [{ name: "Demo Pizza", qty: 1, price: 400 }] },
+        metadata: { is_demo: true }
+      },
+      {
+        id: "demo-order-2",
+        customer_id: custId,
+        restaurant_id: restId,
+        status: "PREPARING",
+        total_price: 320,
+        created_at: new Date().toISOString(),
+        delivery_address: "456 Tech Park, Alkapuri",
+        items: { lines: [{ name: "Demo Burger Meal", qty: 2, price: 160 }] },
+        metadata: { is_demo: true }
+      },
+      {
+        id: "demo-order-3",
+        customer_id: custId,
+        restaurant_id: restId,
+        status: "PLACED",
+        total_price: 890,
+        created_at: new Date().toISOString(),
+        delivery_address: "789 Residential View, Gotri",
+        items: { lines: [{ name: "Demo Family Pack", qty: 1, price: 850 }] },
+        metadata: { is_demo: true }
+      }
+    ];
+
+    return { gigs: demoGigs, orders: demoOrders };
+  });
