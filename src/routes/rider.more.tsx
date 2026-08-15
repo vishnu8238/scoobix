@@ -80,7 +80,7 @@ function RiderWorkArea() {
             height={360}
             markers={mapMarkers}
             polygons={polygons}
-            center={location || (activeZone?.center_lat ? { lat: activeZone.center_lat, lng: activeZone.center_lng } : undefined)}
+            center={location || (activeZone?.center_lat && activeZone?.center_lng ? { lat: activeZone.center_lat, lng: activeZone.center_lng } : undefined)}
             zoom={13}
           />
           
