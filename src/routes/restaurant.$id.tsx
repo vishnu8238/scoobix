@@ -54,7 +54,13 @@ function RestaurantPage() {
   return (
     <div className="min-h-svh pb-32">
       <div className="relative h-56">
-        <img src={r.cover} alt={r.name} className="h-full w-full object-cover" />
+        {r.cover ? (
+          <img src={r.cover} alt={r.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+             <span className="font-display text-7xl font-extrabold text-primary/10">{(r.name ?? "?").slice(0, 1).toUpperCase()}</span>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-background" />
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <button onClick={() => navigate({ to: "/app" })} className="grid h-10 w-10 place-items-center rounded-full bg-white/90 backdrop-blur"><ArrowLeft className="h-4 w-4" /></button>
