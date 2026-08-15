@@ -494,35 +494,4 @@ function RiderActive() {
     </div>
   );
 }
-
-
-           <div className="rounded-2xl bg-muted/30 p-4">
-              <div className="flex items-center justify-between mb-3">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order Items</span>
-                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">₹{(order.total_price as React.ReactNode) || 0} Total</span>
-              </div>
-              <ul className="space-y-2">
-                 {/* Logic to parse items from order.items */}
-                 <li className="flex items-center justify-between text-xs font-bold">
-                    <span>Standard Delivery Order</span>
-                    <span className="text-muted-foreground">x1</span>
-                 </li>
-              </ul>
-           </div>
-        </section>
-
-        {/* Critical Actions */}
-        <div className="grid grid-cols-2 gap-3">
-           <button onClick={() => toast.info("Support ticket system initializing...")} className="flex items-center justify-center gap-2 rounded-2xl bg-rose-50 p-4 text-[10px] font-black uppercase tracking-widest text-rose-600 ring-1 ring-rose-200">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Report Issue
-           </button>
-           <button onClick={() => navigate({ to: "/rider/support" })} className="flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 p-4 text-[10px] font-black uppercase tracking-widest text-white">
-              <MessageSquare className="h-3.5 w-3.5" />
-              Support
-           </button>
-        </div>
-      </div>
-    </div>
-  );
 }
