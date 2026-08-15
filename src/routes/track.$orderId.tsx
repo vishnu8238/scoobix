@@ -186,9 +186,9 @@ function TrackPage() {
           <div className="flex justify-between text-sm font-bold"><span>Total paid</span><span>{currency(order.total)}</span></div>
         </div>
 
-        {delivered && (
+        {(delivered || order.status === "CANCELLED") && (
           <Button onClick={() => navigate({ to: "/app" })} className="h-14 w-full rounded-full gradient-primary text-base font-bold text-primary-foreground shadow-glow">
-            Order again
+            {order.status === "CANCELLED" ? "Order again" : "Order again"}
           </Button>
         )}
 
@@ -196,16 +196,18 @@ function TrackPage() {
           <Button
             variant="outline"
             onClick={async () => {
-              const res = await cancelOrder(order.id);
-              if (res.ok) { toast.success(res.message); navigate({ to: "/app/orders" }); }
-              else toast.error(res.message);
+              if (window.confirm("Are you sure you want to cancel this order?")) {
+                const res = await cancelOrder(order.id);
+                if (res.ok) { toast.success(res.message); }
+                else toast.error(res.message);
+              }
             }}
-
             className="h-12 w-full rounded-full text-sm font-bold text-destructive border-destructive/40 hover:bg-destructive/5"
           >
             <X className="mr-1.5 h-4 w-4" /> Cancel order
           </Button>
         )}
+
       </div>
     </div>
   );
