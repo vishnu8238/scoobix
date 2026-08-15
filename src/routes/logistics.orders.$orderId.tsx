@@ -24,6 +24,7 @@ function LogisticsOrderDetailsPage() {
   const { orderId } = Route.useParams();
   const [data, setData] = useState<any>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const liveOrder = useLiveOrder(orderId);
 
   useEffect(() => {
     const init = async () => {
@@ -43,7 +44,7 @@ function LogisticsOrderDetailsPage() {
 
   useEffect(() => {
     if (liveOrder) {
-      setData(prev => prev ? { ...prev, order: { ...prev.order, ...liveOrder } } : prev);
+      setData((prev: any) => prev ? { ...prev, order: { ...prev.order, ...liveOrder } } : prev);
     }
   }, [liveOrder]);
 
