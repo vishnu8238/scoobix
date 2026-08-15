@@ -9,10 +9,10 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Plus, Database, Info, AlertTriangle, Search } from "lucide-react";
 import { toast } from "sonner";
-import { fetchZones, type DeliveryZone } from "@/lib/zones-api";
+import { fetchZones, fetchCities, type DeliveryZone } from "@/lib/zones-api";
 import { createGig } from "@/lib/gigs-api";
-import { seedLogisticsPrerequisites } from "@/lib/logistics-ops.functions";
-import { useServerFn } from "@tanstack/react-start";
+import { insforge } from "@/lib/insforge";
+import { createRecord } from "@/lib/insforge-crud";
 import { cn } from "@/lib/utils";
 
 interface CreateGigModalProps {
@@ -40,7 +40,6 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     completion_pct: 98
   });
 
-  const seedPrereqs = useServerFn(seedLogisticsPrerequisites);
   const [isSeeding, setIsSeeding] = useState(false);
 
   useEffect(() => {
@@ -52,7 +51,6 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const { fetchCities } = await import("@/lib/zones-api");
       const c = await fetchCities();
       console.log("[CREATE_GIG] Cities loaded:", c.length);
       setCities(c);
@@ -74,16 +72,73 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
 
   const handleSeed = async () => {
     setIsSeeding(true);
+    setDiagnostics(null);
     try {
-      const result = await seedPrereqs();
-      setDiagnostics(result);
-      if (result.errors.length === 0) {
-        toast.success("Logistics prerequisites seeded successfully");
+      console.log("[SEED_CLIENT] Starting authoritative client-side logistics seed...");
+      
+      const CITY_1_ID = "c1110000-0000-0000-0000-000000000001";
+      const ZONE_1_ID = "z1110000-0000-0000-0000-000000000001";
+
+      // Discovery: probe for writable tables
+      const cityTableCandidates = ["cities", "logistics_cities", "delivery_cities"];
+      const zoneTableCandidates = ["zones", "logistics_zones", "delivery_zones"];
+      
+      const results: any[] = [];
+      
+      // Seed City
+      let seededCity = false;
+      for (const table of cityTableCandidates) {
+        try {
+          const res = await createRecord(table, {
+            id: CITY_1_ID,
+            name: "Vadodara",
+            status: "ACTIVE",
+            metadata: { demo_tag: "logistics_test_v6", seeded_at: new Date().toISOString() }
+          });
+          if (res) {
+            results.push({ table, op: "upsert_city", success: true });
+            seededCity = true;
+            break; 
+          }
+        } catch (e: any) {
+          results.push({ table, op: "upsert_city", success: false, error: e.message });
+        }
+      }
+
+      // Seed Zone
+      let seededZone = false;
+      if (seededCity) {
+        for (const table of zoneTableCandidates) {
+          try {
+            const res = await createRecord(table, {
+              id: ZONE_1_ID,
+              city_id: CITY_1_ID,
+              name: "Main Zone",
+              status: "ACTIVE",
+              metadata: { demo_tag: "logistics_test_v6", seeded_at: new Date().toISOString() }
+            });
+            if (res) {
+              results.push({ table, op: "upsert_zone", success: true });
+              seededZone = true;
+              break;
+            }
+          } catch (e: any) {
+            results.push({ table, op: "upsert_zone", success: false, error: e.message });
+          }
+        }
+      }
+
+      setDiagnostics({ diagnostics: results });
+      
+      if (seededCity && seededZone) {
+        toast.success("Logistics prerequisites seeded successfully (Client-side)");
         await loadInitialData();
+        setFormData(prev => ({ ...prev, city_id: CITY_1_ID, zone_id: ZONE_1_ID }));
       } else {
-        toast.error("Seeding completed with errors");
+        toast.error("Seeding failed to establish prerequisites. Check diagnostics.");
       }
     } catch (err: any) {
+      console.error("[SEED_CLIENT] Fatal error:", err);
       toast.error(`Seeding failed: ${err.message}`);
     } finally {
       setIsSeeding(false);
