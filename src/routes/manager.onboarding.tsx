@@ -147,6 +147,8 @@ function OnboardingFlow() {
           branch_name: (r as { branch_name?: string | null }).branch_name ?? "",
           delivery_radius: String(r.delivery_radius ?? 5),
           commission: String(r.commission ?? 20),
+          has_cover: !!(r.cover_url ?? r.cover_image),
+          has_gallery: Array.isArray(r.documents) && r.documents.some(d => d.label === "Gallery / Guest Image"),
         });
         setLoading(false);
       } catch (err: any) {
