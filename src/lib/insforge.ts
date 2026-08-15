@@ -44,7 +44,7 @@ export const ensureAuthHydrated = async () => {
 
       console.log("[INSFORGE_AUTH] Hydrating session from storage/cookies...");
       
-      // Attempt to restore session
+      // Perform authoritative check with the SDK
       const { data, error } = await insforge.auth.getCurrentUser();
       
       if (error) {
