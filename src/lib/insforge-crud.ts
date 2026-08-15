@@ -302,7 +302,7 @@ export function createRecord<T = Record<string, unknown>>(
   return withRetry<T | null>(table, async () => {
     // RLS Defense: Restrictive SELECT policies can make an otherwise-successful 
     // INSERT look like a failure (returning null/empty result).
-    const query = insforge.database.from(table).insert([record]).select().single();
+    const query = insforge.database.from(table).insert([record]).select();
     try {
       const res = await handleResponse<T>(query, "POST", table);
       console.log(`[DB_INSERT] ${table} success:`, JSON.stringify(res));
