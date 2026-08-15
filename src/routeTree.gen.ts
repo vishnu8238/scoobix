@@ -16,6 +16,7 @@ import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as LogisticsRouteImport } from './routes/logistics'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as CustomerRouteImport } from './routes/customer'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -202,6 +203,11 @@ const LogisticsRoute = LogisticsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerRoute = CustomerRouteImport.update({
+  id: '/customer',
+  path: '/customer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -970,6 +976,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/logistics': typeof LogisticsRouteWithChildren
   '/manager': typeof ManagerRouteWithChildren
@@ -1129,6 +1136,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
@@ -1287,6 +1295,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/logistics': typeof LogisticsRouteWithChildren
   '/manager': typeof ManagerRouteWithChildren
@@ -1450,6 +1459,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/customer'
     | '/login'
     | '/logistics'
     | '/manager'
@@ -1609,6 +1619,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/customer'
     | '/login'
     | '/privacy'
     | '/terms'
@@ -1766,6 +1777,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/customer'
     | '/login'
     | '/logistics'
     | '/manager'
@@ -1928,6 +1940,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  CustomerRoute: typeof CustomerRoute
   LoginRoute: typeof LoginRoute
   LogisticsRoute: typeof LogisticsRouteWithChildren
   ManagerRoute: typeof ManagerRouteWithChildren
@@ -1989,6 +2002,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer': {
+      id: '/customer'
+      path: '/customer'
+      fullPath: '/customer'
+      preLoaderRoute: typeof CustomerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -3455,6 +3475,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  CustomerRoute: CustomerRoute,
   LoginRoute: LoginRoute,
   LogisticsRoute: LogisticsRouteWithChildren,
   ManagerRoute: ManagerRouteWithChildren,
