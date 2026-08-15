@@ -494,4 +494,3 @@ function RiderActive() {
     </div>
   );
 }
-}
