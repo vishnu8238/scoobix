@@ -27,14 +27,17 @@ function RiderRequestsPage() {
   const version = useTableVersion(["gig_participants", "gigs"]);
 
   const loadGigs = useCallback(async () => {
+    // If we're already loading or driver isn't resolved, skip
     if (driverLoading) return;
+    
     setLoading(true);
     try {
+      console.log("[RIDER_GIGS] Loading gigs...");
       const data = await fetchGigs();
       setGigs(Array.isArray(data) ? data : []);
     } catch (e: any) {
-      console.error("[GIGS_LOAD_ERROR]", e);
-      toast.error(e.isSchemaError ? "Gig database is unavailable." : "Failed to load gigs. Please retry.");
+      console.error("[RIDER_GIGS] Load error:", e);
+      toast.error("Failed to load gigs. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -54,7 +57,8 @@ function RiderRequestsPage() {
           setEnrolledIds(new Set((parts || []).map(p => p.gig_id)));
         })
         .catch(err => {
-          console.error("[ENROLLMENT_LOAD_ERROR]", err);
+          console.error("[RIDER_GIGS] Enrollment load error:", err);
+          // Don't toast here as it's secondary to the main list
         });
     }
   }, [driverId, busy, version]);

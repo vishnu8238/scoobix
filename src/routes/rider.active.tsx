@@ -78,7 +78,9 @@ function RiderActive() {
 
   // --- Sync with backend ---
   const load = useCallback(async () => {
+    // Always clear loading if driver resolution fails or completes
     if (driverLoading) return;
+    
     if (!driverId) { 
       setOrder(null); 
       setLoading(false); 
@@ -87,6 +89,7 @@ function RiderActive() {
     
     setLoading(true);
     try {
+      console.log("[RIDER_ACTIVE] Fetching active order for driver:", driverId);
       const rows = await listTable<OrderRow>("orders", {
         driver_id: `eq.${driverId}`,
         order: "created_at.desc",
@@ -96,22 +99,26 @@ function RiderActive() {
       const active = (rows || []).find((r) => ACTIVE_STATUSES.includes(String(r.status ?? "").toUpperCase())) ?? null;
       setOrder(active);
 
-      if (active?.restaurant_id) {
-        const rs = await listTable<any>("restaurants", { id: `eq.${active.restaurant_id}`, limit: 1 });
+      if (active) {
+        // Parallel fetch for associated data
+        const [rs, us] = await Promise.all([
+          active.restaurant_id 
+            ? listTable<any>("restaurants", { id: `eq.${active.restaurant_id}`, limit: 1 }).catch(() => [])
+            : Promise.resolve([]),
+          active.customer_id
+            ? listTable<any>("users", { id: `eq.${active.customer_id}`, limit: 1 }).catch(() => [])
+            : Promise.resolve([])
+        ]);
+        
         setRestaurant(rs[0] ?? null);
-      } else {
-        setRestaurant(null);
-      }
-      
-      if (active?.customer_id) {
-        const us = await listTable<any>("users", { id: `eq.${active.customer_id}`, limit: 1 });
         setCustomer(us[0] ?? null);
       } else {
+        setRestaurant(null);
         setCustomer(null);
       }
     } catch (err: any) {
-      console.error("[ACTIVE_DELIVERY_LOAD_ERROR]", err);
-      toast.error("Failed to sync delivery state. Please retry.");
+      console.error("[RIDER_ACTIVE] Sync error:", err);
+      toast.error("Network error while syncing delivery state.");
     } finally {
       setLoading(false);
     }
