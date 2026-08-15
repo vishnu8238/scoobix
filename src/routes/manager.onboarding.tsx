@@ -227,9 +227,9 @@ function OnboardingFlow() {
         ...extra,
       });
 
-      if (saved) {
+      if (saved && saved.id) {
         setRecord(saved);
-        if (!id) {
+        if (id !== saved.id) {
           navigate({ to: "/manager/onboarding", search: { id: saved.id }, replace: true });
         }
         await logOnboardingEvent({
