@@ -27,29 +27,39 @@ function RiderRequestsPage() {
   const version = useTableVersion(["gig_participants", "gigs"]);
 
   const loadGigs = useCallback(async () => {
+    // If we're already loading or driver isn't resolved, skip
+    if (driverLoading) return;
+    
     setLoading(true);
     try {
+      console.log("[RIDER_GIGS] Loading gigs...");
       const data = await fetchGigs();
-      setGigs(data);
-    } catch (e) {
-      toast.error("Failed to load gigs");
+      setGigs(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      console.error("[RIDER_GIGS] Load error:", e);
+      toast.error("Failed to load gigs. Please check your connection.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [driverLoading]);
 
   useEffect(() => {
     void loadGigs();
-  }, [loadGigs]);
+  }, [loadGigs, version]);
 
   // Read-back authoritative enrollment tracking
   const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (driverId) {
-      listTable<any>("gig_participants", { rider_id: `eq.${driverId}` }).then(parts => {
-        setEnrolledIds(new Set(parts.map(p => p.gig_id)));
-      });
+      listTable<any>("gig_participants", { rider_id: `eq.${driverId}` }, { fresh: true, ttl: 0 })
+        .then(parts => {
+          setEnrolledIds(new Set((parts || []).map(p => p.gig_id)));
+        })
+        .catch(err => {
+          console.error("[RIDER_GIGS] Enrollment load error:", err);
+          // Don't toast here as it's secondary to the main list
+        });
     }
   }, [driverId, busy, version]);
 
@@ -105,10 +115,10 @@ function RiderRequestsPage() {
       </div>
 
       <div className="mt-6 px-4 space-y-4">
-        {loading || driverLoading ? (
+        {(loading || driverLoading) ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-40">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="mt-4 text-xs font-bold uppercase tracking-[0.2em]">Syncing slots...</p>
+            <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em]">Syncing slots...</p>
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState 
