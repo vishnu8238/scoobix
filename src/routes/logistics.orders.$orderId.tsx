@@ -43,8 +43,8 @@ function LogisticsOrderDetailsPage() {
             setData({
               order: o,
               items: o.items?.lines || [],
-              payment: { status: o.payment_status || "PENDING", amount: o.total_price },
-              restaurant: { name: "Demo Restaurant", address: o.pickup_address || o.delivery_address },
+              payment: { status: (o as any).payment_status || "PAID", amount: o.total_price },
+              restaurant: { name: "Demo Restaurant", address: (o as any).pickup_address || o.delivery_address },
               customer: { name: "Demo Customer", email: "demo@scoobix.test" },
               rider: null,
               history: [],
