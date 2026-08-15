@@ -50,25 +50,31 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   }, [isOpen]);
 
   const loadInitialData = async () => {
+    setLoading(true);
     try {
       const z = await fetchZones();
+      console.log("[CREATE_GIG] Zones loaded:", z.length);
       setZones(z);
       
       // Extract unique cities from zones
       const uniqueCities = Array.from(new Set(z.map(zone => zone.city))).map(cityName => {
         const zoneWithCity = z.find(zone => zone.city === cityName);
         return {
-          id: zoneWithCity?.id || cityName, // Temporary fallback
-          name: cityName
+          id: zoneWithCity?.id || cityName,
+          name: cityName || "Unknown City"
         };
-      });
+      }).filter(c => c.name !== "Unknown City");
+      
       setCities(uniqueCities);
 
-      if (uniqueCities.length > 0) {
+      if (uniqueCities.length > 0 && !formData.city_id) {
         setFormData(prev => ({ ...prev, city_id: uniqueCities[0].id }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load cities/zones:", err);
+      setDiagnostics({ error: err.message, stack: "loadInitialData" });
+    } finally {
+      setLoading(false);
     }
   };
 

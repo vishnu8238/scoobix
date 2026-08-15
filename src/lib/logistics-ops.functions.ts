@@ -14,111 +14,42 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
   .middleware([requireInsForgeAuth])
   .handler(async ({ context }) => {
     const { insforge } = context;
-    console.log("[SEED_PREREQ] Starting authoritative idempotent city/zone seeding with SDK...");
+    console.log("[SEED_PREREQ] Starting recovery seed...");
     
-    // c1110000-0000-0000-0000-000000000001
-    const city1Id = "c1110000-0000-0000-0000-000000000001";
-    const zone1Id = "z1110000-0000-0000-0000-000000000001";
+    // We discovered that 'restaurants' and 'orders' exist.
+    // In many delivery systems, "Cities" are often stored as 'areas' or 'regions'.
+    // Since literal 'cities' and 'zones' 404, we will try to probe 'restaurants' for its column names.
     
-    // Comprehensive list of possible table names to check
-    const tables = ["logistics_zones", "delivery_zones", "zones", "cities"];
-    let result = { 
-      cities: 0, 
-      zones: 0, 
+    const result = { 
+      success: false,
       errors: [] as string[],
       diagnostics: [] as any[]
     };
 
-    const cityPayload = {
-      id: city1Id,
-      name: "City 1",
-      status: "ACTIVE",
-      metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
-    };
+    try {
+      // Step 1: Probe 'restaurants' to find city/zone columns
+      const { data: restSample, error: restError } = await insforge.database
+        .from("restaurants")
+        .select("*")
+        .limit(1);
+      
+      result.diagnostics.push({ 
+        action: "probe_restaurants", 
+        success: !restError, 
+        columns: restSample && restSample.length > 0 ? Object.keys(restSample[0]) : null,
+        error: restError?.message
+      });
 
-    const zonePayload = {
-      id: zone1Id,
-      name: "Zone 1",
-      city: "City 1",
-      city_id: city1Id,
-      status: "ACTIVE",
-      boundary: { type: "Polygon", coordinates: [[[73.1, 22.3], [73.2, 22.3], [73.2, 22.4], [73.1, 22.4], [73.1, 22.3]]] },
-      center_lat: 22.3072,
-      center_lng: 73.1812,
-      pickup_radius_km: 5,
-      max_delivery_distance_km: 10,
-      max_orders_per_rider: 3,
-      assignment_timeout_sec: 30,
-      metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
-    };
-
-    for (const table of tables) {
-      try {
-        console.log(`[SEED_PREREQ] Probing ${table} via SDK...`);
-        const targetId = table === "cities" ? city1Id : zone1Id;
-        const payload = table === "cities" ? cityPayload : zonePayload;
-        
-        const { data: found, error: probeError, status: probeStatus } = await insforge.database
-          .from(table)
-          .select("*")
-          .eq("id", targetId)
-          .limit(1);
-        
-        if (probeError) {
-          console.warn(`[SEED_PREREQ] Probe failed for ${table}:`, probeError.message);
-          result.diagnostics.push({ 
-            table, 
-            op: "probe", 
-            status: probeStatus, 
-            error: probeError.message,
-            code: (probeError as any).code
-          });
-          
-          // If it's a 42P01 (relation does not exist), just skip it
-          if ((probeError as any).code === "42P01" || probeError.message.includes("does not exist")) {
-            continue;
-          }
-          
-          result.errors.push(`${table} probe failed: ${probeError.message}`);
-          continue;
-        }
-
-        result.diagnostics.push({ table, op: "probe", status: probeStatus, success: true, count: found?.length });
-
-        if (found && found.length > 0) {
-          console.log(`[SEED_PREREQ] Record exists in ${table}.`);
-          continue;
-        }
-
-        console.log(`[SEED_PREREQ] Inserting into ${table} via SDK...`);
-        const { data: inserted, error: insertError, status: insertStatus } = await insforge.database
-          .from(table)
-          .insert([payload])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.warn(`[SEED_PREREQ] Insert failed for ${table}:`, insertError.message);
-          result.diagnostics.push({ 
-            table, 
-            op: "insert", 
-            status: insertStatus, 
-            error: insertError.message,
-            code: (insertError as any).code
-          });
-          result.errors.push(`${table} insert failed: ${insertError.message}`);
-        } else {
-          console.log(`[SEED_PREREQ] Success for ${table}`);
-          if (table === "cities") result.cities++;
-          else result.zones++;
-          result.diagnostics.push({ table, op: "insert", status: insertStatus, success: true });
-          publishTableChange(table, "insert", payload);
-        }
-      } catch (e: any) {
-        console.error(`[SEED_PREREQ] Critical error for ${table}:`, e);
-        result.errors.push(`${table} exception: ${e.message}`);
-        result.diagnostics.push({ table, op: "exception", error: e.message });
-      }
+      // Based on previous probe, 'restaurants' has 'city' (text) but no 'zone_id'.
+      // Wait, let's look at the probe output again.
+      // "restaurants" columns: "city", "latitude", "longitude"... but no "zone_id" visible in the truncated list?
+      // Actually, let me check the full list from my earlier probe.
+      
+      // Step 2: Attempt to create a "virtual" City 1 / Zone 1 in a table that DOES exist
+      // or at least report exactly what we found.
+      
+    } catch (e: any) {
+      result.errors.push(e.message);
     }
 
     return result;
