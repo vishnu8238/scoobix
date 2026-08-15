@@ -21,9 +21,13 @@ import type { CartItem, Order, OrderStatus } from "./stores";
 const getHeaders = async () => {
   const { getAccessToken } = await import("./insforge");
   const token = await getAccessToken();
+  
+  // Use authoritative anon key as fallback if session is not yet hydrated
+  const finalToken = token || INSFORGE_ANON_KEY;
+  
   return {
     apikey: INSFORGE_ANON_KEY,
-    Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
+    Authorization: `Bearer ${finalToken}`,
     "Content-Type": "application/json",
   };
 };
