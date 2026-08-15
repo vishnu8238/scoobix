@@ -52,23 +52,17 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
   const loadInitialData = async () => {
     setLoading(true);
     try {
+      const { fetchCities } = await import("@/lib/zones-api");
+      const c = await fetchCities();
+      console.log("[CREATE_GIG] Cities loaded:", c.length);
+      setCities(c);
+
       const z = await fetchZones();
       console.log("[CREATE_GIG] Zones loaded:", z.length);
       setZones(z);
-      
-      // Extract unique cities from zones
-      const uniqueCities = Array.from(new Set(z.map(zone => zone.city))).map(cityName => {
-        const zoneWithCity = z.find(zone => zone.city === cityName);
-        return {
-          id: zoneWithCity?.id || cityName,
-          name: cityName || "Unknown City"
-        };
-      }).filter(c => c.name !== "Unknown City");
-      
-      setCities(uniqueCities);
 
-      if (uniqueCities.length > 0 && !formData.city_id) {
-        setFormData(prev => ({ ...prev, city_id: uniqueCities[0].id }));
+      if (c.length > 0 && !formData.city_id) {
+        setFormData(prev => ({ ...prev, city_id: c[0].id }));
       }
     } catch (err: any) {
       console.error("Failed to load cities/zones:", err);
@@ -124,10 +118,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     }
   };
 
-  const selectedCityZones = zones.filter(z => {
-    const city = cities.find(c => c.id === formData.city_id);
-    return z.city === city?.name;
-  });
+  const selectedCityZones = zones.filter(z => z.city_id === formData.city_id);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
