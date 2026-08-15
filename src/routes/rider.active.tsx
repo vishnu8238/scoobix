@@ -242,18 +242,22 @@ function RiderActive() {
         <section className="h-64 overflow-hidden rounded-[2rem] bg-muted shadow-card ring-1 ring-border/60">
            <GoogleMap 
              className="h-full w-full"
-             center={order.pickup_latitude && order.pickup_longitude ? { lat: order.pickup_latitude, lng: order.pickup_longitude } : undefined}
+             center={order.pickup_latitude && order.pickup_longitude ? { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) } : undefined}
              zoom={13}
              markers={[
                ...(order.pickup_latitude && order.pickup_longitude ? [{
-                 position: { lat: order.pickup_latitude, lng: order.pickup_longitude },
-                 title: "Pickup",
-                 icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                 id: "pickup",
+                 lat: Number(order.pickup_latitude),
+                 lng: Number(order.pickup_longitude),
+                 kind: "pickup" as const,
+                 label: "Pickup"
                }] : []),
                ...(order.delivery_latitude && order.delivery_longitude ? [{
-                 position: { lat: order.delivery_latitude, lng: order.delivery_longitude },
-                 title: "Drop-off",
-                 icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                 id: "dropoff",
+                 lat: Number(order.delivery_latitude),
+                 lng: Number(order.delivery_longitude),
+                 kind: "drop" as const,
+                 label: "Drop-off"
                }] : [])
              ]}
            />
