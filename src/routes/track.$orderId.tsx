@@ -21,7 +21,10 @@ function TrackPage() {
   const navigate = useNavigate();
   const { getOrder, cancelOrder, subscribeToOrders, loading } = useOrders();
   const { user } = useAuth();
+  const { userCoords } = useAppUI();
+  const [error, setError] = useState<string | null>(null);
   const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   
   // Real-time synchronization
   useEffect(() => {
