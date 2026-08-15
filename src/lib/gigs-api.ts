@@ -29,25 +29,35 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  console.log("[GIGS_API] Fetching authoritative gigs...");
-  return listTable<Gig>("gigs", { 
-    select: "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,subzone_id,city_id,capacity,completion_pct,created_at",
-    order: "created_at.desc", 
-    ...params 
-  });
+  console.log("[GIGS_API] Fetching authoritative gigs...", params);
+  try {
+    const data = await listTable<Gig>("gigs", { 
+      select: "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,subzone_id,city_id,capacity,completion_pct,created_at",
+      order: "created_at.desc", 
+      ...params 
+    }, { fresh: true });
+    console.log(`[GIGS_API] Fetch success. Found ${data.length} gigs.`);
+    return data;
+  } catch (err: any) {
+    console.error("[GIGS_API] Fetch failed:", err.message);
+    throw err;
+  }
 }
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   const id = newUuid();
+  console.log("[GIGS_API] Creating gig...", { id, ...gig });
   try {
     const res = await createRecord<Gig>("gigs", { ...gig, id });
     if (res) {
+      console.log("[GIGS_API] Create success. Record:", JSON.stringify(res));
       publishTableChange("gigs", "insert", res as any);
       return res;
     }
+    console.error("[GIGS_API] Create returned null");
     throw new Error("Creation returned no record. Check table permissions.");
   } catch (error: any) {
-    console.error("[GIGS_API] Failed to create gig:", error);
+    console.error("[GIGS_API] Create failed:", error.message, error.status);
     throw error;
   }
 }
