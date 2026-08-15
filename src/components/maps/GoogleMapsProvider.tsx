@@ -14,7 +14,7 @@ export function GoogleMapsProvider({ children, fallback }: { children: ReactNode
   useEffect(() => {
     // Check if it's already in the env (e.g. if configured via build settings)
     const envKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    if (envKey) {
+    if (envKey && envKey !== "YOUR_GOOGLE_MAPS_API_KEY") {
       setApiKey(envKey);
       setLoading(false);
       return;

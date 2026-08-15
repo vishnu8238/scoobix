@@ -82,7 +82,7 @@ function LogisticsOrders() {
             onClick={async () => {
               setIsSeeding(true);
               try {
-                const res = await seedDemoOrders({ data: undefined });
+                const res = await seedDemoOrders({ data: {} });
                 if (res.seeded > 0) {
                   toast.success(`Seeded ${res.seeded} new demo orders`);
                 } else if (res.existing > 0) {

@@ -38,6 +38,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
               [73.1812, 22.3072], 
               [73.1912, 22.3072], 
               [73.1912, 22.3172], 
+              [73.1812, 22.3172],
               [73.1812, 22.3072]
             ]] 
           };
