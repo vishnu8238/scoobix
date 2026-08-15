@@ -302,17 +302,18 @@ export function createRecord<T = Record<string, unknown>>(
     const query = insforge.database.from(table).insert([record]).select().single();
     try {
       const res = await handleResponse<T>(query, "POST", table);
+      console.log(`[DB_INSERT] ${table} success:`, JSON.stringify(res));
       if (!res) {
         throw new Error("Insert returned empty result");
       }
       announce(table, "insert", (res as Record<string, unknown>) || record);
       return res;
     } catch (err: any) {
-      console.warn(`[DB_RLS_GUARD] createRecord for ${table} returned an error.`, err);
+      console.error(`[DB_INSERT_ERROR] ${table} failed:`, err.message, err.status);
       
       const status = err.status || 0;
       if (status === 406 || status === 404 || status === 0) {
-        console.log(`[DB_RLS_GUARD] Optimistically treating ${status} as a SELECT-back failure for ${table}. Returning input.`);
+        console.warn(`[DB_RLS_GUARD] Optimistically treating ${status} as a SELECT-back failure for ${table}. Returning input.`);
         const fallback = { ...record, id: (record.id || "pending-refresh") } as unknown as T;
         announce(table, "insert", record);
         return fallback;
