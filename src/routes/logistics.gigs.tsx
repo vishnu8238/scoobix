@@ -41,6 +41,7 @@ function LogisticsGigs() {
   const [selectedDate, setSelectedDate] = useState(startOfToday());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   // Filters for Slots/Capacity
   const [city, setCity] = useState("all");
