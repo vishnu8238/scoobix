@@ -10,7 +10,8 @@ export const TABLE_AUDIT = "audit_logs";
 export type DeliveryZone = {
   id: string;
   name: string;
-  city: string;
+  city_id?: string;
+  city?: string;
   description: string;
   status: "ACTIVE" | "DISABLED" | "ARCHIVED";
   boundary: any; // GeoJSON
