@@ -18,10 +18,14 @@ import { publishTableChange } from "./realtime-bus";
 import type { CartItem, Order, OrderStatus } from "./stores";
 
 
-const H = {
-  apikey: INSFORGE_ANON_KEY,
-  Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
-  "Content-Type": "application/json",
+const getHeaders = async () => {
+  const { getAccessToken } = await import("./insforge");
+  const token = await getAccessToken();
+  return {
+    apikey: INSFORGE_ANON_KEY,
+    Authorization: `Bearer ${token || INSFORGE_ANON_KEY}`,
+    "Content-Type": "application/json",
+  };
 };
 
 const rec = (table: string) => `${INSFORGE_URL}/api/database/records/${table}`;
@@ -131,10 +135,15 @@ export function rowToOrder(row: OrderRow): Order {
 
 async function getJson<T>(url: string): Promise<T | null> {
   try {
-    const res = await fetch(url, { headers: H });
-    if (!res.ok) return null;
+    const headers = await getHeaders();
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      if (res.status === 401) console.error("[ORDERS_API] Unauthorized request to", url);
+      return null;
+    }
     return (await res.json()) as T;
-  } catch {
+  } catch (e) {
+    console.error("[ORDERS_API] Fetch error:", e);
     return null;
   }
 }
@@ -200,7 +209,8 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
   let pickupAddr: string | null = null;
 
   try {
-    const res = await fetch(`${rec("restaurants")}?id=eq.${input.restaurantId}&select=zone_id,subzone_id,latitude,longitude,address`, { headers: H });
+    const headers = await getHeaders();
+    const res = await fetch(`${rec("restaurants")}?id=eq.${input.restaurantId}&select=zone_id,subzone_id,latitude,longitude,address`, { headers });
     const data = await res.json();
     if (data?.[0]) {
       if (!zoneId) zoneId = data[0].zone_id;
@@ -250,18 +260,19 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
   };
 
   try {
-    const res = await fetch(rec("orders"), { method: "POST", headers: H, body: JSON.stringify(body) });
+    const headers = await getHeaders();
+    const res = await fetch(rec("orders"), { method: "POST", headers, body: JSON.stringify(body) });
     if (!res.ok) return null;
   } catch {
     return null;
   }
 
-  // Child rows — best effort
+  const childHeaders = await getHeaders();
   await Promise.all([
     ...input.items.map((it) =>
       fetch(rec("order_items"), {
         method: "POST",
-        headers: H,
+        headers: childHeaders,
         body: JSON.stringify({
           id: newUuid(),
           order_id: id,
@@ -274,7 +285,7 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     ),
     fetch(rec("payments"), {
       method: "POST",
-      headers: H,
+      headers: childHeaders,
       body: JSON.stringify({
         id: newUuid(),
         order_id: id,
@@ -294,9 +305,10 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
 export async function patchOrder(orderId: string, patch: Record<string, unknown>): Promise<boolean> {
   if (!isUuid(orderId)) return false;
   try {
+    const headers = await getHeaders();
     const res = await fetch(`${rec("orders")}?id=eq.${orderId}`, {
       method: "PATCH",
-      headers: H,
+      headers,
       body: JSON.stringify(patch),
     });
     if (res.ok) publishTableChange("orders", "update", { id: orderId, ...patch });
@@ -336,9 +348,10 @@ export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
 export async function patchPaymentByOrder(orderId: string, patch: Record<string, unknown>): Promise<void> {
   if (!isUuid(orderId)) return;
   try {
+    const headers = await getHeaders();
     await fetch(`${rec("payments")}?order_id=eq.${orderId}`, {
       method: "PATCH",
-      headers: H,
+      headers,
       body: JSON.stringify(patch),
     });
     publishTableChange("payments", "update", { order_id: orderId, ...patch });

@@ -93,12 +93,15 @@ function LogisticsGigs() {
 
     } catch (err: any) {
       console.error("[GIGS_PAGE] Authoritative load failed:", err);
-      toast.error("Failed to load gigs: " + (err.message || "Unknown error"));
+      const errorMsg = err.message || "Unknown database error";
+      toast.error(`Failed to load gigs: ${errorMsg}`);
       setDiagnostics({ 
-        error: err.message, 
+        error: errorMsg, 
         status: err.status, 
-        response: err.response || "No response details" 
+        rawError: JSON.stringify(err),
+        timestamp: new Date().toISOString()
       });
+      setGigs([]); // Clear view on error
     } finally {
       setLoading(false);
     }

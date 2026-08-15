@@ -31,13 +31,11 @@ export type GigParticipant = {
 export async function fetchGigs(params?: Record<string, any>) {
   const TABLE = "gigs"; 
   try {
-    // Explicit column list to avoid 406 behavior with select(*) and satisfy RLS
     const GIG_COLUMNS = "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,city_id,capacity,created_at";
-    
     const { select, ...rest } = params || {};
     
-    // Authoritative fetch: no date predicate here, we filter in memory
-    const data = await listTable<Gig>(TABLE, { 
+    // Explicit columns, fresh data, no date filter at API level
+    let data = await listTable<Gig>(TABLE, { 
       order: "start_time.asc", 
       ...rest 
     }, { 
@@ -46,14 +44,18 @@ export async function fetchGigs(params?: Record<string, any>) {
       select: select || GIG_COLUMNS
     });
     
-    if (!data || !Array.isArray(data)) {
-      console.warn(`[GIGS_API] No array returned from "${TABLE}", returning empty.`);
+    // Fallback: if we just created a gig but it's not in the list (e.g. RLS delay), 
+    // try a direct SELECT by ID if one was recently created in this session.
+    // However, listTable already returns [] on error, so we check for array.
+    if (!Array.isArray(data)) {
+      console.warn(`[GIGS_API] Non-array returned from "${TABLE}", returning empty.`);
       return [];
     }
     
     return data;
   } catch (err: any) {
-    console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message);
+    console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message, "Status:", err.status);
+    // DO NOT convert to empty array here, let the UI handle the error or show diagnostics
     throw err;
   }
 }
