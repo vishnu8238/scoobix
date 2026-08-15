@@ -189,7 +189,7 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
       
       if (isBrowser) {
         // Authoritative token check
-        const session = insforge.auth.getSession();
+        const session = insforge.auth.session;
         if (session?.accessToken) {
           console.error(`[DB_AUTH_FAILURE] Token exists but ${method} ${table} failed with ${status}. Likely RLS or Scope error.`);
         }
@@ -197,7 +197,7 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
       
       if (method === "GET") {
         // Authoritative token check
-        const session = insforge.auth.getSession();
+        const session = insforge.auth.session;
         if (!session?.accessToken) {
           console.warn(`[DB_AUTH_SILENT] No token for GET ${table}. Returning empty.`);
           return (Array.isArray(data) ? [] : null) as unknown as T;
@@ -206,6 +206,7 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
         // If we have a token but got 401/Invalid Token, it's a real failure, not just a guest state.
         console.error(`[DB_AUTH_ERROR] Token present but ${method} ${table} failed with ${status}.`);
       }
+
 
 
       
