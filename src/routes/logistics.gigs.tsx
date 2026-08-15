@@ -85,6 +85,27 @@ function LogisticsGigs() {
     }
   }, [selectedDate]);
 
+  const productionTest = useServerFn(import("@/lib/logistics-ops.functions").then(m => m.performProductionGigTest));
+
+  const runGigTest = async () => {
+    setIsTesting(true);
+    try {
+      const res = await productionTest();
+      console.log("[GIG_TEST_RESULT]", res);
+      if (res.success) {
+        toast.success("Production Gig Test Passed: Row persisted and read back.");
+        await load();
+      } else {
+        toast.error(`Production Gig Test Failed: ${res.error}`);
+        setDiagnostics((prev: any) => ({ ...prev, testError: res }));
+      }
+    } catch (err: any) {
+      toast.error(`Test execution failed: ${err.message}`);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   useEffect(() => { void load(); }, [load]);
 
   const dates = Array.from({ length: 7 }).map((_, i) => addDays(startOfToday(), i - 1));
