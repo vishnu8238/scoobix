@@ -24,8 +24,6 @@ export const requireInsForgeAuth = createMiddleware({ type: 'function' }).server
       baseUrl: INSFORGE_URL,
       anonKey: INSFORGE_ANON_KEY,
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
         detectOAuthCallback: false
       }
     });
