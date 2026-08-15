@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-store";
 import { useDriver } from "@/lib/driver-store";
 import { getDisplayName } from "@/lib/identity-utils";
-import { PageHeader } from "@/components/cravio/PageHeader";
 import { User, Shield, Globe, Clock, Volume2, Moon, ChevronRight, LogOut, PlayCircle, Star, Settings, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/format";
 import { useState, useEffect } from "react";
@@ -151,18 +150,18 @@ function RiderProfile() {
           <div className="rounded-[2rem] bg-card p-2 shadow-soft ring-1 ring-border/60">
             <Link to="/rider/support" className="flex items-center justify-between p-4 hover:bg-muted/30 rounded-2xl transition">
               <div className="flex items-center gap-3">
-                <HelpCircle className="h-5 w-5 text-primary" />
+                <Settings className="h-5 w-5 text-primary" />
                 <span className="text-sm font-bold">Help Center</span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
-            <a href="https://scoobix.app/terms" target="_blank" className="flex items-center justify-between p-4 hover:bg-muted/30 rounded-2xl transition">
+            <a href="https://scoobix.app/terms" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 hover:bg-muted/30 rounded-2xl transition">
               <div className="flex items-center gap-3">
                 <ExternalLink className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-bold">Terms & Conditions</span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
+            </a>
           </div>
         </div>
 
