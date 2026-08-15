@@ -11,6 +11,7 @@ import { ImageUploader } from "@/components/cravio/ImageUploader";
 import type { ImageRef } from "@/lib/image-service";
 import { listTable } from "@/lib/insforge-crud";
 import { cn } from "@/lib/format";
+import { getDisplayName } from "@/lib/identity-utils";
 import {
   useManager,
   saveOnboardingDraft,
