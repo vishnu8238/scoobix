@@ -149,9 +149,28 @@ function TrackPage() {
                 ? "Delivered. Enjoy your meal!" 
                 : order.status === "CANCELLED" 
                   ? "Order Cancelled"
-                  : `Arriving in ~${Math.max(1, order.etaMins - Math.floor((Date.now() - order.placedAt) / 60000))} min`}
+                  : `Arriving in ~${etaMins} min`}
             </h2>
             <p className="text-xs text-muted-foreground">From {order.restaurantName}</p>
+            {!delivered && order.status !== "CANCELLED" && (
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-primary" />
+                  {new Date(now + etaMins * 60000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+                {liveEta && (
+                  <>
+                    <span>{liveEta.km.toFixed(1)} km away</span>
+                    <span className="flex items-center gap-1 text-primary">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      {driverCoords ? "Live rider ETA" : "Live route ETA"}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
+
 
           </div>
         </div>
