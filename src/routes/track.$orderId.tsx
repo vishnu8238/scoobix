@@ -109,9 +109,14 @@ function TrackPage() {
           <div className="p-4">
             <div className="text-xs font-bold uppercase tracking-wider text-primary">{STATUS_LABEL[order.status]}</div>
             <h2 className="mt-1 font-display text-lg font-bold leading-tight">
-              {delivered ? "Delivered. Enjoy your meal!" : `Arriving in ~${Math.max(1, order.etaMins - Math.floor((Date.now() - order.placedAt) / 60000))} min`}
+              {delivered 
+                ? "Delivered. Enjoy your meal!" 
+                : order.status === "CANCELLED" 
+                  ? "Order Cancelled"
+                  : `Arriving in ~${Math.max(1, order.etaMins - Math.floor((Date.now() - order.placedAt) / 60000))} min`}
             </h2>
             <p className="text-xs text-muted-foreground">From {order.restaurantName}</p>
+
           </div>
         </div>
 
