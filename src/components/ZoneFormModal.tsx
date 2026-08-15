@@ -24,11 +24,12 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
     boundary: initialData?.boundary || { type: "Polygon", coordinates: [] }
   });
 
+  const hasMapPoints = formData.boundary?.coordinates?.[0]?.length >= 3;
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const hasMapPoints = formData.boundary?.coordinates?.[0]?.length >= 3;
     setLoading(true);
     try {
       
