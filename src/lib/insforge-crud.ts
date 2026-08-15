@@ -189,9 +189,10 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
       const session = isBrowser ? insforge.auth.session : null;
       const hasToken = !!session?.accessToken;
 
-      if (method === "GET" && !hasToken && !isBrowser) {
-        // Only return empty array if we are CERTAIN this is a non-authenticated SSR read that should have been authenticated
-        // But in Logistics, these are mostly client-side.
+      // Only return empty for GETs if we are in the browser and genuinely have no token.
+      // On the server, we might have been called before middleware attached the token,
+      // or we might be in a background worker context.
+      if (method === "GET" && !hasToken && isBrowser) {
         console.warn(`[DB_AUTH_SILENT] No token for GET ${table}. Returning empty.`);
         return [] as unknown as T;
       }
