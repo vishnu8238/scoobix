@@ -131,21 +131,24 @@ export function ManagerOnboardingRegression() {
     <div className="rounded-3xl bg-card p-6 shadow-soft ring-1 ring-border/60">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="font-display text-lg font-extrabold">Manager Onboarding Regression</h2>
-          <p className="text-xs text-muted-foreground">End-to-end verification of the onboarding flow.</p>
+          <h2 className="font-display text-lg font-extrabold">Manager Onboarding Regression v2</h2>
+          <p className="text-xs text-muted-foreground">End-to-end verification of the onboarding flow (InsForge-only).</p>
         </div>
-        <Button 
-          onClick={runTest} 
-          disabled={isRunning}
-          className="rounded-full gradient-primary shadow-glow"
-        >
-          {isRunning ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Play className="mr-2 h-4 w-4 fill-current" />
-          )}
-          Run Suite
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => runTest()} 
+            disabled={isRunning}
+            variant="outline"
+            className="rounded-full border-primary/20 hover:bg-primary/5"
+          >
+            {isRunning ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="mr-2 h-4 w-4 fill-current" />
+            )}
+            Run Complete Suite
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-3">
