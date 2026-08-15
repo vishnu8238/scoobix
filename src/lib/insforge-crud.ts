@@ -217,11 +217,21 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
 
     // InsForge Response Normalization: Handle data, rows, result, records, or flat arrays
     const rawData = res.data;
-    let normalizedData = rawData;
+    const rawResult = res.result;
+    
+    // Check both 'data' and 'result' top-level keys
+    let source = rawData !== undefined ? rawData : rawResult;
+    let normalizedData = source;
 
-    if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
-      // It's an envelope object
-      normalizedData = rawData.rows || rawData.data || rawData.result || rawData.records || rawData;
+    if (source && typeof source === 'object' && !Array.isArray(source)) {
+      // It's an envelope object, look for known array keys
+      normalizedData = source.rows || source.data || source.result || source.records || source.items || source;
+    }
+
+    // If normalizedData is still the envelope object and we have a flat array elsewhere, use that.
+    // Some InsForge versions return { status: 200, data: [ ... ] } directly.
+    if (!Array.isArray(normalizedData) && Array.isArray(source)) {
+      normalizedData = source;
     }
 
     // If it's a success status but data is null/undefined, return empty array/null instead of throwing
