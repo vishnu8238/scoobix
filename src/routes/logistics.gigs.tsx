@@ -188,16 +188,17 @@ function LogisticsGigs() {
         
         // Use the authoritative direct SELECT via fetchGigs (which also probes candidates)
         const verifyRows = await fetchGigs({ id: testId });
-        const foundInList = verifyRows.some((g: any) => g.id === testId);
+        const foundGig = verifyRows.find((g: any) => g.id === testId);
         
         const authUser = await insforge.auth.getCurrentUser();
         
-        if (foundInList || successRes) {
+        if (foundGig || successRes) {
           const tableUsed = activeTable || "unknown";
-          toast.success(`Production Gig Test Passed: Row persisted ${foundInList ? `and verified in "${tableUsed}"` : `(Read-back bypassed)`}.`);
+          toast.success(`Production Gig Test Passed: Row persisted ${foundGig ? `and verified in "${tableUsed}"` : `(Read-back bypassed)`}.`);
           
-          // Append created gig to list immediately for responsiveness
-          setGigs(prev => [testGig as Gig, ...prev]);
+          // Use the actual verified row if available, otherwise fallback to the test object
+          const finalGig = foundGig || testGig;
+          setGigs(prev => [finalGig as Gig, ...prev]);
           setAllGigsCount(prev => (prev || 0) + 1);
 
           setDiagnostics((prev: any) => ({ 
@@ -207,9 +208,9 @@ function LogisticsGigs() {
               success: true, 
               testRecordId: testId, 
               userId: authUser.data?.user?.id || "unknown",
-              listCount: foundInList ? verifyRows.length : 1,
+              listCount: foundGig ? verifyRows.length : 1,
               confirmedTable: tableUsed,
-              note: foundInList ? "Authoritative Verify" : "Optimistic Verify (INSERT returned success)"
+              note: foundGig ? "Authoritative Verify" : "Optimistic Verify (INSERT returned success)"
             } 
           }));
         } else {
