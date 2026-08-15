@@ -101,19 +101,23 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     setLoading(true);
     
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split('T')[0];
       const payload = {
         ...formData,
         status: "ACTIVE" as const,
-        start_time: `${today}T${formData.start_time}:00.000Z`,
-        end_time: `${today}T${formData.end_time}:00.000Z`
+        start_time: `${todayStr}T${formData.start_time}:00.000Z`,
+        end_time: `${todayStr}T${formData.end_time}:00.000Z`
       };
       
-      await createGig(payload);
+      console.log("[CREATE_GIG_MODAL] Submitting payload:", payload);
+      const res = await createGig(payload);
+      console.log("[CREATE_GIG_MODAL] Success response:", res);
+      
       toast.success("Gig created successfully");
       onSuccess();
       onClose();
     } catch (err: any) {
+      console.error("[CREATE_GIG_MODAL] Error:", err.message, err.status);
       toast.error(err.message || "Failed to create gig");
     } finally {
       setLoading(false);
