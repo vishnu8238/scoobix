@@ -360,7 +360,7 @@ export function patchRecord<T = Record<string, unknown>>(
   invalidateTable(table);
   return withRetry<T | null>(table, () => {
     const query = insforge.database.from(table).update(patch).eq("id", id).select();
-    return handleResponse<T>(query, "PATCH", table);
+    return handleResponse<T[]>(query, "PATCH", table).then(rows => Array.isArray(rows) ? rows[0] : rows);
   }).then((res) => {
     announce(table, "update", { id, ...patch, ...((res as any) || {}) });
     return res as T;
