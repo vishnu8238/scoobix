@@ -407,24 +407,42 @@ export function useManager() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    if (!user?.id) { setManager(null); setLoading(false); return; }
-    setLoading(true);
-    let row = await getManagerByUser(user.id);
-    // Self-heal: an auth account with the manager role but no manager record.
-    if (!row && user.role === "manager") {
-      const created = await createRecord<MerchantManager[] | MerchantManager>("merchant_managers", {
-        user_id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || null,
-        status: "active",
-        monthly_target: 10,
-      });
-      row = (Array.isArray(created) ? created[0] : created) as MerchantManager | null;
+    // Authoritative check from session first to avoid stale hook states
+    const session = insforge.auth.session;
+    const authId = session?.user?.id || user?.id;
+
+    if (!authId) {
+      console.warn("[MANAGER_API] No auth ID found for manager resolution.");
+      setManager(null);
+      setLoading(false);
+      return;
     }
-    setManager(row ?? null);
-    setLoading(false);
-  }, [user?.id, user?.role, user?.name, user?.email, user?.phone]);
+
+    setLoading(true);
+    try {
+      let row = await getManagerByUser(authId);
+      // Self-heal: an auth account with the manager role but no manager record.
+      const isManagerRole = user?.role === "manager" || user?.roles?.includes("manager");
+      if (!row && isManagerRole) {
+        console.info(`[MANAGER_API] Self-healing manager record for user ${authId}`);
+        const created = await createRecord<MerchantManager[] | MerchantManager>("merchant_managers", {
+          user_id: authId,
+          name: user?.name || session?.user?.name || "Manager",
+          email: user?.email || session?.user?.email,
+          phone: user?.phone || null,
+          status: "active",
+          monthly_target: 10,
+        });
+        row = (Array.isArray(created) ? created[0] : created) as MerchantManager | null;
+      }
+      setManager(row ?? null);
+    } catch (err) {
+      console.error("[MANAGER_API] Failed to resolve manager:", err);
+      setManager(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, user?.role, user?.roles, user?.name, user?.email, user?.phone]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
