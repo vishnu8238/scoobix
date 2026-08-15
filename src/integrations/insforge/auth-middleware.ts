@@ -14,28 +14,31 @@ export const requireInsForgeAuth = createMiddleware({ type: 'function' }).server
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('[INSFORGE_AUTH_MW] No Bearer token found in headers');
       throw new Error('Unauthorized: No token provided');
     }
 
     const token = authHeader.replace('Bearer ', '');
     
-    // Create a per-request client and bind the token.
-    // The InsForge SDK uses HttpClient internally which manages the userToken.
-    // Calling setAuthToken on the HttpClient instance (via client.auth.tokenManager or directly if accessible)
-    // ensures this request's context is authenticated.
     const insforge = createClient({
       baseUrl: INSFORGE_URL,
       anonKey: INSFORGE_ANON_KEY,
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectOAuthCallback: false
+      }
     });
 
-    // Bind the token to this request-specific client
+    // Authoritative Token Injection
     (insforge.auth as any).tokenManager.setAccessToken(token);
 
+    // Validate token by fetching the user
     const { data: userData, error } = await insforge.auth.getCurrentUser();
     
     if (error || !userData?.user) {
-      console.error('[INSFORGE_AUTH_MW] Token validation failed:', error?.message);
-      throw new Error('Unauthorized: Invalid token');
+      console.error('[INSFORGE_AUTH_MW] Token validation failed:', error?.message || 'Invalid user data');
+      throw new Error(`Unauthorized: Invalid token (${error?.message || 'Verification failed'})`);
     }
 
     return next({

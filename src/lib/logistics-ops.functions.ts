@@ -14,7 +14,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
   .middleware([requireInsForgeAuth])
   .handler(async ({ context }) => {
     const { insforge } = context;
-    console.log("[SEED_PREREQ] Starting discovery seed...");
+    console.log("[SEED_PREREQ] Starting authoritative logistics seed...");
     
     const result = { 
       success: false,
@@ -31,9 +31,8 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
       const tables = ["gigs", "cities", "zones", "logistics_zones", "delivery_zones", "subzones", "restaurants", "orders", "users"];
       for (const table of tables) {
         try {
-          // Check for relation existence and column info if possible
+          // Check for relation existence
           const { status, error } = await insforge.database.from(table).select("count").limit(1);
-          console.log(`[SCHEMA_PROBE] Table "${table}": status=${status} ${error ? `error=${error.message}` : "OK"}`);
           result.schema.push({ 
             table, 
             status: status || 0, 
@@ -45,46 +44,68 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
         }
       }
 
-      // Step 1: Probe 'restaurants' to extract usable City strings for fallback
-      const { data: restaurants, error: restError } = await insforge.database
-        .from("restaurants")
-        .select("city")
-        .limit(20);
-      
-      const foundCities = Array.from(new Set(restaurants?.map(r => r.city) || []));
-      result.diagnostics.push({ 
-        action: "probe_restaurants", 
-        success: !restError, 
-        foundCities,
-        error: restError?.message
-      });
-
-      // Step 2: Idempotent seed for cities and zones
-      // We try both 'cities' and 'logistics_cities' to be safe
-      const cityTables = ["cities", "logistics_cities", "delivery_cities"];
-      const zoneTables = ["zones", "logistics_zones", "delivery_zones"];
-      
-      const cityName = foundCities[0] || "Vadodara";
-
-      for (const table of cityTables) {
-        const { status, error } = await insforge.database.from(table).insert([{
-          id: CITY_1_ID,
-          name: cityName,
-          status: "ACTIVE",
-          metadata: { demo_tag: "logistics_test_v4" }
-        }]);
-        result.diagnostics.push({ table, op: "insert_city", status, error: error?.message, success: status === 201 || status === 409 || status === 406 });
+      // Step 1: Discover valid city names from restaurants for fallback
+      let fallbackCityName = "Vadodara";
+      try {
+        const { data: restaurants } = await insforge.database
+          .from("restaurants")
+          .select("city")
+          .limit(10);
+        
+        if (restaurants && restaurants.length > 0) {
+          const found = restaurants.find(r => r.city);
+          if (found) fallbackCityName = found.city;
+        }
+      } catch (e) {
+        console.warn("[SEED_PREREQ] Restaurant probe failed, using Vadodara fallback.");
       }
 
-      for (const table of zoneTables) {
-        const { status, error } = await insforge.database.from(table).insert([{
-          id: ZONE_1_ID,
-          city_id: CITY_1_ID,
-          name: "Main Zone",
-          status: "ACTIVE",
-          metadata: { demo_tag: "logistics_test_v4" }
-        }]);
-        result.diagnostics.push({ table, op: "insert_zone", status, error: error?.message, success: status === 201 || status === 409 || status === 406 });
+      // Step 2: Idempotent seed for cities and zones
+      // We probe for the writable table
+      const cityTableCandidates = ["cities", "logistics_cities", "delivery_cities"];
+      const zoneTableCandidates = ["zones", "logistics_zones", "delivery_zones"];
+      
+      for (const table of cityTableCandidates) {
+        try {
+          const { status, error } = await insforge.database.from(table).upsert({
+            id: CITY_1_ID,
+            name: fallbackCityName,
+            status: "ACTIVE",
+            metadata: { demo_tag: "logistics_test_v5" }
+          }, { onConflict: 'id' });
+          
+          result.diagnostics.push({ 
+            table, 
+            op: "upsert_city", 
+            status, 
+            success: status === 200 || status === 201 || status === 204 || status === 409 || status === 406,
+            error: error?.message 
+          });
+        } catch (e: any) {
+          result.diagnostics.push({ table, op: "upsert_city", status: 500, error: e.message });
+        }
+      }
+
+      for (const table of zoneTableCandidates) {
+        try {
+          const { status, error } = await insforge.database.from(table).upsert({
+            id: ZONE_1_ID,
+            city_id: CITY_1_ID,
+            name: "Main Zone",
+            status: "ACTIVE",
+            metadata: { demo_tag: "logistics_test_v5" }
+          }, { onConflict: 'id' });
+          
+          result.diagnostics.push({ 
+            table, 
+            op: "upsert_zone", 
+            status, 
+            success: status === 200 || status === 201 || status === 204 || status === 409 || status === 406,
+            error: error?.message 
+          });
+        } catch (e: any) {
+          result.diagnostics.push({ table, op: "upsert_zone", status: 500, error: e.message });
+        }
       }
       
       result.success = true;
