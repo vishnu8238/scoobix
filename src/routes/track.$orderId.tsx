@@ -108,8 +108,7 @@ function TrackPage() {
             interactive={false}
             route={{ 
               from: pickup, 
-              to: drop,
-              rider: driverCoords ?? undefined
+              to: drop
             }}
             riderProgress={driverCoords ? undefined : statusToProgress(order.status)}
             riderLabel={order.driver.name}
