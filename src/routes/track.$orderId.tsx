@@ -1,12 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { ArrowLeft, MessageSquare, Phone, Star, MapPin, Clock, ShieldCheck, StickyNote, X } from "lucide-react";
 import { useOrders, useAppUI, STATUS_LABEL } from "@/lib/stores";
-import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
+import { GoogleMap } from "@/components/maps/GoogleMap";
 import { TimelineStepper } from "@/components/cravio/TimelineStepper";
 import { Button } from "@/components/ui/button";
 import { currency } from "@/lib/format";
 import { addressCoords, restaurantCoords, statusToProgress, CITY_CENTER } from "@/lib/geo";
 import { toast } from "sonner";
+import { subscribeToDelivery } from "@/lib/delivery-sync";
+import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/track/$orderId")({
   head: () => ({ meta: [{ title: "Scoobix · Tracking" }] }),
@@ -16,9 +19,19 @@ export const Route = createFileRoute("/track/$orderId")({
 function TrackPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate();
-  const { getOrder, cancelOrder } = useOrders();
+  const { getOrder, cancelOrder, subscribeToOrders } = useOrders();
+  const { user } = useAuth();
   const { userCoords } = useAppUI();
+  
+  // Real-time synchronization
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsub = subscribeToOrders(user.id);
+    return () => { unsub(); };
+  }, [user?.id, subscribeToOrders]);
+
   const order = getOrder(orderId);
+
   const canCancel = order && !["PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"].includes(order.status);
 
   if (!order) {
