@@ -308,11 +308,13 @@ export function createRecord<T = Record<string, unknown>>(
       
       const row = Array.isArray(res) ? res[0] : res;
       if (!row) {
-        throw new Error(`Insert into "${table}" returned empty result - check RLS/Table Existence. Project Host: ${insforge.auth.api.baseUrl}`);
+        // If SELECT-back failed but status was 201, we might get an empty array.
+        // We log it but don't necessarily throw yet if we can verify.
+        console.warn(`[DB_INSERT_EMPTY] Insert into "${table}" returned empty result - attempting read-back verification.`);
       }
 
       // Read-back verification: fetch the row again by ID to ensure it is actually there
-      const rowId = (row as any).id;
+      const rowId = (row as any)?.id || record.id;
       if (rowId) {
         console.log(`[DB_INSERT_VERIFY] Performing immediate read-back for ${table}:${rowId} using ${insforge.auth.api.baseUrl}`);
         // Ensure we bypass cache for verification
