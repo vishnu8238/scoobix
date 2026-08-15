@@ -307,10 +307,17 @@ function RiderActive() {
                  label: customer?.name || "Drop-off"
                }] : [])
              ]}
-             polyline={
+             polylines={
                order.pickup_latitude && order.delivery_latitude ? [
-                 { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) },
-                 { lat: Number(order.delivery_latitude), lng: Number(order.delivery_longitude) }
+                 { 
+                   id: "route",
+                   points: [
+                     { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) },
+                     { lat: Number(order.delivery_latitude), lng: Number(order.delivery_longitude) }
+                   ],
+                   color: "#3B82F6",
+                   weight: 4
+                 }
                ] : undefined
              }
            />
@@ -321,6 +328,7 @@ function RiderActive() {
              </div>
            )}
         </section>
+
 
         {/* Action Center */}
         <section className="rounded-[2.5rem] bg-card p-6 shadow-card ring-1 ring-border/60">
