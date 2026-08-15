@@ -55,7 +55,7 @@ function LogisticsGigs() {
       // NOTE: We match start_time between todayT00:00 and todayT23:59
       const data = await fetchGigs({ 
         start_time: `gte.${today}T00:00:00.000Z`,
-        end_time: `lte.${today}T23:59:59.999Z`
+        start_time: `lte.${today}T23:59:59.999Z`
       });
       
       console.log(`[GIGS_PAGE] Data received: ${data.length} rows`);
