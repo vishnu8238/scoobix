@@ -85,8 +85,9 @@ function LogisticsGigs() {
         filtered: data.length,
         filterDate: localDateStr,
         firstGig: all[0] ? { id: all[0].id, title: all[0].title, start: all[0].start_time } : "none",
-        sessionActive: !!insforge.auth.getSession()?.accessToken
+        sessionActive: !!insforge.auth.session?.accessToken
       });
+
     } catch (err: any) {
       console.error("[GIGS_PAGE] Load failed:", err.message);
       toast.error("Failed to load gigs: " + err.message);
@@ -148,6 +149,7 @@ function LogisticsGigs() {
             listCount: allAfter.length
           } 
         }));
+
         await load();
       } else {
         throw new Error("Persistence check returned null");
