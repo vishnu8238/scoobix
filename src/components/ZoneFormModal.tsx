@@ -28,9 +28,9 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const hasMapPoints = formData.boundary?.coordinates?.[0]?.length >= 3;
     setLoading(true);
     try {
-      const hasMapPoints = formData.boundary?.coordinates?.[0]?.length >= 3;
       
       // Default boundary if none provided (Main Zone / Vadodara context)
       const DEFAULT_BOUNDARY = { 
