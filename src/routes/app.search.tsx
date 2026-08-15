@@ -98,7 +98,7 @@ function SearchPage() {
 
   const filteredRestaurants = useMemo(() => {
     let list = filterVeg(restaurants, vegMode, pureVegOverrides).filter(r => 
-      (r.status === 'active' || r.status === 'approved' || (r as any).onboarding_status === 'live')
+      ((r as any).status === 'active' || (r as any).status === 'approved' || (r as any).onboarding_status === 'live')
     ).filter((r) => {
       if (cuisine !== "All" && !r.cuisine.toLowerCase().includes(cuisine.toLowerCase()) && !r.tags.some((t) => t.toLowerCase() === cuisine.toLowerCase())) return false;
       if (r.rating < minRating) return false;
