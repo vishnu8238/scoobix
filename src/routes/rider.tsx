@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, Inbox, Bike, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield, Info } from "lucide-react";
+import { Home, Inbox, Bike, Wallet, Settings, Bell, HelpCircle, PhoneCall, AlertTriangle, X, ChevronRight, Menu, User, LogOut, Shield, Info, Calendar } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
