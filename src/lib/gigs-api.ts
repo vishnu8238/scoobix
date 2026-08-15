@@ -32,10 +32,17 @@ export async function fetchGigs(params?: Record<string, any>) {
   const TABLE = "gigs"; 
   try {
     const GIG_COLUMNS = "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,city_id,capacity,created_at";
-    const { select, ...rest } = params || {};
+    const { select, id, ...rest } = params || {};
     
-    // Explicit columns, fresh data, no date filter at API level
-    // We use SELECT * as a fallback if explicit columns fail RLS (unlikely but safe)
+    // If an ID is provided, perform a direct SELECT by ID for authoritative verification
+    if (id) {
+      console.log(`[GIGS_API] Authoritative SELECT by ID for "${TABLE}:${id}"`);
+      const query = insforge.database.from(TABLE).select(select || GIG_COLUMNS).eq("id", id);
+      const rows = await handleResponse<Gig[]>(query, "GET", TABLE);
+      return Array.isArray(rows) ? rows : [];
+    }
+
+    // Standard list fetch
     let data = await listTable<Gig>(TABLE, { 
       order: "start_time.asc", 
       ...rest 
@@ -45,23 +52,17 @@ export async function fetchGigs(params?: Record<string, any>) {
       select: select || GIG_COLUMNS
     });
     
-    if (!Array.isArray(data)) {
-      console.warn(`[GIGS_API] Non-array returned from "${TABLE}", returning empty.`);
-      return [];
-    }
-    
-    return data;
+    return Array.isArray(data) ? data : [];
   } catch (err: any) {
     console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message, "Status:", err.status);
     
-    // If it's a 406 (Not Acceptable) or 401, it might be the column list. Try SELECT * once.
     if (err.status === 406 || err.status === 401) {
       console.warn(`[GIGS_API] Retrying "${TABLE}" with SELECT * fallback...`);
       try {
         const fallback = await listTable<Gig>(TABLE, { limit: 1000 }, { fresh: true, ttl: 0, select: "*" });
         return Array.isArray(fallback) ? fallback : [];
       } catch (retryErr) {
-        throw err; // throw original
+        throw err;
       }
     }
     

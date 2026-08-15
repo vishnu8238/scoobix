@@ -223,25 +223,28 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
     
     // Check both 'data' and 'result' top-level keys
     let source = rawData !== undefined ? rawData : rawResult;
-    let normalizedData = source;
-
+    
+    // If we have a direct row/object and the method is POST or SELECT by ID,
+    // we should treat it as the result if no array is found.
     if (source && typeof source === 'object' && !Array.isArray(source)) {
       // It's an envelope object, look for known array keys
-      normalizedData = source.rows || source.data || source.result || source.records || source.items || source;
+      const possibleArray = source.rows || source.data || source.result || source.records || source.items;
+      if (Array.isArray(possibleArray)) return possibleArray as T;
+      
+      // If no array key but the object has an 'id' or we're looking for one record, wrap it
+      if (source.id || method === "POST") return [source] as unknown as T;
     }
 
-    // If normalizedData is still the envelope object and we have a flat array elsewhere, use that.
-    // Some InsForge versions return { status: 200, data: [ ... ] } directly.
-    if (!Array.isArray(normalizedData) && Array.isArray(source)) {
-      normalizedData = source;
-    }
+    // If source is already an array, use it
+    if (Array.isArray(source)) return source as T;
 
     // If it's a success status but data is null/undefined, return empty array/null instead of throwing
-    if (normalizedData === undefined || normalizedData === null) {
+    if (source === undefined || source === null) {
       return (method === "GET" ? [] : null) as unknown as T;
     }
 
-    return normalizedData as T;
+    // Final fallback: if it's an object with data but not an array, wrap it
+    return [source] as unknown as T;
   } catch (err: any) {
     if (err instanceof HttpError) throw err;
     

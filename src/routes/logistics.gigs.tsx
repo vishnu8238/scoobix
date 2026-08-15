@@ -140,54 +140,38 @@ function LogisticsGigs() {
         // Wait for potential indexing/propagation
         await new Promise(r => setTimeout(r, 1500));
         
-        // Use raw query for verification to bypass any potential layer issues
-        const verifyRes = await insforge.database.from("gigs").select("*");
-        
-        // Use a robust normalization helper locally for the test
-        const extractRows = (res: any) => {
-          const raw = res.data || res.result;
-          if (Array.isArray(raw)) return raw;
-          if (raw && typeof raw === 'object') {
-            return raw.rows || raw.data || raw.result || raw.records || raw.items || [raw];
-          }
-          return [];
-        };
-
-        const allRows = extractRows(verifyRes);
-        const foundInList = allRows.some((g: any) => g.id === testId);
+        // Use the authoritative direct SELECT by ID via fetchGigs
+        const verifyRows = await fetchGigs({ id: testId });
+        const foundInList = verifyRows.some((g: any) => g.id === testId);
         
         const authUser = await insforge.auth.getCurrentUser();
         
         if (foundInList) {
-          toast.success("Production Gig Test Passed: Row persisted and verified in list.");
+          toast.success("Production Gig Test Passed: Row persisted and verified by direct UUID query.");
           setDiagnostics((prev: any) => ({ 
             ...prev, 
             testError: { 
               success: true, 
               testRecordId: testId, 
               userId: authUser.data?.user?.id || "unknown",
-              listCount: allRows.length,
-              status: verifyRes.status
+              listCount: verifyRows.length
             } 
           }));
         } else {
-          console.error("[GIG_TEST_CLIENT] Persistence failure: ID not found in list.", {
+          console.error("[GIG_TEST_CLIENT] Persistence failure: ID not found in direct read-back.", {
             testId,
-            listSize: allRows.length,
-            status: verifyRes.status,
-            error: verifyRes.error
+            resultSize: verifyRows.length
           });
-          toast.error("Production Gig Test FAILED: Row persisted but NOT found in canonical list.");
+          toast.error("Production Gig Test FAILED: Row persisted but NOT found by direct UUID query.");
           setDiagnostics((prev: any) => ({ 
             ...prev, 
             testError: { 
               success: false, 
-              error: "ID persisted but not found in subsequent fetch",
+              error: "ID persisted but not found in direct SELECT",
               testRecordId: testId,
               userId: authUser.data?.user?.id || "unknown",
-              listCount: allRows.length,
-              status: verifyRes.status,
-              rawResponse: JSON.stringify(verifyRes.data || verifyRes.result || verifyRes.error || verifyRes || {}).slice(0, 200)
+              listCount: verifyRows.length,
+              rawResponse: JSON.stringify(verifyRows).slice(0, 200)
             } 
           }));
         }
