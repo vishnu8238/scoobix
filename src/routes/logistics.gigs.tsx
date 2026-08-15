@@ -47,15 +47,26 @@ function LogisticsGigs() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const today = format(selectedDate, "yyyy-MM-dd");
-    // Ensure authoritative filtering. start_time is usually an ISO string.
-    const data = await fetchGigs({ 
-      start_time: `gte.${today}T00:00:00.000Z`,
-      end_time: `lte.${today}T23:59:59.999Z`
-    });
-    setGigs(data);
-    setLoading(false);
-  }, []);
+    try {
+      const today = format(selectedDate, "yyyy-MM-dd");
+      console.log(`[GIGS_PAGE] Loading for date: ${today}`);
+      
+      // Ensure authoritative filtering. start_time is usually an ISO string.
+      // NOTE: We match start_time between todayT00:00 and todayT23:59
+      const data = await fetchGigs({ 
+        start_time: `gte.${today}T00:00:00.000Z`,
+        end_time: `lte.${today}T23:59:59.999Z`
+      });
+      
+      console.log(`[GIGS_PAGE] Data received: ${data.length} rows`);
+      setGigs(data);
+    } catch (err: any) {
+      console.error("[GIGS_PAGE] Load failed:", err.message);
+      toast.error("Failed to load gigs: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate]);
 
   useEffect(() => { void load(); }, [load]);
 
