@@ -41,35 +41,65 @@ export async function getDriverForUser(userId: string): Promise<DriverRow | null
 
 
 export function useDriver() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, authState } = useAuth();
   const [driver, setDriver] = useState<DriverRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    if (!user?.id) {
-      
+    
+    // If auth is completely done and we have no user, we can't have a driver.
+    if (!authLoading && !user?.id) {
       setDriver(null);
-      setLoading(authLoading);
+      setLoading(false);
+      setError(authState === "auth_error" ? "Identity resolution failed" : null);
       return;
     }
+
+    // If auth is still loading, wait, but don't hang if it takes too long (AuthProvider handles this)
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     setLoading(true);
+    setError(null);
     
-    void getDriverForUser(user.id).then((row) => {
-      if (cancelled) return;
-      
-      setDriver(row);
-      setLoading(false);
-    });
+    // Safety timeout for driver profile lookup
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        console.warn("[DRIVER_STORE] Driver lookup timed out after 10s");
+        setLoading(false);
+        setError("Connection timeout while resolving driver profile");
+      }
+    }, 10000);
+    
+    void getDriverForUser(user!.id)
+      .then((row) => {
+        if (cancelled) return;
+        setDriver(row);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[DRIVER_STORE] Driver lookup failed:", err);
+        setError(err.message || "Failed to resolve driver profile");
+        setLoading(false);
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+      });
+
     return () => { cancelled = true; };
-  }, [user?.id, authLoading]);
+  }, [user?.id, authLoading, authState]);
 
   const update = async (patch: Partial<DriverRow>) => {
     if (!driver?.id) return;
     setDriver((prev) => (prev ? { ...prev, ...patch } : prev));
-    if (user?.id) cache.set(user.id, { ...driver, ...patch });
+    if (user?.id) cache.set(user.id, { ...driver, ...patch } as DriverRow);
     await patchRecord("drivers", driver.id, patch as Record<string, unknown>);
   };
 
-  return { driver, driverId: driver?.id ?? "", loading, update };
+  return { driver, driverId: driver?.id ?? "", loading, error, update };
 }
