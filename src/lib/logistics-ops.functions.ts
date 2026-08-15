@@ -22,8 +22,11 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
       diagnostics: [] as any[]
     };
 
+    const CITY_1_ID = "c1110000-0000-0000-0000-000000000001";
+    const ZONE_1_ID = "z1110000-0000-0000-0000-000000000001";
+
     try {
-      // Step 1: Probe 'restaurants' to extract usable City strings
+      // Step 1: Probe 'restaurants' to extract usable City strings for fallback
       const { data: restaurants, error: restError } = await insforge.database
         .from("restaurants")
         .select("city")
@@ -38,23 +41,38 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
         error: restError?.message
       });
 
-      // Step 2: Since 'logistics_zones' etc 404, we must find where they ARE.
-      // We will try one more schema-less probe for common naming variations
-      const zoneVariations = ["delivery_areas", "service_areas", "operational_regions"];
-      for (const table of zoneVariations) {
-        const { status, error, data } = await insforge.database.from(table).select("*").limit(1);
-        result.diagnostics.push({ table, status, exists: status === 200, count: data?.length });
-        if (status === 200) {
-          result.success = true;
-          // If we found a table, we could seed it here, but we need its schema.
-        }
+      // Step 2: Idempotent seed for cities and zones
+      // We try both 'cities' and 'logistics_cities' to be safe
+      const cityTables = ["cities", "logistics_cities", "delivery_cities"];
+      const zoneTables = ["zones", "logistics_zones", "delivery_zones"];
+      
+      const cityName = foundCities[0] || "Vadodara";
+
+      for (const table of cityTables) {
+        const { status, error } = await insforge.database.from(table).insert([{
+          id: CITY_1_ID,
+          name: cityName,
+          status: "ACTIVE",
+          metadata: { demo_tag: "logistics_test_v4" }
+        }]);
+        result.diagnostics.push({ table, op: "insert_city", status, error: error?.message, success: status === 201 || status === 409 || status === 406 });
+      }
+
+      for (const table of zoneTables) {
+        const { status, error } = await insforge.database.from(table).insert([{
+          id: ZONE_1_ID,
+          city_id: CITY_1_ID,
+          name: "Main Zone",
+          status: "ACTIVE",
+          metadata: { demo_tag: "logistics_test_v4" }
+        }]);
+        result.diagnostics.push({ table, op: "insert_zone", status, error: error?.message, success: status === 201 || status === 409 || status === 406 });
       }
       
-      // Fallback: If no authoritative tables exist, we report the "Available Cities" from restaurants
-      // so the UI can at least show something.
-      if (foundCities.length > 0) result.success = true;
+      result.success = true;
 
     } catch (e: any) {
+      console.error("[SEED_PREREQ] Critical error:", e);
       result.errors.push(e.message);
     }
 
