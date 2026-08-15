@@ -32,8 +32,8 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
     e.preventDefault();
     setLoading(true);
     try {
-      
-      // Default boundary if none provided (Main Zone / Vadodara context)
+      // Robust boundary fallback for Logistics: allow creation with minimal deterministic coordinates
+      // if map/polygon is unavailable or fails to draw.
       const DEFAULT_BOUNDARY = { 
         type: "Polygon", 
         coordinates: [[
@@ -47,11 +47,15 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
 
       const boundary = hasMapPoints ? formData.boundary : DEFAULT_BOUNDARY;
 
-      // Validate boundary coordinates for zones (must be closed)
-      if (boundary.coordinates.length > 0) {
+      // Ensure polygon closure: first coordinate must match the last
+      if (boundary.coordinates && boundary.coordinates.length > 0) {
         const coords = boundary.coordinates[0];
-        if (JSON.stringify(coords[0]) !== JSON.stringify(coords[coords.length - 1])) {
-          coords.push(coords[0]);
+        if (coords.length >= 3) {
+          const first = coords[0];
+          const last = coords[coords.length - 1];
+          if (JSON.stringify(first) !== JSON.stringify(last)) {
+            coords.push([...first]);
+          }
         }
       }
 
@@ -64,19 +68,20 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         center_lng: boundary.coordinates?.[0]?.[0]?.[0] || 73.1812
       };
 
-      console.log("[ZONE_MODAL] Submitting zone:", submission);
+      console.log("[ZONE_MODAL] Submitting authoritative zone via InsForge...", submission);
       const result = await createNewZone({ data: submission as any });
       
-      if (!result || (!result.id && !Array.isArray(result))) {
-        throw new Error("Creation returned an invalid result. Check database connection.");
+      // Robust response check: InsForge returns the inserted row or an array
+      if (!result || (typeof result === 'object' && !result.id && !Array.isArray(result))) {
+        throw new Error("Zone creation failed: Invalid response from database.");
       }
       
-      toast.success("Zone created successfully");
+      toast.success("Zone created and verified in database");
       onSuccess();
       onClose();
     } catch (err: any) {
-      console.error("[ZONE_MODAL] Creation failed:", err);
-      toast.error(`Failed to create zone: ${err.message || "Unknown error"}`);
+      console.error("[ZONE_MODAL] Production creation error:", err);
+      toast.error(`Production Zone Error: ${err.message || "Unauthorized or RLS Blocked"}`);
     } finally {
       setLoading(false);
     }

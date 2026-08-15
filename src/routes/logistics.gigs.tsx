@@ -55,7 +55,8 @@ function LogisticsGigs() {
     setLoading(true);
     try {
       console.log("[GIGS_PAGE] Loading authoritative canonical list...");
-      // 1. Authoritative fetch: all gigs, no date predicate, explicit column set
+      
+      // 1. Authoritative fetch: all gigs, no date predicate
       const all = await fetchGigs({ limit: 1000 });
       console.log(`[GIGS_PAGE] Loaded ${all.length} normalized rows.`);
       
@@ -68,11 +69,9 @@ function LogisticsGigs() {
       const data = all.filter(g => {
         if (!g.start_time) return false;
         try {
-          // Normalize gig date (handling potential UTC shift from InsForge)
           const gigDateObj = parseISO(g.start_time);
           const gigDateStr = format(gigDateObj, "yyyy-MM-dd");
           const rawIsoDate = g.start_time.split('T')[0];
-          
           return gigDateStr === localDateStr || rawIsoDate === localDateStr;
         } catch (e) {
           return false;
@@ -86,9 +85,9 @@ function LogisticsGigs() {
         total: all.length,
         filtered: data.length,
         filterDate: localDateStr,
-        firstGig: all[0] ? { id: all[0].id, title: all[0].title, start: all[0].start_time } : "none",
+        firstGig: all[0] ? { id: all[0].id, title: all[0].title } : "none",
         sessionActive: !!insforge.auth.session?.accessToken,
-        responseSample: all.slice(0, 1).map(g => ({ id: g.id, title: g.title }))
+        tokenPrefix: insforge.auth.session?.accessToken ? insforge.auth.session.accessToken.substring(0, 10) : "none"
       });
 
     } catch (err: any) {
@@ -97,11 +96,11 @@ function LogisticsGigs() {
       toast.error(`Failed to load gigs: ${errorMsg}`);
       setDiagnostics({ 
         error: errorMsg, 
-        status: err.status, 
-        rawError: JSON.stringify(err),
+        status: err.status,
+        session: !!insforge.auth.session?.accessToken,
         timestamp: new Date().toISOString()
       });
-      setGigs([]); // Clear view on error
+      setGigs([]);
     } finally {
       setLoading(false);
     }

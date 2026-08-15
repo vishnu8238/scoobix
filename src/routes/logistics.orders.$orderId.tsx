@@ -29,10 +29,15 @@ function LogisticsOrderDetailsPage() {
   useEffect(() => {
     const init = async () => {
       try {
+        console.log(`[ORDER_DETAIL] Loading authoritative order ${orderId}...`);
         const d = await fetchCompleteOrderDetails(orderId);
+        if (!d || !d.order) {
+           console.warn(`[ORDER_DETAIL] No authoritative data found for ${orderId}`);
+        }
         setData(d);
-      } catch (err) {
-        console.error("Failed to load order:", err);
+      } catch (err: any) {
+        console.error("[ORDER_DETAIL] Load failed:", err);
+        toast.error(`Order Load Error: ${err.message || "Unauthorized"}`);
       } finally {
         setLoadingInitial(false);
       }
