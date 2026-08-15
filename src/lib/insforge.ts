@@ -103,15 +103,46 @@ export const subscribeCatalog = () => () => {};
 export const getCatalogVersion = () => "1.0.0";
 export const setRestaurantApprovalStatus = async (...args: any[]) => {};
 export const setRestaurantCommission = async (...args: any[]) => {};
-export const updateRestaurantStatus = async (...args: any[]) => {};
-export const deleteRestaurantComplete = async (...args: any[]): Promise<any> => ({ ok: true });
+export const updateRestaurantStatus = async (id: string, patch: Record<string, any>) => {
+  const { patchRecord } = await import("./insforge-crud");
+  return patchRecord("restaurants", id, patch);
+};
+export const deleteRestaurantComplete = async (id: string): Promise<any> => {
+  const { deleteRecord } = await import("./insforge-crud");
+  return deleteRecord("restaurants", id);
+};
 export const scheduleOrder = async (...args: any[]) => {};
-export const upsertMenuItem = async (...args: any[]): Promise<any> => ({ ok: true });
-export const deleteMenuItem = async (...args: any[]) => {};
-export const upsertAddon = async (...args: any[]) => {};
-export const deleteAddon = async (...args: any[]) => {};
-export const updateOrderStatus = async (...args: any[]) => {};
+export const upsertMenuItem = async (item: any): Promise<any> => {
+  const { createRecord, patchRecord } = await import("./insforge-crud");
+  if (item.id && !item.id.startsWith('n')) {
+    return patchRecord("menu_items", item.id, item);
+  }
+  return createRecord("menu_items", item);
+};
+export const deleteMenuItem = async (id: string) => {
+  const { deleteRecord } = await import("./insforge-crud");
+  return deleteRecord("menu_items", id);
+};
+export const upsertAddon = async (addon: any) => {
+  const { createRecord, patchRecord } = await import("./insforge-crud");
+  if (addon.id && !addon.id.startsWith('a')) {
+    return patchRecord("menu_addons", addon.id, addon);
+  }
+  return createRecord("menu_addons", addon);
+};
+export const deleteAddon = async (id: string) => {
+  const { deleteRecord } = await import("./insforge-crud");
+  return deleteRecord("menu_addons", id);
+};
+export const updateOrderStatus = async (id: string, patch: Record<string, any>) => {
+  const { patchRecord } = await import("./insforge-crud");
+  return patchRecord("orders", id, patch);
+};
 export const pingDriverLocation = async (...args: any[]) => {};
 export const setDriverOnline = async (...args: any[]) => {};
-export const acceptDeliveryRequest = async (...args: any[]) => {};
+export const acceptDeliveryRequest = async (...args: any[]) => {
+  const { patchRecord } = await import("./insforge-crud");
+  const [id] = args;
+  return patchRecord("delivery_requests", id, { status: 'accepted' });
+};
 
