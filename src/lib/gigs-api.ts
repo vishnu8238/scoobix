@@ -30,45 +30,63 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  const TABLE = "gigs"; 
-  try {
-    const GIG_COLUMNS = "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,city_id,capacity,created_at";
-    const { select, id, ...rest } = params || {};
-    
-    // If an ID is provided, perform a direct SELECT by ID for authoritative verification
-    if (id) {
-      console.log(`[GIGS_API] Authoritative SELECT by ID for "${TABLE}:${id}"`);
-      const query = insforge.database.from(TABLE).select(select || GIG_COLUMNS).eq("id", id);
-      const rows = await handleResponse<Gig[]>(query, "GET", TABLE);
-      return Array.isArray(rows) ? rows : [];
-    }
+  // Authoritative Discovery: The production error 'relation "public.gigs" does not exist'
+  // suggests the table might be named 'delivery_gigs' or the schema prefix is wrong.
+  // We probe 'gigs' first, then 'delivery_gigs'.
+  const TABLE_CANDIDATES = ["gigs", "delivery_gigs"]; 
+  const GIG_COLUMNS = "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,city_id,capacity,created_at";
+  const { select, id, ...rest } = params || {};
+  
+  for (const table of TABLE_CANDIDATES) {
+    try {
+      console.log(`[GIGS_API] Authoritative probe for table "${table}"...`);
+      
+      // If an ID is provided, perform a direct SELECT by ID for authoritative verification
+      if (id) {
+        const query = insforge.database.from(table).select(select || GIG_COLUMNS).eq("id", id);
+        const rows = await handleResponse<Gig[]>(query, "GET", table);
+        if (Array.isArray(rows) && rows.length > 0) return rows;
+        if (id && rows.length === 0) continue; // Try next candidate if not found
+      }
 
-    // Standard list fetch
-    let data = await listTable<Gig>(TABLE, { 
-      order: "start_time.asc", 
-      ...rest 
-    }, { 
-      fresh: true, 
-      ttl: 0,
-      select: select || GIG_COLUMNS
-    });
-    
-    return Array.isArray(data) ? data : [];
-  } catch (err: any) {
-    console.error(`[GIGS_API] Fetch failed from "${TABLE}":`, err.message, "Status:", err.status);
-    
-    if (err.status === 406 || err.status === 401) {
-      console.warn(`[GIGS_API] Retrying "${TABLE}" with SELECT * fallback...`);
-      try {
-        const fallback = await listTable<Gig>(TABLE, { limit: 1000 }, { fresh: true, ttl: 0, select: "*" });
-        return Array.isArray(fallback) ? fallback : [];
-      } catch (retryErr) {
+      // Standard list fetch
+      let data = await listTable<Gig>(table, { 
+        order: "start_time.asc", 
+        ...rest 
+      }, { 
+        fresh: true, 
+        ttl: 0,
+        select: select || GIG_COLUMNS
+      });
+      
+      if (Array.isArray(data)) return data;
+    } catch (err: any) {
+      console.warn(`[GIGS_API] Probe failed for "${table}":`, err.message);
+      
+      // If it's a relation error (404), continue to next candidate
+      if (err.status === 404 || err.isRelationError) {
+        continue;
+      }
+      
+      // If it's a 406 (Not Acceptable) or 401, it might be the column list. Try SELECT * once.
+      if (err.status === 406 || err.status === 401) {
+        console.warn(`[GIGS_API] Retrying "${table}" with SELECT * fallback...`);
+        try {
+          const fallback = await listTable<Gig>(table, { limit: 1000 }, { fresh: true, ttl: 0, select: "*" });
+          if (Array.isArray(fallback)) return fallback;
+        } catch (retryErr) {
+          // ignore retry err, throw original if this was the last candidate
+        }
+      }
+      
+      // If this is the last candidate, throw the error
+      if (table === TABLE_CANDIDATES[TABLE_CANDIDATES.length - 1]) {
         throw err;
       }
     }
-    
-    throw err;
   }
+  
+  return [];
 }
 
 
