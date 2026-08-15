@@ -66,7 +66,7 @@ function ManagerShell({ pathname }: { pathname: string }) {
               data-testid="header-user-name"
               className="text-[12px] font-bold leading-none text-foreground"
             >
-              {manager?.name || getDisplayName(user) || "Scoobix Manager"}
+              {manager?.name || (user?.name && user.name !== "User" ? user.name : getDisplayName(user)) || "Scoobix Manager"}
             </p>
             <p className="text-[10px] text-muted-foreground mt-0.5">{user?.email || "Manager"}</p>
           </div>
