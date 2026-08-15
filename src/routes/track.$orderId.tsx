@@ -9,6 +9,8 @@ import { currency } from "@/lib/format";
 import { addressCoords, restaurantCoords, statusToProgress, CITY_CENTER } from "@/lib/geo";
 import { toast } from "sonner";
 import { subscribeToDelivery, subscribeToDriverLocation } from "@/lib/delivery-sync";
+import { initGoogleMaps, routeBetween } from "@/lib/maps-service";
+
 import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/track/$orderId")({
@@ -24,6 +26,8 @@ function TrackPage() {
   const { userCoords } = useAppUI();
   const [error, setError] = useState<string | null>(null);
   const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [liveEta, setLiveEta] = useState<{ mins: number; km: number; at: number } | null>(null);
+
 
   
   // Real-time synchronization
@@ -49,6 +53,38 @@ function TrackPage() {
       setError(null);
     }
   }, [loading, order, orderId]);
+
+  // Live travel-time estimate from the rider's real position to the drop-off
+  const dropTarget = order ? (userCoords ?? addressCoords(order.addressLine || order.addressLabel || "Default")) : null;
+  const originForEta = driverCoords ?? (order?.restaurantId ? restaurantCoords(order.restaurantId) : null);
+  const activeDelivery = !!order && !["DELIVERED", "CANCELLED", "REJECTED"].includes(order.status);
+
+  useEffect(() => {
+    if (!activeDelivery || !dropTarget || !originForEta) return;
+    let alive = true;
+    (async () => {
+      await initGoogleMaps();
+      const r = await routeBetween(originForEta, dropTarget);
+      if (!alive || !r) return;
+      setLiveEta({ mins: Math.max(1, r.durationMins), km: r.distanceKm, at: Date.now() });
+    })();
+    return () => { alive = false; };
+  }, [activeDelivery, originForEta?.lat, originForEta?.lng, dropTarget?.lat, dropTarget?.lng]);
+
+  // Tick so the countdown and arrival clock stay current
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!activeDelivery) return;
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, [activeDelivery]);
+
+  const fallbackEta = order ? order.etaMins - Math.floor((now - order.placedAt) / 60000) : 0;
+  const etaMins = Math.max(
+    1,
+    liveEta ? liveEta.mins - Math.floor((now - liveEta.at) / 60000) : fallbackEta
+  );
+
 
   if (loading && !order) {
     return (
@@ -126,9 +162,28 @@ function TrackPage() {
                 ? "Delivered. Enjoy your meal!" 
                 : order.status === "CANCELLED" 
                   ? "Order Cancelled"
-                  : `Arriving in ~${Math.max(1, order.etaMins - Math.floor((Date.now() - order.placedAt) / 60000))} min`}
+                  : `Arriving in ~${etaMins} min`}
             </h2>
             <p className="text-xs text-muted-foreground">From {order.restaurantName}</p>
+            {!delivered && order.status !== "CANCELLED" && (
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-primary" />
+                  {new Date(now + etaMins * 60000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+                {liveEta && (
+                  <>
+                    <span>{liveEta.km.toFixed(1)} km away</span>
+                    <span className="flex items-center gap-1 text-primary">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      {driverCoords ? "Live rider ETA" : "Live route ETA"}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
+
 
           </div>
         </div>
