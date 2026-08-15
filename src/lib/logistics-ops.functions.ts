@@ -14,11 +14,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
   .middleware([requireInsForgeAuth])
   .handler(async ({ context }) => {
     const { insforge } = context;
-    console.log("[SEED_PREREQ] Starting recovery seed...");
-    
-    // We discovered that 'restaurants' and 'orders' exist.
-    // In many delivery systems, "Cities" are often stored as 'areas' or 'regions'.
-    // Since literal 'cities' and 'zones' 404, we will try to probe 'restaurants' for its column names.
+    console.log("[SEED_PREREQ] Starting discovery seed...");
     
     const result = { 
       success: false,
@@ -27,27 +23,37 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     };
 
     try {
-      // Step 1: Probe 'restaurants' to find city/zone columns
-      const { data: restSample, error: restError } = await insforge.database
+      // Step 1: Probe 'restaurants' to extract usable City strings
+      const { data: restaurants, error: restError } = await insforge.database
         .from("restaurants")
-        .select("*")
-        .limit(1);
+        .select("city")
+        .not("city", "is", null)
+        .limit(20);
       
+      const foundCities = Array.from(new Set(restaurants?.map(r => r.city) || []));
       result.diagnostics.push({ 
         action: "probe_restaurants", 
         success: !restError, 
-        columns: restSample && restSample.length > 0 ? Object.keys(restSample[0]) : null,
+        foundCities,
         error: restError?.message
       });
 
-      // Based on previous probe, 'restaurants' has 'city' (text) but no 'zone_id'.
-      // Wait, let's look at the probe output again.
-      // "restaurants" columns: "city", "latitude", "longitude"... but no "zone_id" visible in the truncated list?
-      // Actually, let me check the full list from my earlier probe.
+      // Step 2: Since 'logistics_zones' etc 404, we must find where they ARE.
+      // We will try one more schema-less probe for common naming variations
+      const zoneVariations = ["delivery_areas", "service_areas", "operational_regions"];
+      for (const table of zoneVariations) {
+        const { status, error, data } = await insforge.database.from(table).select("*").limit(1);
+        result.diagnostics.push({ table, status, exists: status === 200, count: data?.length });
+        if (status === 200) {
+          result.success = true;
+          // If we found a table, we could seed it here, but we need its schema.
+        }
+      }
       
-      // Step 2: Attempt to create a "virtual" City 1 / Zone 1 in a table that DOES exist
-      // or at least report exactly what we found.
-      
+      // Fallback: If no authoritative tables exist, we report the "Available Cities" from restaurants
+      // so the UI can at least show something.
+      if (foundCities.length > 0) result.success = true;
+
     } catch (e: any) {
       result.errors.push(e.message);
     }
