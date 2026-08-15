@@ -30,7 +30,9 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
     e.preventDefault();
     setLoading(true);
     try {
-      const boundary = (formData.boundary?.coordinates?.[0]?.length >= 3) 
+      const hasMapPoints = formData.boundary?.coordinates?.[0]?.length >= 3;
+      
+      const boundary = hasMapPoints
         ? formData.boundary 
         : { 
             type: "Polygon", 
@@ -59,15 +61,20 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         center_lat: boundary.coordinates?.[0]?.[0]?.[1] || 22.3072,
         center_lng: boundary.coordinates?.[0]?.[0]?.[0] || 73.1812
       };
+
+      console.log("[ZONE_MODAL] Submitting zone:", submission);
       const result = await createNewZone({ data: submission as any });
-      if (result && !result.id) {
-        throw new Error("Creation returned an invalid result");
+      
+      if (!result || (!result.id && !Array.isArray(result))) {
+        throw new Error("Creation returned an invalid result. Check database connection.");
       }
+      
       toast.success("Zone created successfully");
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error(`Failed to create zone: ${err.message}`);
+      console.error("[ZONE_MODAL] Creation failed:", err);
+      toast.error(`Failed to create zone: ${err.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }

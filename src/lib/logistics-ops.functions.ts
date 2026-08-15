@@ -202,18 +202,23 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
   .inputValidator(z.object({ data: z.any().optional() }))
   .handler(async ({ context }) => {
     const { insforge } = context;
-    console.log("[SEED] Starting idempotent demo seeding via SDK...");
+    console.log("[SEED] Starting idempotent demo seeding via context insforge...");
     
     const city1Id = "c1110000-0000-0000-0000-000000000001";
     const zone1Id = "z1110000-0000-0000-0000-000000000001";
 
     // 1. Ensure a demo restaurant exists
-    const { data: restaurantsFound } = await insforge.database
+    const { data: restaurantsFound, error: restError } = await insforge.database
       .from("restaurants")
       .select("*")
       .filter("metadata->>demo_tag", "eq", "logistics_test_v3")
       .limit(1);
     
+    if (restError) {
+      console.error("[SEED_ERROR] Restaurant lookup failed:", restError);
+      throw new Error(`Prerequisite lookup failed: ${restError.message}`);
+    }
+
     let restaurants = restaurantsFound || [];
     
     if (!restaurants.length) {
@@ -227,23 +232,29 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         city_id: city1Id,
         metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
       };
-      const { data: created } = await insforge.database
+      const { data: created, error: createRestErr } = await insforge.database
         .from("restaurants")
         .insert([demoRest])
         .select()
         .single();
       
+      if (createRestErr) {
+        console.error("[SEED_ERROR] Restaurant creation failed:", createRestErr);
+        throw new Error(`Prerequisite creation failed: ${createRestErr.message}`);
+      }
       if (created) restaurants = [created];
       else restaurants = [demoRest];
     }
 
     // 2. Ensure a demo customer exists
-    const { data: usersFound } = await insforge.database
+    const { data: usersFound, error: userLookupErr } = await insforge.database
       .from("users")
       .select("*")
       .filter("metadata->>demo_tag", "eq", "logistics_test_v3")
       .limit(1);
     
+    if (userLookupErr) throw userLookupErr;
+
     let customers = usersFound || [];
     
     if (!customers.length) {
@@ -255,12 +266,13 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         email: "demo.customer@scoobix.test",
         metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
       };
-      const { data: created } = await insforge.database
+      const { data: created, error: createCustErr } = await insforge.database
         .from("users")
         .insert([demoCust])
         .select()
         .single();
       
+      if (createCustErr) throw createCustErr;
       if (created) customers = [created];
       else customers = [demoCust];
     }

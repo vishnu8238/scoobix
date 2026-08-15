@@ -67,11 +67,18 @@ function LogisticsGigs() {
       const data = all.filter(g => {
         if (!g.start_time) return false;
         try {
-          // Normalize both to date strings for comparison to avoid TZ boundary issues
-          const isoDate = new Date(g.start_time).toISOString().split('T')[0];
+          // 1. Normalize selected date to YYYY-MM-DD
+          const localDateStr = format(selectedDate, "yyyy-MM-dd");
+          
+          // 2. Normalize gig date (handling potential UTC shift from InsForge)
+          // We parse it and then check the date part in local time
           const gigDateObj = parseISO(g.start_time);
-          const gigDate = format(gigDateObj, "yyyy-MM-dd");
-          return isoDate === localDateStr || gigDate === localDateStr;
+          const gigDateStr = format(gigDateObj, "yyyy-MM-dd");
+          
+          // 3. Also check the raw ISO string part for robustness
+          const rawIsoDate = g.start_time.split('T')[0];
+          
+          return gigDateStr === localDateStr || rawIsoDate === localDateStr;
         } catch (e) {
           return false;
         }

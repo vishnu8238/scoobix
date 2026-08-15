@@ -18,37 +18,42 @@ import { AssignRiderModal } from "@/components/admin/AssignRiderModal";
 
 export const Route = createFileRoute("/logistics/orders/$orderId")({
   component: LogisticsOrderDetailsPage,
-  loader: ({ params, context }) => {
-    return context.queryClient.ensureQueryData({
-      queryKey: ["logistics", "order-details", params.orderId],
-      queryFn: () => fetchCompleteOrderDetails(params.orderId),
-    });
-  },
 });
 
 function LogisticsOrderDetailsPage() {
   const { orderId } = Route.useParams();
-  const { data: initialData } = useSuspenseQuery({
-    queryKey: ["logistics", "order-details", orderId],
-    queryFn: () => fetchCompleteOrderDetails(orderId),
-  });
-
+  const [data, setData] = useState<any>(null);
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const liveOrder = useLiveOrder(orderId);
-  const [data, setData] = useState(initialData);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const d = await fetchCompleteOrderDetails(orderId);
+        setData(d);
+      } catch (err) {
+        console.error("Failed to load order:", err);
+      } finally {
+        setLoadingInitial(false);
+      }
+    };
+    init();
+  }, [orderId]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isAssignRiderOpen, setIsAssignRiderOpen] = useState(false);
 
   useEffect(() => {
     if (liveOrder) {
-      setData(prev => prev ? { ...prev, order: { ...prev.order, ...liveOrder } } : prev);
+      setData((prev: any) => prev ? { ...prev, order: { ...prev.order, ...liveOrder } } : prev);
     }
   }, [liveOrder]);
 
-  if (!data || !data.order) return (
+  if (loadingInitial || !data || !data.order) return (
     <div className="flex h-screen items-center justify-center bg-background">
       <div className="text-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
         <p className="font-display font-bold text-muted-foreground">Loading Order Details...</p>
+        {!loadingInitial && !data?.order && <p className="text-xs text-rose-500 mt-2">Order #{orderId.slice(0, 8)} not found</p>}
       </div>
     </div>
   );

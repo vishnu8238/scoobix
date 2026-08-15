@@ -187,18 +187,18 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
     if (!res || (error && (status === 401 || (error.message && error.message.toLowerCase().includes("invalid token"))))) {
       const isBrowser = typeof window !== "undefined";
       
+      // Authoritative token check
+      const session = isBrowser ? insforge.auth.session : null;
+      const hasToken = !!session?.accessToken;
+
       if (isBrowser) {
-        // Authoritative token check
-        const session = insforge.auth.session;
-        if (session?.accessToken) {
+        if (hasToken) {
           console.error(`[DB_AUTH_FAILURE] Token exists but ${method} ${table} failed with ${status}. Likely RLS or Scope error.`);
         }
       }
       
       if (method === "GET") {
-        // Authoritative token check
-        const session = insforge.auth.session;
-        if (!session?.accessToken) {
+        if (!hasToken) {
           console.warn(`[DB_AUTH_SILENT] No token for GET ${table}. Returning empty.`);
           return (Array.isArray(data) ? [] : null) as unknown as T;
         }
@@ -207,9 +207,6 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
         console.error(`[DB_AUTH_ERROR] Token present but ${method} ${table} failed with ${status}.`);
       }
 
-
-
-      
       const authErr = new HttpError(status || 401, error?.message || "Unauthorized: No token provided");
       (authErr as any).isAuthError = true;
       throw authErr;
