@@ -74,11 +74,12 @@ function RiderActive() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [otp, setOtp] = useState("");
-  const [podImageUrl, setPodImageUrl] = useState<string | null>(null);
+  const [podRef, setPodRef] = useState<any | null>(null);
   const [showFailedModal, setShowFailedModal] = useState(false);
   const [eta, setEta] = useState<string | null>(null);
 
   const riderId = user?.id;
+
 
   const loadData = useCallback(async () => {
     if (!riderId) {
