@@ -479,7 +479,9 @@ type OrdersCtx = {
   cancelOrder: (id: string, reason?: string) => Promise<{ ok: boolean; message: string }>;
   refunds: Record<string, "none" | "pending" | "refunded">;
   setRefundStatus: (id: string, status: "none" | "pending" | "refunded") => void;
+  subscribeToOrders: (userId: string) => () => void;
 };
+
 
 
 const OrdersContext = createContext<OrdersCtx | null>(null);
@@ -580,11 +582,21 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const setRefundStatus: OrdersCtx["setRefundStatus"] = (id, status) =>
     setRefunds((p) => ({ ...p, [id]: status }));
 
+  const subscribeToOrders = useCallback((userId: string) => {
+    const { onTableChange } = require("./realtime-bus");
+    return onTableChange("orders", (payload: any) => {
+      if (payload.row?.customer_id === userId || payload.row?.user_id === userId) {
+        refresh();
+      }
+    });
+  }, [refresh]);
+
   return (
-    <OrdersContext.Provider value={{ orders, loading, refresh, placeOrder, getOrder, reorder, cancelOrder, refunds, setRefundStatus }}>
+    <OrdersContext.Provider value={{ orders, loading, refresh, placeOrder, getOrder, reorder, cancelOrder, refunds, setRefundStatus, subscribeToOrders }}>
       {children}
     </OrdersContext.Provider>
   );
+
 }
 
 export const useOrders = () => {
