@@ -103,7 +103,10 @@ export function ManagerOnboardingRegression() {
       }, { fresh: true });
       
       const foundAll = restaurantIds.every(id => visibleRows.some(r => r.id === id));
-      if (!foundAll) throw new Error("Some approved restaurants are not visible to customers");
+      if (!foundAll) {
+        console.error("Missing restaurants in visible list:", restaurantIds.filter(id => !visibleRows.some(r => r.id === id)));
+        throw new Error("Some approved restaurants are not visible to customers. Check if status='active' filter matches discovery query.");
+      }
       updateStep("customer_visibility", { status: "passed" });
 
       // 6. Cleanup
