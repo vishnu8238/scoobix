@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Store, User, MapPin, FileText, Banknote, Percent, Check, ChevronRight, Save } from "lucide-react";
+import { Store, User, MapPin, FileText, Banknote, Percent, Check, ChevronRight, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,13 @@ import {
   ONBOARDING_TONE,
   type ManagedRestaurant,
 } from "@/lib/manager-api";
+import { useAuth } from "@/lib/auth-store";
 import { logDuplicateCheck, nextBranchCode } from "@/lib/duplicate-api";
 import { requestOwnershipTransfer } from "@/lib/transfers-api";
 import { DuplicateDialog, useDuplicateCheck, type DuplicateChoice } from "@/components/cravio/DuplicateCheck";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { LocationPicker } from "@/components/maps/LocationPicker";
+import { insforge } from "@/lib/insforge";
 
 type Search = { id?: string };
 
@@ -201,36 +203,53 @@ function OnboardingFlow() {
       toast.error("Restaurant name is required");
       return null;
     }
-    if (!manager?.id) {
-      toast.error("Your manager profile is still loading");
+    
+    // Authoritative manager resolution before write
+    const session = insforge.auth.session;
+    const authoritativeManagerId = manager?.id || session?.user?.id;
+    
+    if (!authoritativeManagerId) {
+      console.error("[ONBOARDING_SUBMIT] No manager ID found in session or hook state");
+      toast.error("Your manager session has expired. Please sign in again.");
       return null;
     }
+
     setBusy(true);
-    const rst = record?.rst_code || (await nextRstCode());
-    const saved = await saveOnboardingDraft(record?.id ?? id ?? null, {
-      ...payload,
-      rst_code: rst,
-      ...extra,
-    });
-    if (saved) {
-      setRecord(saved);
-      // Ensure the URL is updated so a refresh doesn't lose the record link
-      if (!id) {
-        navigate({ to: "/manager/onboarding", search: { id: saved.id }, replace: true });
-      }
-      await logOnboardingEvent({
-        restaurantId: saved.id,
-        managerId: manager.id,
-        status: String(extra.onboarding_status ?? "draft"),
-        note: statusLabel,
+    try {
+      const rst = record?.rst_code || (await nextRstCode());
+      console.info(`[ONBOARDING_SUBMIT] Persisting record. RST: ${rst}, Manager: ${authoritativeManagerId}`);
+      
+      const saved = await saveOnboardingDraft(record?.id ?? id ?? null, {
+        ...payload,
+        rst_code: rst,
+        manager_id: authoritativeManagerId,
+        onboarded_by: authoritativeManagerId,
+        ...extra,
       });
-      // Invalidate cache so history shows up immediately
-      const { invalidateTable } = await import("@/lib/insforge-crud");
-      invalidateTable("onboarding_events");
-      invalidateTable("restaurants");
+
+      if (saved) {
+        setRecord(saved);
+        if (!id) {
+          navigate({ to: "/manager/onboarding", search: { id: saved.id }, replace: true });
+        }
+        await logOnboardingEvent({
+          restaurantId: saved.id,
+          managerId: authoritativeManagerId,
+          status: String(extra.onboarding_status ?? "draft"),
+          note: statusLabel,
+        });
+        const { invalidateTable } = await import("@/lib/insforge-crud");
+        invalidateTable("onboarding_events");
+        invalidateTable("restaurants");
+      }
+      return saved;
+    } catch (err: any) {
+      console.error("[ONBOARDING_SUBMIT_ERROR]", err);
+      toast.error(err.message || "Failed to save restaurant details");
+      return null;
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
-    return saved;
   };
 
   const saveDraft = async () => {
@@ -261,32 +280,54 @@ function OnboardingFlow() {
   );
 
   const finalizeSubmit = async (extra: Record<string, unknown> = {}) => {
-    const account = await provisionAccount({
-      email: form.owner_email,
-      name: form.owner_name || form.name,
-      phone: form.owner_phone,
-      role: "RESTAURANT",
-    });
-    if (!account.ok) {
-      toast.error(account.message ?? "Could not create the restaurant account");
-      return;
+    if (busy) return;
+    setBusy(true);
+    
+    try {
+      console.info("[ONBOARDING_SUBMIT] Provisioning restaurant account:", form.owner_email);
+      const account = await provisionAccount({
+        email: form.owner_email,
+        name: form.owner_name || form.name,
+        phone: form.owner_phone,
+        role: "RESTAURANT",
+      });
+
+      if (!account.ok) {
+        console.error("[ONBOARDING_SUBMIT] Account provision failed:", account.message);
+        toast.error(account.message ?? "Could not create the restaurant account");
+        return;
+      }
+
+      console.info("[ONBOARDING_SUBMIT] Account provisioned. ID:", account.userId);
+
+      const saved = await persist(
+        {
+          onboarding_status: "submitted",
+          status: "pending",
+          owner_id: account.userId ?? null,
+          submitted_at: new Date().toISOString(),
+          ...extra,
+        },
+        "Submitted for admin approval",
+      );
+
+      if (!saved) {
+        console.error("[ONBOARDING_SUBMIT] Final persist failed");
+        return;
+      }
+
+      console.info("[ONBOARDING_SUBMIT] Success:", saved.rst_code);
+      toast.success(`Submitted · ${saved.rst_code}`, {
+        description: `Your application has been submitted successfully for admin approval. Owner login: ${form.owner_email} · temporary password ${account.password}`,
+        duration: 12000,
+      });
+      navigate({ to: "/manager/restaurants" });
+    } catch (err: any) {
+      console.error("[ONBOARDING_SUBMIT_FATAL]", err);
+      toast.error("A fatal error occurred during submission. Please check your internet connection.");
+    } finally {
+      setBusy(false);
     }
-    const saved = await persist(
-      {
-        onboarding_status: "submitted",
-        status: "pending",
-        owner_id: account.userId ?? null,
-        submitted_at: new Date().toISOString(),
-        ...extra,
-      },
-      "Submitted for admin approval",
-    );
-    if (!saved) return;
-    toast.success(`Submitted · ${saved.rst_code}`, {
-      description: `Your application has been submitted successfully for admin approval. Owner login: ${form.owner_email} · temporary password ${account.password}`,
-      duration: 12000,
-    });
-    navigate({ to: "/manager/restaurants" });
   };
 
   const submit = async () => {
@@ -394,8 +435,25 @@ function OnboardingFlow() {
   const last = step === STEPS.length - 1;
   const current = record ? onboardingStatus(record) : "draft";
 
-  if (loading) {
-    return <div className="mx-auto max-w-[520px] px-5 py-10"><div className="h-40 animate-pulse rounded-3xl bg-muted/60" /></div>;
+  if (loading || (managerLoading && !manager)) {
+    return (
+      <div className="mx-auto max-w-[520px] px-5 py-20 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground animate-pulse">Initializing manager session...</p>
+      </div>
+    );
+  }
+
+  if (!manager && hydrationComplete) {
+    return (
+      <div className="mx-auto max-w-[520px] px-5 py-20 text-center">
+        <h2 className="text-xl font-bold">Manager access required</h2>
+        <p className="mt-2 text-muted-foreground">You must be logged in as a Merchant Manager to access this page.</p>
+        <Button className="mt-6 rounded-full" onClick={() => navigate({ to: "/login", search: { portal: "manager" } })}>
+          Go to Login
+        </Button>
+      </div>
+    );
   }
 
   return (
