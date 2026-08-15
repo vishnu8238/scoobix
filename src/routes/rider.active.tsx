@@ -14,7 +14,7 @@ import { onTableChange } from "@/lib/realtime-bus";
 import { acceptOrderOffer, rejectOrderOffer, cancelAssignment } from "@/lib/logistics-engine.functions";
 import { pingDriverLocation } from "@/lib/insforge";
 import { useCms } from "@/lib/cms-store";
-import { useDriver } from "@/lib/driver-store";
+import { useAuth } from "@/lib/auth-store";
 import { listTable } from "@/lib/insforge-crud";
 import { patchOrder, patchPaymentByOrder, type OrderRow } from "@/lib/orders-api";
 import { startNavigation } from "@/lib/navigation";
@@ -62,55 +62,49 @@ const ACTIVE_STATUSES = [
 
 function RiderActive() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const cms = useCms();
   const settings = cms?.settings;
-  const { driver, driverId, loading: driverLoading, error: driverError, update: updateDriver } = useDriver();
-
+  
   const [order, setOrder] = useState<OrderRow | null>(null);
-  const [activeOffer, setActiveOffer] = useState<any | null>(null);
   const [restaurant, setRestaurant] = useState<any | null>(null);
   const [customer, setCustomer] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [otp, setOtp] = useState("");
-  const [showFailedModal, setShowFailedModal] = useState(false);
-  const [failReason, setFailReason] = useState("");
 
-  // --- Sync with backend ---
-  const load = useCallback(async () => {
-    // If driver is still loading, wait. useDriver has a timeout.
-    if (driverLoading) return;
-    
-    if (!driverId) { 
-      setOrder(null); 
-      setLoading(false); 
-      return; 
+  const riderId = user?.id; // InsForge Auth ID is authoritative
+
+  const loadData = useCallback(async () => {
+    if (!riderId) {
+      setLoading(false);
+      return;
     }
-    
+
     setLoading(true);
     setError(null);
 
-    // Watchdog for active order loading
-    const timeoutId = setTimeout(() => {
-      console.warn("[RIDER_ACTIVE] Order lookup timed out after 10s");
-      setLoading(false);
-      setError("Syncing is taking longer than expected. Please check your connection.");
-    }, 10000);
+    const TIMEOUT = 8000;
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT)
+    );
 
     try {
-      console.log("[RIDER_ACTIVE] Fetching active order for driver authoritative check:", driverId);
-      const rows = await listTable<OrderRow>("orders", {
-        driver_id: `eq.${driverId}`,
+      console.log("[RIDER_ACTIVE] Authoritative sync for rider:", riderId);
+      
+      const fetchPromise = listTable<OrderRow>("orders", {
+        driver_id: `eq.${riderId}`,
         order: "created_at.desc",
         limit: 10,
       }, { fresh: true, ttl: 0 });
+
+      const rows = await Promise.race([fetchPromise, timeoutPromise]) as OrderRow[];
       
       const active = (rows || []).find((r) => ACTIVE_STATUSES.includes(String(r.status ?? "").toUpperCase())) ?? null;
       setOrder(active);
 
       if (active) {
-        // Parallel fetch for associated data
         const [rs, us] = await Promise.all([
           active.restaurant_id 
             ? listTable<any>("restaurants", { id: `eq.${active.restaurant_id}`, limit: 1 }).catch(() => [])
@@ -122,38 +116,36 @@ function RiderActive() {
         
         setRestaurant(rs[0] ?? null);
         setCustomer(us[0] ?? null);
-      } else {
-        setRestaurant(null);
-        setCustomer(null);
       }
     } catch (err: any) {
       console.error("[RIDER_ACTIVE] Sync error:", err);
-      setError("Failed to sync delivery state. Tap to retry.");
+      setError(err.message === "TIMEOUT" 
+        ? "Syncing is taking longer than expected." 
+        : "Failed to sync delivery state. Tap to retry."
+      );
     } finally {
-      clearTimeout(timeoutId);
       setLoading(false);
     }
-  }, [driverId, driverLoading]);
+  }, [riderId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void loadData(); }, [loadData]);
 
-  // --- Realtime Subscription ---
   useEffect(() => {
-    if (!driverId) return;
+    if (!riderId) return;
     return onTableChange("orders", (payload) => {
-      if (payload.row?.driver_id === driverId) {
-        void load();
+      if (payload.row?.driver_id === riderId) {
+        void loadData();
       }
     });
-  }, [driverId, load]);
+  }, [riderId, loadData]);
 
   const handleStatusChange = async (newStatus: string, metadata?: any) => {
-    if (!order?.id || !driverId || busy) return;
+    if (!order?.id || !riderId || busy) return;
     setBusy(true);
     try {
-      await updateOrderState(String(order.id), driverId, newStatus, metadata);
+      await updateOrderState(String(order.id), riderId, newStatus, metadata);
       toast.success(`Status updated: ${STATUS_LABELS[newStatus] || newStatus}`);
-      await load();
+      await loadData();
     } catch (err) {
       toast.error("Failed to update status");
     } finally {
@@ -162,33 +154,13 @@ function RiderActive() {
   };
 
   const handleAcceptOffer = async () => {
-    if (!activeOffer || !driverId || busy) return;
-    setBusy(true);
-    try {
-      const res = await acceptOrderOffer({ 
-        data: {
-          orderId: activeOffer.order_id, 
-          riderId: driverId, 
-          offerId: activeOffer.id 
-        }
-      });
-      if (res.success) {
-        toast.success("Order accepted!");
-        setActiveOffer(null);
-        await load();
-      } else {
-        toast.error(res.error || "Failed to accept order");
-      }
-    } catch (err) {
-      toast.error("An error occurred");
-    } finally {
-      setBusy(false);
-    }
+    // Note: activeOffer state was not being used for the accept button logic in original code
+    // but we keep the handler if needed for future offers implementation.
+    toast.info("Offer acceptance requires active invitation");
   };
 
   const handleDeliveryComplete = async () => {
-    if (!order?.id || !driverId) return;
-    // OTP verification if required
+    if (!order?.id || !riderId) return;
     if (order.otp_required && otp !== order.otp) {
       toast.error("Invalid delivery PIN");
       return;
@@ -208,9 +180,8 @@ function RiderActive() {
   };
 
   const currentStatus = String(order?.status ?? "").toUpperCase();
-
-  const isActuallyLoading = loading || driverLoading;
-  const isError = !!(error || driverError);
+  const isActuallyLoading = loading;
+  const isError = !!error;
 
   if (isActuallyLoading) {
     return (

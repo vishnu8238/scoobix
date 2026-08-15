@@ -4,7 +4,7 @@ import { useTableVersion } from "@/lib/realtime-hooks";
 import { formatPrice } from "@/lib/format";
 import { Check, X, MapPin, Package, Clock, Loader2, Calendar, Info, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useDriver } from "@/lib/driver-store";
+import { useAuth } from "@/lib/auth-store";
 import { listTable } from "@/lib/insforge-crud";
 import { fetchGigs, enrollInGig, cancelGigEnrollment, type Gig } from "@/lib/gigs-api";
 import { cn } from "@/lib/format";
@@ -20,84 +20,72 @@ type Tab = "available" | "booked" | "history";
 
 function RiderRequestsPage() {
   const [tab, setTab] = useState<Tab>("available");
-  const { driver, driverId, loading: driverLoading, error: driverError } = useDriver();
+  const { user } = useAuth();
   const [gigs, setGigs] = useState<Gig[]>([]);
+  const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const version = useTableVersion(["gig_participants", "gigs"]);
 
-  const loadGigs = useCallback(async () => {
-    // If driver is still loading, wait. useDriver has a timeout.
-    if (driverLoading) return;
-    
+  const riderId = user?.id; // Authority is the InsForge Auth ID
+
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    // Watchdog for gig loading
-    const timeoutId = setTimeout(() => {
-      console.warn("[RIDER_GIGS] fetchGigs timed out after 10s");
-      setLoading(false);
-      setError("Syncing is taking longer than expected. Please check your connection.");
-    }, 10000);
+    // Initial query bounds
+    const TIMEOUT = 8000;
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT)
+    );
 
     try {
-      console.log("[RIDER_GIGS] Loading gigs authoritative check...");
-      const data = await fetchGigs();
-      setGigs(Array.isArray(data) ? data : []);
+      console.log("[RIDER_GIGS] Authoritative sync starting...");
+      
+      const fetchPromise = Promise.all([
+        fetchGigs({ status: "eq.ACTIVE" }),
+        riderId 
+          ? listTable<any>("gig_participants", { rider_id: `eq.${riderId}` }, { fresh: true, ttl: 0 })
+          : Promise.resolve([])
+      ]);
+
+      const [gigsData, participantsData] = await Promise.race([fetchPromise, timeoutPromise]) as [Gig[], any[]];
+      
+      setGigs(Array.isArray(gigsData) ? gigsData : []);
+      setEnrolledIds(new Set((participantsData || []).map(p => p.gig_id)));
     } catch (e: any) {
       console.error("[RIDER_GIGS] Load error:", e);
-      setError("Failed to sync slots. Tap to retry.");
+      setError(e.message === "TIMEOUT" 
+        ? "Syncing is taking longer than expected. Please check your connection." 
+        : "Failed to sync slots. Tap to retry."
+      );
     } finally {
-      clearTimeout(timeoutId);
       setLoading(false);
     }
-  }, [driverLoading]);
+  }, [riderId]);
 
   useEffect(() => {
-    void loadGigs();
-  }, [loadGigs, version]);
-
-  // Read-back authoritative enrollment tracking
-  const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (driverId) {
-      listTable<any>("gig_participants", { rider_id: `eq.${driverId}` }, { fresh: true, ttl: 0 })
-        .then(parts => {
-          setEnrolledIds(new Set((parts || []).map(p => p.gig_id)));
-        })
-        .catch(err => {
-          console.warn("[RIDER_GIGS] Enrollment load error:", err);
-        });
-    }
-  }, [driverId, busy, version]);
-
-  const filtered = useMemo(() => {
-    const now = new Date().toISOString();
-    if (tab === "available") {
-      return gigs.filter(g => !enrolledIds.has(g.id) && g.start_time > now && g.status !== "CANCELLED");
-    }
-    if (tab === "booked") {
-      return gigs.filter(g => enrolledIds.has(g.id) && g.end_time > now);
-    }
-    return gigs.filter(g => g.end_time <= now || (enrolledIds.has(g.id) && g.status === "COMPLETED"));
-  }, [gigs, tab, enrolledIds]);
+    void loadData();
+  }, [loadData, version]);
 
   const handleAction = async (gigId: string, action: 'enroll' | 'cancel') => {
-    if (!driverId) return;
+    if (!riderId) {
+      toast.error("Auth session required");
+      return;
+    }
     setBusy(true);
     try {
       if (action === 'enroll') {
-        await enrollInGig(gigId, driverId);
+        await enrollInGig(gigId, riderId);
         toast.success("Gig booked successfully!");
       } else {
         const confirmed = window.confirm("Are you sure you want to cancel this booking?");
         if (!confirmed) return;
-        await cancelGigEnrollment(gigId, driverId);
+        await cancelGigEnrollment(gigId, riderId);
         toast.info("Booking cancelled");
       }
-      void loadGigs();
+      void loadData();
     } catch (e) {
       toast.error("Operation failed");
     } finally {
@@ -105,8 +93,8 @@ function RiderRequestsPage() {
     }
   };
 
-  const isActuallyLoading = loading || driverLoading;
-  const isError = !!(error || driverError);
+  const isActuallyLoading = loading;
+  const isError = !!error;
 
   return (
     <div className="mx-auto min-h-svh max-w-[520px] pb-24">
