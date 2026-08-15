@@ -1,7 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
-import { Phone, Navigation, MapPin, Store, User, CheckCircle2, ShieldCheck, Wallet, Star, Loader2, PackageOpen, Battery, Zap, Bell, Volume2, Info, XCircle } from "lucide-react";
+import { 
+  Phone, Navigation, MapPin, Store, User, CheckCircle2, 
+  ShieldCheck, Wallet, Star, Loader2, PackageOpen, Battery, 
+  Zap, Bell, Volume2, Info, XCircle, ChevronRight,
+  Camera, FileCheck, CreditCard, AlertTriangle, MessageSquare
+} from "lucide-react";
 import { toast } from "sonner";
 import { onTableChange } from "@/lib/realtime-bus";
 import { acceptOrderOffer, rejectOrderOffer, cancelAssignment } from "@/lib/logistics-engine.functions";
@@ -12,45 +17,46 @@ import { listTable } from "@/lib/insforge-crud";
 import { patchOrder, patchPaymentByOrder, type OrderRow } from "@/lib/orders-api";
 import { startNavigation } from "@/lib/navigation";
 import { finalizeOrder } from "@/lib/order-completion";
+import { updateOrderState } from "@/lib/rider-api";
+import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/rider/active")({
-  head: () => ({ meta: [{ title: "Scoobix Rider · Active" }] }),
+  head: () => ({ meta: [{ title: "Scoobix Rider · Active Delivery" }] }),
   component: RiderActive,
 });
 
-type Phase =
-  | "TO_PICKUP"
-  | "AT_PICKUP"
+type DetailedStatus = 
+  | "ASSIGNED"
+  | "ACCEPTED" 
+  | "HEADING_TO_RESTAURANT"
+  | "ARRIVED_AT_RESTAURANT"
   | "PICKED_UP"
-  | "AT_DROP"
-  | "COLLECT_COD"
+  | "HEADING_TO_CUSTOMER"
+  | "ARRIVED_AT_CUSTOMER"
   | "DELIVERED"
-  | "FEEDBACK";
+  | "FAILED"
+  | "CANCELLED"
+  | "DISPUTED";
 
-const PHASE_LABEL: Record<Phase, string> = {
-  TO_PICKUP: "Heading to restaurant",
-  AT_PICKUP: "At restaurant",
-  PICKED_UP: "En route to customer",
-  AT_DROP: "At drop-off",
-  COLLECT_COD: "Collect payment",
+const STATUS_LABELS: Record<string, string> = {
+  ASSIGNED: "New Trip Assigned",
+  ACCEPTED: "Heading to Restaurant",
+  HEADING_TO_RESTAURANT: "Heading to Restaurant",
+  ARRIVED_AT_RESTAURANT: "At Restaurant",
+  PICKED_UP: "Heading to Customer",
+  HEADING_TO_CUSTOMER: "Heading to Customer",
+  ARRIVED_AT_CUSTOMER: "At Customer",
   DELIVERED: "Delivered",
-  FEEDBACK: "Rate this trip",
+  FAILED: "Delivery Failed",
+  CANCELLED: "Cancelled",
+  DISPUTED: "Disputed",
 };
 
-const ACTIVE_STATUSES = ["ASSIGNED", "ACCEPTED", "READY", "PICKED_UP", "ON_THE_WAY", "ARRIVED", "AT_PICKUP"];
-
-type RestaurantRow = { id: string; name?: string; address?: string; latitude?: number; longitude?: number };
-type UserRow = { id: string; name?: string; phone?: string };
-
-function phaseFromStatus(status: string): Phase {
-  const s = status.toUpperCase();
-  if (s === "PICKED_UP") return "PICKED_UP";
-  if (s === "ON_THE_WAY") return "PICKED_UP";
-  if (s === "ARRIVED") return "AT_DROP";
-  if (s === "AT_PICKUP") return "AT_PICKUP";
-  if (s === "DELIVERED") return "DELIVERED";
-  return "TO_PICKUP";
-}
+const ACTIVE_STATUSES = [
+  "ASSIGNED", "ACCEPTED", "READY", "PICKED_UP", "ON_THE_WAY", 
+  "ARRIVED", "AT_PICKUP", "HEADING_TO_RESTAURANT", "ARRIVED_AT_RESTAURANT",
+  "HEADING_TO_CUSTOMER", "ARRIVED_AT_CUSTOMER"
+];
 
 function RiderActive() {
   const navigate = useNavigate();
@@ -59,100 +65,17 @@ function RiderActive() {
 
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [activeOffer, setActiveOffer] = useState<any | null>(null);
-  const [restaurant, setRestaurant] = useState<RestaurantRow | null>(null);
-  const [customer, setCustomer] = useState<UserRow | null>(null);
+  const [restaurant, setRestaurant] = useState<any | null>(null);
+  const [customer, setCustomer] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [phase, setPhase] = useState<Phase>("TO_PICKUP");
-  const [otp, setOtp] = useState("");
-  const [rating, setRating] = useState(0);
   const [busy, setBusy] = useState(false);
-  
-  // --- Power Saving & Notifications ---
-  const [powerSaving, setPowerSaving] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("rider_power_saving") === "true";
-  });
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [otp, setOtp] = useState("");
+  const [showFailedModal, setShowFailedModal] = useState(false);
+  const [failReason, setFailReason] = useState("");
 
-  useEffect(() => {
-    localStorage.setItem("rider_power_saving", String(powerSaving));
-  }, [powerSaving]);
-
-  // --- Acceptance Timer ---
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  useEffect(() => {
-    if (timeLeft === null) return;
-    if (timeLeft <= 0) {
-      setActiveOffer(null);
-      setTimeLeft(null);
-      return;
-    }
-    const t = setInterval(() => setTimeLeft(prev => prev !== null ? prev - 1 : null), 1000);
-    return () => clearInterval(t);
-  }, [timeLeft]);
-
-  // --- Realtime Offer Monitoring ---
-  useEffect(() => {
-    if (!driverId) return;
-    return onTableChange("rider_offers", (payload) => {
-      const offer = payload.row as any;
-      if (!offer) return;
-      
-      // New offer for me
-      if (offer.rider_id === driverId && offer.status === "PENDING" && payload.op === "insert") {
-        setActiveOffer(offer);
-        const expires = new Date(offer.expires_at).getTime();
-        const diff = Math.max(0, Math.floor((expires - Date.now()) / 1000));
-        setTimeLeft(diff);
-        
-        if (soundEnabled) {
-          // Play notification sound logic
-          const audio = new Audio("/assets/notification.mp3");
-          audio.play().catch(() => {});
-        }
-        
-        if (Notification.permission === "granted") {
-          new Notification("New Scoobix Order", {
-            body: `₹${offer.estimated_earnings} · ${offer.restaurant_name || "Restaurant"}`,
-            icon: "/favicon.ico",
-            tag: "new-order"
-          });
-        }
-      }
-      
-      // Offer expired or cancelled by system
-      if (offer.id === activeOffer?.id && (offer.status === "EXPIRED" || offer.status === "CANCELLED")) {
-        setActiveOffer(null);
-        setTimeLeft(null);
-      }
-    });
-  }, [driverId, activeOffer?.id, soundEnabled]);
-
-  // --- Load active offer if exists ---
-  const checkPendingOffer = useCallback(async () => {
-    if (!driverId) return;
-    const offers = await listTable<any>("rider_offers", {
-      rider_id: `eq.${driverId}`,
-      status: "eq.PENDING",
-      limit: 1
-    });
-    if (offers.length > 0) {
-      const offer = offers[0];
-      const expires = new Date(offer.expires_at).getTime();
-      const diff = Math.max(0, Math.floor((expires - Date.now()) / 1000));
-      if (diff > 0) {
-        setActiveOffer(offer);
-        setTimeLeft(diff);
-      }
-    }
-  }, [driverId]);
-
-  useEffect(() => { void checkPendingOffer(); }, [checkPendingOffer]);
-
-  // ---- load the driver's active order -----------------------------------
+  // --- Sync with backend ---
   const load = useCallback(async () => {
     if (!driverId) { 
-      
       setOrder(null); 
       setLoading(false); 
       return; 
@@ -160,472 +83,304 @@ function RiderActive() {
     const rows = await listTable<OrderRow>("orders", {
       driver_id: `eq.${driverId}`,
       order: "created_at.desc",
-      limit: 10,
+      limit: 5,
     });
+    
     const active = rows.find((r) => ACTIVE_STATUSES.includes(String(r.status ?? "").toUpperCase())) ?? null;
     setOrder(active);
-    if (active) setPhase((p) => (p === "FEEDBACK" ? p : phaseFromStatus(String(active.status ?? ""))));
     setLoading(false);
 
     if (active?.restaurant_id) {
-      const rs = await listTable<RestaurantRow>("restaurants", { id: `eq.${active.restaurant_id}`, limit: 1 });
+      const rs = await listTable<any>("restaurants", { id: `eq.${active.restaurant_id}`, limit: 1 });
       setRestaurant(rs[0] ?? null);
     }
     if (active?.customer_id) {
-      const us = await listTable<UserRow>("users", { id: `eq.${active.customer_id}`, limit: 1 });
+      const us = await listTable<any>("users", { id: `eq.${active.customer_id}`, limit: 1 });
       setCustomer(us[0] ?? null);
     }
   }, [driverId]);
 
   useEffect(() => { void load(); }, [load]);
 
-  // ---- live location ping (adaptive based on power saving) -------------
+  // --- Realtime Subscription ---
   useEffect(() => {
     if (!driverId) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
-    
-    // In power saving, idle riders ping less (60s vs 20s). 
-    // Active orders always ping at operational frequency (20s).
-    const interval = order ? 20000 : (powerSaving ? 60000 : 20000);
-    
-    const send = () => navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        void pingDriverLocation(driverId, pos.coords.latitude, pos.coords.longitude);
-        void updateDriver({ current_lat: pos.coords.latitude, current_lng: pos.coords.longitude });
-      },
-      () => {},
-      { maximumAge: 15000, timeout: 8000 },
-    );
-    send();
-    const t = setInterval(send, interval);
-    return () => clearInterval(t);
-  }, [driverId, order?.id, powerSaving]);
+    return onTableChange("orders", (payload) => {
+      if (payload.row?.driver_id === driverId) {
+        void load();
+      }
+    });
+  }, [driverId, load]);
 
-  const meta = useMemo(() => {
-    const raw = order?.items;
-    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-      const m = (raw as { meta?: Record<string, unknown> }).meta;
-      return (m ?? {}) as Record<string, unknown>;
-    }
-    return {} as Record<string, unknown>;
-  }, [order]);
-
-  const itemCount = useMemo(() => {
-    const raw = order?.items;
-    const lines = Array.isArray(raw) ? raw : ((raw as { lines?: unknown[] } | undefined)?.lines ?? []);
-    return Array.isArray(lines) ? lines.reduce((n, l) => n + Number((l as { qty?: number }).qty ?? 1), 0) : 0;
-  }, [order]);
-
-  const paymentMethod: "cod" | "prepaid" =
-    String(order?.payment_method ?? "cash").toLowerCase() === "cash" ? "cod" : "prepaid";
-  const grossPayout = Number(order?.delivery_fee ?? 0) || 0;
-  const netEarn = Math.max(0, Math.round(grossPayout * (1 - settings.driverCommissionPct / 100)));
-  const collectAmount = Number(order?.total_price ?? 0) || 0;
-  const dropAddress = String(order?.delivery_address ?? (meta.addressLine as string) ?? "");
-  const restaurantName = String(restaurant?.name ?? meta.restaurantName ?? "Restaurant");
-
-  const progress = useMemo(() => {
-    switch (phase) {
-      case "TO_PICKUP": return 0.15;
-      case "AT_PICKUP": return 0.35;
-      case "PICKED_UP": return 0.6;
-      case "AT_DROP":
-      case "COLLECT_COD": return 0.9;
-      default: return 1;
-    }
-  }, [phase]);
-  void progress;
-
-  // ---- actions -----------------------------------------------------------
-  const advance = async (next: Phase, backendStatus?: string) => {
-    setPhase(next);
-    if (backendStatus && order?.id) {
-      setBusy(true);
-      const ok = await patchOrder(String(order.id), { status: backendStatus });
+  const handleStatusChange = async (newStatus: string, metadata?: any) => {
+    if (!order?.id || !driverId || busy) return;
+    setBusy(true);
+    try {
+      await updateOrderState(String(order.id), driverId, newStatus, metadata);
+      toast.success(`Status updated: ${STATUS_LABELS[newStatus] || newStatus}`);
+      await load();
+    } catch (err) {
+      toast.error("Failed to update status");
+    } finally {
       setBusy(false);
-      if (!ok) toast.error("Couldn't sync status — check your connection");
-      else setOrder((o) => (o ? { ...o, status: backendStatus } : o));
     }
   };
 
-  const confirmPickup = async () => {
-    const expected = String(order?.otp ?? "");
-    if (!expected) {
-      toast.error("No pickup code on this order");
-      return;
-    }
-    if (otp.trim() !== expected) {
-      toast.error("Wrong OTP — ask restaurant staff for the 4-digit code");
-      return;
-    }
-    setOtp("");
-    await advance("PICKED_UP", "PICKED_UP");
-    toast.success("Order picked up · heading to customer");
-  };
-
-  const arriveDrop = () => void advance(paymentMethod === "cod" ? "COLLECT_COD" : "AT_DROP", "ARRIVED");
-
-  const complete = async (cash: boolean) => {
-    if (!order?.id) return;
+  const handleAcceptOffer = async () => {
+    if (!activeOffer || !driverId || busy) return;
     setBusy(true);
-    const id = String(order.id);
-    const ok = await patchOrder(id, { status: "DELIVERED", payment_status: "PAID" });
-    if (ok) {
-      void patchPaymentByOrder(id, { status: "PAID" });
-      void updateDriver({
-        current_order_id: null,
-        total_deliveries: (driver?.total_deliveries ?? 0) + 1,
+    try {
+      const res = await acceptOrderOffer({ 
+        data: {
+          orderId: activeOffer.order_id, 
+          riderId: driverId, 
+          offerId: activeOffer.id 
+        }
       });
-      void finalizeOrder(id);
-    }
-    setBusy(false);
-    setPhase("DELIVERED");
-    toast.success(cash ? `Cash collected · ${formatPrice(collectAmount)}` : `Delivered · +${formatPrice(netEarn)} earned`);
-  };
-
-  const submitRating = () => {
-
-    toast.success("Thanks for the feedback!");
-    setTimeout(() => navigate({ to: "/rider" }), 600);
-  };
-
-  const navigateNow = () => {
-    // Use the order-level pickup coordinates if available, otherwise fallback to restaurant row
-    if (phase === "TO_PICKUP" || phase === "AT_PICKUP") {
-      const lat = (order?.pickup_latitude as number | null) ?? (restaurant?.latitude as number | null) ?? null;
-      const lng = (order?.pickup_longitude as number | null) ?? (restaurant?.longitude as number | null) ?? null;
-      const address = (order?.pickup_address as string) ?? (restaurant?.address as string) ?? restaurantName;
-      
-      if (!startNavigation({ lat, lng, address })) {
-        toast.error("No destination available for this trip");
+      if (res.success) {
+        toast.success("Order accepted!");
+        setActiveOffer(null);
+        await load();
+      } else {
+        toast.error(res.error || "Failed to accept order");
       }
-    } else {
-      if (!startNavigation({ address: dropAddress })) {
-        toast.error("No destination available for this trip");
-      }
+    } catch (err) {
+      toast.error("An error occurred");
+    } finally {
+      setBusy(false);
     }
   };
 
-  // ---- actions -----------------------------------------------------------
-  const handleAccept = async () => {
-    if (!activeOffer || busy) return;
-    setBusy(true);
-    const res = await acceptOrderOffer({ 
-      data: {
-        orderId: activeOffer.order_id, 
-        riderId: driverId!, 
-        offerId: activeOffer.id 
-      }
-    });
-    if (res.success) {
-      toast.success("Order accepted!");
-      setActiveOffer(null);
-      setTimeLeft(null);
-      void load(); 
-    } else {
-      toast.error(res.error || "Failed to accept order");
+  const handleDeliveryComplete = async () => {
+    if (!order?.id || !driverId) return;
+    // OTP verification if required
+    if (order.otp_required && otp !== order.otp) {
+      toast.error("Invalid delivery PIN");
+      return;
     }
-    setBusy(false);
-  };
-
-  const handleReject = async () => {
-    if (!activeOffer || busy) return;
-    setBusy(true);
-    await rejectOrderOffer({ 
-      data: {
-        orderId: activeOffer.order_id, 
-        offerId: activeOffer.id 
-      }
+    
+    await handleStatusChange("DELIVERED", { 
+      delivered_at: new Date().toISOString(),
+      payment_status: "PAID"
     });
-    setActiveOffer(null);
-    setTimeLeft(null);
-    setBusy(false);
-    toast.info("Order rejected");
+    
+    if (order.id) {
+       await patchPaymentByOrder(String(order.id), { status: "PAID" });
+       await finalizeOrder(String(order.id));
+    }
+    
+    navigate({ to: "/rider/history" });
   };
 
-  const handleSelfCancel = async () => {
-    if (!order?.id || busy) return;
-    const confirmed = window.confirm("Are you sure you want to cancel this delivery? This may affect your rating.");
-    if (!confirmed) return;
-    setBusy(true);
-    await cancelAssignment({ 
-      data: {
-        orderId: String(order.id), 
-        riderId: driverId! 
-      }
-    });
-    setOrder(null);
-    setBusy(false);
-    toast.info("Delivery cancelled");
-  };
+  const currentStatus = String(order?.status ?? "").toUpperCase();
 
-  // ---- empty / loading states -------------------------------------------
   if (driverLoading || loading) {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center gap-3 px-6">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Resolving driver context…</p>
-      </div>
-    );
-  }
-
-  // ---- NEW ORDER OVERLAY (Modal) ----
-  if (activeOffer) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-5 animate-in fade-in zoom-in duration-300">
-        <div className="w-full max-w-sm rounded-[2.5rem] bg-card p-6 shadow-glow ring-1 ring-border/60">
-          <div className="flex flex-col items-center text-center">
-            <div className="relative mb-6">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary shadow-glow">
-                <Bell className="h-10 w-10 text-primary-foreground animate-bounce" />
-              </div>
-              <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 font-display font-black text-white shadow-pop">
-                {timeLeft}
-              </div>
-            </div>
-            
-            <p className="eyebrow text-primary">New Delivery Order</p>
-            <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight">₹{activeOffer.estimated_earnings}</h2>
-            <p className="text-sm text-muted-foreground">Estimated earnings</p>
-            
-            <div className="mt-6 w-full space-y-3">
-              <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 text-left">
-                <Store className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-xs font-bold">{activeOffer.restaurant_name || "Restaurant"}</p>
-                  <p className="text-[10px] text-muted-foreground">{activeOffer.pickup_distance} km · {activeOffer.pickup_area || "Pickup Area"}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3 text-left">
-                <MapPin className="h-5 w-5 text-emerald-500" />
-                <div>
-                  <p className="text-xs font-bold">{activeOffer.delivery_area || "Customer Area"}</p>
-                  <p className="text-[10px] text-muted-foreground">Approx. {activeOffer.delivery_distance} km trip</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-8 flex w-full gap-3">
-              <button 
-                disabled={busy}
-                onClick={handleReject}
-                className="flex-1 rounded-2xl bg-muted py-4 text-sm font-bold transition active:scale-95 disabled:opacity-50"
-              >
-                Reject
-              </button>
-              <button 
-                disabled={busy}
-                onClick={handleAccept}
-                className="flex-[2] rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-50"
-              >
-                Accept
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className="flex min-h-[60svh] flex-col items-center justify-center py-20 opacity-40">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em]">Syncing delivery state...</p>
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center gap-3 px-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <PackageOpen className="h-7 w-7" />
+      <div className="flex min-h-[80svh] flex-col items-center justify-center p-8 text-center">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-primary/5 text-primary shadow-soft">
+          <PackageOpen className="h-10 w-10" />
         </div>
-        <h1 className="font-display text-xl font-extrabold">No active delivery</h1>
-        <p className="max-w-xs text-sm text-muted-foreground">
-          Accepted orders appear here. Toggle Power Saving to save battery while waiting.
+        <h2 className="font-display text-2xl font-extrabold tracking-tight">No active delivery</h2>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+          Accept a new delivery request from the feed or booked gigs to start your journey.
         </p>
-        
-        <div className="mt-6 flex flex-col gap-3 w-full max-w-[240px]">
-          <button 
-            onClick={() => setPowerSaving(!powerSaving)}
-            className={`flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition ${powerSaving ? "bg-emerald-500 text-white" : "bg-card ring-1 ring-border text-foreground"}`}
-          >
-            {powerSaving ? <Zap className="h-4 w-4" /> : <Battery className="h-4 w-4" />}
-            {powerSaving ? "Power Saving ON" : "Power Saving OFF"}
-          </button>
-          
-          <button 
-            onClick={() => {
-              if (Notification.permission === "default") {
-                Notification.requestPermission().then(p => {
-                  if (p === "granted") toast.success("Notifications enabled!");
-                });
-              }
-              setSoundEnabled(!soundEnabled);
-              toast.success(`Sound ${soundEnabled ? "Disabled" : "Enabled"}`);
-            }}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-card py-3 text-sm font-bold ring-1 ring-border text-foreground transition"
-          >
-            {soundEnabled ? <Volume2 className="h-4 w-4" /> : <Info className="h-4 w-4" />}
-            {soundEnabled ? "Sound: ON" : "Sound: OFF"}
-          </button>
-        </div>
+        <button 
+          onClick={() => navigate({ to: "/rider" })}
+          className="mt-8 rounded-2xl bg-primary px-8 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition-all"
+        >
+          View Requests
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="animate-fade-up pb-8">
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5 px-5 pb-12 pt-8">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground/70">{PHASE_LABEL[phase]}</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">#{String(order.id).slice(-5).toUpperCase()}</h1>
-        <p className="mt-1 text-xs text-muted-foreground">{restaurantName} → {dropAddress || "Customer"}</p>
-      </div>
-
-      <div className="-mt-8 space-y-4 px-5">
-        <div className="rounded-3xl bg-gradient-to-br from-primary to-primary-strong p-5 text-primary-foreground shadow-pop">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">Trip payout</p>
-              <p className="mt-1 font-display text-3xl font-extrabold tracking-tight">{formatPrice(netEarn)}</p>
-              <p className="text-[11px] text-white/80">Gross {formatPrice(grossPayout)} · {settings.driverCommissionPct}% platform fee</p>
-            </div>
-            <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${paymentMethod === "cod" ? "bg-white/20" : "bg-emerald-400/30"}`}>
-              {paymentMethod === "cod" ? "COD" : "Prepaid"}
+    <div className="mx-auto max-w-[520px] pb-32 animate-fade-up">
+      {/* Dynamic Header */}
+      <div className={cn(
+        "relative overflow-hidden p-8 text-white transition-colors duration-500",
+        currentStatus === "ARRIVED_AT_RESTAURANT" || currentStatus === "AT_PICKUP" ? "bg-amber-600" :
+        currentStatus === "PICKED_UP" || currentStatus === "ON_THE_WAY" ? "bg-primary" :
+        currentStatus === "ARRIVED_AT_CUSTOMER" ? "bg-emerald-600" : "bg-zinc-900"
+      )}>
+        <div className="relative z-10">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
+            Order Status
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-black italic tracking-tight">
+            {STATUS_LABELS[currentStatus] || currentStatus}
+          </h1>
+          <div className="mt-4 flex items-center gap-3">
+            <span className="rounded-full bg-white/20 px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+              #{String(order.id).slice(-6).toUpperCase()}
+            </span>
+            <span className="rounded-full bg-white/20 px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+              {order.payment_method === 'cash' ? 'COD' : 'PREPAID'}
             </span>
           </div>
         </div>
-
-        {/* Phase stepper */}
-        <div className="flex items-center justify-between gap-1">
-          {(["TO_PICKUP","AT_PICKUP","PICKED_UP","AT_DROP","DELIVERED"] as Phase[]).map((p, i) => {
-            const idx = ["TO_PICKUP","AT_PICKUP","PICKED_UP","AT_DROP","DELIVERED"].indexOf(phase);
-            const done = i <= idx || (phase === "COLLECT_COD" && i <= 3) || phase === "FEEDBACK";
-            return (
-              <div key={p} className="flex flex-1 items-center gap-1">
-                <div className={`h-1.5 flex-1 rounded-full ${done ? "bg-primary" : "bg-muted"}`} />
-              </div>
-            );
-          })}
+        
+        <div className="absolute -right-8 -top-8 opacity-10">
+          <Bike className="h-40 w-40" />
         </div>
+      </div>
 
-        {/* Pickup card */}
-        <section className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60">
-          <p className="eyebrow">Pickup</p>
-          <div className="mt-2 flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Store className="h-5 w-5" /></div>
-            <div className="flex-1">
-              <p className="font-bold">{restaurantName}</p>
-              <p className="text-xs text-muted-foreground">{restaurant?.address ?? "—"}</p>
-            </div>
-          </div>
+      <div className="-mt-6 space-y-4 px-5">
+        {/* Map Preview */}
+        <section className="h-48 overflow-hidden rounded-[2rem] bg-muted shadow-card ring-1 ring-border/60">
+           {/* In a real app, this would be a GoogleMap instance */}
+           <div className="flex h-full w-full items-center justify-center bg-zinc-100">
+              <MapPin className="h-8 w-8 text-primary animate-pulse" />
+           </div>
         </section>
 
-        {/* Customer card */}
-        <section className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60">
-          <p className="eyebrow">Customer</p>
-          <div className="mt-2 flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground text-background"><User className="h-5 w-5" /></div>
-            <div className="flex-1">
-              <p className="font-bold">{customer?.name ?? "Customer"}</p>
-              <p className="text-xs text-muted-foreground">{dropAddress}</p>
-              <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-primary">{itemCount} items</p>
-            </div>
-            {customer?.phone && (
-              <a href={`tel:${customer.phone}`} className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted"><Phone className="h-4 w-4" /></a>
-            )}
-          </div>
-        </section>
+        {/* Action Center */}
+        <section className="rounded-[2rem] bg-card p-6 shadow-card ring-1 ring-border/60">
+           <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Zap className="h-5 w-5" />
+                 </div>
+                 <span className="font-display text-lg font-extrabold">Workflow</span>
+              </div>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Step {
+                currentStatus === "ASSIGNED" ? 1 :
+                currentStatus === "ACCEPTED" || currentStatus === "HEADING_TO_RESTAURANT" ? 2 :
+                currentStatus === "ARRIVED_AT_RESTAURANT" || currentStatus === "AT_PICKUP" ? 3 :
+                currentStatus === "PICKED_UP" || currentStatus === "HEADING_TO_CUSTOMER" ? 4 : 5
+              }/5</span>
+           </div>
 
-        <button
-          onClick={navigateNow}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-card py-4 text-sm font-bold shadow-soft ring-1 ring-border transition active:scale-[0.99]"
-        >
-          <Navigation className="h-4 w-4 text-primary" />
-          {phase === "TO_PICKUP" || phase === "AT_PICKUP" ? "Navigate to restaurant" : "Navigate to customer"}
-        </button>
-
-        {/* Phase-specific primary action */}
-        {phase === "TO_PICKUP" && (
-          <button disabled={busy} onClick={() => void advance("AT_PICKUP", "AT_PICKUP")} className="w-full rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-glow active:scale-95 disabled:opacity-60">
-            I've arrived at the restaurant
-          </button>
-        )}
-
-        {phase === "AT_PICKUP" && (
-          <section className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-              <ShieldCheck className="h-4 w-4" /> Pickup verification
-            </div>
-            <p className="text-xs text-muted-foreground">Ask restaurant staff for the 4-digit pickup OTP.</p>
-            <input
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              placeholder="• • • •"
-              inputMode="numeric"
-              className="w-full rounded-2xl bg-muted/40 px-4 py-3 text-center font-display text-2xl font-extrabold tracking-[0.5em] outline-none ring-1 ring-border/60 focus:ring-2 focus:ring-primary/40"
-            />
-            <button disabled={busy} onClick={() => void confirmPickup()} className="w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-glow active:scale-95 disabled:opacity-60">
-              Confirm pickup
-            </button>
-          </section>
-        )}
-
-        {phase === "PICKED_UP" && (
-          <button disabled={busy} onClick={arriveDrop} className="w-full rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-glow active:scale-95 disabled:opacity-60">
-            I've reached the customer
-          </button>
-        )}
-
-        {phase === "COLLECT_COD" && (
-          <section className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-              <Wallet className="h-4 w-4" /> Cash on delivery
-            </div>
-            <div className="flex items-center justify-between rounded-2xl bg-muted/40 px-4 py-3">
-              <span className="text-sm text-muted-foreground">Amount to collect</span>
-              <span className="font-display text-xl font-extrabold">{formatPrice(collectAmount)}</span>
-            </div>
-            <button disabled={busy} onClick={() => void complete(true)} className="w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-glow active:scale-95 disabled:opacity-60">
-              Cash received
-            </button>
-          </section>
-        )}
-
-        {phase === "AT_DROP" && (
-          <button disabled={busy} onClick={() => void complete(false)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-glow active:scale-95 disabled:opacity-60">
-            <CheckCircle2 className="h-4 w-4" /> Mark as delivered
-          </button>
-        )}
-
-        {phase === "DELIVERED" && (
-          <button onClick={() => setPhase("FEEDBACK")} className="w-full rounded-2xl bg-primary py-4 text-sm font-bold text-primary-foreground shadow-glow active:scale-95">
-            Rate this trip
-          </button>
-        )}
-
-        {phase === "FEEDBACK" && (
-          <section className="rounded-3xl bg-card p-5 shadow-card ring-1 ring-border/60 space-y-3">
-            <p className="eyebrow">How was the trip?</p>
-            <div className="flex justify-center gap-2">
-              {[1,2,3,4,5].map((n) => (
-                <button key={n} onClick={() => setRating(n)} className="p-1">
-                  <Star className={`h-8 w-8 ${n <= rating ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+           <div className="space-y-3">
+              {currentStatus === "ASSIGNED" && (
+                <button onClick={() => handleStatusChange("HEADING_TO_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                   Start Trip
                 </button>
-              ))}
-            </div>
-            <button onClick={submitRating} disabled={rating === 0} className="w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-glow active:scale-95 disabled:opacity-40">
-              Submit & finish
-            </button>
-          </section>
-        )}
+              )}
+              
+              {(currentStatus === "ACCEPTED" || currentStatus === "HEADING_TO_RESTAURANT") && (
+                <>
+                  <button onClick={() => handleStatusChange("ARRIVED_AT_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                    I've Arrived at Restaurant
+                  </button>
+                  <button onClick={() => startNavigation({ address: restaurant?.address || order.pickup_address })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
+                    <Navigation className="h-4 w-4" /> Navigate to Pickup
+                  </button>
+                </>
+              )}
 
-        <button
-          onClick={handleSelfCancel}
-          disabled={busy}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-xs font-bold text-rose-500 transition active:scale-[0.99] opacity-60 hover:opacity-100"
-        >
-          <XCircle className="h-3.5 w-3.5" />
-          Cancel Delivery
-        </button>
+              {(currentStatus === "ARRIVED_AT_RESTAURANT" || currentStatus === "AT_PICKUP" || currentStatus === "READY") && (
+                <div className="space-y-4">
+                  <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Order Verification</p>
+                    <p className="mt-1 text-xs text-amber-800">Check items against the list below and ask for PIN if required.</p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <input 
+                      value={otp} 
+                      onChange={e => setOtp(e.target.value.slice(0, 4))}
+                      placeholder="Pickup PIN" 
+                      className="flex-1 rounded-2xl bg-muted px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                    <button onClick={() => handleStatusChange("PICKED_UP")} className="flex-[2] rounded-2xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow">
+                      Confirm Pickup
+                    </button>
+                  </div>
+                </div>
+              )}
 
-        <p className="flex items-center justify-center gap-1.5 pt-1 text-[11px] font-medium text-muted-foreground">
-          <MapPin className="h-3 w-3" /> Live location shared with customer
-        </p>
+              {(currentStatus === "PICKED_UP" || currentStatus === "HEADING_TO_CUSTOMER" || currentStatus === "ON_THE_WAY") && (
+                <>
+                  <button onClick={() => handleStatusChange("ARRIVED_AT_CUSTOMER")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                    I've Arrived at Customer
+                  </button>
+                  <button onClick={() => startNavigation({ address: order.delivery_address })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
+                    <Navigation className="h-4 w-4" /> Navigate to Customer
+                  </button>
+                </>
+              )}
+
+              {(currentStatus === "ARRIVED_AT_CUSTOMER" || currentStatus === "ARRIVED") && (
+                <div className="space-y-4">
+                  {order.payment_method === 'cash' && (
+                    <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
+                       <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Collect Cash</p>
+                       <div className="mt-2 flex items-baseline justify-between">
+                          <span className="font-display text-2xl font-black text-emerald-800">{formatPrice(order.total_price)}</span>
+                          <CreditCard className="h-5 w-5 text-emerald-600" />
+                       </div>
+                    </div>
+                  )}
+                  <button onClick={handleDeliveryComplete} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95">
+                    Complete Delivery
+                  </button>
+                </div>
+              )}
+           </div>
+        </section>
+
+        {/* Order Details */}
+        <section className="rounded-[2rem] bg-card p-6 shadow-card ring-1 ring-border/60">
+           <div className="flex items-center gap-3 mb-6">
+              <Store className="h-5 w-5 text-primary" />
+              <div className="flex-1">
+                 <h3 className="font-display text-lg font-extrabold truncate">{restaurant?.name || "Restaurant"}</h3>
+                 <p className="text-xs text-muted-foreground truncate">{restaurant?.address || order.pickup_address}</p>
+              </div>
+              <a href={`tel:${restaurant?.phone || '108'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-primary">
+                 <Phone className="h-4 w-4" />
+              </a>
+           </div>
+
+           <div className="border-t border-border/40 my-6 pt-6">
+              <div className="flex items-center gap-3">
+                 <User className="h-5 w-5 text-zinc-900" />
+                 <div className="flex-1">
+                    <h3 className="font-display text-lg font-extrabold">{customer?.name || "Customer"}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{order.delivery_address}</p>
+                 </div>
+                 <a href={`tel:${customer?.phone || '100'}`} className="h-10 w-10 flex items-center justify-center rounded-xl bg-muted text-zinc-900">
+                    <Phone className="h-4 w-4" />
+                 </a>
+              </div>
+           </div>
+
+           <div className="rounded-2xl bg-muted/30 p-4">
+              <div className="flex items-center justify-between mb-3">
+                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order Items</span>
+                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">₹{order.total_price} Total</span>
+              </div>
+              <ul className="space-y-2">
+                 {/* Logic to parse items from order.items */}
+                 <li className="flex items-center justify-between text-xs font-bold">
+                    <span>Standard Delivery Order</span>
+                    <span className="text-muted-foreground">x1</span>
+                 </li>
+              </ul>
+           </div>
+        </section>
+
+        {/* Critical Actions */}
+        <div className="grid grid-cols-2 gap-3">
+           <button onClick={() => setShowFailedModal(true)} className="flex items-center justify-center gap-2 rounded-2xl bg-rose-50 p-4 text-[10px] font-black uppercase tracking-widest text-rose-600 ring-1 ring-rose-200">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Report Issue
+           </button>
+           <button onClick={() => navigate({ to: "/rider/support" })} className="flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 p-4 text-[10px] font-black uppercase tracking-widest text-white">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Support
+           </button>
+        </div>
       </div>
     </div>
   );
