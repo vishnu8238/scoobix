@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
-import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { INSFORGE_URL, INSFORGE_ANON_KEY, insforge } from "./insforge";
 import { useAuth } from "./auth-store";
 import { queueNotification } from "./notifications-queue";
 
