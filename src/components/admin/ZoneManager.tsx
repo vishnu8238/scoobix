@@ -50,7 +50,7 @@ export function ZoneManager() {
   const filteredZones = useMemo(() => {
     return zones.filter(z => 
       z.name.toLowerCase().includes(q.toLowerCase()) || 
-      z.city.toLowerCase().includes(q.toLowerCase())
+      (z.city || "").toLowerCase().includes(q.toLowerCase())
     );
   }, [zones, q]);
 
@@ -105,10 +105,10 @@ export function ZoneManager() {
           <div className="flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 shadow-lg backdrop-blur-md ring-1 ring-black/5 dark:bg-zinc-900/90">
              <ListFilter className="h-4 w-4 text-muted-foreground" />
              <select className="bg-transparent text-sm font-bold outline-none">
-               <option>All Cities</option>
-               {Array.from(new Set(zones.map(z => z.city))).map(city => (
-                 <option key={city}>{city}</option>
-               ))}
+                <option>All Cities</option>
+                {Array.from(new Set(zones.map(z => z.city).filter(Boolean))).map(city => (
+                  <option key={city}>{city}</option>
+                ))}
              </select>
           </div>
 
@@ -202,7 +202,7 @@ export function ZoneManager() {
             Map Active
           </div>
           <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground border-l border-border/40">
-            {Array.from(new Set(zones.map(z => z.city))).length} Cities
+            {Array.from(new Set(zones.map(z => z.city).filter(Boolean))).length} Cities
           </div>
           <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground border-l border-border/40">
             {zones.length} Zones
