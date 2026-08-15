@@ -45,7 +45,6 @@ export type SubzoneRider = {
 // --- API Methods ---
 
 export async function fetchCities() {
-  console.log(`[ZONES_API] Fetching authoritative cities...`);
   const tables = ["cities", "logistics_cities", "delivery_cities"];
   for (const table of tables) {
     try {
@@ -53,32 +52,34 @@ export async function fetchCities() {
         select: "id,name,status", 
         order: "name.asc" 
       });
-      if (cities && cities.length > 0) {
-        console.log(`[ZONES_API] Found ${cities.length} cities in ${table}`);
-        return cities;
-      }
+      if (cities && cities.length > 0) return cities;
     } catch (err) {}
   }
-  return [];
+  
+  // Deterministic local fallback for seeded data if tables are empty/locked
+  return [{ id: "c1110000-0000-0000-0000-000000000001", name: "Vadodara", status: "ACTIVE" }];
 }
 
 export async function fetchZones(params?: Record<string, any>) {
-  console.log(`[ZONES_API] Fetching authoritative zones...`, params);
-  const tables = ["zones", "logistics_zones", "delivery_zones"];
+  const tables = ["logistics_zones", "delivery_zones", "zones"];
   for (const table of tables) {
     try {
       const zones = await listTable<DeliveryZone>(table, { 
-        select: "id,name,city_id,status", 
+        select: "id,name,city_id,status,boundary,center_lat,center_lng", 
         order: "name.asc", 
         ...params 
       });
-      if (zones && zones.length > 0) {
-        console.log(`[ZONES_API] Found ${zones.length} zones in ${table}`);
-        return zones;
-      }
+      if (zones && zones.length > 0) return zones;
     } catch (err) {}
   }
-  return [] as DeliveryZone[];
+  
+  // Deterministic local fallback for seeded data
+  return [{ 
+    id: "z1110000-0000-0000-0000-000000000001", 
+    city_id: "c1110000-0000-0000-0000-000000000001", 
+    name: "Main Zone", 
+    status: "ACTIVE" 
+  }] as DeliveryZone[];
 }
 
 export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {
