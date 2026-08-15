@@ -53,17 +53,17 @@ function LogisticsGigs() {
     setLoading(true);
     try {
       // 1. Fetch total count first to prove persistence
-      const all = await fetchGigs({ limit: 100 });
+      const all = await fetchGigs({ limit: 1000, "start_time.gte": "2020-01-01T00:00:00Z" });
       setAllGigsCount(all.length);
       
-      const today = format(selectedDate, "yyyy-MM-dd");
+      const today = new Date(selectedDate.getTime() - (selectedDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
       console.log(`[GIGS_PAGE] Filtering for calendar day: ${today} (Local: ${selectedDate.toString()})`);
       
       // Broaden filter to catch boundary issues (±1 day)
       // or just filter client-side for absolute proof if the table is small
       const data = all.filter(g => {
         if (!g.start_time) return false;
-        const gigDate = g.start_time.split('T')[0];
+        const gigDate = new Date(g.start_time).toISOString().split('T')[0];
         return gigDate === today;
       });
       
