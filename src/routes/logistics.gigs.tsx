@@ -110,7 +110,6 @@ function LogisticsGigs() {
   const runGigTest = async () => {
     setIsTesting(true);
     try {
-      // We use createRecord directly to bypass potential server function auth issues
       const { newUuid } = await import("@/lib/orders-api");
       const { createRecord } = await import("@/lib/insforge-crud");
       const testId = newUuid();
@@ -131,46 +130,69 @@ function LogisticsGigs() {
         metadata: { is_test: true, timestamp: now.toISOString() }
       };
 
-      console.log("[GIG_TEST_CLIENT] Starting client-side persistence test...");
-      const res = await createRecord("gigs", testGig);
+      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test with table discovery...");
       
-      if (res) {
-        console.log("[GIG_TEST_CLIENT] Row persisted. Verifying presence in authoritative list...");
+      // We probe 'gigs' and 'delivery_gigs'
+      const TABLE_CANDIDATES = ["gigs", "delivery_gigs"];
+      let successRes: any = null;
+      let activeTable = "";
+
+      for (const table of TABLE_CANDIDATES) {
+        try {
+          console.log(`[GIG_TEST_CLIENT] Probing INSERT on "${table}"...`);
+          successRes = await createRecord(table, testGig);
+          if (successRes) {
+            activeTable = table;
+            break;
+          }
+        } catch (e: any) {
+          console.warn(`[GIG_TEST_CLIENT] INSERT probe failed for "${table}":`, e.message);
+          if (e.status === 404 || e.isRelationError) continue;
+          throw e;
+        }
+      }
+
+      if (successRes) {
+        console.log(`[GIG_TEST_CLIENT] Row persisted to "${activeTable}". Verifying via direct UUID query...`);
         
-        // Wait for potential indexing/propagation
         await new Promise(r => setTimeout(r, 1500));
         
-        // Use the authoritative direct SELECT by ID via fetchGigs
+        // Use the authoritative direct SELECT via fetchGigs (which also probes candidates)
         const verifyRows = await fetchGigs({ id: testId });
         const foundInList = verifyRows.some((g: any) => g.id === testId);
         
         const authUser = await insforge.auth.getCurrentUser();
         
         if (foundInList) {
-          toast.success("Production Gig Test Passed: Row persisted and verified by direct UUID query.");
+          toast.success(`Production Gig Test Passed: Row persisted and verified in "${activeTable}".`);
           setDiagnostics((prev: any) => ({ 
             ...prev, 
+            activeTable,
             testError: { 
               success: true, 
               testRecordId: testId, 
               userId: authUser.data?.user?.id || "unknown",
-              listCount: verifyRows.length
+              listCount: verifyRows.length,
+              confirmedTable: activeTable
             } 
           }));
         } else {
-          console.error("[GIG_TEST_CLIENT] Persistence failure: ID not found in direct read-back.", {
+          console.error("[GIG_TEST_CLIENT] Persistence failure: ID not found after successRes.", {
             testId,
+            activeTable,
             resultSize: verifyRows.length
           });
           toast.error("Production Gig Test FAILED: Row persisted but NOT found by direct UUID query.");
           setDiagnostics((prev: any) => ({ 
             ...prev, 
+            activeTable,
             testError: { 
               success: false, 
               error: "ID persisted but not found in direct SELECT",
               testRecordId: testId,
               userId: authUser.data?.user?.id || "unknown",
               listCount: verifyRows.length,
+              confirmedTable: activeTable,
               rawResponse: JSON.stringify(verifyRows).slice(0, 200)
             } 
           }));
@@ -178,14 +200,19 @@ function LogisticsGigs() {
 
         await load();
       } else {
-        throw new Error("createRecord returned null/empty for test gig");
+        throw new Error("createRecord returned null/empty for all gig candidates");
       }
     } catch (err: any) {
       console.error("[GIG_TEST_CLIENT] FAILED:", err);
       toast.error(`Test execution failed: ${err.message}`);
       setDiagnostics((prev: any) => ({ 
         ...prev, 
-        testError: { success: false, error: err.message, details: err.status } 
+        testError: { 
+          success: false, 
+          error: err.message, 
+          details: err.status,
+          rawError: err.rawMessage || err.message
+        } 
       }));
     } finally {
       setIsTesting(false);
@@ -348,7 +375,7 @@ function LogisticsGigs() {
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4 lg:grid-cols-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground uppercase text-[8px] font-black">Canonical Table</span>
-                    <span className="text-primary font-bold text-xs">gigs</span>
+                    <span className="text-primary font-bold text-xs">{diagnostics.activeTable || "gigs / delivery_gigs"}</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground uppercase text-[8px] font-black">Verified Persistence</span>

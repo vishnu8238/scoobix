@@ -213,8 +213,22 @@ export async function handleResponse<T>(promise: Promise<any>, method: string, t
     });
 
     if (error) {
+      // Production fix: Relation "public.gigs" error indicates the SDK/DB configuration
+      // is adding an incorrect schema prefix or the table exists under a different name.
       console.error(`[DB_ERROR] ${method} ${table} failed. Full error:`, JSON.stringify(error, null, 2), "status:", status, "statusText:", statusText);
-      throw new HttpError(status ?? 0, error.message || error.error || error.detail || statusText || JSON.stringify(error) || "Unknown database error");
+      
+      const msg = String(error.message || "").toLowerCase();
+      const statusNum = status ?? 0;
+      
+      // Wrap relation errors specifically for the UI to show the actual failing name
+      if (msg.includes("relation") && msg.includes("does not exist")) {
+        const relationErr = new HttpError(404, `Relation error: ${error.message}`);
+        (relationErr as any).isRelationError = true;
+        (relationErr as any).rawMessage = error.message;
+        throw relationErr;
+      }
+      
+      throw new HttpError(statusNum, error.message || error.error || error.detail || statusText || JSON.stringify(error) || "Unknown database error");
     }
 
     // InsForge Response Normalization: Handle data, rows, result, records, or flat arrays
