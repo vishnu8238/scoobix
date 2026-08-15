@@ -18,7 +18,7 @@ export const Route = createFileRoute("/rider")({
 const NAV = [
   { to: "/rider", label: "Home", icon: Home, exact: true },
   { to: "/rider/history", label: "Pocket", icon: Wallet },
-  { to: "/rider/requests", label: "Gigs", icon: Inbox },
+  { to: "/rider/requests", label: "Gigs", icon: Calendar },
   { to: "/rider/incentives", label: "Offers", icon: Shield },
   { to: "/rider/more", label: "Bazaar", icon: Menu },
 ];
