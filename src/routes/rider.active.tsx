@@ -238,11 +238,24 @@ function RiderActive() {
 
       <div className="-mt-6 space-y-4 px-5">
         {/* Map Preview */}
-        <section className="h-48 overflow-hidden rounded-[2rem] bg-muted shadow-card ring-1 ring-border/60">
-           {/* In a real app, this would be a GoogleMap instance */}
-           <div className="flex h-full w-full items-center justify-center bg-zinc-100">
-              <MapPin className="h-8 w-8 text-primary animate-pulse" />
-           </div>
+        <section className="h-64 overflow-hidden rounded-[2rem] bg-muted shadow-card ring-1 ring-border/60">
+           <GoogleMap 
+             className="h-full w-full"
+             center={order.pickup_latitude && order.pickup_longitude ? { lat: order.pickup_latitude, lng: order.pickup_longitude } : undefined}
+             zoom={13}
+             markers={[
+               ...(order.pickup_latitude && order.pickup_longitude ? [{
+                 position: { lat: order.pickup_latitude, lng: order.pickup_longitude },
+                 title: "Pickup",
+                 icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+               }] : []),
+               ...(order.delivery_latitude && order.delivery_longitude ? [{
+                 position: { lat: order.delivery_latitude, lng: order.delivery_longitude },
+                 title: "Drop-off",
+                 icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+               }] : [])
+             ]}
+           />
         </section>
 
         {/* Action Center */}

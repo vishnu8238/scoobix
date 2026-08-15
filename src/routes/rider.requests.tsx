@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useTableVersion } from "@/lib/realtime-hooks";
 import { formatPrice } from "@/lib/format";
 import { Check, X, MapPin, Package, Clock, Loader2, Calendar, Info, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ function RiderRequestsPage() {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const version = useTableVersion(["gig_participants", "gigs"]);
 
   const loadGigs = useCallback(async () => {
     setLoading(true);
@@ -40,8 +42,7 @@ function RiderRequestsPage() {
     void loadGigs();
   }, [loadGigs]);
 
-  // For Part 2, we simulate enrollment tracking by checking against a local set or participant table
-  // In a real app, fetchGigs would include enrollment status for the current driver
+  // Read-back authoritative enrollment tracking
   const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -50,7 +51,7 @@ function RiderRequestsPage() {
         setEnrolledIds(new Set(parts.map(p => p.gig_id)));
       });
     }
-  }, [driverId, busy]);
+  }, [driverId, busy, version]);
 
   const filtered = useMemo(() => {
     const now = new Date().toISOString();
