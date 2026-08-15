@@ -24,6 +24,8 @@ function TrackPage() {
   const { userCoords } = useAppUI();
   const [error, setError] = useState<string | null>(null);
   const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [liveEta, setLiveEta] = useState<{ mins: number; km: number; at: number } | null>(null);
+
 
   
   // Real-time synchronization
