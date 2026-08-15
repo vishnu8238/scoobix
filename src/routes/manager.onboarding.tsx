@@ -11,6 +11,7 @@ import { ImageUploader } from "@/components/cravio/ImageUploader";
 import type { ImageRef } from "@/lib/image-service";
 import { listTable } from "@/lib/insforge-crud";
 import { cn } from "@/lib/format";
+import { getDisplayName } from "@/lib/identity-utils";
 import {
   useManager,
   saveOnboardingDraft,
@@ -464,7 +465,7 @@ function OnboardingFlow() {
   return (
     <div className="mx-auto max-w-[520px] pb-8">
       <PageHeader
-        title={record ? record.name || "Onboarding" : "New restaurant"}
+        title={record?.name || getDisplayName(user) || "New restaurant"}
         subtitle={record?.rst_code ?? "ID assigned on first save"}
         right={
           <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${ONBOARDING_TONE[current]}`}>
