@@ -27,6 +27,10 @@ function TrackPage() {
   const [error, setError] = useState<string | null>(null);
   const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [liveEta, setLiveEta] = useState<{ mins: number; km: number; at: number } | null>(null);
+  // Path actually taken by the rider so far
+  const [trail, setTrail] = useState<{ lat: number; lng: number }[]>([]);
+  // Remaining road path from the rider to the customer
+  const [routePath, setRoutePath] = useState<{ lat: number; lng: number }[]>([]);
 
 
   
@@ -36,12 +40,20 @@ function TrackPage() {
     const unsubOrders = subscribeToOrders(user.id);
     const unsubLocation = subscribeToDriverLocation(orderId, (coords) => {
       setDriverCoords(coords);
+      setTrail((prev) => {
+        const last = prev[prev.length - 1];
+        // Skip duplicate/near-identical pings (< ~10m) to keep the polyline clean
+        if (last && Math.abs(last.lat - coords.lat) < 0.0001 && Math.abs(last.lng - coords.lng) < 0.0001) return prev;
+        const next = [...prev, coords];
+        return next.length > 300 ? next.slice(next.length - 300) : next;
+      });
     });
     return () => { 
       unsubOrders(); 
       unsubLocation();
     };
   }, [user?.id, orderId, subscribeToOrders]);
+
 
   const order = getOrder(orderId);
 
