@@ -20,25 +20,36 @@ type Tab = "available" | "booked" | "history";
 
 function RiderRequestsPage() {
   const [tab, setTab] = useState<Tab>("available");
-  const { driver, driverId, loading: driverLoading } = useDriver();
+  const { driver, driverId, loading: driverLoading, error: driverError } = useDriver();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const version = useTableVersion(["gig_participants", "gigs"]);
 
   const loadGigs = useCallback(async () => {
-    // If we're already loading or driver isn't resolved, skip
+    // If driver is still loading, wait. useDriver has a timeout.
     if (driverLoading) return;
     
     setLoading(true);
+    setError(null);
+
+    // Watchdog for gig loading
+    const timeoutId = setTimeout(() => {
+      console.warn("[RIDER_GIGS] fetchGigs timed out after 10s");
+      setLoading(false);
+      setError("Syncing is taking longer than expected. Please check your connection.");
+    }, 10000);
+
     try {
-      console.log("[RIDER_GIGS] Loading gigs...");
+      console.log("[RIDER_GIGS] Loading gigs authoritative check...");
       const data = await fetchGigs();
       setGigs(Array.isArray(data) ? data : []);
     } catch (e: any) {
       console.error("[RIDER_GIGS] Load error:", e);
-      toast.error("Failed to load gigs. Please check your connection.");
+      setError("Failed to sync slots. Tap to retry.");
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   }, [driverLoading]);
@@ -57,8 +68,7 @@ function RiderRequestsPage() {
           setEnrolledIds(new Set((parts || []).map(p => p.gig_id)));
         })
         .catch(err => {
-          console.error("[RIDER_GIGS] Enrollment load error:", err);
-          // Don't toast here as it's secondary to the main list
+          console.warn("[RIDER_GIGS] Enrollment load error:", err);
         });
     }
   }, [driverId, busy, version]);
@@ -95,6 +105,9 @@ function RiderRequestsPage() {
     }
   };
 
+  const isActuallyLoading = loading || driverLoading;
+  const isError = !!(error || driverError);
+
   return (
     <div className="mx-auto min-h-svh max-w-[520px] pb-24">
       <PageHeader title="Gigs" subtitle="Schedule your delivery shifts" />
@@ -115,10 +128,23 @@ function RiderRequestsPage() {
       </div>
 
       <div className="mt-6 px-4 space-y-4">
-        {(loading || driverLoading) ? (
+        {isActuallyLoading ? (
           <div className="flex flex-col items-center justify-center py-20 opacity-40">
             <Loader2 className="h-8 w-8 animate-spin" />
             <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em]">Syncing slots...</p>
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+            <div className="h-16 w-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-4">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+            <p className="text-sm font-bold text-foreground">{error || driverError}</p>
+            <button 
+              onClick={() => void loadGigs()}
+              className="mt-6 rounded-2xl bg-primary px-8 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-glow"
+            >
+              Retry Sync
+            </button>
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState 
@@ -139,7 +165,7 @@ function RiderRequestsPage() {
         )}
       </div>
 
-      {tab === "available" && !loading && filtered.length > 0 && (
+      {tab === "available" && !loading && filtered.length > 0 && !isError && (
         <div className="mx-4 mt-8 rounded-3xl bg-primary/5 p-5 ring-1 ring-primary/10">
            <div className="flex gap-3">
               <Info className="h-5 w-5 text-primary shrink-0" />
@@ -147,7 +173,7 @@ function RiderRequestsPage() {
                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">Booking Rules</p>
                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                    Gigs can be cancelled up to 2 hours before start time without penalty. 
-                   Late cancellations or no-shows may affect your rider rating.
+                   Late cancellations or no-shows may affect your rating.
                  </p>
               </div>
            </div>
