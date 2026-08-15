@@ -178,7 +178,7 @@ function OnboardingFlow() {
       opening_time: form.opening_time || null,
       closing_time: form.closing_time || null,
       logo_url: form.logo_url || null,
-      cover_url: form.cover_url || null,
+      cover_url: form.has_cover ? (form.cover_url || null) : null,
       documents: form.documents,
       bank_holder: form.bank_holder.trim() || null,
       bank_account: form.bank_account.trim() || null,
