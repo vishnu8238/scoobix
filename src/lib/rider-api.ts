@@ -60,8 +60,6 @@ export async function createRiderNotification(riderId: string, notification: { t
  */
 
 export async function updateOrderState(orderId: string, riderId: string, status: string, metadata?: any) {
-  // Use authoritative patchOrder from orders-api or direct patchRecord
-  // We'll also log an audit event
   const now = new Date().toISOString();
   
   await createRecord("order_audit_logs", {
@@ -69,7 +67,7 @@ export async function updateOrderState(orderId: string, riderId: string, status:
     order_id: orderId,
     actor_id: riderId,
     actor_type: "RIDER",
-    old_status: "unknown", // Ideal would be to fetch first, but trying to be fast
+    old_status: "unknown",
     new_status: status,
     metadata: metadata || {},
     created_at: now
@@ -85,19 +83,7 @@ export async function updateOrderState(orderId: string, riderId: string, status:
   });
 }
 
-export async function fetchRiderEarnings(riderId: string, period: 'day' | 'week' | 'month' | 'lifetime') {
-  // Try to find an earnings table, fallback to orders aggregation
-  try {
-    const data = await listTable<any>("rider_earnings", { 
-      rider_id: `eq.${riderId}`,
-      order: "created_at.desc"
-    });
-    if (data && data.length > 0) return data;
-  } catch (e) {
-    console.warn("rider_earnings table not found, falling back to orders");
-  }
-
-  // Fallback: Aggregate from orders
+export async function fetchRiderEarnings(riderId: string) {
   const orders = await listTable<any>("orders", {
     driver_id: `eq.${riderId}`,
     status: "eq.DELIVERED"
@@ -105,7 +91,7 @@ export async function fetchRiderEarnings(riderId: string, period: 'day' | 'week'
   
   return orders.map(o => ({
     id: o.id,
-    amount: o.delivery_fee || 0,
+    amount: o.driver_earnings || o.delivery_fee || 0,
     tip: o.tip || 0,
     created_at: o.created_at,
     type: 'DELIVERY'
