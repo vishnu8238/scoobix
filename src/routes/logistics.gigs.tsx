@@ -41,6 +41,7 @@ function LogisticsGigs() {
   const [selectedDate, setSelectedDate] = useState(startOfToday());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   // Filters for Slots/Capacity
   const [city, setCity] = useState("all");
@@ -83,6 +84,27 @@ function LogisticsGigs() {
       setLoading(false);
     }
   }, [selectedDate]);
+
+  const productionTest = useServerFn(import("@/lib/logistics-ops.functions").then(m => m.performProductionGigTest));
+
+  const runGigTest = async () => {
+    setIsTesting(true);
+    try {
+      const res = await productionTest();
+      console.log("[GIG_TEST_RESULT]", res);
+      if (res.success) {
+        toast.success("Production Gig Test Passed: Row persisted and read back.");
+        await load();
+      } else {
+        toast.error(`Production Gig Test Failed: ${res.error}`);
+        setDiagnostics((prev: any) => ({ ...prev, testError: res }));
+      }
+    } catch (err: any) {
+      toast.error(`Test execution failed: ${err.message}`);
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   useEffect(() => { void load(); }, [load]);
 

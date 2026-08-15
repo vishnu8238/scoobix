@@ -32,7 +32,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
       for (const table of tables) {
         try {
           // Check for relation existence and column info if possible
-          const { status, error, data } = await insforge.database.from(table).select("count").limit(1);
+          const { status, error } = await insforge.database.from(table).select("count").limit(1);
           console.log(`[SCHEMA_PROBE] Table "${table}": status=${status} ${error ? `error=${error.message}` : "OK"}`);
           result.schema.push({ 
             table, 
@@ -95,6 +95,84 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
     }
 
     return result;
+  });
+
+export const performProductionGigTest = createServerFn({ method: "POST" })
+  .middleware([requireInsForgeAuth])
+  .handler(async ({ context }) => {
+    const { insforge } = context;
+    const TABLE = "gigs";
+    const testId = newUuid();
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    console.log(`[GIG_TEST] Starting production test on "${TABLE}"...`);
+    
+    try {
+      // 1. Discover auth context
+      const authUser = await insforge.auth.getCurrentUser();
+      
+      // 2. Insert test record
+      const gig = {
+        id: testId,
+        title: `Production Verification Gig - ${now.toISOString()}`,
+        description: "Automated verification record for production persistence check",
+        reward_amount: 1,
+        target_deliveries: 1,
+        start_time: now.toISOString(),
+        end_time: tomorrow.toISOString(),
+        status: "ACTIVE",
+        city_id: "c1110000-0000-0000-0000-000000000001",
+        zone_id: "z1110000-0000-0000-0000-000000000001",
+        capacity: 1,
+        metadata: { is_test: true, timestamp: now.toISOString() }
+      };
+
+      console.log(`[GIG_TEST] Inserting into "${TABLE}"...`);
+      const { data: inserted, error: insertError } = await insforge.database
+        .from(TABLE)
+        .insert([gig])
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      
+      // 3. Immediate read-back
+      console.log(`[GIG_TEST] Verifying read-back for ${testId}...`);
+      const { data: readBack, error: readError } = await insforge.database
+        .from(TABLE)
+        .select("*")
+        .eq("id", testId)
+        .single();
+
+      if (readError) throw readError;
+
+      // 4. List check
+      const { data: list } = await insforge.database
+        .from(TABLE)
+        .select("id")
+        .limit(10);
+
+      return {
+        success: true,
+        userId: authUser.data?.user?.id,
+        testRecordId: testId,
+        inserted: !!inserted,
+        readBack: !!readBack,
+        listCount: list?.length || 0,
+        errors: []
+      };
+    } catch (err: any) {
+      console.error("[GIG_TEST] FAILED:", err);
+      return {
+        success: false,
+        error: err.message,
+        details: err.details,
+        hint: err.hint,
+        code: err.code
+      };
+    }
   });
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
