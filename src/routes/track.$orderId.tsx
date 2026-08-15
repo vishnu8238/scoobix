@@ -21,15 +21,20 @@ function TrackPage() {
   const navigate = useNavigate();
   const { getOrder, cancelOrder, subscribeToOrders, loading } = useOrders();
   const { user } = useAuth();
-  const { userCoords } = useAppUI();
-  const [error, setError] = useState<string | null>(null);
+  const [driverCoords, setDriverCoords] = useState<{ lat: number; lng: number } | null>(null);
   
   // Real-time synchronization
   useEffect(() => {
-    if (!user?.id) return;
-    const unsub = subscribeToOrders(user.id);
-    return () => { unsub(); };
-  }, [user?.id, subscribeToOrders]);
+    if (!user?.id || !orderId) return;
+    const unsubOrders = subscribeToOrders(user.id);
+    const unsubLocation = subscribeToDriverLocation(orderId, (coords) => {
+      setDriverCoords(coords);
+    });
+    return () => { 
+      unsubOrders(); 
+      unsubLocation();
+    };
+  }, [user?.id, orderId, subscribeToOrders]);
 
   const order = getOrder(orderId);
 
