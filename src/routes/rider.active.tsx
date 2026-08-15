@@ -6,7 +6,7 @@ import {
   ShieldCheck, Wallet, Star, Loader2, PackageOpen, Battery, 
   Zap, Bell, Volume2, Info, XCircle, ChevronRight,
   Camera, FileCheck, CreditCard, AlertTriangle, MessageSquare,
-  Bike
+  Bike, ArrowRight, RefreshCcw
 } from "lucide-react";
 import { GoogleMap } from "@/components/maps/GoogleMap";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { startNavigation } from "@/lib/navigation";
 import { finalizeOrder } from "@/lib/order-completion";
 import { updateOrderState } from "@/lib/rider-api";
 import { cn } from "@/lib/format";
+import { ImageUploader } from "@/components/cravio/ImageUploader";
 
 export const Route = createFileRoute("/rider/active")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Active Delivery" }] }),
@@ -73,8 +74,11 @@ function RiderActive() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [otp, setOtp] = useState("");
+  const [podImageUrl, setPodImageUrl] = useState<string | null>(null);
+  const [showFailedModal, setShowFailedModal] = useState(false);
+  const [eta, setEta] = useState<string | null>(null);
 
-  const riderId = user?.id; // InsForge Auth ID is authoritative
+  const riderId = user?.id;
 
   const loadData = useCallback(async () => {
     if (!riderId) {
@@ -85,18 +89,16 @@ function RiderActive() {
     setLoading(true);
     setError(null);
 
-    const TIMEOUT = 8000;
+    const TIMEOUT = 10000;
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT)
     );
 
     try {
-      console.log("[RIDER_ACTIVE] Authoritative sync for rider:", riderId);
-      
       const fetchPromise = listTable<OrderRow>("orders", {
         driver_id: `eq.${riderId}`,
         order: "created_at.desc",
-        limit: 10,
+        limit: 5,
       }, { fresh: true, ttl: 0 });
 
       const rows = await Promise.race([fetchPromise, timeoutPromise]) as OrderRow[];
@@ -139,6 +141,19 @@ function RiderActive() {
     });
   }, [riderId, loadData]);
 
+  // Periodic ETA refresh
+  useEffect(() => {
+    if (!order || !["PICKED_UP", "HEADING_TO_CUSTOMER", "ON_THE_WAY"].includes(String(order.status).toUpperCase())) return;
+    
+    const interval = setInterval(() => {
+      // Logic for ETA calculation would go here, using Google Routes API
+      // Mocking for now to demonstrate UI update
+      setEta(`${Math.floor(Math.random() * 5 + 5)} mins`);
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [order]);
+
   const handleStatusChange = async (newStatus: string, metadata?: any) => {
     if (!order?.id || !riderId || busy) return;
     setBusy(true);
@@ -153,12 +168,6 @@ function RiderActive() {
     }
   };
 
-  const handleAcceptOffer = async () => {
-    // Note: activeOffer state was not being used for the accept button logic in original code
-    // but we keep the handler if needed for future offers implementation.
-    toast.info("Offer acceptance requires active invitation");
-  };
-
   const handleDeliveryComplete = async () => {
     if (!order?.id || !riderId) return;
     if (order.otp_required && otp !== order.otp) {
@@ -166,18 +175,30 @@ function RiderActive() {
       return;
     }
     
-    await handleStatusChange("DELIVERED", { 
-      delivered_at: new Date().toISOString(),
-      payment_status: "PAID"
-    });
-    
-    if (order.id) {
-       await patchPaymentByOrder(String(order.id), { status: "PAID" });
-       await finalizeOrder(String(order.id));
+    setBusy(true);
+    try {
+      await handleStatusChange("DELIVERED", { 
+        delivered_at: new Date().toISOString(),
+        payment_status: "PAID",
+        pod_image: podImageUrl
+      });
+      
+      await patchPaymentByOrder(String(order.id), { status: "PAID" });
+      await finalizeOrder(String(order.id));
+      
+      navigate({ to: "/rider/history" });
+    } catch (e) {
+      toast.error("Completion failed. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    
-    navigate({ to: "/rider/history" });
   };
+
+  const handleRetryDelivery = async () => {
+    setShowFailedModal(false);
+    await handleStatusChange("HEADING_TO_CUSTOMER");
+  };
+
 
   const currentStatus = String(order?.status ?? "").toUpperCase();
   const isActuallyLoading = loading;
