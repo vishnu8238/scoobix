@@ -185,8 +185,9 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
     
     // Auth Guard: handle unauthenticated states gracefully
     if (!res || (error && (status === 401 || (error.message && error.message.toLowerCase().includes("invalid token"))))) {
-      // If we are in a browser, we can check if we actually have an active session
-      if (typeof window !== "undefined") {
+      const isBrowser = typeof window !== "undefined";
+      
+      if (isBrowser) {
         const session = insforge.auth.tokenManager?.getSession?.();
         if (session) {
           console.error(`[DB_AUTH_FAILURE] Session exists but ${method} ${table} failed with 401. Possible RLS or token expiry.`);
@@ -199,11 +200,13 @@ async function handleResponse<T>(promise: Promise<any>, method: string, table: s
       }
       
       // If we are on a login page already, don't throw to avoid infinite error loops
-      if (typeof window !== 'undefined' && (window.location.pathname.includes('/login') || window.location.pathname.includes('/auth/callback'))) {
+      if (isBrowser && (window.location.pathname.includes('/login') || window.location.pathname.includes('/auth/callback'))) {
         return (Array.isArray(data) ? [] : null) as unknown as T;
       }
 
-      throw new HttpError(401, error?.message || "Unauthorized: Invalid or missing token");
+      const authErr = new HttpError(401, error?.message || "Unauthorized: Invalid or missing token");
+      (authErr as any).isAuthError = true;
+      throw authErr;
     }
     
     recordMetric({
