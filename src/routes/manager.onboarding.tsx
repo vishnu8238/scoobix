@@ -80,6 +80,8 @@ type Form = {
   branch_name: string;
   delivery_radius: string;
   commission: string;
+  has_cover: boolean;
+  has_gallery: boolean;
 };
 
 const EMPTY: Form = {
