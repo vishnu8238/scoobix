@@ -54,28 +54,23 @@ function LogisticsGigs() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("[GIGS_PAGE] Loading canonical list...");
-      // 1. Fetch from canonical gigs table
+      console.log("[GIGS_PAGE] Loading authoritative canonical list...");
+      // 1. Authoritative fetch: all gigs, no date predicate, explicit column set
       const all = await fetchGigs({ limit: 1000 });
-      console.log(`[GIGS_PAGE] Loaded ${all.length} rows.`);
+      console.log(`[GIGS_PAGE] Loaded ${all.length} normalized rows.`);
       
       setAllGigsCount(all.length);
       
+      // 2. Local date normalization
       const localDateStr = format(selectedDate, "yyyy-MM-dd");
       
-      // Authoritative client-side filtering: match ISO date part or formatted local date
+      // 3. Normalized filtering
       const data = all.filter(g => {
         if (!g.start_time) return false;
         try {
-          // 1. Normalize selected date to YYYY-MM-DD
-          const localDateStr = format(selectedDate, "yyyy-MM-dd");
-          
-          // 2. Normalize gig date (handling potential UTC shift from InsForge)
-          // We parse it and then check the date part in local time
+          // Normalize gig date (handling potential UTC shift from InsForge)
           const gigDateObj = parseISO(g.start_time);
           const gigDateStr = format(gigDateObj, "yyyy-MM-dd");
-          
-          // 3. Also check the raw ISO string part for robustness
           const rawIsoDate = g.start_time.split('T')[0];
           
           return gigDateStr === localDateStr || rawIsoDate === localDateStr;
@@ -92,13 +87,18 @@ function LogisticsGigs() {
         filtered: data.length,
         filterDate: localDateStr,
         firstGig: all[0] ? { id: all[0].id, title: all[0].title, start: all[0].start_time } : "none",
-        sessionActive: !!insforge.auth.session?.accessToken
+        sessionActive: !!insforge.auth.session?.accessToken,
+        responseSample: all.slice(0, 1).map(g => ({ id: g.id, title: g.title }))
       });
 
     } catch (err: any) {
-      console.error("[GIGS_PAGE] Load failed:", err.message);
-      toast.error("Failed to load gigs: " + err.message);
-      setDiagnostics({ error: err.message, status: err.status, stack: err.stack });
+      console.error("[GIGS_PAGE] Authoritative load failed:", err);
+      toast.error("Failed to load gigs: " + (err.message || "Unknown error"));
+      setDiagnostics({ 
+        error: err.message, 
+        status: err.status, 
+        response: err.response || "No response details" 
+      });
     } finally {
       setLoading(false);
     }
@@ -133,33 +133,51 @@ function LogisticsGigs() {
       const res = await createRecord("gigs", testGig);
       
       if (res) {
-        // Verification: check if the new ID is in the canonical load
-        // We wait a brief moment for realtime propagation and index refresh
-        await new Promise(r => setTimeout(r, 500));
+        console.log("[GIG_TEST_CLIENT] Row persisted. Verifying presence in authoritative list...");
+        
+        // Wait for potential indexing/propagation
+        await new Promise(r => setTimeout(r, 1000));
+        
+        // Auth-check: must use the same authoritative fetch path as the main list
         const allAfter = await fetchGigs({ limit: 1000 });
         const foundInList = allAfter.some(g => g.id === testId);
         
+        const authUser = await insforge.auth.getCurrentUser();
+        
         if (foundInList) {
           toast.success("Production Gig Test Passed: Row persisted and verified in list.");
+          setDiagnostics((prev: any) => ({ 
+            ...prev, 
+            testError: { 
+              success: true, 
+              testRecordId: testId, 
+              userId: authUser.data?.user?.id || "unknown",
+              listCount: allAfter.length
+            } 
+          }));
         } else {
-          toast.error("Production Gig Test: Row persisted but NOT found in list after refresh.");
+          console.error("[GIG_TEST_CLIENT] Persistence failure: ID not found in list.", {
+            testId,
+            listSize: allAfter.length,
+            sampleIds: allAfter.slice(0, 5).map(g => g.id)
+          });
+          toast.error("Production Gig Test FAILED: Row persisted but NOT found in canonical list.");
+          setDiagnostics((prev: any) => ({ 
+            ...prev, 
+            testError: { 
+              success: false, 
+              error: "ID persisted but not found in subsequent fetch",
+              testRecordId: testId,
+              userId: authUser.data?.user?.id || "unknown",
+              listCount: allAfter.length,
+              sampleIds: allAfter.slice(0, 5).map(g => g.id)
+            } 
+          }));
         }
-
-        
-        const authUser = await insforge.auth.getCurrentUser();
-        setDiagnostics((prev: any) => ({ 
-          ...prev, 
-          testError: { 
-            success: foundInList, 
-            testRecordId: testId, 
-            userId: authUser.data?.user?.id || "unknown",
-            listCount: allAfter.length
-          } 
-        }));
 
         await load();
       } else {
-        throw new Error("Persistence check returned null");
+        throw new Error("createRecord returned null/empty for test gig");
       }
     } catch (err: any) {
       console.error("[GIG_TEST_CLIENT] FAILED:", err);
