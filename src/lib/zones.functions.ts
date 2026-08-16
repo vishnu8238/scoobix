@@ -3,6 +3,7 @@ import { z } from "zod";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { publishTableChange } from "./realtime-bus";
 import { TABLE_ZONES, TABLE_SUBZONES } from "./zones-api";
+import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";
 
 const HEADERS = {
   apikey: INSFORGE_ANON_KEY,
