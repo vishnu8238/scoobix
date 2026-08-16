@@ -49,6 +49,11 @@ function LogisticsGigs() {
   const [diagnostics, setDiagnostics] = useState<any>({ initial: true });
   const [isTesting, setIsTesting] = useState(false);
 
+  // Filters for Slots/Capacity
+  const [city, setCity] = useState("all");
+  const [entityType, setEntityType] = useState("all");
+  const [zone, setZone] = useState("all");
+
   // Real-time sync
   const version = useTableVersion(["gigs", "gig_participants"]);
 
