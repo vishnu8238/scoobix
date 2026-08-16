@@ -199,7 +199,7 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
   });
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ 
+  .validator(z.object({ 
     data: z.any().optional(),
     accessToken: z.string().optional()
   }))
