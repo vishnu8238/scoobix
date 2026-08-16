@@ -158,7 +158,7 @@ function OrderLedger() {
                     customer_id: customerId,
                     restaurant_id: restaurantId,
                     status: statuses[i % statuses.length],
-                    total_price: 250 + (i * 50),
+                    total_amount: 250 + (i * 50),
                     created_at: now,
                     items: {
                       lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
