@@ -22,14 +22,17 @@ import {
   TrendingUp,
   Settings
 } from "lucide-react";
-import { fetchGigs, type Gig } from "@/lib/gigs-api";
-import { format, addDays, startOfToday } from "date-fns";
+import { fetchGigs, createGig, enrollInGig, type Gig } from "@/lib/gigs-api";
+import { format, addDays, startOfToday, parseISO } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { performProductionGigTest, getLogisticsDemoData } from "@/lib/logistics-ops.functions";
+import { performProductionGigTest } from "@/lib/logistics-ops.functions";
 import { exportExcel } from "@/lib/export-utils";
+import { createRecord, listTable } from "@/lib/insforge-crud";
+import { newUuid } from "@/lib/orders-api";
+import { useTableVersion } from "@/lib/realtime-hooks";
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
@@ -244,7 +247,7 @@ function LogisticsGigs() {
     }
   };
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, version]);
 
   const dates = Array.from({ length: 7 }).map((_, i) => addDays(startOfToday(), i - 1));
 
