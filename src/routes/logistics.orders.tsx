@@ -102,6 +102,7 @@ function OrderLedger() {
               try {
                 console.log("[LOGISTICS_ORDERS] Seeding directly via SDK client...");
                 const { insforge: sdk } = await import("@/lib/insforge");
+                const { createRecord } = await import("@/lib/insforge-crud");
                 
                 // Construct demo data
                 const zone1Id = "z1110000-0000-0000-0000-000000000001";
@@ -119,9 +120,10 @@ function OrderLedger() {
                     status: "ACTIVE",
                     city: "Vadodara"
                   };
-                  const { data: created, error } = await sdk.database.from("restaurants").insert([rest]).select("id").single();
-                  if (error) throw new Error(`Restaurant creation failed: ${error.message}`);
-                  restaurantId = created?.id || rest.id;
+                  // Use createRecord for retries and normalization
+                  const created = await createRecord<any>("restaurants", rest);
+                  if (!created) throw new Error(`Restaurant creation failed: Empty response`);
+                  restaurantId = created.id || rest.id;
                 }
 
                 // 2. Ensure Customer
@@ -135,9 +137,10 @@ function OrderLedger() {
                     role: "customer",
                     email: "demo.customer@scoobix.test"
                   };
-                  const { data: created, error } = await sdk.database.from("users").insert([cust]).select("id").single();
-                  if (error) throw new Error(`Customer creation failed: ${error.message}`);
-                  customerId = created?.id || cust.id;
+                  // Use createRecord for retries and normalization
+                  const created = await createRecord<any>("users", cust);
+                  if (!created) throw new Error(`Customer creation failed: Empty response`);
+                  customerId = created.id || cust.id;
                 }
 
                 // 3. Insert Orders
@@ -145,8 +148,8 @@ function OrderLedger() {
                 let seededCount = 0;
                 
                 for (let i = 0; i < 5; i++) {
-                  const demoRef = `demo_order_v5_${i}`;
-                  const { data: existing } = await sdk.database.from("orders").select("id").eq("delivery_address", `123 Demo Street, Vadodara #${i}`).limit(1);
+                  const deliveryAddress = `123 Demo Street, Vadodara #${i}`;
+                  const { data: existing } = await sdk.database.from("orders").select("id").eq("delivery_address", deliveryAddress).limit(1);
                   
                   if (existing?.length) continue;
 
@@ -162,21 +165,22 @@ function OrderLedger() {
                       lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
                       meta: { restaurantName: "Scoobix Demo Kitchen", addressLine: "123 Demo St" }
                     },
-                    delivery_address: `123 Demo Street, Vadodara #${i}`,
+                    delivery_address: deliveryAddress,
                     payment_method: "CASH",
                     payment_status: i % 2 === 0 ? "PAID" : "PENDING"
                   };
 
-                  const { error: insErr } = await sdk.database.from("orders").insert([order]);
-                  if (!insErr) seededCount++;
+                  const created = await createRecord<any>("orders", order);
+                  if (created) seededCount++;
                 }
                 
                 if (seededCount > 0) {
-                  toast.success(`Seeded ${seededCount} new demo orders`);
+                  toast.success(`Successfully seeded ${seededCount} demo orders`);
+                  window.location.reload();
                 } else {
-                  toast.info("Demo orders already present");
+                  toast.info("Demo orders already exist in the ledger");
+                  void load();
                 }
-                void load();
               } catch (e: any) {
                 console.error("[SEED_ORDER_ERROR]", e);
                 toast.error(`Backend seeding failed: ${e.message || "Unauthorized or RLS Blocked"}`);
