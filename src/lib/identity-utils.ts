@@ -42,7 +42,10 @@ export function getDisplayName(user: any): string {
         ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}` 
         : user.user_metadata?.given_name || user.user_metadata?.family_name,
     
-    // 3. OAuth identity payload / provider_data
+    // 3. Existing Merchant Manager profile name (if resolving for manager portal)
+    user.merchant_manager?.name,
+
+    // 4. OAuth identity payload / provider_data
     user.identities?.find((i: any) => i.identity_data?.full_name)?.identity_data?.full_name,
     user.identities?.find((i: any) => i.identity_data?.name)?.identity_data?.name,
     user.identities?.find((i: any) => i.identity_data?.given_name)?.identity_data?.given_name && 
