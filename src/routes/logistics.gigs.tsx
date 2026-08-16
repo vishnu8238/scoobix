@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
-import { parseISO } from "date-fns";
 import { insforge } from "@/lib/insforge";
 import { 
   Search, 
@@ -50,34 +49,86 @@ function LogisticsGigs() {
   const [diagnostics, setDiagnostics] = useState<any>({ initial: true });
   const [isTesting, setIsTesting] = useState(false);
 
-  // Filters for Slots/Capacity
-  const [city, setCity] = useState("all");
-  const [entityType, setEntityType] = useState("all");
-  const [zone, setZone] = useState("all");
+  // Real-time sync
+  const version = useTableVersion(["gigs", "gig_participants"]);
+
+  const seedDemos = useCallback(async () => {
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const city1Id = "c1110000-0000-0000-0000-000000000001";
+      const zone1Id = "z1110000-0000-0000-0000-000000000001";
+
+      const demoGigs = [
+        {
+          id: "demo-gig-1",
+          title: "Morning Shift - Vadodara Central",
+          description: "Standard morning peak shift. Clearly marked DEMO DATA.",
+          reward_amount: 500,
+          target_deliveries: 15,
+          start_time: `${todayStr}T08:00:00Z`,
+          end_time: `${todayStr}T12:00:00Z`,
+          status: "ACTIVE" as const,
+          city_id: city1Id,
+          zone_id: zone1Id,
+          capacity: 10,
+          metadata: { is_demo: true, demo_tag: "logistics_gig_demo_v1" },
+          created_at: new Date().toISOString()
+        },
+        {
+          id: "demo-gig-2",
+          title: "Lunch Peak Express",
+          description: "High volume lunch shift. Clearly marked DEMO DATA.",
+          reward_amount: 350,
+          target_deliveries: 10,
+          start_time: `${todayStr}T12:00:00Z`,
+          end_time: `${todayStr}T15:00:00Z`,
+          status: "ACTIVE" as const,
+          city_id: city1Id,
+          zone_id: zone1Id,
+          capacity: 15,
+          metadata: { is_demo: true, demo_tag: "logistics_gig_demo_v1" },
+          created_at: new Date().toISOString()
+        },
+        {
+          id: "demo-gig-3",
+          title: "Evening Logistics Surge",
+          description: "Late night delivery surge incentive. Clearly marked DEMO DATA.",
+          reward_amount: 600,
+          target_deliveries: 20,
+          start_time: `${todayStr}T18:00:00Z`,
+          end_time: `${todayStr}T22:00:00Z`,
+          status: "ACTIVE" as const,
+          city_id: city1Id,
+          zone_id: zone1Id,
+          capacity: 8,
+          metadata: { is_demo: true, demo_tag: "logistics_gig_demo_v1" },
+          created_at: new Date().toISOString()
+        }
+      ];
+
+      for (const demo of demoGigs) {
+        const existing = await listTable("gigs", { id: `eq.${demo.id}` });
+        if (!existing || existing.length === 0) {
+          await createRecord("gigs", demo);
+        }
+      }
+    } catch (e) {
+      console.warn("[GIGS_PAGE] Demo seeding skipped/failed:", e);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       console.log("[GIGS_PAGE] Loading authoritative canonical list...");
       
+      // Seed demos first to ensure they exist in the real table
+      await seedDemos();
+
       // 1. Authoritative fetch
       let all = await fetchGigs({ limit: 1000 });
       console.log(`[GIGS_PAGE] Loaded ${all.length} normalized rows.`);
       
-      // LOGISTICS DEMO DATA FALLBACK
-      if (all.length === 0) {
-        console.warn("[GIGS_PAGE] No backend gigs found. Fetching demo data...");
-        try {
-          const demo = await getLogisticsDemoData();
-          if (demo?.gigs?.length) {
-            all = demo.gigs as Gig[];
-            console.log(`[GIGS_PAGE] Using ${all.length} demo gigs.`);
-          }
-        } catch (demoErr) {
-          console.error("[GIGS_PAGE] Demo data fetch failed:", demoErr);
-        }
-      }
-
       setAllGigsCount(all.length);
       
       // 2. Local date normalization
@@ -108,17 +159,8 @@ function LogisticsGigs() {
       });
     } catch (err: any) {
       console.error("[GIGS_PAGE] Authoritative load failed:", err);
-      // Fallback to demo data on error too
-      try {
-        const demo = await getLogisticsDemoData();
-        if (demo?.gigs?.length) {
-          const all = demo.gigs as Gig[];
-          setGigs(all);
-          setAllGigsCount(all.length);
-          toast.info("Showing demo data due to backend connectivity issues.");
-          return;
-        }
-      } catch (e) {}
+      // Error path handled by toast
+      setGigs([]);
 
       const errorMsg = err.message || "Unknown database error";
       toast.error(`Failed to load gigs: ${errorMsg}`);
