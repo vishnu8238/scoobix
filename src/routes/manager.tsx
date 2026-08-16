@@ -5,7 +5,7 @@ import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 import { useManager } from "@/lib/manager-api";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
-import { getInitials, getDisplayName } from "@/lib/identity-utils";
+import { getInitials, getManagerDisplayName } from "@/lib/identity-utils";
 import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/manager")({
@@ -59,14 +59,14 @@ function ManagerShell({ pathname }: { pathname: string }) {
       <header className="px-5 pt-6 pb-2 flex items-center justify-between bg-background/80 backdrop-blur-md sticky top-0 z-30">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-[12px] font-extrabold text-primary-foreground mr-1">
-            {getInitials(manager?.name || user?.name) || "M"}
+            {getInitials(getManagerDisplayName(user, manager))}
           </div>
           <div className="text-left">
             <p 
               data-testid="header-user-name"
               className="text-[12px] font-bold leading-none text-foreground"
             >
-              {manager?.name || user?.name || "Scoobix Manager"}
+              {getManagerDisplayName(user, manager)}
             </p>
             <p className="text-[10px] text-muted-foreground mt-0.5">{user?.email || manager?.email || "Manager"}</p>
           </div>

@@ -14,8 +14,8 @@ export function getDisplayName(user: any): string {
 
     const n = cleaned.toLowerCase();
     
-    // Explicitly forbidden generic terms as full strings
-    const forbidden = ['user', 'unknown', 'guest', 'anonymous', 'null', 'undefined', 'administrator', 'logistics staff', 'merchant manager', 'logistics'];
+    // Explicitly forbidden generic terms as full strings (case-insensitive)
+    const forbidden = ['user', 'us', 'unknown', 'guest', 'anonymous', 'null', 'undefined', 'administrator', 'logistics staff', 'merchant manager', 'logistics', 'm'];
     if (forbidden.includes(n)) return null;
 
     // If it looks like an email, it's not a real name
@@ -24,45 +24,80 @@ export function getDisplayName(user: any): string {
     return cleaned;
   };
 
-  // Authoritative identity resolution order
-  const candidates = [
-    // 1. InsForge profile fields from the database (highest priority)
-    user.profile?.display_name,
-    user.profile?.full_name,
-    user.profile?.name,
-    user.profile?.first_name && user.profile?.last_name 
-        ? `${user.profile.first_name} ${user.profile.last_name}` 
-        : user.profile?.first_name || user.profile?.last_name,
+  /**
+   * Helper to resolve the best name from an entity (user or manager)
+   * while rejecting generic placeholders.
+   */
+  const resolve = (entity: any): string | null => {
+    if (!entity) return null;
     
-    // 2. InsForge auth user metadata
-    user.user_metadata?.full_name,
-    user.user_metadata?.name,
-    user.user_metadata?.display_name,
-    user.user_metadata?.given_name && user.user_metadata?.family_name 
-        ? `${user.user_metadata.given_name} ${user.user_metadata.family_name}` 
-        : user.user_metadata?.given_name || user.user_metadata?.family_name,
-    
-    // 3. OAuth identity payload / provider_data
-    user.identities?.find((i: any) => i.identity_data?.full_name)?.identity_data?.full_name,
-    user.identities?.find((i: any) => i.identity_data?.name)?.identity_data?.name,
-    user.identities?.find((i: any) => i.identity_data?.given_name)?.identity_data?.given_name && 
-    user.identities?.find((i: any) => i.identity_data?.family_name)?.identity_data?.family_name 
-        ? `${user.identities.find((i: any) => i.identity_data.given_name).identity_data.given_name} ${user.identities.find((i: any) => i.identity_data.family_name).identity_data.family_name}` 
-        : null,
-  ];
+    // Check direct name fields first
+    const directNames = [
+      entity.display_name,
+      entity.full_name,
+      entity.name,
+      entity.first_name && entity.last_name 
+          ? `${entity.first_name} ${entity.last_name}` 
+          : entity.first_name || entity.last_name,
+    ];
 
-  for (const val of candidates) {
-    const res = normalize(val);
-    if (res) return res;
-  }
+    for (const val of directNames) {
+      const res = normalize(val);
+      if (res) return res;
+    }
 
-  // 4. Fallback: Human-readable name from email (never literal "User")
+    // Check nested metadata
+    if (entity.user_metadata) {
+      const metaNames = [
+        entity.user_metadata.full_name,
+        entity.user_metadata.name,
+        entity.user_metadata.display_name,
+        entity.user_metadata.given_name && entity.user_metadata.family_name 
+            ? `${entity.user_metadata.given_name} ${entity.user_metadata.family_name}` 
+            : entity.user_metadata.given_name || entity.user_metadata.family_name,
+      ];
+      for (const val of metaNames) {
+        const res = normalize(val);
+        if (res) return res;
+      }
+    }
+
+    // Check identities
+    if (entity.identities) {
+      for (const identity of entity.identities) {
+        const data = identity.identity_data;
+        if (!data) continue;
+        const identityNames = [
+          data.full_name,
+          data.name,
+          data.given_name && data.family_name ? `${data.given_name} ${data.family_name}` : data.given_name || data.family_name
+        ];
+        for (const val of identityNames) {
+          const res = normalize(val);
+          if (res) return res;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  // Authoritative identity resolution order:
+  // 1. Authenticated User object (metadata, profile, etc.)
+  const userResolved = resolve(user) || resolve(user.profile);
+  if (userResolved) return userResolved;
+
+  // 2. Manager record (if generic values were passed in, resolve() will filter them)
+  const managerResolved = resolve(user.manager);
+  if (managerResolved) return managerResolved;
+
+  // 3. Fallback: Human-readable name from email
   const email = user.email || user.user_metadata?.email || user.profile?.email || 
-                user.identities?.find((i: any) => i.identity_data?.email)?.identity_data?.email;
+                user.identities?.find((i: any) => i.identity_data?.email)?.identity_data?.email ||
+                user.manager?.email;
   
   if (email && typeof email === 'string' && email.includes('@')) {
     const prefix = email.split('@')[0];
-    // Convert "john.doe" or "john_doe" to "John Doe"
     const humanName = prefix
       .split(/[._-]/)
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
@@ -70,13 +105,32 @@ export function getDisplayName(user: any): string {
     
     const res = normalize(humanName);
     if (res) return res;
-    
-    // If it's a forbidden word after transformation (e.g. "user@..."), force the prefix as-is
-    // but here we just return the humanName as the fallback
     return humanName;
   }
 
   return "";
+}
+
+/**
+ * Returns the final authoritative display name for the Manager portal, 
+ * explicitly rejecting generic fallbacks like "User" or "M".
+ */
+export function getManagerDisplayName(user: any, manager?: any): string {
+  const name = getDisplayName(user) || (manager ? getDisplayName({ ...user, manager }) : "");
+  const forbidden = ['user', 'us', 'merchant manager', 'scoobix manager', 'unknown', 'm'];
+  if (!name || forbidden.includes(name.toLowerCase())) {
+    // If somehow we still have a generic name, force the email fallback
+    const email = user?.email || manager?.email;
+    if (email && email.includes('@')) {
+      const prefix = email.split('@')[0];
+      return prefix
+        .split(/[._-]/)
+        .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+    return "Scoobix Manager";
+  }
+  return name;
 }
 
 /**
