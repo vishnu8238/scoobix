@@ -90,44 +90,57 @@ if (typeof window !== "undefined") {
 export const getAccessToken = async () => {
   // 1. Authoritative check: current SDK session memory
   const sdkSession = insforge.auth.session;
-  if (sdkSession?.accessToken) return sdkSession.accessToken;
+  if (sdkSession?.accessToken) {
+    console.log("[INSFORGE_AUTH] getAccessToken: using SDK session token");
+    return sdkSession.accessToken;
+  }
 
-  // 2. Authorization fallback: browser local storage (SDK might have lost its in-memory state)
+  // 2. Refresh/Fetch authoritative state from SDK if memory is stale
   if (typeof window !== "undefined") {
     try {
-      // The InsForge SDK uses this key format by default
-      const stored = window.localStorage.getItem("insforge.auth.token");
+      console.log("[INSFORGE_AUTH] getAccessToken: memory stale, checking SDK current session...");
+      const session = await insforge.auth.getSession();
+      if (session?.accessToken) {
+        console.log("[INSFORGE_AUTH] getAccessToken: found fresh SDK session token");
+        return session.accessToken;
+      }
+
+      // Try getCurrentUser as it often triggers internal hydration
+      const { data } = await insforge.auth.getCurrentUser();
+      if (data?.user) {
+        const finalSession = insforge.auth.session;
+        if (finalSession?.accessToken) {
+          console.log("[INSFORGE_AUTH] getAccessToken: token recovered after getCurrentUser");
+          return finalSession.accessToken;
+        }
+      }
+    } catch (e) {
+      console.warn("[INSFORGE_AUTH] Authoritative session check failed:", e);
+    }
+  }
+
+  // 3. Authorization fallback: browser local storage (legacy compatibility)
+  if (typeof window !== "undefined") {
+    try {
+      // Look for the specific cookie-based session established by the auth handler
+      const cookieSessionKey = "__insforge_session";
+      const stored = window.localStorage.getItem("insforge.auth.token") || 
+                     window.localStorage.getItem(cookieSessionKey) ||
+                     window.localStorage.getItem("scoobix_auth_token");
+
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed?.access_token) return parsed.access_token;
-        if (parsed?.accessToken) return parsed.accessToken;
-      }
-      
-      // Secondary fallback: search all keys for something that looks like an access token
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const key = window.localStorage.key(i);
-        if (key?.includes("insforge") || key?.includes("auth") || key?.includes("token")) {
-          const val = window.localStorage.getItem(key!);
-          if (val && val.includes("access_token")) {
-            const parsed = JSON.parse(val);
-            if (parsed.access_token) return parsed.access_token;
-            if (parsed.accessToken) return parsed.accessToken;
-            if (parsed.session?.access_token) return parsed.session.access_token;
-            if (parsed.session?.accessToken) return parsed.session.accessToken;
-          }
+        const token = parsed?.accessToken || parsed?.access_token || parsed?.session?.accessToken || parsed?.session?.access_token;
+        if (token) {
+          console.log("[INSFORGE_AUTH] getAccessToken: using fallback storage token");
+          return token;
         }
       }
     } catch { /* ignore */ }
   }
 
-  // 3. Last resort: hydrate from server or trigger refresh
-  if (!cachedAccessToken && typeof window !== "undefined") {
-    await ensureAuthHydrated();
-  }
-  
-  const finalToken = cachedAccessToken || sdkSession?.accessToken || null;
-  console.log("[INSFORGE_AUTH] getAccessToken result:", finalToken ? "PRESENT" : "MISSING");
-  return finalToken;
+  console.warn("[INSFORGE_AUTH] getAccessToken: NO TOKEN FOUND");
+  return null;
 };
 
 
