@@ -199,11 +199,11 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
   });
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
-  .validator(z.object({ 
+  .inputValidator(z.object({ 
     data: z.any().optional(),
     accessToken: z.string().optional()
   }))
-  .handler(async ({ input, context }) => {
+  .handler(async ({ data: input, context }) => {
     const { accessToken } = input;
     
     // Auth configuration
