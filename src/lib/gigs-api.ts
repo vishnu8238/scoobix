@@ -31,7 +31,7 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  const TABLE_CANDIDATES = ["gigs", "delivery_gigs"]; 
+  const TABLE_CANDIDATES = ["gigs"];
   const GIG_COLUMNS = "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,city_id,capacity,created_at";
   const { select, id, ...rest } = params || {};
   
@@ -74,7 +74,7 @@ export async function fetchGigs(params?: Record<string, any>) {
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   // Authoritative write candidate discovery
-  const TABLE_CANDIDATES = ["gigs", "delivery_gigs"];
+  const TABLE_CANDIDATES = ["gigs"];
   const id = newUuid();
   
   let lastError: any = null;
