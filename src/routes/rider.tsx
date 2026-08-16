@@ -221,8 +221,8 @@ function RiderLayout() {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </RoleGuard>
   );
 }
 
