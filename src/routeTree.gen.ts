@@ -32,11 +32,13 @@ import { Route as RiderVehicleRouteImport } from './routes/rider.vehicle'
 import { Route as RiderSupportRouteImport } from './routes/rider.support'
 import { Route as RiderRequestsRouteImport } from './routes/rider.requests'
 import { Route as RiderProfileRouteImport } from './routes/rider.profile'
+import { Route as RiderPocketRouteImport } from './routes/rider.pocket'
 import { Route as RiderOnboardingRouteImport } from './routes/rider.onboarding'
 import { Route as RiderNotificationsRouteImport } from './routes/rider.notifications'
 import { Route as RiderMoreRouteImport } from './routes/rider.more'
 import { Route as RiderIncentivesRouteImport } from './routes/rider.incentives'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
+import { Route as RiderGigsRouteImport } from './routes/rider.gigs'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
 import { Route as RiderBazaarRouteImport } from './routes/rider.bazaar'
 import { Route as RiderAnalyticsRouteImport } from './routes/rider.analytics'
@@ -286,6 +288,11 @@ const RiderProfileRoute = RiderProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => RiderRoute,
 } as any)
+const RiderPocketRoute = RiderPocketRouteImport.update({
+  id: '/pocket',
+  path: '/pocket',
+  getParentRoute: () => RiderRoute,
+} as any)
 const RiderOnboardingRoute = RiderOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -309,6 +316,11 @@ const RiderIncentivesRoute = RiderIncentivesRouteImport.update({
 const RiderHistoryRoute = RiderHistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderGigsRoute = RiderGigsRouteImport.update({
+  id: '/gigs',
+  path: '/gigs',
   getParentRoute: () => RiderRoute,
 } as any)
 const RiderEarningsRoute = RiderEarningsRouteImport.update({
@@ -1116,11 +1128,13 @@ export interface FileRoutesByFullPath {
   '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/bazaar': typeof RiderBazaarRoute
   '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/gigs': typeof RiderGigsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
+  '/rider/pocket': typeof RiderPocketRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
   '/rider/support': typeof RiderSupportRoute
@@ -1273,11 +1287,13 @@ export interface FileRoutesByTo {
   '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/bazaar': typeof RiderBazaarRoute
   '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/gigs': typeof RiderGigsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
+  '/rider/pocket': typeof RiderPocketRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
   '/rider/support': typeof RiderSupportRoute
@@ -1437,11 +1453,13 @@ export interface FileRoutesById {
   '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/bazaar': typeof RiderBazaarRoute
   '/rider/earnings': typeof RiderEarningsRoute
+  '/rider/gigs': typeof RiderGigsRoute
   '/rider/history': typeof RiderHistoryRoute
   '/rider/incentives': typeof RiderIncentivesRoute
   '/rider/more': typeof RiderMoreRoute
   '/rider/notifications': typeof RiderNotificationsRoute
   '/rider/onboarding': typeof RiderOnboardingRoute
+  '/rider/pocket': typeof RiderPocketRoute
   '/rider/profile': typeof RiderProfileRoute
   '/rider/requests': typeof RiderRequestsRoute
   '/rider/support': typeof RiderSupportRoute
@@ -1602,11 +1620,13 @@ export interface FileRouteTypes {
     | '/rider/analytics'
     | '/rider/bazaar'
     | '/rider/earnings'
+    | '/rider/gigs'
     | '/rider/history'
     | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
+    | '/rider/pocket'
     | '/rider/profile'
     | '/rider/requests'
     | '/rider/support'
@@ -1759,11 +1779,13 @@ export interface FileRouteTypes {
     | '/rider/analytics'
     | '/rider/bazaar'
     | '/rider/earnings'
+    | '/rider/gigs'
     | '/rider/history'
     | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
+    | '/rider/pocket'
     | '/rider/profile'
     | '/rider/requests'
     | '/rider/support'
@@ -1922,11 +1944,13 @@ export interface FileRouteTypes {
     | '/rider/analytics'
     | '/rider/bazaar'
     | '/rider/earnings'
+    | '/rider/gigs'
     | '/rider/history'
     | '/rider/incentives'
     | '/rider/more'
     | '/rider/notifications'
     | '/rider/onboarding'
+    | '/rider/pocket'
     | '/rider/profile'
     | '/rider/requests'
     | '/rider/support'
@@ -2128,6 +2152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RiderProfileRouteImport
       parentRoute: typeof RiderRoute
     }
+    '/rider/pocket': {
+      id: '/rider/pocket'
+      path: '/pocket'
+      fullPath: '/rider/pocket'
+      preLoaderRoute: typeof RiderPocketRouteImport
+      parentRoute: typeof RiderRoute
+    }
     '/rider/onboarding': {
       id: '/rider/onboarding'
       path: '/onboarding'
@@ -2161,6 +2192,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/rider/history'
       preLoaderRoute: typeof RiderHistoryRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/gigs': {
+      id: '/rider/gigs'
+      path: '/gigs'
+      fullPath: '/rider/gigs'
+      preLoaderRoute: typeof RiderGigsRouteImport
       parentRoute: typeof RiderRoute
     }
     '/rider/earnings': {
@@ -3459,11 +3497,13 @@ interface RiderRouteChildren {
   RiderAnalyticsRoute: typeof RiderAnalyticsRoute
   RiderBazaarRoute: typeof RiderBazaarRoute
   RiderEarningsRoute: typeof RiderEarningsRoute
+  RiderGigsRoute: typeof RiderGigsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
   RiderIncentivesRoute: typeof RiderIncentivesRoute
   RiderMoreRoute: typeof RiderMoreRoute
   RiderNotificationsRoute: typeof RiderNotificationsRoute
   RiderOnboardingRoute: typeof RiderOnboardingRoute
+  RiderPocketRoute: typeof RiderPocketRoute
   RiderProfileRoute: typeof RiderProfileRoute
   RiderRequestsRoute: typeof RiderRequestsRoute
   RiderSupportRoute: typeof RiderSupportRoute
@@ -3477,11 +3517,13 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderAnalyticsRoute: RiderAnalyticsRoute,
   RiderBazaarRoute: RiderBazaarRoute,
   RiderEarningsRoute: RiderEarningsRoute,
+  RiderGigsRoute: RiderGigsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
   RiderIncentivesRoute: RiderIncentivesRoute,
   RiderMoreRoute: RiderMoreRoute,
   RiderNotificationsRoute: RiderNotificationsRoute,
   RiderOnboardingRoute: RiderOnboardingRoute,
+  RiderPocketRoute: RiderPocketRoute,
   RiderProfileRoute: RiderProfileRoute,
   RiderRequestsRoute: RiderRequestsRoute,
   RiderSupportRoute: RiderSupportRoute,
