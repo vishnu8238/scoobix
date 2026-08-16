@@ -10,6 +10,7 @@ import {
   ONBOARDING_TONE,
 } from "@/lib/manager-api";
 import { useLeads, leadStats } from "@/lib/leads-api";
+import { getDisplayName } from "@/lib/identity-utils";
 
 export const Route = createFileRoute("/manager/")({
   head: () => ({
