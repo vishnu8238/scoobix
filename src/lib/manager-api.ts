@@ -471,7 +471,7 @@ export function useManager() {
         console.info(`[MANAGER_API] Self-healing manager record for user ${authId}`);
         const created = await createRecord<MerchantManager[] | MerchantManager>("merchant_managers", {
           user_id: authId,
-          name: (user?.name || getDisplayName(user || session?.user)) || "Scoobix Manager",
+          name: getManagerDisplayName(user || session?.user),
           email: user?.email || session?.user?.email,
           phone: user?.phone || null,
           status: "active",

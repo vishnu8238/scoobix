@@ -10,7 +10,7 @@ import {
   ONBOARDING_TONE,
 } from "@/lib/manager-api";
 import { useLeads, leadStats } from "@/lib/leads-api";
-import { getDisplayName } from "@/lib/identity-utils";
+import { getManagerDisplayName } from "@/lib/identity-utils";
 
 export const Route = createFileRoute("/manager/")({
   head: () => ({
@@ -38,7 +38,7 @@ function ManagerDashboard() {
             Merchant Manager
           </p>
           <h1 className="font-display text-2xl font-extrabold tracking-tight">
-            {manager?.name || user?.name || "Scoobix Manager"}
+            {getManagerDisplayName(user, manager)}
           </h1>
           {manager?.region && (
             <p className="text-[12px] text-muted-foreground">{manager.region}</p>
