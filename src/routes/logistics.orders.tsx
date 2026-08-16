@@ -102,6 +102,7 @@ function OrderLedger() {
               try {
                 console.log("[LOGISTICS_ORDERS] Seeding directly via SDK client...");
                 const { insforge: sdk } = await import("@/lib/insforge");
+                const { createRecord } = await import("@/lib/insforge-crud");
                 
                 // Construct demo data
                 const zone1Id = "z1110000-0000-0000-0000-000000000001";
@@ -119,9 +120,10 @@ function OrderLedger() {
                     status: "ACTIVE",
                     city: "Vadodara"
                   };
-                  const { data: created, error } = await sdk.database.from("restaurants").insert([rest]).select("id").single();
-                  if (error) throw new Error(`Restaurant creation failed: ${error.message}`);
-                  restaurantId = created?.id || rest.id;
+                  // Use createRecord for retries and normalization
+                  const created = await createRecord<any>("restaurants", rest);
+                  if (!created) throw new Error(`Restaurant creation failed: Empty response`);
+                  restaurantId = created.id || rest.id;
                 }
 
                 // 2. Ensure Customer
