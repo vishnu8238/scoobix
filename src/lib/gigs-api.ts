@@ -1,4 +1,4 @@
-import { listTable, createRecord, patchRecord, deleteRecord, handleResponse } from "./insforge-crud";
+import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-crud";
 import { publishTableChange } from "./realtime-bus";
 import { newUuid } from "./orders-api";
 import { insforge } from "./insforge";
@@ -31,36 +31,19 @@ export type GigParticipant = {
   created_at: string;
 };
 
+const AUTHORITATIVE_TABLE = "delivery_gigs";
+
 export async function fetchGigs(params?: Record<string, any>) {
-  const TABLE = "gigs";
   const { id, ...rest } = params || {};
 
   try {
     let rows: any[] = [];
     if (id) {
-      // PROBE: try 'gigs' first, then 'delivery_gigs'
-      const { data, error, status } = await insforge.database.from(TABLE).select("*").eq("id", id);
-      if (error && (status === 404 || error.message.includes("does not exist"))) {
-        console.warn(`[GIGS_API] Table "gigs" missing, probing "delivery_gigs"...`);
-        const alt = await insforge.database.from("delivery_gigs").select("*").eq("id", id);
-        rows = alt.data || [];
-      } else {
-        rows = data || [];
-      }
+      const { data } = await insforge.database.from(AUTHORITATIVE_TABLE).select("*").eq("id", id);
+      rows = data || [];
     } else {
-      // For lists, we use the candidate discovery in listTable if we had it, 
-      // but here we'll just try 'gigs' and handle the error.
-      try {
-        const data = await listTable<any>(TABLE, rest, { fresh: true, ttl: 0 });
-        rows = Array.isArray(data) ? data : [];
-      } catch (e: any) {
-        if (e.message.includes("does not exist")) {
-           const altData = await listTable<any>("delivery_gigs", rest, { fresh: true, ttl: 0 });
-           rows = Array.isArray(altData) ? altData : [];
-        } else {
-          throw e;
-        }
-      }
+      const data = await listTable<any>(AUTHORITATIVE_TABLE, rest, { fresh: true, ttl: 0 });
+      rows = Array.isArray(data) ? data : [];
     }
     
     // Normalize mapping for UI
@@ -77,7 +60,7 @@ export async function fetchGigs(params?: Record<string, any>) {
       status: r.status
     }));
   } catch (err: any) {
-    console.error(`[GIGS_API] Fetch failed:`, err.message);
+    console.error(`[GIGS_API] Fetch failed for ${AUTHORITATIVE_TABLE}:`, err.message);
     throw err;
   }
 }
@@ -104,45 +87,27 @@ export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   };
 
   try {
-    // Probe candidates
-    const CANDIDATES = ["gigs", "delivery_gigs"];
-    let lastErr: any = null;
-    
-    for (const table of CANDIDATES) {
-      try {
-        const res = await createRecord<Gig>(table, record);
-        if (res) {
-          publishTableChange(table, "insert", res as any);
-          return res;
-        }
-      } catch (e: any) {
-        lastErr = e;
-        if (e.message.includes("does not exist") || e.status === 404) continue;
-        throw e;
-      }
+    const res = await createRecord<Gig>(AUTHORITATIVE_TABLE, record);
+    if (res) {
+      publishTableChange(AUTHORITATIVE_TABLE, "insert", res as any);
+      return res;
     }
-    throw lastErr || new Error("No valid gig table found");
+    throw new Error(`Failed to create gig in ${AUTHORITATIVE_TABLE}`);
   } catch (error: any) {
-    console.error(`[GIGS_API] Create failed:`, error.message);
+    console.error(`[GIGS_API] Create failed for ${AUTHORITATIVE_TABLE}:`, error.message);
     throw error;
   }
 }
 
-
 export async function updateGig(id: string, patch: Partial<Gig>) {
-  const CANDIDATES = ["gigs", "delivery_gigs"];
-  let lastErr: any = null;
-  for (const table of CANDIDATES) {
-    try {
-      const res = await patchRecord<Gig>(table, id, patch as any);
-      if (res) return res;
-    } catch (e: any) {
-      lastErr = e;
-      if (e.message.includes("does not exist") || e.status === 404) continue;
-      throw e;
-    }
+  try {
+    const res = await patchRecord<Gig>(AUTHORITATIVE_TABLE, id, patch as any);
+    if (res) return res;
+    throw new Error(`Gig ${id} not found in ${AUTHORITATIVE_TABLE}`);
+  } catch (error: any) {
+    console.error(`[GIGS_API] Update failed for ${AUTHORITATIVE_TABLE}:`, error.message);
+    throw error;
   }
-  throw lastErr || new Error("Gig not found in any candidate table");
 }
 
 export async function fetchGigParticipants(gigId: string) {
@@ -212,4 +177,3 @@ export async function fetchRiderGigs(riderId: string) {
     return { ...g, enrollment: p };
   });
 }
-
