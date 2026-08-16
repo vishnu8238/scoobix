@@ -65,142 +65,131 @@ function RiderLayout() {
 
   return (
     <RoleGuard allow="rider" transitionLabel="Accessing Rider Portal...">
-      <div className="relative min-h-svh bg-background pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 md:pl-64">
-        
-        {/* Desktop Sidebar */}
-        <aside className="fixed left-0 top-0 hidden h-full w-64 border-r border-border/60 bg-card p-6 md:block">
-          <div className="flex items-center gap-3 px-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">
-              <Bike className="h-6 w-6" />
+      <div className="relative min-h-svh bg-background flex flex-col items-center">
+        {/* Mobile App Container */}
+        <div className="relative w-full min-h-svh max-w-[430px] bg-card shadow-2xl flex flex-col ring-1 ring-border/10 overflow-hidden">
+          
+          {/* Compact Responsive Header */}
+          <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">
+                <Bike className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="font-display text-sm font-black italic tracking-tighter text-primary">SCOOBIX</span>
+                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 leading-none">Rider Portal</p>
+              </div>
             </div>
-            <span className="font-display text-xl font-black italic tracking-tight text-primary">SCOOBIX</span>
-          </div>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setShowSOS(true)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-500 transition active:scale-90"
+                aria-label="Emergency SOS"
+              >
+                <AlertTriangle className="h-5 w-5" />
+              </button>
+              <Link 
+                to="/rider/notifications" 
+                className="relative flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 transition active:scale-90"
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-primary border-2 border-background" />
+              </Link>
+              <Link 
+                to="/rider/profile" 
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 transition active:scale-90 overflow-hidden"
+                aria-label="Profile"
+              >
+                 {user?.avatar ? (
+                   <img src={user.avatar} alt={displayName} className="h-full w-full object-cover" />
+                 ) : (
+                   <User className="h-5 w-5" />
+                 )}
+              </Link>
+            </div>
+          </header>
 
-          <nav className="mt-10 space-y-1">
+          {/* Update Banner */}
+          <AnimatePresence>
+            {showUpdate && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden bg-primary/10"
+              >
+                <div className="flex items-center justify-between px-4 py-2.5 text-[10px] font-bold text-primary">
+                  <div className="flex items-center gap-2">
+                    <Info className="h-3.5 w-3.5" />
+                    <span>App update available.</span>
+                  </div>
+                  <button onClick={() => setShowUpdate(false)} aria-label="Close banner"><X className="h-3.5 w-3.5" /></button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Main Content Area */}
+          <main className="flex-1 w-full overflow-y-auto overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))]">
+            <div className="w-full">
+              <Outlet />
+            </div>
+          </main>
+
+          {/* Fixed Bottom Navigation (Mobile App Style) */}
+          <nav className="fixed bottom-0 left-1/2 z-50 flex h-[calc(4.5rem+env(safe-area-inset-bottom))] w-full max-w-[430px] -translate-x-1/2 items-center justify-around border-t border-border/40 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md px-2 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
             {NAV.map((n) => {
               const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
               return (
                 <Link
                   key={n.to}
                   to={n.to}
+                  aria-label={n.label}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition",
-                    active ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:bg-muted/50"
+                    "relative flex flex-1 flex-col items-center justify-center gap-1.5 transition-all duration-300",
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <n.icon className="h-5 w-5" />
-                  {n.label}
+                  <div className={cn(
+                    "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-300",
+                    active ? "bg-primary/10 shadow-glow text-primary" : "bg-transparent"
+                  )}>
+                    <n.icon className={cn("h-5 w-5", active ? "stroke-[2.5px]" : "stroke-[2px]")} />
+                  </div>
+                  <span className={cn("text-[9px] font-black uppercase tracking-widest", active ? "opacity-100" : "opacity-60")}>
+                    {n.label}
+                  </span>
+                  {active && (
+                    <motion.div 
+                      layoutId="activeNavTab"
+                      className="absolute -bottom-1 h-1 w-4 rounded-full bg-primary" 
+                    />
+                  )}
                 </Link>
               );
             })}
-          </nav>
-
-          <div className="absolute bottom-6 left-6 right-6">
-            <button 
-              onClick={() => logout()}
-              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-rose-500 transition hover:bg-rose-50"
+            <Link
+              to="/rider/more"
+              className={cn(
+                "relative flex flex-1 flex-col items-center justify-center gap-1.5 transition-all duration-300",
+                pathname.startsWith("/rider/more") ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <LogOut className="h-5 w-5" />
-              Sign Out
-            </button>
-          </div>
-        </aside>
-
-        {/* Header (Mobile & Desktop) */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/40 bg-background/80 px-5 backdrop-blur-md">
-          <div className="flex items-center gap-3 md:hidden">
-             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Bike className="h-5 w-5" />
-             </div>
-             <span className="font-display font-black italic tracking-tight text-primary">SCOOBIX</span>
-          </div>
-          
-          <div className="hidden md:block">
-            <h2 className="font-display font-bold text-muted-foreground uppercase tracking-widest text-[10px]">Rider Portal</h2>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowSOS(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-500 transition active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-              aria-label="Emergency SOS"
-            >
-              <AlertTriangle className="h-5 w-5" />
-            </button>
-            <Link 
-              to="/rider/notifications" 
-              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 transition active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              aria-label="Notifications"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary border-2 border-background" />
-            </Link>
-            <Link 
-              to="/rider/profile" 
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 transition active:scale-95 overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              aria-label="Profile"
-            >
-               {user?.avatar ? (
-                 <img src={user.avatar} alt={displayName} className="h-full w-full object-cover" />
-               ) : (
-                 <User className="h-5 w-5" />
-               )}
-            </Link>
-          </div>
-        </header>
-
-        {/* Update Banner */}
-        <AnimatePresence>
-          {showUpdate && (
-            <motion.div 
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="flex items-center justify-between bg-primary/10 px-5 py-2.5 text-[11px] font-bold text-primary">
-                <div className="flex items-center gap-2">
-                  <Info className="h-3.5 w-3.5" />
-                  <span>App update required for best performance</span>
-                </div>
-                <button onClick={() => setShowUpdate(false)} aria-label="Close banner"><X className="h-3.5 w-3.5" /></button>
+              <div className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-300",
+                pathname.startsWith("/rider/more") ? "bg-primary/10 shadow-glow text-primary" : "bg-transparent"
+              )}>
+                <ChevronRight className={cn("h-5 w-5 rotate-90", pathname.startsWith("/rider/more") ? "stroke-[2.5px]" : "stroke-[2px]")} />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Main Content */}
-        <main className="relative mx-auto w-full max-w-5xl">
-          <Outlet />
-        </main>
-
-        {/* Mobile Bottom Navigation Bar */}
-        <nav className="glass fixed bottom-[env(safe-area-inset-bottom,12px)] left-1/2 z-40 flex w-[min(540px,calc(100%-1.5rem))] -translate-x-1/2 items-center justify-around rounded-[2.5rem] p-1.5 shadow-float md:hidden border border-border/60">
-          {NAV.map((n) => {
-            const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
-            return (
-              <Link
-                key={n.to}
-                to={n.to}
-                aria-label={n.label}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "relative flex flex-1 flex-col items-center gap-1 rounded-[1.8rem] py-2.5 text-[9px] font-black uppercase tracking-tighter transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  active ? "bg-primary text-primary-foreground shadow-glow scale-105" : "text-muted-foreground hover:bg-muted/50 active:scale-95",
-                )}
-              >
-                <n.icon className={cn("h-5 w-5 transition-transform duration-300", active ? "scale-110" : "scale-100")} strokeWidth={active ? 2.8 : 2} />
-                <span className="text-[8px]">{n.label}</span>
-                {active && (
-                  <motion.div 
-                    layoutId="activeNavTab"
-                    className="absolute -bottom-1.5 h-1 w-1 rounded-full bg-primary-foreground" 
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+              <span className={cn("text-[9px] font-black uppercase tracking-widest", pathname.startsWith("/rider/more") ? "opacity-100" : "opacity-60")}>
+                More
+              </span>
+            </Link>
+          </nav>
+        </div>
 
         {/* SOS Modal */}
         {showSOS && (

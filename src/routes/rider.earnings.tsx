@@ -39,7 +39,7 @@ function RiderEarnings() {
   };
 
   return (
-    <div className="mx-auto min-h-svh max-w-[520px] pb-24 px-5 pt-7 animate-fade-up">
+    <div className="w-full min-h-svh pb-8 px-4 pt-7 animate-fade-up">
       <header className="mb-6">
         <p className="eyebrow text-primary">Earnings</p>
         <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">Your payouts</h1>

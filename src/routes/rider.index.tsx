@@ -139,7 +139,7 @@ function RiderHome() {
   };
 
   return (
-    <div className="animate-fade-up space-y-6 px-5 pb-8 pt-7">
+    <div className="animate-fade-up space-y-6 px-4 pb-8 pt-7">
       
       {/* Header & Identity */}
       <header className="flex items-center justify-between">

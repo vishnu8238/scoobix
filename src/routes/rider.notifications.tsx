@@ -24,7 +24,7 @@ function RiderNotifs() {
   });
 
   return (
-    <div className="mx-auto min-h-svh max-w-[520px] pb-24">
+    <div className="w-full pb-8">
       <PageHeader title="Notifications" subtitle={unreadCount ? `${unreadCount} unread` : "Trips, payouts & bonuses"} />
       
       {/* Stories / Announcements */}

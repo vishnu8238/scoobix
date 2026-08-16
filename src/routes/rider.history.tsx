@@ -42,7 +42,7 @@ function RiderHistory() {
   );
 
   return (
-    <div className="mx-auto min-h-svh max-w-[520px] pb-24 px-5 pt-7 animate-fade-up">
+    <div className="w-full min-h-svh pb-8 px-4 pt-7 animate-fade-up">
       <header className="mb-6">
         <div className="flex items-center gap-2 text-primary mb-1">
           <History className="h-4 w-4" />
