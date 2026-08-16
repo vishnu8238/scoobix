@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { createClient } from "@insforge/sdk";
 import { publishTableChange } from "./realtime-bus";
 import { TABLE_ZONES, TABLE_SUBZONES } from "./zones-api";
 import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";

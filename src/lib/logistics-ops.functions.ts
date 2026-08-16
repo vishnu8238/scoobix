@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { createClient } from "@insforge/sdk";
 import { publishTableChange } from "./realtime-bus";
 import { newUuid } from "./orders-api";
 import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";
@@ -198,11 +199,11 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
   });
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
-  .validator(z.object({ 
+  .inputValidator(z.object({ 
     data: z.any().optional(),
     accessToken: z.string().optional()
   }))
-  .handler(async ({ input }) => {
+  .handler(async ({ data: input }) => {
     const { accessToken } = input;
     
     // Auth configuration: Use provided token OR read from request headers if available
