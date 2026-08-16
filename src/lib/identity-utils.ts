@@ -70,7 +70,10 @@ export function getDisplayName(user: any): string {
     
     const res = normalize(humanName);
     if (res) return res;
-    return humanName; // Return even if it fails normalize (last resort before empty)
+    
+    // If it's a forbidden word after transformation (e.g. "user@..."), force the prefix as-is
+    // but here we just return the humanName as the fallback
+    return humanName;
   }
 
   return "";
