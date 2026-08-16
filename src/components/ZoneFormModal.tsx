@@ -76,8 +76,11 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         center_lng: boundary.coordinates?.[0]?.[0]?.[0] || 73.1812
       };
 
-      console.log("[ZONE_MODAL] Submitting authoritative zone via InsForge...", submission);
-      const result = await createNewZone({ data: submission as any });
+      const { getAccessToken } = await import("@/lib/insforge");
+      const token = await getAccessToken();
+
+      console.log("[ZONE_MODAL] Submitting zone with explicit token forwarding:", !!token);
+      const result = await createNewZone({ data: { ...submission, accessToken: token } as any });
       
       // Robust response check: InsForge returns the inserted row or an array
       if (!result || (typeof result === 'object' && !result.id && !Array.isArray(result))) {
