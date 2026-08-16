@@ -91,19 +91,22 @@ export const getAccessToken = async () => {
   if (typeof window === "undefined") return null;
   
   try {
+    // Proactively check SDK session memory
     const sdkSession = insforge.auth.session;
     if (sdkSession?.accessToken) {
       console.log("[INSFORGE_AUTH] getAccessToken: using SDK session token");
       return sdkSession.accessToken;
     }
 
-    console.log("[INSFORGE_AUTH] getAccessToken: checking SDK current session...");
-    const { data: { session } } = await insforge.auth.getSession();
-    if (session?.accessToken) {
-      console.log("[INSFORGE_AUTH] getAccessToken: found fresh SDK session token");
-      return session.accessToken;
+    // Attempt authoritative session recovery from SDK
+    console.log("[INSFORGE_AUTH] getAccessToken: memory stale, fetching session...");
+    const { data } = await insforge.auth.getSession();
+    if (data?.session?.accessToken) {
+      console.log("[INSFORGE_AUTH] getAccessToken: recovered SDK session token");
+      return data.session.accessToken;
     }
 
+    // Fallback: Check local storage for known InsForge keys
     const storageKeys = [
       "insforge.auth.token",
       "__insforge_session",
@@ -117,7 +120,7 @@ export const getAccessToken = async () => {
           const parsed = JSON.parse(stored);
           const token = parsed?.accessToken || parsed?.access_token || parsed?.session?.accessToken || parsed?.session?.access_token;
           if (token) {
-            console.log(`[INSFORGE_AUTH] getAccessToken: using fallback storage token from ${key}`);
+            console.log(`[INSFORGE_AUTH] getAccessToken: recovered token from ${key}`);
             return token;
           }
         }
