@@ -101,7 +101,18 @@ function OrderLedger() {
             onClick={async () => {
               setIsSeeding(true);
               try {
-                const res = await seedDemoOrders({ data: {} });
+                const { getAccessToken } = await import("@/lib/insforge");
+                const token = await getAccessToken();
+                
+                if (!token) {
+                  throw new Error("No active session found. Please re-authenticate.");
+                }
+
+                console.log("[LOGISTICS_ORDERS] Seeding with token presence:", !!token);
+                const res = await seedDemoOrders({ 
+                  data: {} 
+                });
+                
                 if (res.seeded > 0) {
                   toast.success(`Seeded ${res.seeded} new demo orders`);
                 } else if (res.existing > 0) {

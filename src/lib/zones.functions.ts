@@ -115,7 +115,8 @@ export const createNewZone = createServerFn({ method: "POST" })
     status: z.enum(["ACTIVE", "DISABLED", "ARCHIVED"]).default("ACTIVE"),
     pickup_radius_km: z.number().nullable().optional().default(1),
     max_delivery_distance_km: z.number().nullable().optional().default(4),
-    boundary: z.any().optional()
+    boundary: z.any().optional(),
+    accessToken: z.string().optional()
   }))
   .handler(async ({ data, context }) => {
     const { insforge } = context;

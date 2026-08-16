@@ -186,11 +186,18 @@ export async function handleResponse<T>(promise: Promise<any>, method: string, t
     
     // Auth Guard: handle unauthenticated states gracefully
     if (!res || (error && (status === 401 || status === 403 || (error.message && (error.message.toLowerCase().includes("no token") || error.message.toLowerCase().includes("invalid token") || error.message.toLowerCase().includes("unauthorized") || error.message.toLowerCase().includes("permission denied")))))) {
-      // If we are here, we check for a session in context if on server, or SDK if on client
-      const sdkSession = insforge.auth.session;
-      const hasToken = !!sdkSession?.accessToken;
+      // PROBE auth state at the moment of failure for diagnostics
+      let diagnosticToken = null;
+      if (typeof window !== "undefined") {
+        try {
+          const { getAccessToken } = await import("./insforge");
+          diagnosticToken = await getAccessToken();
+        } catch {}
+      }
 
-      if (method === "GET" && !hasToken && typeof window !== "undefined") {
+      console.error(`[DB_AUTH_ERROR] ${method} ${table} failed. Status: ${status}. SDK Session: ${!!insforge.auth.session?.accessToken}. Diagnostic Token: ${!!diagnosticToken}. Error:`, error?.message);
+
+      if (method === "GET" && !insforge.auth.session?.accessToken && typeof window !== "undefined") {
         // Log to diagnostics but return empty for smooth UI lists
         console.warn(`[DB_AUTH_SILENT] Unauthorized GET ${table} (Client). Returning empty.`);
         return [] as unknown as T;
