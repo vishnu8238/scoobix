@@ -283,7 +283,7 @@ export function publishTableChange(table, op, row) {
         if (table === "restaurants")
             add("restaurant", id);
         add("restaurant", r.restaurant_id);
-        if (table === "drivers")
+        if (table === "drivers" || table === "rider_gig_enrollments")
             add("driver", id);
         add("driver", r.driver_id);
         if (table === "support_tickets")
