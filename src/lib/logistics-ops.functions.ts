@@ -199,14 +199,35 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
   });
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
-  .middleware([requireInsForgeAuth])
   .inputValidator(z.object({ 
     data: z.any().optional(),
     accessToken: z.string().optional()
   }))
-  .handler(async ({ context }) => {
-    const { insforge } = context;
-    console.log("[SEED] Starting idempotent demo seeding via context insforge...");
+  .handler(async ({ data: input, context }) => {
+    const { accessToken } = input;
+    
+    // Auth configuration
+    const INSFORGE_URL = process.env['VITE_INSFORGE_URL'] || process.env['INSFORGE_URL'] || "https://awvs3seh.us-east.insforge.app";
+    const INSFORGE_ANON_KEY = process.env['VITE_INSFORGE_ANON_KEY'] || process.env['INSFORGE_ANON_KEY'] || "sb_publishable_FIPSldMe55J2LJ_hczRqag_orYaOaTT";
+    
+    let insforgeClient = (context as any).insforge;
+
+    if (accessToken) {
+      console.log("[SEED] Using explicitly provided accessToken for seeding");
+      const client = createClient({
+        baseUrl: INSFORGE_URL,
+        anonKey: INSFORGE_ANON_KEY,
+      });
+      (client.auth as any).tokenManager.setAccessToken(accessToken);
+      insforgeClient = client;
+    }
+
+    const insforge = insforgeClient;
+    if (!insforge) {
+      throw new Error("Unauthorized: No authenticated client available (Missing token)");
+    }
+
+    console.log("[SEED] Starting idempotent demo seeding via authoritative client...");
     
     const city1Id = "c1110000-0000-0000-0000-000000000001";
     const zone1Id = "z1110000-0000-0000-0000-000000000001";

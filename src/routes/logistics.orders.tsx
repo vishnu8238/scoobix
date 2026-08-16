@@ -108,9 +108,12 @@ function OrderLedger() {
                   throw new Error("No active session found. Please re-authenticate.");
                 }
 
-                console.log("[LOGISTICS_ORDERS] Seeding with token presence:", !!token);
+                console.log("[LOGISTICS_ORDERS] Seeding with explicit token forwarding:", !!token);
                 const res = await seedDemoOrders({ 
-                  data: {} 
+                  data: {
+                    data: {},
+                    accessToken: token
+                  }
                 });
                 
                 if (res.seeded > 0) {

@@ -110,21 +110,26 @@ export const getAccessToken = async () => {
     const storageKeys = [
       "insforge.auth.token",
       "__insforge_session",
-      "scoobix_auth_token"
+      "scoobix_auth_token",
+      `sb-${INSFORGE_PROJECT_ID}-auth-token`
     ];
 
-    for (const key of storageKeys) {
-      try {
-        const stored = window.localStorage.getItem(key);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const token = parsed?.accessToken || parsed?.access_token || parsed?.session?.accessToken || parsed?.session?.access_token;
-          if (token) {
-            console.log(`[INSFORGE_AUTH] getAccessToken: recovered token from ${key}`);
-            return token;
+    // Scan all localStorage keys for anything that looks like a token
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && (k.includes("auth-token") || k.includes("session") || k.includes("insforge"))) {
+        try {
+          const stored = window.localStorage.getItem(k);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            const token = parsed?.accessToken || parsed?.access_token || parsed?.session?.accessToken || parsed?.session?.access_token || (typeof parsed === 'string' ? parsed : null);
+            if (token && typeof token === 'string' && token.length > 50) {
+              console.log(`[INSFORGE_AUTH] getAccessToken: recovered token from dynamic key ${k}`);
+              return token;
+            }
           }
-        }
-      } catch { /* skip */ }
+        } catch { /* skip */ }
+      }
     }
   } catch (e) {
     console.warn("[INSFORGE_AUTH] getAccessToken error:", e);

@@ -108,7 +108,6 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
   });
 
 export const createNewZone = createServerFn({ method: "POST" })
-  .middleware([requireInsForgeAuth])
   .inputValidator(z.object({
     name: z.string(),
     city: z.string().default("Vadodara"),
@@ -120,7 +119,23 @@ export const createNewZone = createServerFn({ method: "POST" })
     accessToken: z.string().optional()
   }))
   .handler(async ({ data, context }) => {
-    const { insforge } = context;
+    const { accessToken } = data;
+    let insforgeClient = (context as any).insforge;
+
+    if (accessToken) {
+      console.log("[ZONES_SERVER] Using explicitly provided accessToken for zone creation");
+      const client = createClient({
+        baseUrl: INSFORGE_URL,
+        anonKey: INSFORGE_ANON_KEY,
+      });
+      (client.auth as any).tokenManager.setAccessToken(accessToken);
+      insforgeClient = client;
+    }
+
+    const insforge = insforgeClient;
+    if (!insforge) {
+      throw new Error("Unauthorized: No authenticated client available for zone creation");
+    }
     // InsForge / PostgREST compatibility: check if table is accessible
     const boundary = (data.boundary?.type === "Polygon" && Array.isArray(data.boundary.coordinates?.[0]) && data.boundary.coordinates[0].length >= 3) 
       ? data.boundary 
