@@ -76,15 +76,17 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         center_lng: boundary.coordinates?.[0]?.[0]?.[0] || 73.1812
       };
 
-      const { getAccessToken } = await import("@/lib/insforge");
-      const token = await getAccessToken();
+      const { insforge: sdk } = await import("@/lib/insforge");
 
-      console.log("[ZONE_MODAL] Submitting zone with explicit token forwarding:", !!token);
-      const result = await createNewZone({ data: { ...submission, accessToken: token } as any });
+      console.log("[ZONE_MODAL] Submitting zone directly via SDK client...");
+      const { data: result, error } = await sdk.database
+        .from("logistics_zones")
+        .insert([submission])
+        .select()
+        .single();
       
-      // Robust response check: InsForge returns the inserted row or an array
-      if (!result || (typeof result === 'object' && !result.id && !Array.isArray(result))) {
-        throw new Error("Zone creation failed: Invalid response from database.");
+      if (error) {
+        throw new Error(error.message || "Failed to create zone (Unauthorized or RLS)");
       }
       
       toast.success("Zone created and verified in database");
