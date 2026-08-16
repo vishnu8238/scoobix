@@ -3,6 +3,7 @@ import { z } from "zod";
 import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
 import { publishTableChange } from "./realtime-bus";
 import { TABLE_ZONES, TABLE_SUBZONES } from "./zones-api";
+import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";
 
 const HEADERS = {
   apikey: INSFORGE_ANON_KEY,
@@ -106,6 +107,7 @@ export const seedVadodaraStructure = createServerFn({ method: "POST" })
   });
 
 export const createNewZone = createServerFn({ method: "POST" })
+  .middleware([requireInsForgeAuth])
   .inputValidator(z.object({
     name: z.string(),
     city: z.string().default("Vadodara"),
@@ -115,7 +117,8 @@ export const createNewZone = createServerFn({ method: "POST" })
     max_delivery_distance_km: z.number().nullable().optional().default(4),
     boundary: z.any().optional()
   }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { insforge } = context;
     // InsForge / PostgREST compatibility: check if table is accessible
     const boundary = (data.boundary?.type === "Polygon" && Array.isArray(data.boundary.coordinates?.[0]) && data.boundary.coordinates[0].length >= 3) 
       ? data.boundary 
@@ -146,22 +149,16 @@ export const createNewZone = createServerFn({ method: "POST" })
 
     console.log("[ZONES_SERVER] Creating zone with payload:", JSON.stringify(payload));
 
-    const res = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}`, {
-      method: "POST",
-      headers: {
-        ...HEADERS,
-        "Prefer": "return=representation"
-      },
-      body: JSON.stringify(payload)
-    });
+    const { data: created, error } = await insforge.database
+      .from(TABLE_ZONES)
+      .insert([payload])
+      .select()
+      .single();
     
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("InsForge Error:", errText);
-      throw new Error(errText || "Failed to create zone");
+    if (error) {
+      console.error("InsForge Database Error:", error);
+      throw new Error(error.message || "Failed to create zone");
     }
-    
-    const created = await res.json();
     const row = Array.isArray(created) ? created[0] : created;
     if (row) {
       publishTableChange(TABLE_ZONES, "insert", row);
@@ -170,13 +167,15 @@ export const createNewZone = createServerFn({ method: "POST" })
   });
 
 export const createNewSubzone = createServerFn({ method: "POST" })
+  .middleware([requireInsForgeAuth])
   .inputValidator(z.object({
     zone_id: z.string(),
     name: z.string(),
     status: z.enum(["ACTIVE", "DISABLED"]).default("ACTIVE"),
     boundary: z.any().optional()
   }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { insforge } = context;
     const payload = {
       zone_id: data.zone_id,
       name: data.name,
@@ -186,22 +185,18 @@ export const createNewSubzone = createServerFn({ method: "POST" })
     
     console.log("[ZONES_SERVER] Creating subzone with payload:", JSON.stringify(payload));
 
-    const res = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}`, {
-      method: "POST",
-      headers: {
-        ...HEADERS,
-        "Prefer": "return=representation"
-      },
-      body: JSON.stringify(payload)
-    });
+    const { data: created, error } = await insforge.database
+      .from(TABLE_SUBZONES)
+      .insert([payload])
+      .select()
+      .single();
     
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || "Failed to create subzone");
+    if (error) {
+      throw new Error(error.message || "Failed to create subzone");
     }
-    
-    const created = await res.json();
     const row = Array.isArray(created) ? created[0] : created;
-    publishTableChange(TABLE_SUBZONES, "insert", row);
+    if (row) {
+      publishTableChange(TABLE_SUBZONES, "insert", row);
+    }
     return row;
   });
