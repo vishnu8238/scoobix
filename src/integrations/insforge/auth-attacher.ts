@@ -3,10 +3,11 @@ import { getAccessToken } from '@/lib/insforge'
 
 export const attachInsForgeAuth = createMiddleware({ type: 'function' }).client(
   async ({ next }) => {
-    // Attempt to get the current valid session token
+    // Authoritative token resolution for EVERY server function call
     const token = await getAccessToken();
-    console.log('[INSFORGE_AUTH_ATTACH] Attaching token to server function call:', !!token);
+    console.log('[INSFORGE_AUTH_ATTACH] Propagation Check: Token Present =', !!token);
     
+    // Explicitly set the Authorization header which requireInsForgeAuth expects
     return next({
       headers: token ? { 
         Authorization: `Bearer ${token}` 
