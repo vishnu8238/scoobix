@@ -13,8 +13,10 @@ interface GigCardProps {
 }
 
 export function GigCard({ gig, onEdit, enrollmentCount = 0 }: GigCardProps) {
-  const start = parseISO(gig.start_time);
-  const end = parseISO(gig.end_time);
+  const startStr = gig.start_time || new Date().toISOString();
+  const endStr = gig.end_time || new Date().toISOString();
+  const start = parseISO(startStr);
+  const end = parseISO(endStr);
   const duration = differenceInHours(end, start);
   const maxEnrollment = gig.capacity || 50;
   const progress = (enrollmentCount / maxEnrollment) * 100;
