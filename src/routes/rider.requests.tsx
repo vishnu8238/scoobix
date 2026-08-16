@@ -131,7 +131,7 @@ function RiderRequestsPage() {
   }, [gigs, enrolledIds, tab, selectedDate]);
 
   return (
-    <div className="mx-auto min-h-svh max-w-[520px] pb-24">
+    <div className="w-full min-h-svh pb-8">
       <PageHeader title="Gigs" subtitle="Schedule your delivery shifts" />
 
       {/* Tab Switcher */}

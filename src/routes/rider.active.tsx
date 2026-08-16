@@ -256,7 +256,7 @@ function RiderActive() {
   }
 
   return (
-    <div className="mx-auto max-w-[520px] pb-32 animate-fade-up">
+    <div className="w-full pb-8 animate-fade-up">
       {/* Dynamic Header */}
       <div className={cn(
         "relative overflow-hidden p-8 text-white transition-colors duration-500",
@@ -286,7 +286,7 @@ function RiderActive() {
         </div>
       </div>
 
-      <div className="-mt-6 space-y-4 px-5">
+      <div className="-mt-6 space-y-4 px-4">
         {/* Map Preview with Pathing */}
         <section className="h-64 overflow-hidden rounded-[2.5rem] bg-muted shadow-card ring-1 ring-border/60 relative">
            <GoogleMap 
