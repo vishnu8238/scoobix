@@ -108,7 +108,7 @@ function OrderLedger() {
                 const now = new Date().toISOString();
                 
                 // 1. Ensure Restaurant
-                const { data: restData } = await sdk.database.from("restaurants").select("id").eq("metadata->>demo_tag", "logistics_test_v3").limit(1);
+                const { data: restData } = await sdk.database.from("restaurants").select("id").eq("name", "Scoobix Demo Kitchen").limit(1);
                 let restaurantId = restData?.[0]?.id;
                 
                 if (!restaurantId) {
@@ -118,8 +118,7 @@ function OrderLedger() {
                     address: "123 Logistics Hub, Vadodara",
                     status: "ACTIVE",
                     zone_id: zone1Id,
-                    city: "Vadodara",
-                    metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
+                    city: "Vadodara"
                   };
                   const { data: created, error } = await sdk.database.from("restaurants").insert([rest]).select("id").single();
                   if (error) throw new Error(`Restaurant creation failed: ${error.message}`);
@@ -127,7 +126,7 @@ function OrderLedger() {
                 }
 
                 // 2. Ensure Customer
-                const { data: custData } = await sdk.database.from("users").select("id").eq("metadata->>demo_tag", "logistics_test_v3").limit(1);
+                const { data: custData } = await sdk.database.from("users").select("id").eq("email", "demo.customer@scoobix.test").limit(1);
                 let customerId = custData?.[0]?.id;
                 
                 if (!customerId) {
@@ -135,8 +134,7 @@ function OrderLedger() {
                     id: crypto.randomUUID(),
                     name: "Demo Customer",
                     role: "customer",
-                    email: "demo.customer@scoobix.test",
-                    metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
+                    email: "demo.customer@scoobix.test"
                   };
                   const { data: created, error } = await sdk.database.from("users").insert([cust]).select("id").single();
                   if (error) throw new Error(`Customer creation failed: ${error.message}`);
@@ -149,7 +147,7 @@ function OrderLedger() {
                 
                 for (let i = 0; i < 5; i++) {
                   const demoRef = `demo_order_v5_${i}`;
-                  const { data: existing } = await sdk.database.from("orders").select("id").eq("metadata->>demo_ref", demoRef).limit(1);
+                  const { data: existing } = await sdk.database.from("orders").select("id").eq("delivery_address", `123 Demo Street, Vadodara #${i}`).limit(1);
                   
                   if (existing?.length) continue;
 
@@ -161,12 +159,11 @@ function OrderLedger() {
                     zone_id: zone1Id,
                     total_price: 250 + (i * 50),
                     created_at: now,
-                    metadata: { is_demo: true, demo_tag: "logistics_test_v5", demo_ref: demoRef },
                     items: {
                       lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
                       meta: { restaurantName: "Scoobix Demo Kitchen", addressLine: "123 Demo St" }
                     },
-                    delivery_address: "123 Demo Street, Vadodara",
+                    delivery_address: `123 Demo Street, Vadodara #${i}`,
                     payment_method: "CASH",
                     payment_status: i % 2 === 0 ? "PAID" : "PENDING"
                   };
@@ -270,7 +267,6 @@ type DemoRestaurantInsert = {
   status: string;
   zone_id: string;
   city: string;
-  metadata: { is_demo: true; demo_tag: string };
 };
 
 const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];

@@ -68,7 +68,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
             id: CITY_1_ID,
             name: fallbackCityName,
             status: "ACTIVE",
-            metadata: { demo_tag: "logistics_test_v5" }
+            // metadata removed
           }, { onConflict: 'id' });
           
           result.diagnostics.push({ 
@@ -90,7 +90,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
             city_id: CITY_1_ID,
             name: "Main Zone",
             status: "ACTIVE",
-            metadata: { demo_tag: "logistics_test_v5" }
+            // metadata removed
           }, { onConflict: 'id' });
           
           result.diagnostics.push({ 
@@ -144,7 +144,7 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
         city_id: "c1110000-0000-0000-0000-000000000001",
         zone_id: "z1110000-0000-0000-0000-000000000001",
         capacity: 1,
-        metadata: { is_test: true, timestamp: now.toISOString() }
+        // metadata removed
       };
 
       console.log(`[GIG_TEST] Inserting into "${TABLE}"...`);
@@ -214,7 +214,7 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         city_id: city1Id,
         zone_id: zone1Id,
         capacity: 10,
-        metadata: { is_demo: true },
+        // metadata removed
         created_at: new Date().toISOString()
       },
       {
@@ -229,7 +229,7 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         city_id: city1Id,
         zone_id: zone1Id,
         capacity: 15,
-        metadata: { is_demo: true },
+        // metadata removed
         created_at: new Date().toISOString()
       },
       {
@@ -244,7 +244,7 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         city_id: city1Id,
         zone_id: zone1Id,
         capacity: 8,
-        metadata: { is_demo: true },
+        // metadata removed
         created_at: new Date().toISOString()
       }
     ];
@@ -261,7 +261,7 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         items: { lines: [{ name: "Demo Pizza", qty: 1, price: 400 }] },
         payment_status: "PAID",
         pickup_address: "Scoobix Demo Kitchen, Vadodara",
-        metadata: { is_demo: true }
+        // metadata removed
       },
       {
         id: "d922ca54-450b-4b50-af0a-6cd58acf00d5",
@@ -274,7 +274,7 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         items: { lines: [{ name: "Demo Burger Meal", qty: 2, price: 160 }] },
         payment_status: "PAID",
         pickup_address: "Scoobix Demo Kitchen, Vadodara",
-        metadata: { is_demo: true }
+        // metadata removed
       },
       {
         id: "c811ba54-340a-3a50-bf0b-5cd48acf99c4",
@@ -287,7 +287,7 @@ export const getLogisticsDemoData = createServerFn({ method: "GET" })
         items: { lines: [{ name: "Demo Family Pack", qty: 1, price: 850 }] },
         payment_status: "PENDING",
         pickup_address: "Scoobix Demo Kitchen, Vadodara",
-        metadata: { is_demo: true }
+        // metadata removed
       }
     ];
 
