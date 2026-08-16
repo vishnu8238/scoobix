@@ -129,7 +129,7 @@ export const getAccessToken = async () => {
 
   console.warn("[INSFORGE_AUTH] getAccessToken: NO TOKEN FOUND");
   return null;
-
+};
 
 // Mock/Stub exports for missing members reported in build errors
 export const addonsForDish = async (...args: any[]): Promise<any[]> => [];
