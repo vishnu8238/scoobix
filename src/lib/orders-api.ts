@@ -217,8 +217,9 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     const res = await fetch(`${rec("restaurants")}?id=eq.${input.restaurantId}&select=latitude,longitude,address`, { headers });
     const data = await res.json();
     if (data?.[0]) {
-      if (!zoneId) zoneId = data[0].zone_id;
-      if (!subzoneId) subzoneId = data[0].subzone_id;
+      // zone_id and subzone_id removed from restaurants schema
+      if (!zoneId) zoneId = null;
+      if (!subzoneId) subzoneId = null;
       pickupLat = data[0].latitude;
       pickupLng = data[0].longitude;
       pickupAddr = data[0].address;
