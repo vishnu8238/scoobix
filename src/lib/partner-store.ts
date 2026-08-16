@@ -49,9 +49,13 @@ export async function getRestaurantForUser(userId: string): Promise<RestaurantRo
   const hit = cache.get(userId);
   if (hit) return hit;
   
-  // Try finding as owner first.
-  const ownerRows = await listTable<RestaurantRow>("restaurants", { owner_id: `eq.${userId}`, limit: 1 });
-  const row = ownerRows[0] || null;
+  // AUTHORITATIVE PARTNER HANDOFF: Resolve by owner_id (assigned during manager onboarding)
+  const rows = await listTable<RestaurantRow>("restaurants", { 
+    owner_id: `eq.${userId}`,
+    limit: 1 
+  }, { fresh: true });
+  
+  const row = rows[0] || null;
   if (row?.id) cache.set(userId, row);
   return row;
 }
