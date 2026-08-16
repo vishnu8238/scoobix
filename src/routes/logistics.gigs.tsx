@@ -112,11 +112,12 @@ function LogisticsGigs() {
       ];
 
       for (const demo of demoGigs) {
-        const existing = await listTable("gigs", { id: `eq.${demo.id}` });
+        const existing = await fetchGigs({ id: demo.id });
         if (!existing || existing.length === 0) {
-          await createRecord("gigs", demo);
+          await createGig(demo);
         }
       }
+
     } catch (e) {
       console.warn("[GIGS_PAGE] Demo seeding skipped/failed:", e);
     }

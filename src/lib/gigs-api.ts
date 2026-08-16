@@ -174,9 +174,8 @@ export async function fetchRiderGigs(riderId: string) {
   if (!participations.length) return [];
   
   const gigIds = participations.map(p => p.gig_id);
-  // Ideally use .in filter if SDK supports it, or individual fetches
   const gigs = await Promise.all(
-    gigIds.map(id => listTable<Gig>("gigs", { id: `eq.${id}`, limit: 1 }).then(rows => rows[0]))
+    gigIds.map(id => fetchGigs({ id }).then(rows => rows[0]))
   );
   
   return gigs.filter(Boolean).map(g => {
@@ -184,3 +183,4 @@ export async function fetchRiderGigs(riderId: string) {
     return { ...g, enrollment: p };
   });
 }
+
