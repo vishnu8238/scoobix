@@ -52,6 +52,7 @@ async function withRetry(table, fn) {
         const isSchemaError = msg.includes("does not exist") ||
             msg.includes("undefined_table") ||
             msg.includes("undefined_column") ||
+            msg.includes("not found") ||
             msg.includes("42p01") || // Postgres relation does not exist code
             msg.includes("42703"); // Postgres undefined column code
         if (isSchemaError) {
@@ -173,19 +174,27 @@ export async function handleResponse(promise, method, table) {
         const res = await promise;
         const { error, status, statusText } = res || {};
         // Auth Guard: handle unauthenticated states gracefully
-        if (!res || (error && (status === 401 || (error.message && error.message.toLowerCase().includes("no token"))))) {
-            const isBrowser = typeof window !== "undefined";
-            // CRITICAL: Always check the SDK session directly here for the most current state
-            const session = insforge.auth.session;
-            const hasToken = !!session?.accessToken;
-            if (method === "GET" && !hasToken && isBrowser) {
-                // Log to diagnostics but return empty for smooth UI
+        if (!res || (error && (status === 401 || status === 403 || (error.message && (error.message.toLowerCase().includes("no token") || error.message.toLowerCase().includes("invalid token") || error.message.toLowerCase().includes("unauthorized") || error.message.toLowerCase().includes("permission denied")))))) {
+            // PROBE auth state at the moment of failure for diagnostics
+            let diagnosticToken = null;
+            if (typeof window !== "undefined") {
+                try {
+                    const { getAccessToken } = await import("./insforge");
+                    diagnosticToken = await getAccessToken();
+                }
+                catch { }
+            }
+            console.error(`[DB_AUTH_ERROR] ${method} ${table} failed. Status: ${status}. SDK Session: ${!!insforge.auth.session?.accessToken}. Diagnostic Token: ${!!diagnosticToken}. Error:`, error?.message);
+            if (method === "GET" && !insforge.auth.session?.accessToken && typeof window !== "undefined") {
+                // Log to diagnostics but return empty for smooth UI lists
                 console.warn(`[DB_AUTH_SILENT] Unauthorized GET ${table} (Client). Returning empty.`);
                 return [];
             }
-            // If we are here, either it's a write (must fail) or we're on the server
-            const authErr = new HttpError(status || 401, error?.message || "Unauthorized: No token provided");
+            // Authoritative failure for writes or when explicit seeding/ops are intended
+            const authErr = new HttpError(status || 401, error?.message || "Unauthorized: Invalid or missing token");
             authErr.isAuthError = true;
+            authErr.insforge_status = status;
+            authErr.details = error?.details;
             throw authErr;
         }
         recordMetric({

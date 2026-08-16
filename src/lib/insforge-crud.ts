@@ -56,6 +56,7 @@ async function withRetry<T>(table: string, fn: () => Promise<T>): Promise<T> {
     const isSchemaError = msg.includes("does not exist") || 
                          msg.includes("undefined_table") || 
                          msg.includes("undefined_column") ||
+                         msg.includes("not found") ||
                          msg.includes("42p01") || // Postgres relation does not exist code
                          msg.includes("42703");   // Postgres undefined column code
 

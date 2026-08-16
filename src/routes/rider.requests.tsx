@@ -31,7 +31,7 @@ function RiderRequestsPage() {
   const [busy, setBusy] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
-  const version = useTableVersion(["gig_participants", "gigs"]);
+  const version = useTableVersion(["rider_gig_enrollments", "gigs"]);
   const riderId = user?.id;
 
   const loadData = useCallback(async () => {
@@ -43,7 +43,7 @@ function RiderRequestsPage() {
       const [gigsData, participantsData] = await Promise.all([
         fetchGigs({ status: "in.(ACTIVE,SCHEDULED,COMPLETED)" }),
         riderId 
-          ? listTable<any>("gig_participants", { rider_id: `eq.${riderId}` }, { fresh: true, ttl: 0 })
+          ? listTable<any>("rider_gig_enrollments", { rider_id: `eq.${riderId}` }, { fresh: true, ttl: 0 })
           : Promise.resolve([])
       ]);
       
@@ -232,12 +232,12 @@ function RiderRequestsPage() {
 
 function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolean; onAction: (a: 'enroll' | 'cancel') => void; busy: boolean }) {
   const [participantCount, setParticipantCount] = useState<number>(0);
-  const version = useTableVersion(["gig_participants"]);
+  const version = useTableVersion(["rider_gig_enrollments"]);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const rows = await listTable("gig_participants", { gig_id: `eq.${gig.id}` });
+        const rows = await listTable("rider_gig_enrollments", { gig_id: `eq.${gig.id}` });
         setParticipantCount(rows.length);
       } catch (e) {}
     };

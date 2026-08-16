@@ -21,13 +21,13 @@ function LogisticsGigDetails() {
   const [gig, setGig] = useState<any>(null);
   const [participants, setParticipants] = useState<any[]>([]);
   const [tab, setTab] = useState<"overview" | "riders" | "capacity">("overview");
-  const version = useTableVersion(["gigs", "gig_participants"]);
+  const version = useTableVersion(["gigs", "rider_gig_enrollments"]);
 
   const load = useCallback(async () => {
     setLoading(true);
     const [gRows, pRows] = await Promise.all([
       listTable("gigs", { id: `eq.${gigId}`, limit: 1 }),
-      listTable("gig_participants", { gig_id: `eq.${gigId}`, limit: 200 }),
+      listTable("rider_gig_enrollments", { gig_id: `eq.${gigId}`, limit: 200 }),
     ]);
     
     if (gRows[0]) setGig(gRows[0]);
@@ -125,7 +125,7 @@ function LogisticsGigDetails() {
                     <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center font-bold">R</div>
                     <div>
                       <p className="text-sm font-bold">Rider {p.rider_id.slice(0,8)}</p>
-                      <p className="text-[10px] text-muted-foreground">Joined {new Date(p.joined_at).toLocaleTimeString()}</p>
+                      <p className="text-[10px] text-muted-foreground">Joined {new Date(p.created_at).toLocaleTimeString()}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6">

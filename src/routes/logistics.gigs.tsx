@@ -55,7 +55,7 @@ function LogisticsGigs() {
   const [zone, setZone] = useState("all");
 
   // Real-time sync
-  const version = useTableVersion(["gigs", "gig_participants"]);
+  const version = useTableVersion(["gigs", "rider_gig_enrollments"]);
 
   const seedDemos = useCallback(async () => {
     try {

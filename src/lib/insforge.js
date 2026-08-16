@@ -73,42 +73,53 @@ if (typeof window !== "undefined") {
  * Returns the cached value immediately if available.
  */
 export const getAccessToken = async () => {
-    // 1. Authoritative check: current SDK session memory
-    const sdkSession = insforge.auth.session;
-    if (sdkSession?.accessToken)
-        return sdkSession.accessToken;
-    // 2. Authorization fallback: browser local storage (SDK might have lost its in-memory state)
-    if (typeof window !== "undefined") {
-        try {
-            // The InsForge SDK uses this key format by default
-            const stored = window.localStorage.getItem("insforge.auth.token");
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (parsed?.access_token)
-                    return parsed.access_token;
-            }
-            // Secondary fallback: search all keys for something that looks like an access token
-            for (let i = 0; i < window.localStorage.length; i++) {
-                const key = window.localStorage.key(i);
-                if (key?.includes("auth") || key?.includes("token")) {
-                    const val = window.localStorage.getItem(key);
-                    if (val && val.includes("access_token")) {
-                        const parsed = JSON.parse(val);
-                        if (parsed.access_token)
-                            return parsed.access_token;
-                        if (parsed.session?.access_token)
-                            return parsed.session.access_token;
+    if (typeof window === "undefined")
+        return null;
+    try {
+        // Proactively check SDK session memory
+        const sdkSession = insforge.auth.session;
+        if (sdkSession?.accessToken) {
+            console.log("[INSFORGE_AUTH] getAccessToken: using SDK session token");
+            return sdkSession.accessToken;
+        }
+        // Attempt authoritative session recovery from SDK
+        console.log("[INSFORGE_AUTH] getAccessToken: memory stale, fetching session...");
+        const { data } = await insforge.auth.getSession();
+        if (data?.session?.accessToken) {
+            console.log("[INSFORGE_AUTH] getAccessToken: recovered SDK session token");
+            return data.session.accessToken;
+        }
+        // Fallback: Check local storage for known InsForge keys
+        const storageKeys = [
+            "insforge.auth.token",
+            "__insforge_session",
+            "scoobix_auth_token",
+            `sb-${INSFORGE_PROJECT_ID}-auth-token`
+        ];
+        // Scan all localStorage keys for anything that looks like a token
+        for (let i = 0; i < window.localStorage.length; i++) {
+            const k = window.localStorage.key(i);
+            if (k && (k.includes("auth-token") || k.includes("session") || k.includes("insforge"))) {
+                try {
+                    const stored = window.localStorage.getItem(k);
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        const token = parsed?.accessToken || parsed?.access_token || parsed?.session?.accessToken || parsed?.session?.access_token || (typeof parsed === 'string' ? parsed : null);
+                        if (token && typeof token === 'string' && token.length > 50) {
+                            console.log(`[INSFORGE_AUTH] getAccessToken: recovered token from dynamic key ${k}`);
+                            return token;
+                        }
                     }
                 }
+                catch { /* skip */ }
             }
         }
-        catch { /* ignore */ }
     }
-    // 3. Last resort: hydrate from server or trigger refresh
-    if (!cachedAccessToken && typeof window !== "undefined") {
-        await ensureAuthHydrated();
+    catch (e) {
+        console.warn("[INSFORGE_AUTH] getAccessToken error:", e);
     }
-    return cachedAccessToken || sdkSession?.accessToken || null;
+    console.warn("[INSFORGE_AUTH] getAccessToken: NO TOKEN FOUND");
+    return null;
 };
 // Mock/Stub exports for missing members reported in build errors
 export const addonsForDish = async (...args) => [];
