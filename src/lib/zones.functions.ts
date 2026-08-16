@@ -116,25 +116,26 @@ export const createNewZone = createServerFn({ method: "POST" })
     pickup_radius_km: z.number().nullable().optional().default(1),
     max_delivery_distance_km: z.number().nullable().optional().default(4),
     boundary: z.any().optional(),
-    accessToken: z.string().optional()
+    accessToken: z.string()
   }))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data }) => {
     const { accessToken } = data;
-    let insforgeClient = (context as any).insforge;
+    
+    console.log("[ZONES_SERVER] Constructing authenticated server client from explicit token...");
+    const insforge = createClient({
+      baseUrl: INSFORGE_URL,
+      anonKey: INSFORGE_ANON_KEY,
+    });
+    
+    // Authoritative Token Injection
+    (insforge.auth as any).tokenManager.setAccessToken(accessToken);
+    (insforge.auth as any).session = { accessToken };
 
-    if (accessToken) {
-      console.log("[ZONES_SERVER] Using explicitly provided accessToken for zone creation");
-      const client = createClient({
-        baseUrl: INSFORGE_URL,
-        anonKey: INSFORGE_ANON_KEY,
-      });
-      (client.auth as any).tokenManager.setAccessToken(accessToken);
-      insforgeClient = client;
-    }
-
-    const insforge = insforgeClient;
-    if (!insforge) {
-      throw new Error("Unauthorized: No authenticated client available for zone creation");
+    // Verification probe
+    const { data: user, error: authErr } = await insforge.auth.getCurrentUser();
+    if (authErr || !user?.user) {
+      console.error("[ZONES_AUTH_ERROR] Token verification failed on server:", authErr?.message);
+      throw new Error(`Unauthorized: Invalid or expired token (${authErr?.message || 'Verification failed'})`);
     }
     // InsForge / PostgREST compatibility: check if table is accessible
     const boundary = (data.boundary?.type === "Polygon" && Array.isArray(data.boundary.coordinates?.[0]) && data.boundary.coordinates[0].length >= 3) 

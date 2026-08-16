@@ -201,33 +201,33 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
 export const seedDemoOrders = createServerFn({ method: "POST" })
   .inputValidator(z.object({ 
     data: z.any().optional(),
-    accessToken: z.string().optional()
+    accessToken: z.string()
   }))
-  .handler(async ({ data: input, context }) => {
+  .handler(async ({ data: input }) => {
     const { accessToken } = input;
     
     // Auth configuration
     const INSFORGE_URL = process.env['VITE_INSFORGE_URL'] || process.env['INSFORGE_URL'] || "https://awvs3seh.us-east.insforge.app";
     const INSFORGE_ANON_KEY = process.env['VITE_INSFORGE_ANON_KEY'] || process.env['INSFORGE_ANON_KEY'] || "sb_publishable_FIPSldMe55J2LJ_hczRqag_orYaOaTT";
     
-    let insforgeClient = (context as any).insforge;
+    console.log("[SEED] Constructing authenticated server client from explicit token...");
+    const insforge = createClient({
+      baseUrl: INSFORGE_URL,
+      anonKey: INSFORGE_ANON_KEY,
+    });
+    
+    // Authoritative Token Injection
+    (insforge.auth as any).tokenManager.setAccessToken(accessToken);
+    (insforge.auth as any).session = { accessToken }; 
 
-    if (accessToken) {
-      console.log("[SEED] Using explicitly provided accessToken for seeding");
-      const client = createClient({
-        baseUrl: INSFORGE_URL,
-        anonKey: INSFORGE_ANON_KEY,
-      });
-      (client.auth as any).tokenManager.setAccessToken(accessToken);
-      insforgeClient = client;
+    // Verification probe
+    const { data: user, error: authErr } = await insforge.auth.getCurrentUser();
+    if (authErr || !user?.user) {
+      console.error("[SEED_AUTH_ERROR] Token verification failed on server:", authErr?.message);
+      throw new Error(`Unauthorized: Invalid or expired token (${authErr?.message || 'Verification failed'})`);
     }
 
-    const insforge = insforgeClient;
-    if (!insforge) {
-      throw new Error("Unauthorized: No authenticated client available (Missing token)");
-    }
-
-    console.log("[SEED] Starting idempotent demo seeding via authoritative client...");
+    console.log("[SEED] Starting idempotent demo seeding for user:", user.user.email);
     
     const city1Id = "c1110000-0000-0000-0000-000000000001";
     const zone1Id = "z1110000-0000-0000-0000-000000000001";
