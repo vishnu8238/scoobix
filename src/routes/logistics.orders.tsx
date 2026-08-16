@@ -5,7 +5,6 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2, ExternalLink, Database } from "lucide-react";
-import { seedDemoOrders } from "@/lib/logistics-ops.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
@@ -105,7 +104,6 @@ function OrderLedger() {
                 const { insforge: sdk } = await import("@/lib/insforge");
                 
                 // Construct demo data
-                const city1Id = "c1110000-0000-0000-0000-000000000001";
                 const zone1Id = "z1110000-0000-0000-0000-000000000001";
                 const now = new Date().toISOString();
                 
@@ -114,7 +112,7 @@ function OrderLedger() {
                 let restaurantId = restData?.[0]?.id;
                 
                 if (!restaurantId) {
-                  const rest = {
+                  const rest: DemoRestaurantInsert = {
                     id: crypto.randomUUID(),
                     name: "Scoobix Demo Kitchen",
                     address: "123 Logistics Hub, Vadodara",
@@ -265,6 +263,15 @@ type OrderRow = {
   created_at?: string;
 };
 type NamedRow = { id: string; name?: string };
+type DemoRestaurantInsert = {
+  id: string;
+  name: string;
+  address: string;
+  status: string;
+  zone_id: string;
+  city: string;
+  metadata: { is_demo: true; demo_tag: string };
+};
 
 const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
 

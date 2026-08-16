@@ -1,11 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
-import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
-import { createClient } from "@insforge/sdk";
-import { publishTableChange } from "./realtime-bus";
 import { newUuid } from "./orders-api";
 import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";
-import type { OrderStatus } from "./types";
 
 /**
  * Idempotently seeds City 1 and Zone 1 prerequisites for Gig creation.
@@ -196,20 +191,6 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
         code: err.code
       };
     }
-  });
-
-/**
- * SEED DEMO ORDERS IS DEPRECATED.
- * Direct browser-side seeding in src/routes/logistics.orders.tsx is the single source of truth.
- * This server function is disconnected and remains only to prevent import breakage.
- */
-export const seedDemoOrders = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ 
-    data: z.any().optional(),
-    accessToken: z.string()
-  }))
-  .handler(async () => {
-    throw new Error("seedDemoOrders is deprecated. Use direct browser seeding.");
   });
 
 export const getLogisticsDemoData = createServerFn({ method: "GET" })
