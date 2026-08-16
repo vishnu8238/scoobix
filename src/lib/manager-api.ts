@@ -13,6 +13,7 @@ import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-c
 import { INSFORGE_URL, INSFORGE_ANON_KEY, insforge } from "./insforge";
 import { useAuth } from "./auth-store";
 import { queueNotification } from "./notifications-queue";
+import { getDisplayName } from "./identity-utils";
 
 export type OnboardingStatus =
   | "draft"
@@ -336,39 +337,49 @@ export async function saveOnboardingDraft(
   id: string | null,
   values: Record<string, unknown>,
 ): Promise<ManagedRestaurant | null> {
-  // UUID validation: ensure we never use "pending-refresh" or invalid sentinels
   const isUuid = (val: any) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
   const safeId = id && isUuid(id) ? id : null;
+
+  // Identity safety: ensure we have an authenticated user ID
+  const session = insforge.auth.session;
+  const authId = session?.user?.id;
+  if (!authId) {
+    throw new Error("Manager authentication required. Please sign in again.");
+  }
+
+  // Authoritative ownership: always overwrite manager_id with the authenticated user ID
+  const payload = {
+    ...values,
+    manager_id: authId,
+    onboarded_by: authId,
+  };
 
   try {
     if (safeId) {
       console.info(`[MANAGER_API] Updating existing restaurant draft: ${safeId}`);
-      await patchRecord("restaurants", safeId, values);
+      await patchRecord("restaurants", safeId, payload);
       const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${safeId}`, limit: 1 }, { fresh: true });
       return rows[0] ?? null;
     }
 
     console.info(`[MANAGER_API] Creating new restaurant draft`);
-    const created = await createRecord<ManagedRestaurant>("restaurants", values);
+    const created = await createRecord<ManagedRestaurant>("restaurants", payload);
     
-    // Authoritative UUID resolution from createRecord response
     if (created && isUuid(created.id)) {
       console.info(`[MANAGER_API] Created record with ID: ${created.id}`);
       return created;
     }
 
     // Fallback: If creation response is ambiguous, look for the most recent record for this manager
-    const managerId = values.manager_id as string;
-    if (managerId) {
-      console.warn(`[MANAGER_API] createRecord returned ambiguous ID, checking manager history...`);
-      const latest = await listTable<ManagedRestaurant>("restaurants", {
-        manager_id: `eq.${managerId}`,
-        order: "created_at.desc",
-        limit: 1,
-      }, { fresh: true });
-      if (latest[0] && isUuid(latest[0].id)) {
-        return latest[0];
-      }
+    console.warn(`[MANAGER_API] createRecord returned ambiguous ID, checking manager history...`);
+    const latest = await listTable<ManagedRestaurant>("restaurants", {
+      manager_id: `eq.${authId}`,
+      order: "created_at.desc",
+      limit: 1,
+    }, { fresh: true });
+    
+    if (latest[0] && isUuid(latest[0].id)) {
+      return latest[0];
     }
     return null;
   } catch (err) {
@@ -460,7 +471,7 @@ export function useManager() {
         console.info(`[MANAGER_API] Self-healing manager record for user ${authId}`);
         const created = await createRecord<MerchantManager[] | MerchantManager>("merchant_managers", {
           user_id: authId,
-          name: user?.name || session?.user?.name || "Manager",
+          name: getDisplayName(user || session?.user) || "Scoobix Manager",
           email: user?.email || session?.user?.email,
           phone: user?.phone || null,
           status: "active",
