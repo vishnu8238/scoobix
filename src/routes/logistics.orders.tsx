@@ -120,7 +120,7 @@ function OrderLedger() {
                     address: "123 Logistics Hub, Vadodara",
                     status: "ACTIVE",
                     zone_id: zone1Id,
-                    city_id: city1Id,
+                    city: "Vadodara",
                     metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
                   };
                   const { data: created, error } = await sdk.database.from("restaurants").insert([rest]).select("id").single();
