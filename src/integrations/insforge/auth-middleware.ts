@@ -30,6 +30,7 @@ export const requireInsForgeAuth = createMiddleware({ type: 'function' }).server
 
     // Authoritative Token Injection
     (insforge.auth as any).tokenManager.setAccessToken(token);
+    (insforge.auth as any).session = { accessToken: token }; // Ensure session prop is populated for legacy helpers
 
     // Validate token by fetching the user
     const { data: userData, error } = await insforge.auth.getCurrentUser();

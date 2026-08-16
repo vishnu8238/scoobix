@@ -303,7 +303,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
     let existing = 0;
 
     for (let i = 0; i < 5; i++) {
-      const demoRef = `demo_order_v4_${i}`;
+      const demoRef = `demo_order_v5_${i}`;
       
       const { data: found } = await insforge.database
         .from("orders")
@@ -324,7 +324,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         zone_id: zoneId,
         total_price: 250 + (i * 50),
         created_at: new Date().toISOString(),
-        metadata: { is_demo: true, demo_tag: "logistics_test_v4", demo_ref: demoRef },
+        metadata: { is_demo: true, demo_tag: "logistics_test_v5", demo_ref: demoRef },
         items: {
           lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
           meta: { restaurantName: restaurants[0].name, addressLine: "123 Demo St" }
@@ -334,6 +334,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         payment_status: i % 2 === 0 ? "PAID" : "PENDING"
       };
 
+      console.log(`[SEED] Inserting demo order ${demoRef}...`);
       const { data: inserted, error: insertError } = await insforge.database
         .from("orders")
         .insert([order])
@@ -344,7 +345,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
         seeded++;
         publishTableChange("orders", "insert", inserted);
       } else {
-        console.error(`[SEED] Failed to insert order ${demoRef}:`, insertError?.message);
+        console.error(`[SEED] Failed to insert order ${demoRef}:`, insertError?.message, insertError);
       }
     }
 
