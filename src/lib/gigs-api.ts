@@ -33,24 +33,18 @@ export type GigParticipant = {
 
 export async function fetchGigs(params?: Record<string, any>) {
   const TABLE = "gigs";
-  const GIG_COLUMNS = "*";
   const { id, ...rest } = params || {};
 
-  
   try {
     let rows: any[] = [];
     if (id) {
-      const query = insforge.database.from(TABLE).select(GIG_COLUMNS).eq("id", id);
+      const query = insforge.database.from(TABLE).select("*").eq("id", id);
       const res = await handleResponse<any[]>(query, "GET", TABLE);
       rows = Array.isArray(res) ? res : [];
     } else {
-      const data = await listTable<any>(TABLE, { 
-        order: "created_at.desc", 
-        ...rest 
-      }, { 
+      const data = await listTable<any>(TABLE, rest, { 
         fresh: true, 
-        ttl: 0,
-        select: GIG_COLUMNS
+        ttl: 0
       });
       rows = Array.isArray(data) ? data : [];
     }
@@ -58,14 +52,14 @@ export async function fetchGigs(params?: Record<string, any>) {
     // Normalize mapping for UI
     return rows.map(r => ({
       ...r,
-      title: r.title || r.metadata?.title || `Gig ${r.id.substring(0,8)}`,
-      description: r.description || r.metadata?.description || "Delivery shift",
-      reward_amount: r.payout || r.reward_amount || 0,
+      title: r.metadata?.title || r.gig_type || `Gig ${r.id.substring(0,8)}`,
+      description: r.metadata?.description || "Delivery shift",
+      reward_amount: r.payout || 0,
       payout: r.payout || 0,
-      target_deliveries: r.target_deliveries || r.metadata?.target_deliveries || 1,
-      start_time: r.start_time || r.metadata?.start_time || r.created_at,
-      end_time: r.end_time || r.metadata?.end_time || r.created_at,
-      capacity: r.capacity || r.metadata?.capacity || 1,
+      target_deliveries: r.metadata?.target_deliveries || 1,
+      start_time: r.metadata?.start_time || r.created_at,
+      end_time: r.metadata?.end_time || r.created_at,
+      capacity: r.metadata?.capacity || 1,
       status: r.status
     }));
   } catch (err: any) {
@@ -74,13 +68,11 @@ export async function fetchGigs(params?: Record<string, any>) {
   }
 }
 
-
-
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   const TABLE = "gigs";
   const id = newUuid();
   
-  // Map UI fields to database columns
+  // Map UI fields to database columns based on schema audit
   const record = {
     id,
     payout: gig.reward_amount || 0,
