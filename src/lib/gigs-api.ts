@@ -39,36 +39,32 @@ export async function fetchGigs(params?: Record<string, any>) {
     try {
       console.log(`[GIGS_API] Authoritative probe for table "${table}"...`);
       
+      let rows: Gig[] = [];
       if (id) {
-        // Direct UUID query using the standard handleResponse envelope normalization
         const query = insforge.database.from(table).select(select || GIG_COLUMNS).eq("id", id);
-        const rows = await handleResponse<Gig[]>(query, "GET", table);
-        if (Array.isArray(rows) && rows.length > 0) return rows;
-        // If not found in this table, continue to next candidate
-        continue;
+        const res = await handleResponse<Gig[]>(query, "GET", table);
+        rows = Array.isArray(res) ? res : [];
+      } else {
+        const data = await listTable<Gig>(table, { 
+          order: "start_time.asc", 
+          ...rest 
+        }, { 
+          fresh: true, 
+          ttl: 0,
+          select: select || GIG_COLUMNS
+        });
+        rows = Array.isArray(data) ? data : [];
       }
-
-      const data = await listTable<Gig>(table, { 
-        order: "start_time.asc", 
-        ...rest 
-      }, { 
-        fresh: true, 
-        ttl: 0,
-        select: select || GIG_COLUMNS
-      });
       
-      if (Array.isArray(data)) return data;
+      if (rows.length > 0) {
+        console.log(`[GIGS_API] Successfully retrieved ${rows.length} rows from "${table}"`);
+        return rows;
+      }
     } catch (err: any) {
       console.warn(`[GIGS_API] Probe failed for "${table}":`, err.message);
-      if (err.status === 404 || err.isRelationError) continue;
+      if (err.isRelationError || err.status === 404) continue;
       
-      if (err.status === 406 || err.status === 401) {
-        try {
-          const fallback = await listTable<Gig>(table, { limit: 1000 }, { fresh: true, ttl: 0, select: "*" });
-          if (Array.isArray(fallback)) return fallback;
-        } catch (retryErr) {}
-      }
-      
+      // If last candidate, let it fail; otherwise continue
       if (table === TABLE_CANDIDATES[TABLE_CANDIDATES.length - 1]) throw err;
     }
   }

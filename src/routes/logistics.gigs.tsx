@@ -60,7 +60,7 @@ function LogisticsGigs() {
       let all = await fetchGigs({ limit: 1000 });
       console.log(`[GIGS_PAGE] Loaded ${all.length} normalized rows.`);
       
-      // A) LOGISTICS DEMO DATA FALLBACK
+      // LOGISTICS DEMO DATA FALLBACK
       if (all.length === 0) {
         console.warn("[GIGS_PAGE] No backend gigs found. Fetching demo data...");
         try {
@@ -83,10 +83,9 @@ function LogisticsGigs() {
       const data = all.filter(g => {
         if (!g.start_time) return false;
         try {
-          const gigDateObj = parseISO(g.start_time);
-          const gigDateStr = format(gigDateObj, "yyyy-MM-dd");
-          const rawIsoDate = g.start_time.split('T')[0];
-          return gigDateStr === localDateStr || rawIsoDate === localDateStr;
+          // Robust date matching: compare YYYY-MM-DD strings
+          const gigDateStr = g.start_time.split('T')[0];
+          return gigDateStr === localDateStr;
         } catch (e) {
           return false;
         }
@@ -103,8 +102,6 @@ function LogisticsGigs() {
         sessionActive: !!insforge.auth.session?.accessToken,
         tokenPrefix: insforge.auth.session?.accessToken ? insforge.auth.session.accessToken.substring(0, 10) : "none"
       });
-
-
     } catch (err: any) {
       console.error("[GIGS_PAGE] Authoritative load failed:", err);
       // Fallback to demo data on error too
@@ -198,7 +195,13 @@ function LogisticsGigs() {
           
           // Use the actual verified row if available, otherwise fallback to the test object
           const finalGig = foundGig || testGig;
-          setGigs(prev => [finalGig as Gig, ...prev]);
+          
+          // AUTHORITATIVE UI UPDATE
+          setGigs(prev => {
+            const exists = prev.some(g => g.id === finalGig.id);
+            if (exists) return prev;
+            return [finalGig as Gig, ...prev];
+          });
           setAllGigsCount(prev => (prev || 0) + 1);
 
           setDiagnostics((prev: any) => ({ 
@@ -214,14 +217,11 @@ function LogisticsGigs() {
             } 
           }));
         } else {
-          // If we had successRes but not in list, it might be RLS or discovery delay.
-          // But user specifically said "if direct read-back is unavailable, do not falsely fail—use the inserted returned row"
-          // However, here we didn't find it in list but successRes was truthy. 
-          // The logic above `foundInList || successRes` already handles this.
+          throw new Error("Persistence verification failed: row not returned in read-back");
         }
 
         // Delay load to allow for eventual consistency but we've already updated UI optimistically
-        setTimeout(() => void load(), 2000);
+        setTimeout(() => void load(), 1000);
 
       } else {
         throw new Error("createRecord returned null/empty for all gig candidates");
