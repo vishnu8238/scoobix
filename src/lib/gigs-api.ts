@@ -5,20 +5,21 @@ import { insforge } from "./insforge";
 
 export type Gig = {
   id: string;
-  title: string;
-  description: string;
-  reward_amount: number;
+  title?: string;
+  description?: string;
+  payout: number;
+  reward_amount?: number; // legacy alias
   target_deliveries: number;
   start_time: string;
   end_time: string;
-  status: "ACTIVE" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
+  status: "pending" | "in_progress" | "completed" | "cancelled" | "ACTIVE" | "SCHEDULED";
   zone_id?: string;
-  subzone_id?: string;
   city_id?: string;
-  completion_pct?: number;
   capacity?: number;
   metadata?: Record<string, any>;
   created_at: string;
+  driver_id?: string;
+  order_id?: string;
 };
 
 export type GigParticipant = {
@@ -31,71 +32,85 @@ export type GigParticipant = {
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
-  const TABLE_CANDIDATES = ["gigs"];
-  const GIG_COLUMNS = "id,title,description,reward_amount,target_deliveries,start_time,end_time,status,zone_id,city_id,capacity,created_at";
-  const { select, id, ...rest } = params || {};
+  const TABLE = "gigs";
+  const GIG_COLUMNS = "*";
+  const { id, ...rest } = params || {};
+
   
-  for (const table of TABLE_CANDIDATES) {
-    try {
-      console.log(`[GIGS_API] Authoritative probe for table "${table}"...`);
-      
-      let rows: Gig[] = [];
-      if (id) {
-        const query = insforge.database.from(table).select(select || GIG_COLUMNS).eq("id", id);
-        const res = await handleResponse<Gig[]>(query, "GET", table);
-        rows = Array.isArray(res) ? res : [];
-      } else {
-        const data = await listTable<Gig>(table, { 
-          order: "start_time.asc", 
-          ...rest 
-        }, { 
-          fresh: true, 
-          ttl: 0,
-          select: select || GIG_COLUMNS
-        });
-        rows = Array.isArray(data) ? data : [];
-      }
-      
-      if (rows.length > 0) {
-        console.log(`[GIGS_API] Successfully retrieved ${rows.length} rows from "${table}"`);
-        return rows;
-      }
-    } catch (err: any) {
-      console.warn(`[GIGS_API] Probe failed for "${table}":`, err.message);
-      if (err.isRelationError || err.status === 404) continue;
-      
-      // If last candidate, let it fail; otherwise continue
-      if (table === TABLE_CANDIDATES[TABLE_CANDIDATES.length - 1]) throw err;
+  try {
+    let rows: any[] = [];
+    if (id) {
+      const query = insforge.database.from(TABLE).select(GIG_COLUMNS).eq("id", id);
+      const res = await handleResponse<any[]>(query, "GET", TABLE);
+      rows = Array.isArray(res) ? res : [];
+    } else {
+      const data = await listTable<any>(TABLE, { 
+        order: "created_at.desc", 
+        ...rest 
+      }, { 
+        fresh: true, 
+        ttl: 0,
+        select: GIG_COLUMNS
+      });
+      rows = Array.isArray(data) ? data : [];
     }
+    
+    // Normalize mapping for UI
+    return rows.map(r => ({
+      ...r,
+      title: r.title || r.metadata?.title || `Gig ${r.id.substring(0,8)}`,
+      description: r.description || r.metadata?.description || "Delivery shift",
+      reward_amount: r.payout || r.reward_amount || 0,
+      payout: r.payout || 0,
+      target_deliveries: r.target_deliveries || r.metadata?.target_deliveries || 1,
+      start_time: r.start_time || r.metadata?.start_time || r.created_at,
+      end_time: r.end_time || r.metadata?.end_time || r.created_at,
+      capacity: r.capacity || r.metadata?.capacity || 1,
+      status: r.status
+    }));
+  } catch (err: any) {
+    console.error(`[GIGS_API] Fetch failed:`, err.message);
+    throw err;
   }
-  return [];
 }
+
 
 
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
-  // Authoritative write candidate discovery
-  const TABLE_CANDIDATES = ["gigs"];
+  const TABLE = "gigs";
   const id = newUuid();
   
-  let lastError: any = null;
-  for (const table of TABLE_CANDIDATES) {
-    try {
-      console.log(`[GIGS_API] Authoritative write attempt on "${table}"...`);
-      const res = await createRecord<Gig>(table, { ...gig, id });
-      if (res) {
-        publishTableChange(table, "insert", res as any);
-        return res;
-      }
-    } catch (error: any) {
-      console.warn(`[GIGS_API] Write failed for "${table}":`, error.message);
-      lastError = error;
-      // If it's a relation error, try next candidate
-      if (error.status === 404 || error.isRelationError) continue;
-      throw error;
+  // Map UI fields to database columns
+  const record = {
+    id,
+    payout: gig.reward_amount || 0,
+    status: gig.status?.toLowerCase() || "pending",
+    zone_id: gig.zone_id,
+    gig_type: "delivery",
+    metadata: {
+      ...gig.metadata,
+      title: gig.title,
+      description: gig.description,
+      target_deliveries: gig.target_deliveries,
+      start_time: gig.start_time,
+      end_time: gig.end_time,
+      capacity: gig.capacity
     }
+  };
+
+  try {
+    const res = await createRecord<Gig>(TABLE, record);
+    if (res) {
+      publishTableChange(TABLE, "insert", res as any);
+      return res;
+    }
+    return null;
+  } catch (error: any) {
+    console.error(`[GIGS_API] Create failed:`, error.message);
+    throw error;
   }
-  throw lastError || new Error(`Failed to create gig on all candidates: ${TABLE_CANDIDATES.join(", ")}`);
 }
+
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
   return patchRecord<Gig>("gigs", id, patch as any);

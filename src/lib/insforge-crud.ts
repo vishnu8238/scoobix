@@ -376,7 +376,8 @@ export function createRecord<T = Record<string, unknown>>(
             announce(table, "insert", (row as Record<string, unknown>) || record);
             return row as T;
           }
-          throw new Error(`Gig persisted but not found by UUID query in "${table}". Check RLS policies.`);
+          throw new Error(`Row persisted but not found by UUID query in "${table}". Check RLS policies.`);
+
         }
         
         const verifiedRow = verifyRows[0];
