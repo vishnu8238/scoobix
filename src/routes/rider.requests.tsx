@@ -113,10 +113,12 @@ function RiderRequestsPage() {
     const selDateStr = selectedDate.toISOString().split('T')[0];
     
     return gigs.filter(g => {
-      const gigDateStr = new Date(g.start_time).toISOString().split('T')[0];
+      const startTime = g.start_time || new Date().toISOString();
+      const endTime = g.end_time || new Date().toISOString();
+      const gigDateStr = new Date(startTime).toISOString().split('T')[0];
       const matchesDate = gigDateStr === selDateStr;
       const isEnrolled = enrolledIds.has(g.id);
-      const isHistory = new Date(g.end_time) < new Date();
+      const isHistory = new Date(endTime) < new Date();
 
       if (tab === "available") return matchesDate && !isEnrolled && !isHistory;
       if (tab === "booked") return isEnrolled && !isHistory;
@@ -244,8 +246,10 @@ function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolea
     void load();
   }, [gig.id, version]);
 
-  const start = new Date(gig.start_time);
-  const end = new Date(gig.end_time);
+  const startStr = gig.start_time || new Date().toISOString();
+  const endStr = gig.end_time || new Date().toISOString();
+  const start = new Date(startStr);
+  const end = new Date(endStr);
   const dateStr = start.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
   const timeStr = `${start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
   

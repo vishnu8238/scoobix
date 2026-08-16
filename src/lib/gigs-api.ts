@@ -8,11 +8,11 @@ export type Gig = {
   title?: string;
   description?: string;
   payout: number;
-  reward_amount?: number; // legacy alias
-  target_deliveries: number;
-  start_time: string;
-  end_time: string;
-  status: "pending" | "in_progress" | "completed" | "cancelled" | "ACTIVE" | "SCHEDULED";
+  reward_amount?: number; // UI alias
+  target_deliveries?: number;
+  start_time?: string;
+  end_time?: string;
+  status: "pending" | "in_progress" | "completed" | "cancelled" | "ACTIVE" | "SCHEDULED" | string;
   zone_id?: string;
   city_id?: string;
   capacity?: number;
@@ -33,39 +33,47 @@ export type GigParticipant = {
 
 export async function fetchGigs(params?: Record<string, any>) {
   const TABLE = "gigs";
-  const GIG_COLUMNS = "*";
   const { id, ...rest } = params || {};
 
-  
   try {
     let rows: any[] = [];
     if (id) {
-      const query = insforge.database.from(TABLE).select(GIG_COLUMNS).eq("id", id);
-      const res = await handleResponse<any[]>(query, "GET", TABLE);
-      rows = Array.isArray(res) ? res : [];
+      // PROBE: try 'gigs' first, then 'delivery_gigs'
+      const { data, error, status } = await insforge.database.from(TABLE).select("*").eq("id", id);
+      if (error && (status === 404 || error.message.includes("does not exist"))) {
+        console.warn(`[GIGS_API] Table "gigs" missing, probing "delivery_gigs"...`);
+        const alt = await insforge.database.from("delivery_gigs").select("*").eq("id", id);
+        rows = alt.data || [];
+      } else {
+        rows = data || [];
+      }
     } else {
-      const data = await listTable<any>(TABLE, { 
-        order: "created_at.desc", 
-        ...rest 
-      }, { 
-        fresh: true, 
-        ttl: 0,
-        select: GIG_COLUMNS
-      });
-      rows = Array.isArray(data) ? data : [];
+      // For lists, we use the candidate discovery in listTable if we had it, 
+      // but here we'll just try 'gigs' and handle the error.
+      try {
+        const data = await listTable<any>(TABLE, rest, { fresh: true, ttl: 0 });
+        rows = Array.isArray(data) ? data : [];
+      } catch (e: any) {
+        if (e.message.includes("does not exist")) {
+           const altData = await listTable<any>("delivery_gigs", rest, { fresh: true, ttl: 0 });
+           rows = Array.isArray(altData) ? altData : [];
+        } else {
+          throw e;
+        }
+      }
     }
     
     // Normalize mapping for UI
     return rows.map(r => ({
       ...r,
-      title: r.title || r.metadata?.title || `Gig ${r.id.substring(0,8)}`,
-      description: r.description || r.metadata?.description || "Delivery shift",
+      title: r.metadata?.title || r.title || r.gig_type || `Gig ${r.id.substring(0,8)}`,
+      description: r.metadata?.description || r.description || "Delivery shift",
       reward_amount: r.payout || r.reward_amount || 0,
-      payout: r.payout || 0,
-      target_deliveries: r.target_deliveries || r.metadata?.target_deliveries || 1,
-      start_time: r.start_time || r.metadata?.start_time || r.created_at,
-      end_time: r.end_time || r.metadata?.end_time || r.created_at,
-      capacity: r.capacity || r.metadata?.capacity || 1,
+      payout: r.payout || r.reward_amount || 0,
+      target_deliveries: r.metadata?.target_deliveries || r.target_deliveries || 1,
+      start_time: r.metadata?.start_time || r.start_time || r.created_at,
+      end_time: r.metadata?.end_time || r.end_time || r.created_at,
+      capacity: r.metadata?.capacity || r.capacity || 1,
       status: r.status
     }));
   } catch (err: any) {
@@ -74,16 +82,13 @@ export async function fetchGigs(params?: Record<string, any>) {
   }
 }
 
-
-
 export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
-  const TABLE = "gigs";
   const id = newUuid();
   
   // Map UI fields to database columns
   const record = {
     id,
-    payout: gig.reward_amount || 0,
+    payout: gig.payout || gig.reward_amount || 0,
     status: gig.status?.toLowerCase() || "pending",
     zone_id: gig.zone_id,
     gig_type: "delivery",
@@ -99,12 +104,24 @@ export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
   };
 
   try {
-    const res = await createRecord<Gig>(TABLE, record);
-    if (res) {
-      publishTableChange(TABLE, "insert", res as any);
-      return res;
+    // Probe candidates
+    const CANDIDATES = ["gigs", "delivery_gigs"];
+    let lastErr: any = null;
+    
+    for (const table of CANDIDATES) {
+      try {
+        const res = await createRecord<Gig>(table, record);
+        if (res) {
+          publishTableChange(table, "insert", res as any);
+          return res;
+        }
+      } catch (e: any) {
+        lastErr = e;
+        if (e.message.includes("does not exist") || e.status === 404) continue;
+        throw e;
+      }
     }
-    return null;
+    throw lastErr || new Error("No valid gig table found");
   } catch (error: any) {
     console.error(`[GIGS_API] Create failed:`, error.message);
     throw error;
@@ -113,7 +130,19 @@ export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
 
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
-  return patchRecord<Gig>("gigs", id, patch as any);
+  const CANDIDATES = ["gigs", "delivery_gigs"];
+  let lastErr: any = null;
+  for (const table of CANDIDATES) {
+    try {
+      const res = await patchRecord<Gig>(table, id, patch as any);
+      if (res) return res;
+    } catch (e: any) {
+      lastErr = e;
+      if (e.message.includes("does not exist") || e.status === 404) continue;
+      throw e;
+    }
+  }
+  throw lastErr || new Error("Gig not found in any candidate table");
 }
 
 export async function fetchGigParticipants(gigId: string) {
