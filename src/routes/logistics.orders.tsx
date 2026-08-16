@@ -113,7 +113,13 @@ function OrderLedger() {
                 void load();
               } catch (e: any) {
                 console.error("[SEED_ORDER_ERROR]", e);
-                toast.info("Showing local demo orders (backend seed skipped)");
+                // Surface the real error instead of silently skipping backend intent
+                const msg = e.message || "Unknown error";
+                if (msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("no token")) {
+                   toast.error(`Authentication required to seed backend: ${msg}`);
+                } else {
+                   toast.error(`Backend seeding failed: ${msg}`);
+                }
                 void load();
               } finally {
                 setIsSeeding(false);
