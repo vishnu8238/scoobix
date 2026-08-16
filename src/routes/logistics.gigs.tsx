@@ -29,6 +29,7 @@ import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { performProductionGigTest, getLogisticsDemoData } from "@/lib/logistics-ops.functions";
+import { exportExcel } from "@/lib/export-utils";
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
@@ -251,6 +252,53 @@ function LogisticsGigs() {
     g.title?.toLowerCase().includes(q.toLowerCase())
   );
 
+  const handleExport = () => {
+    if (filteredGigs.length === 0) {
+      toast.info("No gigs to export for the selected filters.");
+      return;
+    }
+
+    const columns = [
+      { key: "id", label: "Gig ID" },
+      { key: "date", label: "Date" },
+      { key: "start_time", label: "Start Time" },
+      { key: "end_time", label: "End Time" },
+      { key: "duration", label: "Duration" },
+      { key: "city", label: "City" },
+      { key: "zone", label: "Zone" },
+      { key: "reward_amount", label: "Payout" },
+      { key: "enrolled", label: "Enrollment" },
+      { key: "capacity", label: "Capacity" },
+      { key: "completion_percentage", label: "Completion %" },
+      { key: "slot_id", label: "Slot ID" },
+      { key: "status", label: "Status" },
+    ];
+
+    const rows = filteredGigs.map(g => ({
+      id: g.id,
+      date: g.start_time ? g.start_time.split('T')[0] : "",
+      start_time: g.start_time || "",
+      end_time: g.end_time || "",
+      duration: "N/A", // Not in schema, keeping as placeholder
+      city: g.city_id || "",
+      zone: g.zone_id || "",
+      reward_amount: g.reward_amount || 0,
+      enrolled: 0, // Not in schema, placeholder
+      capacity: g.capacity || 0,
+      completion_percentage: "0%", // Placeholder
+      slot_id: g.metadata?.slot_id || "",
+      status: g.status || "",
+    }));
+
+    exportExcel([{
+      title: `Gigs - ${format(selectedDate, "yyyy-MM-dd")}`,
+      columns,
+      rows: rows as any[]
+    }], `scoobix-gigs-${format(selectedDate, "yyyy-MM-dd")}`);
+    
+    toast.success("Excel export started.");
+  };
+
   return (
     <div className="min-h-screen space-y-8 bg-slate-50/50 p-8 dark:bg-transparent">
       <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -270,6 +318,14 @@ function LogisticsGigs() {
           />
           
           <div className="flex items-center gap-2 border-l border-border/60 pl-3">
+            <button 
+              onClick={() => handleExport()}
+              disabled={loading || filteredGigs.length === 0}
+              title="Export Excel"
+              className="group flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 transition-all hover:bg-muted active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </button>
             <button 
               onClick={() => load()}
               className="group flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 transition-all hover:bg-muted active:scale-95"
