@@ -21,12 +21,12 @@ function LogisticsGigDetails() {
   const [gig, setGig] = useState<any>(null);
   const [participants, setParticipants] = useState<any[]>([]);
   const [tab, setTab] = useState<"overview" | "riders" | "capacity">("overview");
-  const version = useTableVersion(["rider_gigs", "gig_participants"]);
+  const version = useTableVersion(["gigs", "gig_participants"]);
 
   const load = useCallback(async () => {
     setLoading(true);
     const [gRows, pRows] = await Promise.all([
-      listTable("rider_gigs", { id: `eq.${gigId}`, limit: 1 }),
+      listTable("gigs", { id: `eq.${gigId}`, limit: 1 }),
       listTable("gig_participants", { gig_id: `eq.${gigId}`, limit: 200 }),
     ]);
     
