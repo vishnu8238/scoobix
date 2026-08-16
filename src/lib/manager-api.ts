@@ -13,7 +13,7 @@ import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-c
 import { INSFORGE_URL, INSFORGE_ANON_KEY, insforge } from "./insforge";
 import { useAuth } from "./auth-store";
 import { queueNotification } from "./notifications-queue";
-import { getDisplayName } from "./identity-utils";
+import { getDisplayName, getManagerDisplayName } from "./identity-utils";
 
 export type OnboardingStatus =
   | "draft"
