@@ -613,11 +613,6 @@ const LogisticsGigsRoute = LogisticsGigsRouteImport.update({
   path: '/gigs',
   getParentRoute: () => LogisticsRoute,
 } as any)
-const LogisticsGigsRoute = LogisticsGigsRouteImport.update({
-  id: '/gigs',
-  path: '/gigs',
-  getParentRoute: () => LogisticsRoute,
-} as any)
 const LogisticsDuplicatesRoute = LogisticsDuplicatesRouteImport.update({
   id: '/duplicates',
   path: '/duplicates',
@@ -2612,13 +2607,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogisticsGigsRouteImport
       parentRoute: typeof LogisticsRoute
     }
-    '/logistics/gigs': {
-      id: '/logistics/gigs'
-      path: '/gigs'
-      fullPath: '/logistics/gigs'
-      preLoaderRoute: typeof LogisticsGigsRouteImport
-      parentRoute: typeof LogisticsRoute
-    }
     '/logistics/duplicates': {
       id: '/logistics/duplicates'
       path: '/duplicates'
@@ -3352,7 +3340,6 @@ interface LogisticsRouteChildren {
   LogisticsDisputesRoute: typeof LogisticsDisputesRoute
   LogisticsDriversRoute: typeof LogisticsDriversRouteWithChildren
   LogisticsDuplicatesRoute: typeof LogisticsDuplicatesRoute
-  LogisticsGigsRoute: typeof LogisticsGigsRoute
   LogisticsGigsRoute: typeof LogisticsGigsRouteWithChildren
   LogisticsManagersRoute: typeof LogisticsManagersRoute
   LogisticsMapRoute: typeof LogisticsMapRoute
@@ -3391,7 +3378,6 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsDisputesRoute: LogisticsDisputesRoute,
   LogisticsDriversRoute: LogisticsDriversRouteWithChildren,
   LogisticsDuplicatesRoute: LogisticsDuplicatesRoute,
-  LogisticsGigsRoute: LogisticsGigsRoute,
   LogisticsGigsRoute: LogisticsGigsRouteWithChildren,
   LogisticsManagersRoute: LogisticsManagersRoute,
   LogisticsMapRoute: LogisticsMapRoute,
