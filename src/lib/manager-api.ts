@@ -441,8 +441,8 @@ export function useManager() {
 
   const refresh = useCallback(async () => {
     // Authoritative check from session first to avoid stale hook states
-    const session = insforge.auth.session;
-    const authId = session?.user?.id || user?.id;
+    const session = insforge.auth.getSession();
+    const authId = session?.user?.id;
 
     if (!authId) {
       console.warn("[MANAGER_API] No auth ID found for manager resolution.");

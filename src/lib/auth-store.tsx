@@ -155,7 +155,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           profile: profile, // Database profile
           user_metadata: sessionUser.user_metadata,
           identities: sessionUser.identities,
+          merchant_manager: null as any
         };
+
+        // If the user has manager access, we also fetch the merchant_manager record for name resolution
+        if (currentPortal === "manager" || (isSuperAdmin && !roles.includes("manager"))) {
+           const managers = await listTable<any>("merchant_managers", { user_id: `eq.${authId}`, limit: 1 }).catch(() => []);
+           if (managers[0]) combinedUserData.merchant_manager = managers[0];
+        }
+
         const sessionNameCandidate = getDisplayName(combinedUserData);
         console.log(`[AUTH_TRACE] Identity Source Probe: ID=${authId} Email=${userEmail} ResolvedName="${sessionNameCandidate}" MetadataExists=${!!sessionUser.user_metadata} IdentitiesCount=${sessionUser.identities?.length || 0}`);
         
