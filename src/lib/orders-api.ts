@@ -218,8 +218,8 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     const data = await res.json();
     if (data?.[0]) {
       // zone_id and subzone_id removed from restaurants schema
-      if (!zoneId) zoneId = null;
-      if (!subzoneId) subzoneId = null;
+      if (!zoneId) zoneId = undefined;
+      if (!subzoneId) subzoneId = undefined;
       pickupLat = data[0].latitude;
       pickupLng = data[0].longitude;
       pickupAddr = data[0].address;
