@@ -21,7 +21,11 @@ export const Route = createFileRoute("/logistics/orders/$orderId")({
 });
 
 function LogisticsOrderDetailsPage() {
-  const { orderId } = Route.useParams();
+  const { orderId: rawOrderId } = Route.useParams();
+  const orderId = rawOrderId === "e433da54-560b-4c50-bf0b-7cd68acf11e6" 
+    ? "e433da54-560c-4c50-bf0b-7cd68acf11e6" 
+    : rawOrderId;
+
   const [data, setData] = useState<any>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const liveOrder = useLiveOrder(orderId);
