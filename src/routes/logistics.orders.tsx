@@ -158,7 +158,6 @@ function OrderLedger() {
                     customer_id: customerId,
                     restaurant_id: restaurantId,
                     status: statuses[i % statuses.length],
-                    zone_id: zone1Id,
                     total_price: 250 + (i * 50),
                     created_at: now,
                     items: {
