@@ -108,13 +108,22 @@ export async function fetchGigParticipants(gigId: string) {
 export async function enrollInGig(gigId: string, riderId: string) {
   const TABLE = "gig_participants";
   
-  // Check if already enrolled
-  const existing = await listTable<GigParticipant>(TABLE, {
-    gig_id: `eq.${gigId}`,
-    rider_id: `eq.${riderId}`
-  });
-  
+  // 1. Authoritative checks
+  const [gigRows, existing, participants] = await Promise.all([
+    fetchGigs({ id: gigId }),
+    listTable<GigParticipant>(TABLE, { gig_id: `eq.${gigId}`, rider_id: `eq.${riderId}` }),
+    listTable<GigParticipant>(TABLE, { gig_id: `eq.${gigId}` })
+  ]);
+
+  const gig = gigRows[0];
+  if (!gig) throw new Error("Gig not found");
+  if (gig.status !== "ACTIVE" && gig.status !== "SCHEDULED") throw new Error("Gig is not active for booking");
   if (existing && existing.length > 0) return existing[0];
+  
+  const currentCount = participants?.length || 0;
+  if (gig.capacity && currentCount >= gig.capacity) {
+    throw new Error("Gig is at full capacity");
+  }
 
   const id = newUuid();
   const participant: Omit<GigParticipant, "id" | "joined_at"> = {
@@ -124,7 +133,9 @@ export async function enrollInGig(gigId: string, riderId: string) {
     status: "ENROLLED"
   };
   
-  return createRecord<GigParticipant>(TABLE, { ...participant, id });
+  const res = await createRecord<GigParticipant>(TABLE, { ...participant, id });
+  if (res) publishTableChange(TABLE, "insert", res as any);
+  return res;
 }
 
 export async function cancelGigEnrollment(gigId: string, riderId: string) {
