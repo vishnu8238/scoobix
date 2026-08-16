@@ -154,19 +154,46 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
       const payload = {
         ...formData,
         status: "ACTIVE" as const,
-        start_time: new Date(`${todayStr}T${formData.start_time}:00`).toISOString(),
-        end_time: new Date(`${todayStr}T${formData.end_time}:00`).toISOString()
+        start_time: `${todayStr}T${formData.start_time}:00Z`,
+        end_time: `${todayStr}T${formData.end_time}:00Z`
       };
       
       console.log("[CREATE_GIG_MODAL] Submitting payload via authoritative CRUD:", payload);
-      // Use createRecord directly for authoritative read-after-write verification
-      const res = await createRecord<any>("gigs", payload);
       
-      if (!res) {
-        throw new Error("Persistence verification failed: record not found after write");
+      // discovery write probe
+      const TABLE_CANDIDATES = ["gigs", "delivery_gigs"];
+      let res: any = null;
+      let usedTable = "";
+
+      for (const table of TABLE_CANDIDATES) {
+        try {
+          console.log(`[CREATE_GIG_MODAL] Probing write on "${table}"...`);
+          res = await createRecord<any>(table, payload);
+          if (res) {
+            usedTable = table;
+            break;
+          }
+        } catch (e: any) {
+          console.warn(`[CREATE_GIG_MODAL] Write failed for "${table}":`, e.message);
+          if (e.isRelationError || e.status === 404) continue;
+          throw e;
+        }
       }
       
-      console.log("[CREATE_GIG_MODAL] Verified result:", res);
+      if (!res) {
+        throw new Error("Persistence failed: all table candidates rejected the record");
+      }
+      
+      // Authoritative read-back verification after write
+      await new Promise(r => setTimeout(r, 800));
+      const verifyQuery = insforge.database.from(usedTable).select("*").eq("id", res.id || payload.title);
+      const verifyRows = await handleResponse<any[]>(verifyQuery, "GET", usedTable);
+      
+      if (!verifyRows || verifyRows.length === 0) {
+        throw new Error(`Gig persisted to "${usedTable}" but not found by canonical list query. Check RLS.`);
+      }
+
+      console.log("[CREATE_GIG_MODAL] Verified result:", verifyRows[0]);
       toast.success("Gig created and verified in database");
       onSuccess();
       onClose();
