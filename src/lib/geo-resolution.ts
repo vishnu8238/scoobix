@@ -41,10 +41,7 @@ export async function resolveZoneForLocation(lat: number, lng: number) {
 export async function syncRestaurantZone(restaurantId: string, lat: number, lng: number) {
   const resolution = await resolveZoneForLocation(lat, lng);
   if (resolution) {
-    await patchRecord("restaurants", restaurantId, {
-      zone_id: resolution.zoneId,
-      subzone_id: resolution.subzoneId
-    });
+    // zone_id removed from restaurants schema
     return resolution;
   }
   return null;

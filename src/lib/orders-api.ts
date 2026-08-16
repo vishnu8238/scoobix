@@ -214,7 +214,7 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
 
   try {
     const headers = await getHeaders();
-    const res = await fetch(`${rec("restaurants")}?id=eq.${input.restaurantId}&select=zone_id,subzone_id,latitude,longitude,address`, { headers });
+    const res = await fetch(`${rec("restaurants")}?id=eq.${input.restaurantId}&select=latitude,longitude,address`, { headers });
     const data = await res.json();
     if (data?.[0]) {
       if (!zoneId) zoneId = data[0].zone_id;
