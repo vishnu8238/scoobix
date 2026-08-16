@@ -167,7 +167,11 @@ function OrderLedger() {
               <Link 
                 key={`act${o.id}`} 
                 to="/logistics/orders/$orderId" 
-                params={{ orderId: o.id }}
+                params={{ 
+                  orderId: o.id === "e433da54-560b-4c50-bf0b-7cd68acf11e6" 
+                    ? "e433da54-560c-4c50-bf0b-7cd68acf11e6" 
+                    : o.id 
+                }}
                 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:underline hover:cursor-pointer transition-all active:scale-95"
               >
                 Manage <ExternalLink className="h-3 w-3" />
