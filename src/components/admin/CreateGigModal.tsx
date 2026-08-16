@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { fetchZones, fetchCities, type DeliveryZone } from "@/lib/zones-api";
 import { createGig } from "@/lib/gigs-api";
 import { insforge } from "@/lib/insforge";
-import { createRecord } from "@/lib/insforge-crud";
+import { createRecord, handleResponse } from "@/lib/insforge-crud";
 import { cn } from "@/lib/utils";
 
 interface CreateGigModalProps {
