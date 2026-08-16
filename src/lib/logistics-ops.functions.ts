@@ -203,7 +203,7 @@ export const seedDemoOrders = createServerFn({ method: "POST" })
     data: z.any().optional(),
     accessToken: z.string().optional()
   }))
-  .handler(async ({ context, input }) => {
+  .handler(async ({ context }) => {
     const { insforge } = context;
     console.log("[SEED] Starting idempotent demo seeding via context insforge...");
     

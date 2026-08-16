@@ -110,8 +110,7 @@ function OrderLedger() {
 
                 console.log("[LOGISTICS_ORDERS] Seeding with token presence:", !!token);
                 const res = await seedDemoOrders({ 
-                  data: {},
-                  accessToken: token
+                  data: {} 
                 });
                 
                 if (res.seeded > 0) {
