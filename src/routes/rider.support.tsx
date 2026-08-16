@@ -16,7 +16,7 @@ export const Route = createFileRoute("/rider/support")({
 
 function RiderSupport() {
   return (
-    <div className="mx-auto min-h-svh max-w-[520px] pb-24">
+    <div className="w-full min-h-svh pb-8">
       <PageHeader title="Support" subtitle="Tickets & help" />
       <SupportTickets role="driver" intro="Trip problems, payouts or app issues — the rider support team replies here." />
     </div>
