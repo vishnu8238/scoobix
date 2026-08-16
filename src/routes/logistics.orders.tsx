@@ -144,7 +144,7 @@ function OrderLedger() {
                 }
 
                 // 3. Insert Orders
-                const statuses = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
+                const statuses = ["pending", "in_transit", "delivered"];
                 let seededCount = 0;
                 
                 for (let i = 0; i < 5; i++) {
