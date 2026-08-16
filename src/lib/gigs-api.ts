@@ -130,7 +130,19 @@ export async function createGig(gig: Omit<Gig, "id" | "created_at">) {
 
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
-  return patchRecord<Gig>("gigs", id, patch as any);
+  const CANDIDATES = ["gigs", "delivery_gigs"];
+  let lastErr: any = null;
+  for (const table of CANDIDATES) {
+    try {
+      const res = await patchRecord<Gig>(table, id, patch as any);
+      if (res) return res;
+    } catch (e: any) {
+      lastErr = e;
+      if (e.message.includes("does not exist") || e.status === 404) continue;
+      throw e;
+    }
+  }
+  throw lastErr || new Error("Gig not found in any candidate table");
 }
 
 export async function fetchGigParticipants(gigId: string) {
