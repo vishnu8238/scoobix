@@ -17,11 +17,17 @@ const PORTAL_INTENT_KEY = "scoobix_oauth_portal_intent";
 
 /**
  * Persists the portal intent before starting OAuth.
+ * Uses both localStorage and sessionStorage for maximum reliability across browsers.
  */
 export function setPortalIntent(portal: string) {
   if (typeof window !== "undefined") {
     console.log("[AUTH_DEBUG] Setting portal intent:", portal);
     localStorage.setItem(PORTAL_INTENT_KEY, portal);
+    try {
+      sessionStorage.setItem(PORTAL_INTENT_KEY, portal);
+    } catch (e) {
+      // Ignore sessionStorage errors (e.g. private mode)
+    }
   }
 }
 
@@ -30,8 +36,23 @@ export function setPortalIntent(portal: string) {
  */
 export function popPortalIntent(): string {
   if (typeof window === "undefined") return "customer";
-  const intent = localStorage.getItem(PORTAL_INTENT_KEY) || "customer";
+  
+  // Priority: URL Param > sessionStorage > localStorage
+  const params = new URLSearchParams(window.location.search);
+  const portalParam = params.get("portal");
+  if (portalParam) return portalParam;
+
+  const sessionIntent = sessionStorage.getItem(PORTAL_INTENT_KEY);
+  const localIntent = localStorage.getItem(PORTAL_INTENT_KEY);
+  const intent = sessionIntent || localIntent || "customer";
+  
+  console.log("[AUTH_DEBUG] Popped portal intent:", intent, { source: sessionIntent ? 'session' : localIntent ? 'local' : 'default' });
+  
   localStorage.removeItem(PORTAL_INTENT_KEY);
+  try {
+    sessionStorage.removeItem(PORTAL_INTENT_KEY);
+  } catch (e) {}
+  
   return intent;
 }
 

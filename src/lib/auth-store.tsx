@@ -254,7 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: hasAccess ? currentPortal : "customer",
         roles: uniqueRoles,
         membershipsResolved: true,
-        pendingPortal: currentPortal,
+        pendingPortal: currentPortal || prevUser?.pendingPortal,
       });
 
       if (!hasAccess && (currentPortal as string) !== "customer") {
