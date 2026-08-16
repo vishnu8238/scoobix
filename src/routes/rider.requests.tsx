@@ -38,20 +38,14 @@ function RiderRequestsPage() {
     setLoading(true);
     setError(null);
 
-    const TIMEOUT = 10000;
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT)
-    );
-
     try {
-      const fetchPromise = Promise.all([
+      // Authoritative parallel fetch
+      const [gigsData, participantsData] = await Promise.all([
         fetchGigs({ status: "in.(ACTIVE,SCHEDULED,COMPLETED)" }),
         riderId 
           ? listTable<any>("gig_participants", { rider_id: `eq.${riderId}` }, { fresh: true, ttl: 0 })
           : Promise.resolve([])
       ]);
-
-      const [gigsData, participantsData] = await Promise.race([fetchPromise, timeoutPromise]) as [Gig[], any[]];
       
       setGigs(Array.isArray(gigsData) ? gigsData : []);
       setEnrolledIds(new Set((participantsData || []).map(p => p.gig_id)));
@@ -237,6 +231,19 @@ function RiderRequestsPage() {
 }
 
 function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolean; onAction: (a: 'enroll' | 'cancel') => void; busy: boolean }) {
+  const [participantCount, setParticipantCount] = useState<number>(0);
+  const version = useTableVersion(["gig_participants"]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const rows = await listTable("gig_participants", { gig_id: `eq.${gig.id}` });
+        setParticipantCount(rows.length);
+      } catch (e) {}
+    };
+    void load();
+  }, [gig.id, version]);
+
   const start = new Date(gig.start_time);
   const end = new Date(gig.end_time);
   const dateStr = start.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -300,7 +307,7 @@ function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolea
             </div>
           </div>
           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-            {gig.capacity ? `${Math.round(Math.random() * gig.capacity)}/${gig.capacity} Slots Booked` : "Open Slots"}
+            {gig.capacity ? `${participantCount}/${gig.capacity} Slots Booked` : `${participantCount} Enrolled`}
           </span>
         </div>
       </div>
