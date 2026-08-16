@@ -5,7 +5,7 @@ import { APPS, appHead } from "@/lib/apps";
 import { cn } from "@/lib/format";
 import { useManager } from "@/lib/manager-api";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
-import { getInitials, getDisplayName } from "@/lib/identity-utils";
+import { getInitials, getManagerDisplayName } from "@/lib/identity-utils";
 import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/manager")({
