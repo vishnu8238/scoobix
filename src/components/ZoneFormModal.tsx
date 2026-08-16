@@ -14,6 +14,8 @@ type ZoneFormProps = {
 
 export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneFormProps) {
   const [loading, setLoading] = useState(false);
+  
+  // Stable form state outside of map/re-renders
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     city: initialData?.city || "Vadodara",
@@ -22,6 +24,12 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
     max_delivery_distance_km: initialData?.max_delivery_distance_km || 4,
     description: initialData?.description || "",
     boundary: initialData?.boundary || { type: "Polygon", coordinates: [] }
+  });
+
+  // Keep lat/lng separate for manual entry stability
+  const [manualCoords, setManualCoords] = useState({
+    lat: initialData?.center_lat?.toString() || (initialData?.boundary?.coordinates?.[0]?.[0]?.[1]?.toString()) || "22.3072",
+    lng: initialData?.center_lng?.toString() || (initialData?.boundary?.coordinates?.[0]?.[0]?.[0]?.toString()) || "73.1812"
   });
 
   const hasMapPoints = formData.boundary?.coordinates?.[0]?.length >= 3;
@@ -154,9 +162,11 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
               <GoogleMap 
                 className="h-full w-full"
                 interactive={true}
-                center={formData.boundary?.coordinates?.[0]?.[0] ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : { lat: 22.3072, lng: 73.1812 }}
+                center={formData.boundary?.coordinates?.[0]?.[0] ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : { lat: parseFloat(manualCoords.lat), lng: parseFloat(manualCoords.lng) }}
                 onPick={(c) => {
-                  // Fallback for manual pinning if polygon drawing fails
+                  // Update manual coords on pick too
+                  setManualCoords({ lat: c.lat.toString(), lng: c.lng.toString() });
+                  
                   if (!formData.boundary?.coordinates?.[0]?.length) {
                     setFormData(prev => ({
                       ...prev,
@@ -174,6 +184,9 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                   }
                 }}
                 onPolygonEdit={(id, points) => {
+                  if (points.length > 0) {
+                    setManualCoords({ lat: points[0].lat.toString(), lng: points[0].lng.toString() });
+                  }
                   setFormData(prev => ({
                     ...prev,
                     boundary: {
@@ -194,27 +207,33 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                     <MapPin className="h-8 w-8 text-primary mx-auto mb-3" />
                     <p className="text-sm font-black mb-2">No boundary defined</p>
                     <p className="text-[10px] text-muted-foreground font-bold mb-4">
-                      Enter coordinates below or use the map if available to define the zone area.
+                      Enter coordinates below to define the zone area if drawing is unavailable.
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       <input 
                         type="number" step="any" placeholder="Lat" 
+                        value={manualCoords.lat}
                         className="bg-muted px-3 py-2 rounded-xl text-[10px] outline-none ring-1 ring-border/60"
                         onChange={e => {
-                          const lat = parseFloat(e.target.value);
-                          if (!isNaN(lat)) {
-                            const lng = formData.boundary?.coordinates?.[0]?.[0]?.[0] || 73.1812;
+                          const latVal = e.target.value;
+                          setManualCoords(prev => ({ ...prev, lat: latVal }));
+                          const lat = parseFloat(latVal);
+                          const lng = parseFloat(manualCoords.lng);
+                          if (!isNaN(lat) && !isNaN(lng)) {
                             setFormData(prev => ({ ...prev, boundary: { type: "Polygon", coordinates: [[[lng, lat], [lng+0.01, lat], [lng+0.01, lat+0.01], [lng, lat+0.01], [lng, lat]]] } }));
                           }
                         }}
                       />
                       <input 
                         type="number" step="any" placeholder="Lng" 
+                        value={manualCoords.lng}
                         className="bg-muted px-3 py-2 rounded-xl text-[10px] outline-none ring-1 ring-border/60"
                         onChange={e => {
-                          const lng = parseFloat(e.target.value);
-                          if (!isNaN(lng)) {
-                            const lat = formData.boundary?.coordinates?.[0]?.[0]?.[1] || 22.3072;
+                          const lngVal = e.target.value;
+                          setManualCoords(prev => ({ ...prev, lng: lngVal }));
+                          const lng = parseFloat(lngVal);
+                          const lat = parseFloat(manualCoords.lat);
+                          if (!isNaN(lat) && !isNaN(lng)) {
                             setFormData(prev => ({ ...prev, boundary: { type: "Polygon", coordinates: [[[lng, lat], [lng+0.01, lat], [lng+0.01, lat+0.01], [lng, lat+0.01], [lng, lat]]] } }));
                           }
                         }}
