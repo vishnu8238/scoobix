@@ -88,60 +88,47 @@ if (typeof window !== "undefined") {
  * Returns the cached value immediately if available.
  */
 export const getAccessToken = async () => {
-  // 1. Authoritative check: current SDK session memory
-  const sdkSession = insforge.auth.session;
-  if (sdkSession?.accessToken) {
-    console.log("[INSFORGE_AUTH] getAccessToken: using SDK session token");
-    return sdkSession.accessToken;
-  }
-
-  // 2. Refresh/Fetch authoritative state from SDK if memory is stale
-  if (typeof window !== "undefined") {
-    try {
-      console.log("[INSFORGE_AUTH] getAccessToken: memory stale, checking SDK current session...");
-      const session = await insforge.auth.getSession();
-      if (session?.accessToken) {
-        console.log("[INSFORGE_AUTH] getAccessToken: found fresh SDK session token");
-        return session.accessToken;
-      }
-
-      // Try getCurrentUser as it often triggers internal hydration
-      const { data } = await insforge.auth.getCurrentUser();
-      if (data?.user) {
-        const finalSession = insforge.auth.session;
-        if (finalSession?.accessToken) {
-          console.log("[INSFORGE_AUTH] getAccessToken: token recovered after getCurrentUser");
-          return finalSession.accessToken;
-        }
-      }
-    } catch (e) {
-      console.warn("[INSFORGE_AUTH] Authoritative session check failed:", e);
+  if (typeof window === "undefined") return null;
+  
+  try {
+    const sdkSession = insforge.auth.session;
+    if (sdkSession?.accessToken) {
+      console.log("[INSFORGE_AUTH] getAccessToken: using SDK session token");
+      return sdkSession.accessToken;
     }
-  }
 
-  // 3. Authorization fallback: browser local storage (legacy compatibility)
-  if (typeof window !== "undefined") {
-    try {
-      // Look for the specific cookie-based session established by the auth handler
-      const cookieSessionKey = "__insforge_session";
-      const stored = window.localStorage.getItem("insforge.auth.token") || 
-                     window.localStorage.getItem(cookieSessionKey) ||
-                     window.localStorage.getItem("scoobix_auth_token");
+    console.log("[INSFORGE_AUTH] getAccessToken: checking SDK current session...");
+    const { data: { session } } = await insforge.auth.getSession();
+    if (session?.accessToken) {
+      console.log("[INSFORGE_AUTH] getAccessToken: found fresh SDK session token");
+      return session.accessToken;
+    }
 
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const token = parsed?.accessToken || parsed?.access_token || parsed?.session?.accessToken || parsed?.session?.access_token;
-        if (token) {
-          console.log("[INSFORGE_AUTH] getAccessToken: using fallback storage token");
-          return token;
+    const storageKeys = [
+      "insforge.auth.token",
+      "__insforge_session",
+      "scoobix_auth_token"
+    ];
+
+    for (const key of storageKeys) {
+      try {
+        const stored = window.localStorage.getItem(key);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const token = parsed?.accessToken || parsed?.access_token || parsed?.session?.accessToken || parsed?.session?.access_token;
+          if (token) {
+            console.log(`[INSFORGE_AUTH] getAccessToken: using fallback storage token from ${key}`);
+            return token;
+          }
         }
-      }
-    } catch { /* ignore */ }
+      } catch { /* skip */ }
+    }
+  } catch (e) {
+    console.warn("[INSFORGE_AUTH] getAccessToken error:", e);
   }
 
   console.warn("[INSFORGE_AUTH] getAccessToken: NO TOKEN FOUND");
   return null;
-};
 
 
 // Mock/Stub exports for missing members reported in build errors
