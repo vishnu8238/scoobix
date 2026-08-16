@@ -14,14 +14,16 @@ function AuthCallback() {
 
   useEffect(() => {
     // 1. Immediately extract and preserve the portal intent before any potential re-renders or navigation
+    // We try to grab it from URL or storage immediately
     if (!portalRef.current) {
-      portalRef.current = popPortalIntent();
-      // Put it back in storage immediately so it survives a page refresh/reload during the exchange
-      setPortalIntent(portalRef.current);
+      const intent = popPortalIntent();
+      portalRef.current = intent;
+      // Re-persist briefly to survive potential hydration reloads
+      setPortalIntent(intent);
     }
     
     const portal = portalRef.current;
-    console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_MOUNTED] Portal:", portal);
+    console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_MOUNTED] Portal Intent Resolved:", portal);
     
     const checkAuth = async () => {
       try {
@@ -139,15 +141,29 @@ function AuthCallback() {
         // so we trust the destination portal's RoleGuard will pick up the session.
         // We use window.location.replace to ensure the callback page is removed from history.
 
-        const dest = portal === "customer" || !portal ? "/app" : `/${portal}`;
-        console.log("[AUTH_TRACE] Authorization complete. Redirecting to:", dest);
+        // 4. Deterministic Portal Mapping
+        // Map portal keywords to their canonical routes
+        const portalMap: Record<string, string> = {
+          admin: "/admin",
+          logistics: "/logistics",
+          manager: "/manager",
+          partner: "/partner",
+          rider: "/rider",
+          customer: "/app",
+        };
+
+        const destPath = portalMap[portal || "customer"] || "/app";
+        const dest = new URL(destPath, window.location.origin).href;
         
-        // Remove callback from history and redirect
-        // We use absolute URL to ensure we hit the portal guard correctly
-        window.location.replace(new URL(dest, window.location.origin).href);
+        console.log("[AUTH_TRACE] Authorization complete. Redirecting to canonical portal:", { portal, destPath, dest });
         
-        // Remove portal intent only after successful redirect initiation
-        setTimeout(() => localStorage.removeItem("scoobix_oauth_portal_intent"), 2000);
+        // Remove portal intent only AFTER we have the destination ready
+        localStorage.removeItem("scoobix_oauth_portal_intent");
+        try { sessionStorage.removeItem("scoobix_oauth_portal_intent"); } catch(e) {}
+
+        // Use window.location.replace to ensure the callback page is removed from history
+        // and to trigger a clean load of the destination portal shell.
+        window.location.replace(dest);
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);

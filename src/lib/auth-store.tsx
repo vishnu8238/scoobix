@@ -245,7 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log("[AUTH_TRACE] Final Resolved Name:", displayName);
 
-      setUser({
+      setUser(prev => ({
         id: authId,
         name: displayName,
         email: userEmail || "",
@@ -254,8 +254,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: hasAccess ? currentPortal : "customer",
         roles: uniqueRoles,
         membershipsResolved: true,
-        pendingPortal: currentPortal,
-      });
+        pendingPortal: currentPortal || prev?.pendingPortal,
+      }));
 
       if (!hasAccess && (currentPortal as string) !== "customer") {
         console.warn("[AUTH_TRACE] Access denied to portal:", currentPortal);
