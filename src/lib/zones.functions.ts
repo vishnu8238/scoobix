@@ -156,8 +156,8 @@ export const createNewZone = createServerFn({ method: "POST" })
       .single();
     
     if (error) {
-      console.error("InsForge Database Error:", error);
-      throw new Error(error.message || "Failed to create zone");
+      console.error("[ZONES_SERVER] InsForge Database Error:", error.message, error.details);
+      throw new Error(error.message || "Failed to create zone (Unauthorized or RLS)");
     }
     const row = Array.isArray(created) ? created[0] : created;
     if (row) {
@@ -192,7 +192,8 @@ export const createNewSubzone = createServerFn({ method: "POST" })
       .single();
     
     if (error) {
-      throw new Error(error.message || "Failed to create subzone");
+      console.error("[ZONES_SERVER] InsForge Subzone Error:", error.message, error.details);
+      throw new Error(error.message || "Failed to create subzone (Unauthorized or RLS)");
     }
     const row = Array.isArray(created) ? created[0] : created;
     if (row) {

@@ -185,7 +185,7 @@ export async function handleResponse<T>(promise: Promise<any>, method: string, t
     const { error, status, statusText } = res || {};
     
     // Auth Guard: handle unauthenticated states gracefully
-    if (!res || (error && (status === 401 || (error.message && (error.message.toLowerCase().includes("no token") || error.message.toLowerCase().includes("invalid token") || error.message.toLowerCase().includes("unauthorized")))))) {
+    if (!res || (error && (status === 401 || status === 403 || (error.message && (error.message.toLowerCase().includes("no token") || error.message.toLowerCase().includes("invalid token") || error.message.toLowerCase().includes("unauthorized") || error.message.toLowerCase().includes("permission denied")))))) {
       // If we are here, we check for a session in context if on server, or SDK if on client
       const sdkSession = insforge.auth.session;
       const hasToken = !!sdkSession?.accessToken;
@@ -200,6 +200,7 @@ export async function handleResponse<T>(promise: Promise<any>, method: string, t
       const authErr = new HttpError(status || 401, error?.message || "Unauthorized: Invalid or missing token");
       (authErr as any).isAuthError = true;
       (authErr as any).insforge_status = status;
+      (authErr as any).details = error?.details;
       throw authErr;
     }
     
