@@ -100,17 +100,20 @@ export const getAccessToken = async () => {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed?.access_token) return parsed.access_token;
+        if (parsed?.accessToken) return parsed.accessToken;
       }
       
       // Secondary fallback: search all keys for something that looks like an access token
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i);
-        if (key?.includes("auth") || key?.includes("token")) {
-          const val = window.localStorage.getItem(key);
+        if (key?.includes("insforge") || key?.includes("auth") || key?.includes("token")) {
+          const val = window.localStorage.getItem(key!);
           if (val && val.includes("access_token")) {
             const parsed = JSON.parse(val);
             if (parsed.access_token) return parsed.access_token;
+            if (parsed.accessToken) return parsed.accessToken;
             if (parsed.session?.access_token) return parsed.session.access_token;
+            if (parsed.session?.accessToken) return parsed.session.accessToken;
           }
         }
       }
@@ -122,7 +125,9 @@ export const getAccessToken = async () => {
     await ensureAuthHydrated();
   }
   
-  return cachedAccessToken || sdkSession?.accessToken || null;
+  const finalToken = cachedAccessToken || sdkSession?.accessToken || null;
+  console.log("[INSFORGE_AUTH] getAccessToken result:", finalToken ? "PRESENT" : "MISSING");
+  return finalToken;
 };
 
 
