@@ -110,8 +110,10 @@ function OrderLedger() {
 
                 console.log("[LOGISTICS_ORDERS] Seeding with explicit token forwarding:", !!token);
                 const res = await seedDemoOrders({ 
-                  data: {},
-                  accessToken: token
+                  data: {
+                    data: {},
+                    accessToken: token
+                  }
                 });
                 
                 if (res.seeded > 0) {
