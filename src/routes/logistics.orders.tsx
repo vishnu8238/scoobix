@@ -118,8 +118,7 @@ function OrderLedger() {
                     address: "123 Logistics Hub, Vadodara",
                     status: "ACTIVE",
                     zone_id: zone1Id,
-                    city: "Vadodara",
-                    metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
+                    city: "Vadodara"
                   };
                   const { data: created, error } = await sdk.database.from("restaurants").insert([rest]).select("id").single();
                   if (error) throw new Error(`Restaurant creation failed: ${error.message}`);
@@ -270,7 +269,6 @@ type DemoRestaurantInsert = {
   status: string;
   zone_id: string;
   city: string;
-  metadata: { is_demo: true; demo_tag: string };
 };
 
 const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
