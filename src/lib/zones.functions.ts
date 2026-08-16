@@ -117,18 +117,34 @@ export const createNewZone = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     // InsForge / PostgREST compatibility: check if table is accessible
-    const boundary = (data.boundary?.type === "Polygon" && data.boundary.coordinates?.[0]?.length >= 3) 
+    const boundary = (data.boundary?.type === "Polygon" && Array.isArray(data.boundary.coordinates?.[0]) && data.boundary.coordinates[0].length >= 3) 
       ? data.boundary 
-      : { type: "Polygon", coordinates: [] };
+      : { 
+          type: "Polygon", 
+          coordinates: [[
+            [73.1812, 22.3072], 
+            [73.1912, 22.3072], 
+            [73.1912, 22.3172], 
+            [73.1812, 22.3172],
+            [73.1812, 22.3072]
+          ]] 
+        };
 
     const payload = {
-      ...data,
+      name: data.name,
+      city: data.city || "Vadodara",
+      description: data.description || "",
+      status: data.status || "ACTIVE",
+      pickup_radius_km: data.pickup_radius_km ?? 1,
+      max_delivery_distance_km: data.max_delivery_distance_km ?? 4,
       max_orders_per_rider: 3,
       assignment_timeout_sec: 60,
-      center_lat: (boundary.coordinates?.[0]?.length > 0) ? boundary.coordinates[0][0][1] : 22.3072,
-      center_lng: (boundary.coordinates?.[0]?.length > 0) ? boundary.coordinates[0][0][0] : 73.1812,
+      center_lat: boundary.coordinates[0][0][1],
+      center_lng: boundary.coordinates[0][0][0],
       boundary
     };
+
+    console.log("[ZONES_SERVER] Creating zone with payload:", JSON.stringify(payload));
 
     const res = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}`, {
       method: "POST",
@@ -161,16 +177,22 @@ export const createNewSubzone = createServerFn({ method: "POST" })
     boundary: z.any().optional()
   }))
   .handler(async ({ data }) => {
+    const payload = {
+      zone_id: data.zone_id,
+      name: data.name,
+      status: data.status || "ACTIVE",
+      boundary: data.boundary || { type: "Polygon", coordinates: [] }
+    };
+    
+    console.log("[ZONES_SERVER] Creating subzone with payload:", JSON.stringify(payload));
+
     const res = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}`, {
       method: "POST",
       headers: {
         ...HEADERS,
         "Prefer": "return=representation"
       },
-      body: JSON.stringify({
-        ...data,
-        boundary: data.boundary || { type: "Polygon", coordinates: [] }
-      })
+      body: JSON.stringify(payload)
     });
     
     if (!res.ok) {
