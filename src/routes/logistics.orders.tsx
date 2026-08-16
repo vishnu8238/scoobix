@@ -108,7 +108,7 @@ function OrderLedger() {
                 const now = new Date().toISOString();
                 
                 // 1. Ensure Restaurant
-                const { data: restData } = await sdk.database.from("restaurants").select("id").eq("metadata->>demo_tag", "logistics_test_v3").limit(1);
+                const { data: restData } = await sdk.database.from("restaurants").select("id").eq("name", "Scoobix Demo Kitchen").limit(1);
                 let restaurantId = restData?.[0]?.id;
                 
                 if (!restaurantId) {
