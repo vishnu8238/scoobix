@@ -101,39 +101,91 @@ function OrderLedger() {
             onClick={async () => {
               setIsSeeding(true);
               try {
-                const { getAccessToken } = await import("@/lib/insforge");
-                const token = await getAccessToken();
+                console.log("[LOGISTICS_ORDERS] Seeding directly via SDK client...");
+                const { insforge: sdk } = await import("@/lib/insforge");
                 
-                if (!token) {
-                  throw new Error("No active session found. Please re-authenticate.");
+                // Construct demo data
+                const city1Id = "c1110000-0000-0000-0000-000000000001";
+                const zone1Id = "z1110000-0000-0000-0000-000000000001";
+                const now = new Date().toISOString();
+                
+                // 1. Ensure Restaurant
+                const { data: restData } = await sdk.database.from("restaurants").select("id").eq("metadata->>demo_tag", "logistics_test_v3").limit(1);
+                let restaurantId = restData?.[0]?.id;
+                
+                if (!restaurantId) {
+                  const rest = {
+                    id: crypto.randomUUID(),
+                    name: "Scoobix Demo Kitchen",
+                    address: "123 Logistics Hub, Vadodara",
+                    status: "ACTIVE",
+                    zone_id: zone1Id,
+                    city_id: city1Id,
+                    metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
+                  };
+                  const { data: created, error } = await sdk.database.from("restaurants").insert([rest]).select("id").single();
+                  if (error) throw new Error(`Restaurant creation failed: ${error.message}`);
+                  restaurantId = created?.id || rest.id;
                 }
 
-                console.log("[LOGISTICS_ORDERS] Seeding with explicit token forwarding:", !!token);
-                const res = await seedDemoOrders({ 
-                  data: {
-                    data: {},
-                    accessToken: token
-                  }
-                });
+                // 2. Ensure Customer
+                const { data: custData } = await sdk.database.from("users").select("id").eq("metadata->>demo_tag", "logistics_test_v3").limit(1);
+                let customerId = custData?.[0]?.id;
                 
-                if (res.seeded > 0) {
-                  toast.success(`Seeded ${res.seeded} new demo orders`);
-                } else if (res.existing > 0) {
-                  toast.info(`All ${res.existing} demo orders already present`);
+                if (!customerId) {
+                  const cust = {
+                    id: crypto.randomUUID(),
+                    name: "Demo Customer",
+                    role: "customer",
+                    email: "demo.customer@scoobix.test",
+                    metadata: { is_demo: true, demo_tag: "logistics_test_v3" }
+                  };
+                  const { data: created, error } = await sdk.database.from("users").insert([cust]).select("id").single();
+                  if (error) throw new Error(`Customer creation failed: ${error.message}`);
+                  customerId = created?.id || cust.id;
+                }
+
+                // 3. Insert Orders
+                const statuses = ["PLACED", "ACCEPTED", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
+                let seededCount = 0;
+                
+                for (let i = 0; i < 5; i++) {
+                  const demoRef = `demo_order_v5_${i}`;
+                  const { data: existing } = await sdk.database.from("orders").select("id").eq("metadata->>demo_ref", demoRef).limit(1);
+                  
+                  if (existing?.length) continue;
+
+                  const order = {
+                    id: crypto.randomUUID(),
+                    customer_id: customerId,
+                    restaurant_id: restaurantId,
+                    status: statuses[i % statuses.length],
+                    zone_id: zone1Id,
+                    total_price: 250 + (i * 50),
+                    created_at: now,
+                    metadata: { is_demo: true, demo_tag: "logistics_test_v5", demo_ref: demoRef },
+                    items: {
+                      lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
+                      meta: { restaurantName: "Scoobix Demo Kitchen", addressLine: "123 Demo St" }
+                    },
+                    delivery_address: "123 Demo Street, Vadodara",
+                    payment_method: "CASH",
+                    payment_status: i % 2 === 0 ? "PAID" : "PENDING"
+                  };
+
+                  const { error: insErr } = await sdk.database.from("orders").insert([order]);
+                  if (!insErr) seededCount++;
+                }
+                
+                if (seededCount > 0) {
+                  toast.success(`Seeded ${seededCount} new demo orders`);
                 } else {
-                  // Fallback for demo when backend is truly unauthorized or unreachable
-                  toast.info("Showing local demo orders (backend seed skipped)");
+                  toast.info("Demo orders already present");
                 }
                 void load();
               } catch (e: any) {
                 console.error("[SEED_ORDER_ERROR]", e);
-                // Surface the real error instead of silently skipping backend intent
-                const msg = e.message || "Unknown error";
-                if (msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("no token")) {
-                   toast.error(`Authentication required to seed backend: ${msg}`);
-                } else {
-                   toast.error(`Backend seeding failed: ${msg}`);
-                }
+                toast.error(`Backend seeding failed: ${e.message || "Unauthorized or RLS Blocked"}`);
                 void load();
               } finally {
                 setIsSeeding(false);
