@@ -275,7 +275,7 @@ function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolea
             <h3 className="mt-1 font-display text-xl font-extrabold tracking-tight">{gig.title}</h3>
           </div>
           <div className="text-right">
-            <p className="font-display text-xl font-black text-primary">{formatPrice(gig.reward_amount)}</p>
+            <p className="font-display text-xl font-black text-primary">{formatPrice(gig.reward_amount || 0)}</p>
             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Est. Reward</p>
           </div>
         </div>
