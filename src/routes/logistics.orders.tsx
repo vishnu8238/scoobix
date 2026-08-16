@@ -134,7 +134,7 @@ function OrderLedger() {
                   const cust = {
                     id: crypto.randomUUID(),
                     name: "Demo Customer",
-                    role: "customer",
+                    role: "CUSTOMER", // Uppercase to satisfy role constraint if strictly enforced
                     email: "demo.customer@scoobix.test"
                   };
                   // Use createRecord for retries and normalization
