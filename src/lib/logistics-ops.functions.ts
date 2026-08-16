@@ -199,36 +199,14 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
   });
 
 export const seedDemoOrders = createServerFn({ method: "POST" })
-  .validator(z.object({ 
+  .middleware([requireInsForgeAuth])
+  .inputValidator(z.object({ 
     data: z.any().optional(),
     accessToken: z.string().optional()
   }))
-  .handler(async ({ data: input }) => {
-    const { accessToken } = input;
-    
-    // Auth configuration: Use provided token OR read from request headers if available
-    const INSFORGE_URL = process.env['VITE_INSFORGE_URL'] || process.env['INSFORGE_URL'] || "https://awvs3seh.us-east.insforge.app";
-    const INSFORGE_ANON_KEY = process.env['VITE_INSFORGE_ANON_KEY'] || process.env['INSFORGE_ANON_KEY'] || "sb_publishable_FIPSldMe55J2LJ_hczRqag_orYaOaTT";
-    
-    console.log("[SEED] Authorizing request... Token provided:", !!accessToken);
-    
-    // Create server-side authenticated client
-    const insforge = createClient({
-      baseUrl: INSFORGE_URL,
-      anonKey: INSFORGE_ANON_KEY,
-    });
-
-    if (accessToken) {
-      (insforge.auth as any).tokenManager.setAccessToken(accessToken);
-    } else {
-      throw new Error("Unauthorized: No token provided");
-    }
-    
-    // Validate session
-    const { data: user } = await insforge.auth.getCurrentUser();
-    if (!user?.user) throw new Error("Unauthorized: Invalid session");
-
-    console.log("[SEED] Starting idempotent demo seeding for user:", user.user.email);
+  .handler(async ({ context }) => {
+    const { insforge } = context;
+    console.log("[SEED] Starting idempotent demo seeding via context insforge...");
     
     const city1Id = "c1110000-0000-0000-0000-000000000001";
     const zone1Id = "z1110000-0000-0000-0000-000000000001";
