@@ -117,7 +117,6 @@ function OrderLedger() {
                     name: "Scoobix Demo Kitchen",
                     address: "123 Logistics Hub, Vadodara",
                     status: "ACTIVE",
-                    zone_id: zone1Id,
                     city: "Vadodara"
                   };
                   const { data: created, error } = await sdk.database.from("restaurants").insert([rest]).select("id").single();
@@ -265,7 +264,6 @@ type DemoRestaurantInsert = {
   name: string;
   address: string;
   status: string;
-  zone_id: string;
   city: string;
 };
 
