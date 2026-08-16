@@ -27,7 +27,7 @@ export type GigParticipant = {
   rider_id: string;
   completed_deliveries: number;
   status: "ENROLLED" | "COMPLETED" | "FAILED";
-  joined_at: string;
+  created_at: string;
 };
 
 export async function fetchGigs(params?: Record<string, any>) {
@@ -102,11 +102,11 @@ export async function updateGig(id: string, patch: Partial<Gig>) {
 }
 
 export async function fetchGigParticipants(gigId: string) {
-  return listTable<GigParticipant>("gig_participants", { gig_id: `eq.${gigId}`, order: "completed_deliveries.desc" });
+  return listTable<GigParticipant>("rider_gig_enrollments", { gig_id: `eq.${gigId}`, order: "completed_deliveries.desc" });
 }
 
 export async function enrollInGig(gigId: string, riderId: string) {
-  const TABLE = "gig_participants";
+  const TABLE = "rider_gig_enrollments";
   
   // 1. Authoritative checks
   const [gigRows, existing, participants] = await Promise.all([
@@ -126,7 +126,7 @@ export async function enrollInGig(gigId: string, riderId: string) {
   }
 
   const id = newUuid();
-  const participant: Omit<GigParticipant, "id" | "joined_at"> = {
+  const participant: Omit<GigParticipant, "id" | "created_at"> = {
     gig_id: gigId,
     rider_id: riderId,
     completed_deliveries: 0,
@@ -139,7 +139,7 @@ export async function enrollInGig(gigId: string, riderId: string) {
 }
 
 export async function cancelGigEnrollment(gigId: string, riderId: string) {
-  const TABLE = "gig_participants";
+  const TABLE = "rider_gig_enrollments";
   const existing = await listTable<GigParticipant>(TABLE, {
     gig_id: `eq.${gigId}`,
     rider_id: `eq.${riderId}`
@@ -152,7 +152,7 @@ export async function cancelGigEnrollment(gigId: string, riderId: string) {
 }
 
 export async function fetchRiderGigs(riderId: string) {
-  const participations = await listTable<GigParticipant>("gig_participants", {
+  const participations = await listTable<GigParticipant>("rider_gig_enrollments", {
     rider_id: `eq.${riderId}`
   });
   

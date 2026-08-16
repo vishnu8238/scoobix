@@ -285,7 +285,7 @@ export function publishTableChange(
     add("user", r.customer_id);
     if (table === "restaurants") add("restaurant", id);
     add("restaurant", r.restaurant_id);
-    if (table === "drivers") add("driver", id);
+    if (table === "drivers" || table === "rider_gig_enrollments") add("driver", id);
     add("driver", r.driver_id);
     if (table === "support_tickets") add("ticket", id);
     add("ticket", r.ticket_id);
