@@ -31,8 +31,9 @@ function AdminGigs() {
   const dates = Array.from({ length: 7 }).map((_, i) => addDays(startOfToday(), i - 1));
 
   const filteredGigs = gigs.filter(g => 
-    g.title.toLowerCase().includes(q.toLowerCase())
+    (g.title || "").toLowerCase().includes(q.toLowerCase())
   );
+
 
   return (
     <div className="min-h-screen space-y-8 bg-slate-50/50 p-8 dark:bg-transparent">

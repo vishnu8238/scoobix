@@ -74,10 +74,11 @@ export function GigCard({ gig, onEdit, enrollmentCount = 0 }: GigCardProps) {
       <div className="mb-6 space-y-2">
         <div className="flex justify-between text-[10px] font-bold">
           <span className="text-muted-foreground/80">Eligible % for completion</span>
-          <span className="text-primary">{gig.completion_pct || 98}%</span>
+          <span className="text-primary">98%</span>
         </div>
-        <Progress value={gig.completion_pct || 98} className="h-1.5 bg-muted" />
+        <Progress value={98} className="h-1.5 bg-muted" />
       </div>
+
 
       <div className="mt-auto space-y-4">
         <div className="rounded-xl bg-muted/50 p-3 ring-1 ring-border/50">
