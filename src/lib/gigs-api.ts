@@ -8,11 +8,11 @@ export type Gig = {
   title?: string;
   description?: string;
   payout: number;
-  reward_amount?: number; // legacy alias
-  target_deliveries: number;
-  start_time: string;
-  end_time: string;
-  status: "pending" | "in_progress" | "completed" | "cancelled" | "ACTIVE" | "SCHEDULED";
+  reward_amount?: number; // UI alias
+  target_deliveries?: number;
+  start_time?: string;
+  end_time?: string;
+  status: "pending" | "in_progress" | "completed" | "cancelled" | "ACTIVE" | "SCHEDULED" | string;
   zone_id?: string;
   city_id?: string;
   capacity?: number;
