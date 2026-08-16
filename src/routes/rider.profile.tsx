@@ -53,7 +53,7 @@ function RiderProfile() {
   };
 
   return (
-    <div className="mx-auto min-h-svh max-w-[520px] pb-24 px-5 pt-7">
+    <div className="w-full pb-8 px-4 pt-7">
       <header className="flex flex-col items-center text-center mb-8">
         <div className="relative mb-4">
           <div className="h-24 w-24 rounded-[2.5rem] bg-muted/50 ring-4 ring-primary/10 overflow-hidden shadow-pop flex items-center justify-center">
