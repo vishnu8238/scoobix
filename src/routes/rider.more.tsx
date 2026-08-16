@@ -71,7 +71,7 @@ function RiderWorkArea() {
   }, [activeZone]);
 
   return (
-    <div className="mx-auto min-h-svh max-w-[520px] pb-24 px-5 pt-7">
+    <div className="w-full pb-8 px-4 pt-7">
       <PageHeader title="Work Area" subtitle="Your assigned zone & boundaries" />
 
       <div className="mt-6 space-y-6">
