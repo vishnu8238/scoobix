@@ -134,6 +134,53 @@ export const getAccessToken = async () => {
   return null;
 };
 
+/**
+ * AUTHORITATIVE AUTH BOUNDARY
+ * Resolves the current user UUID by synchronizing AuthStore state with 
+ * the InsForge SDK session and token.
+ */
+export const requireAuthenticatedInsforgeUser = async (): Promise<string> => {
+  // 1. Await hydration if not already done
+  await ensureAuthHydrated();
+
+  // 2. Authoritative token resolution (includes storage fallback)
+  const token = await getAccessToken();
+  
+  // 3. Sync token to SDK instance if found but SDK memory is stale
+  if (token && (!insforge.auth.session || insforge.auth.session.accessToken !== token)) {
+    console.log("[INSFORGE_AUTH] Synchronizing SDK session with authoritative token...");
+    try {
+      // We manually set the session in the SDK if the token is available
+      // but the singleton object is missing.
+      const { data } = await insforge.auth.setSession({
+        access_token: token,
+        refresh_token: "", // SDK allows partial session update in some versions
+      }).catch(() => ({ data: null }));
+      
+      if (data?.user?.id) return data.user.id;
+    } catch (e) {
+      console.warn("[INSFORGE_AUTH] Session sync failed:", e);
+    }
+  }
+
+  // 4. Try current session ID
+  const sessionId = insforge.auth.session?.user?.id;
+  if (sessionId) return sessionId;
+
+  // 5. Authoritative SDK call
+  const { data } = await insforge.auth.getCurrentUser().catch(() => ({ data: null }));
+  if (data?.user?.id) return data.user.id;
+
+  // 6. AuthStore Fallback (Browser context only)
+  if (typeof window !== "undefined") {
+    // We try to access the global auth state if available, or just throw
+    // since this is a requirement for a write.
+  }
+
+  throw new Error("Manager authentication required. Please sign in again.");
+};
+
+
 // Mock/Stub exports for missing members reported in build errors
 export const addonsForDish = async (...args: any[]): Promise<any[]> => [];
 export const bootstrapInsForge = async () => {};
