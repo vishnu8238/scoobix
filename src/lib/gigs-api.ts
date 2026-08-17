@@ -125,7 +125,7 @@ export async function enrollInGig(gigId: string, riderId: string) {
   ]);
 
   const gig = gigRows[0];
-  if (!gig) throw new Error("Gig not found");
+  if (!gig) throw new Error("Gig not found in delivery_gigs");
   if (gig.status !== "ACTIVE" && gig.status !== "SCHEDULED") throw new Error("Gig is not active for booking");
   if (existing && existing.length > 0) return existing[0];
   
