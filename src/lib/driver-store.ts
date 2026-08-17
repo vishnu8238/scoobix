@@ -21,6 +21,8 @@ export type DriverRow = {
   current_lat?: number;
   current_lng?: number;
   current_order_id?: string | null;
+  docs_verified?: boolean;
+  verification_status?: string | null;
 };
 
 const cache = new Map<string, DriverRow>();
