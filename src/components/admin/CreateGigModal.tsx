@@ -158,9 +158,9 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         end_time: `${todayStr}T${formData.end_time}:00Z`
       };
       
-      console.log("[CREATE_GIG_MODAL] Submitting payload via authoritative 'delivery_gigs' table:", payload);
+      console.log("[CREATE_GIG_MODAL] Submitting payload via authoritative 'gigs' table:", payload);
       
-      const TABLE = "delivery_gigs";
+      const TABLE = "gigs";
       const res = await createRecord<any>(TABLE, payload);
       
       if (!res) {

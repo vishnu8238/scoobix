@@ -55,7 +55,7 @@ function LogisticsGigs() {
   const [zone, setZone] = useState("all");
 
   // Real-time sync
-  const version = useTableVersion(["delivery_gigs", "rider_gig_enrollments"]);
+  const version = useTableVersion(["gigs", "rider_gig_enrollments"]);
 
   const seedDemos = useCallback(async () => {
     try {
@@ -211,9 +211,9 @@ function LogisticsGigs() {
         created_at: now.toISOString()
       };
 
-      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on 'delivery_gigs'...");
+      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on 'gigs'...");
       
-      const TABLE = "delivery_gigs";
+      const TABLE = "gigs";
       let successRes: any = null;
 
       try {
