@@ -73,7 +73,7 @@ function AuthCallback() {
         // 3. Wait for the SDK to process the callback and emit a user
         // We use a simple loop to wait for the user session to be established by the SDK automatically
         let retryCount = 0;
-        const maxRetries = 30; // ~15 seconds total
+        const maxRetries = 15; // ~7.5 seconds total (reduced from 30)
         
         const waitForUser = async (): Promise<any> => {
           const { data: userData, error: userError } = await insforge.auth.getCurrentUser();

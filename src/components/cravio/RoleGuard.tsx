@@ -27,9 +27,10 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (loading || authState === "initializing" || authState === "session_resolving" || authState === "authorization_resolving") {
+        console.warn("[AUTH_GUARD] Watchdog timeout in RoleGuard. Portal:", portal);
         setTimedOut(true);
       }
-    }, 15000);
+    }, 10000);
 
     if (typeof window !== 'undefined') {
       (window as any).__LAST_ROLE_GUARD_PATH__ = pathname;

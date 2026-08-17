@@ -77,11 +77,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
     const timeoutId = setTimeout(() => {
-      console.error("[AUTH_WATCHDOG] Auth resolution timed out after 15s");
+      console.error("[AUTH_WATCHDOG] Auth resolution timed out after 10s");
       setLoading(false);
-      setAuthState((prev) => (prev === "session_resolving" || prev === "authorization_resolving" || prev === "initializing" ? "auth_error" : prev));
-      setAuthError((prev) => prev || "Authentication connection timed out. Please check your internet and try again.");
-    }, 15000);
+      setAuthState((prev) => {
+        if (prev === "session_resolving" || prev === "authorization_resolving" || prev === "initializing") {
+          return "unauthenticated"; // Fallback to unauthenticated to allow UI to show login
+        }
+        return prev;
+      });
+    }, 10000);
 
     try {
       if (isInitialMountOrSignIn) {
@@ -142,6 +146,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthState("authorization_resolving");
       const currentPortal = getRequestedPortal() as Role;
       lastRequestedPortal.current = currentPortal;
+
+      // Ensure we have an active token for authorization reads
+      const token = await getAccessToken();
+      if (!token) {
+        console.warn("[AUTH_TRACE] No access token available for authorization check.");
+        setUser(null);
+        setAuthState("unauthenticated");
+        return;
+      }
 
       // 1. User Profile Lookup/Creation
       let profile = null;
