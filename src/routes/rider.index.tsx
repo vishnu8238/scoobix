@@ -81,8 +81,8 @@ function RiderHomeContent() {
   const version = useTableVersion(["orders", "drivers"]);
 
   useEffect(() => { 
-    setOnline(Boolean(driver?.online_status)); 
-  }, [driver?.online_status]);
+    setOnline(Boolean(driver?.is_online)); 
+  }, [driver?.is_online]);
 
   // Check geolocation permission on mount
   useEffect(() => {
@@ -165,7 +165,7 @@ function RiderHomeContent() {
       setOnline(next);
       if (driverId) {
         await setRiderAvailability(driverId, next);
-        await update({ online_status: next });
+        await update({ is_online: next });
         toast.success(next ? "You are now ONLINE" : "You are now OFFLINE");
       }
     } catch (err) {
@@ -184,7 +184,7 @@ function RiderHomeContent() {
           <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight truncate">Hey, {firstName}</h1>
           <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
             <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-            <span className="font-bold text-foreground">{(driver?.rating ?? 5).toFixed(2)}</span>
+            <span className="font-bold text-foreground">{(Number(driver?.rating) || 5).toFixed(2)}</span>
             <span className="mx-1 opacity-40">·</span>
             <span>{driver?.total_deliveries ?? 0} trips</span>
             <span className="mx-1 opacity-40">·</span>

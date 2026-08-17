@@ -30,19 +30,21 @@ export async function createRiderProfile(userId: string, data: {
   if (existing) return existing;
 
   // Use the exact authoritative UUID from the session
-  // Removed 'email' field to fix schema mismatch (Could not find 'email' column in 'drivers')
+  // authoritative column mapping confirmed via schema inspection
   const payload = {
     id: newUuid(),
-    user_id: userId, // Authoritative foreign key
+    user_id: userId,
     name: data.name,
     phone: data.phone,
     vehicle_type: data.vehicle_type,
     license_number: data.license_number,
     vehicle_number: data.vehicle_number || null,
-    status: "OFFLINE",
+    status: "offline",
+    is_online: false,
     verification_status: "pending",
     docs_verified: false,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
 
   console.log("[RIDER_KYC] Creating rider profile with user_id:", userId);
