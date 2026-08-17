@@ -39,7 +39,7 @@ export type GigParticipant = {
   created_at: string;
 };
 
-const AUTHORITATIVE_TABLE = "delivery_gigs";
+const AUTHORITATIVE_TABLE = "gigs";
 
 export async function fetchGigs(params?: Record<string, any>) {
   const { id, ...rest } = params || {};
@@ -78,7 +78,7 @@ export async function fetchGigs(params?: Record<string, any>) {
 export async function createGig(gig: Partial<Gig>) {
   const id = gig.id || newUuid();
   
-  // Map UI fields to database columns based on 'delivery_gigs' table schema
+  // Map UI fields to database columns based on 'gigs' table schema
   const record = {
     id,
     payout: gig.payout || gig.reward_amount || 0,
@@ -87,6 +87,7 @@ export async function createGig(gig: Partial<Gig>) {
     gig_type: gig.gig_type || "delivery",
     pickup_location: gig.pickup_location || "",
     dropoff_location: gig.dropoff_location || "",
+    // Extra fields stored in metadata for schema compatibility
     metadata: {
       ...gig.metadata,
       title: gig.title,

@@ -55,7 +55,7 @@ function LogisticsGigs() {
   const [zone, setZone] = useState("all");
 
   // Real-time sync
-  const version = useTableVersion(["delivery_gigs", "rider_gig_enrollments"]);
+  const version = useTableVersion(["gigs", "rider_gig_enrollments"]);
 
   const seedDemos = useCallback(async () => {
     try {
@@ -211,9 +211,9 @@ function LogisticsGigs() {
         created_at: now.toISOString()
       };
 
-      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on 'delivery_gigs'...");
+      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on 'gigs'...");
       
-      const TABLE = "delivery_gigs";
+      const TABLE = "gigs";
       let successRes: any = null;
 
       try {
@@ -264,7 +264,7 @@ function LogisticsGigs() {
         setTimeout(() => void load(), 1000);
 
       } else {
-        throw new Error("createRecord returned null/empty for 'delivery_gigs'");
+        throw new Error(`createRecord returned null/empty for '${TABLE}'`);
       }
     } catch (err: any) {
       console.error("[GIG_TEST_CLIENT] FAILED:", err);
@@ -494,7 +494,7 @@ function LogisticsGigs() {
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4 lg:grid-cols-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground uppercase text-[8px] font-black">Canonical Table</span>
-                    <span className="text-primary font-bold text-xs">{diagnostics.activeTable || "delivery_gigs"}</span>
+                    <span className="text-primary font-bold text-xs">{diagnostics.activeTable || "gigs"}</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground uppercase text-[8px] font-black">Verified Persistence</span>
