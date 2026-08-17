@@ -164,7 +164,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
       const res = await createRecord<any>(TABLE, payload);
       
       if (!res) {
-        throw new Error("Persistence failed: 'gigs' rejected the record");
+        throw new Error("Persistence failed: 'delivery_gigs' rejected the record");
       }
       
       // Authoritative read-back verification after write
