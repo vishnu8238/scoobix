@@ -161,14 +161,13 @@ function AuthCallback() {
         localStorage.removeItem("scoobix_oauth_portal_intent");
         try { sessionStorage.removeItem("scoobix_oauth_portal_intent"); } catch(e) {}
 
-        // Use window.location.replace to ensure the callback page is removed from history
-        // and to trigger a clean load of the destination portal shell.
-        // Use router navigate for internal transition if possible, or location replace
-        // Ensure the store has a moment to pick up the session before we leave
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Use a slight delay to ensure the SDK session is fully flushed to storage
+        // and picked up by the background state listener in the AuthProvider.
+        await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Use window.location.replace to ensure a clean portal load and skip the history entry
-        window.location.replace(dest);
+        // Use window.location.assign to ensure a clean portal load and skip the history entry.
+        // assign() is more reliable for cross-portal navigation than router.navigate.
+        window.location.assign(dest);
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
