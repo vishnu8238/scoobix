@@ -5,10 +5,12 @@
  * All operations are best-effort with a single retry on failure. Never throws
  * — stores stay usable when the backend is unreachable.
  */
-import { insforge } from "./insforge";
+import { insforge, getAccessToken } from "./insforge";
 import { cached, cacheDrop, cacheGet } from "./request-cache";
 import { recordMetric } from "./perf-metrics";
 import { publishTableChange, onAnyChange } from "./realtime-bus";
+import { sanitizeRecord } from "./api-guard";
+
 
 // Any realtime change — from this client or another one — drops the cached
 // reads for that table so the next fetch is authoritative.
@@ -347,9 +349,21 @@ export function createRecord<T = Record<string, unknown>>(
 ): Promise<T | null> {
   invalidateTable(table);
   return withRetry<T | null>(table, async () => {
-    // RLS Defense: Restrictive SELECT policies can make an otherwise-successful 
-    // INSERT look like a failure (returning null/empty result).
-    const query = (insforge.database.from(table) as any).insert(record).select();
+    // SECURITY: Sanitise input and enforce owner scope for user-owned tables
+    const sanitized = sanitizeRecord(record);
+    const session = insforge.auth.session;
+    const authId = session?.user?.id;
+    
+    // Explicit server-side simulation of RLS: if the table has an owner_id or user_id column,
+    // and we have an authenticated user, we ensure it's set correctly.
+    const securedRecord = { ...sanitized };
+    if (authId && !['merchant_managers', 'platform_admins', 'logistics_staff'].includes(table)) {
+      if ('owner_id' in securedRecord) securedRecord.owner_id = authId;
+      if ('user_id' in securedRecord) securedRecord.user_id = authId;
+    }
+
+    const query = (insforge.database.from(table) as any).insert(securedRecord).select();
+
     try {
       const res = await handleResponse<T[]>(query, "POST", table);
       console.log(`[DB_INSERT] ${table} raw response:`, JSON.stringify(res));
