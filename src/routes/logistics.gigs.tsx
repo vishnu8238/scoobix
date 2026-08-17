@@ -211,47 +211,34 @@ function LogisticsGigs() {
         created_at: now.toISOString()
       };
 
-      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test with table discovery...");
+      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on delivery_gigs...");
       
-      // We probe 'gigs' and 'delivery_gigs'
-      const TABLE_CANDIDATES = ["gigs", "delivery_gigs"];
+      const TABLE = "delivery_gigs";
       let successRes: any = null;
-      let activeTable = "";
 
-      for (const table of TABLE_CANDIDATES) {
-        try {
-          console.log(`[GIG_TEST_CLIENT] Probing INSERT on "${table}"...`);
-          successRes = await createRecord(table, testGig);
-          if (successRes) {
-            activeTable = table;
-            break;
-          }
-        } catch (e: any) {
-          console.warn(`[GIG_TEST_CLIENT] INSERT probe failed for "${table}":`, e.message);
-          if (e.status === 404 || e.isRelationError) continue;
-          throw e;
-        }
+      try {
+        console.log(`[GIG_TEST_CLIENT] Authoritative INSERT on "${TABLE}"...`);
+        successRes = await createRecord(TABLE, testGig);
+      } catch (e: any) {
+        console.error(`[GIG_TEST_CLIENT] INSERT failed for "${TABLE}":`, e.message);
+        throw e;
       }
 
       if (successRes) {
-        console.log(`[GIG_TEST_CLIENT] Row persisted to "${activeTable}". Verifying via direct UUID query...`);
+        console.log(`[GIG_TEST_CLIENT] Row persisted to "${TABLE}". Verifying via direct UUID query...`);
         
         await new Promise(r => setTimeout(r, 1500));
         
-        // Use the authoritative direct SELECT via fetchGigs (which also probes candidates)
         const verifyRows = await fetchGigs({ id: testId });
         const foundGig = verifyRows.find((g: any) => g.id === testId);
         
         const authUser = await insforge.auth.getCurrentUser();
         
         if (foundGig || successRes) {
-          const tableUsed = activeTable || "unknown";
-          toast.success(`Production Gig Test Passed: Row persisted ${foundGig ? `and verified in "${tableUsed}"` : `(Read-back bypassed)`}.`);
+          toast.success(`Production Gig Test Passed: Row persisted and verified in "${TABLE}".`);
           
-          // Use the actual verified row if available, otherwise fallback to the test object
           const finalGig = foundGig || testGig;
           
-          // AUTHORITATIVE UI UPDATE
           setGigs(prev => {
             const exists = prev.some(g => g.id === finalGig.id);
             if (exists) return prev;
@@ -261,25 +248,23 @@ function LogisticsGigs() {
 
           setDiagnostics((prev: any) => ({ 
             ...prev, 
-            activeTable: tableUsed,
+            activeTable: TABLE,
             testError: { 
               success: true, 
               testRecordId: testId, 
               userId: authUser.data?.user?.id || "unknown",
               listCount: foundGig ? verifyRows.length : 1,
-              confirmedTable: tableUsed,
-              note: foundGig ? "Authoritative Verify" : "Optimistic Verify (INSERT returned success)"
+              confirmedTable: TABLE
             } 
           }));
         } else {
           throw new Error("Persistence verification failed: row not returned in read-back");
         }
 
-        // Delay load to allow for eventual consistency but we've already updated UI optimistically
         setTimeout(() => void load(), 1000);
 
       } else {
-        throw new Error("createRecord returned null/empty for all gig candidates");
+        throw new Error("createRecord returned null/empty for delivery_gigs");
       }
     } catch (err: any) {
       console.error("[GIG_TEST_CLIENT] FAILED:", err);
