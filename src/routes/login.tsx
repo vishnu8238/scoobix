@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth, Role } from "@/lib/auth-store";
+import { isAuthResolving } from "@/lib/auth-utils";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/login")({
@@ -75,7 +76,12 @@ function ConsolidatedLogin() {
     }
   };
 
-  if ((loading || !hydrationComplete) && !localError && !authError && authState !== "unauthenticated") {
+  // Only show the "Resolving Access" blocker if we are actually in a transition state
+  // and have a session but are verifying it.
+  const isResolving = isAuthResolving(authState) || (loading && !hydrationComplete);
+  const showLoading = isResolving && !localError && !authError && authState !== "unauthenticated";
+
+  if (showLoading) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-background gap-4 p-6 text-center">
         <div className="flex flex-col items-center gap-2">
@@ -86,12 +92,14 @@ function ConsolidatedLogin() {
         </div>
         
         {/* Anti-blank-screen insurance */}
-        <div className="mt-12 animate-in fade-in duration-1000 delay-7000 fill-mode-backwards">
+        <div className="mt-12 animate-in fade-in duration-1000 delay-5000 fill-mode-backwards">
           <Button 
             variant="ghost" 
             size="sm"
             className="text-[10px] uppercase font-bold text-muted-foreground hover:text-foreground"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              void logout().then(() => window.location.reload());
+            }}
           >
             Connection taking too long? Retry
           </Button>

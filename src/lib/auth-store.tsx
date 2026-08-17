@@ -77,21 +77,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lastRequestedPortal = useRef<Role | null>(null);
 
   const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
+    // 10s watchdog for authorization resolution ONLY
     const timeoutId = setTimeout(() => {
-      console.error("[AUTH_WATCHDOG] Auth resolution timed out after 10s");
-      setLoading(false);
-      setAuthState((prev) => {
-        if (isAuthResolving(prev)) {
-          return "unauthenticated"; // Fallback to unauthenticated to allow UI to show login
-        }
-        return prev;
-      });
+      if (authState === "authorization_resolving" || authState === "session_resolving") {
+        console.error("[AUTH_WATCHDOG] Auth resolution timed out after 10s");
+        setAuthState("unauthenticated");
+        setLoading(false);
+      }
     }, 10000);
 
     try {
       if (isInitialMountOrSignIn) {
+        // Only set loading/session_resolving if we don't already have a valid session in memory
+        // and we aren't already resolving.
+        setAuthState(prev => (prev === "authenticated" || isAuthResolving(prev)) ? prev : "session_resolving");
         setLoading(true);
-        setAuthState("session_resolving");
         setAuthError(null);
       }
       
@@ -151,9 +151,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ensure we have an active token for authorization reads
       const token = await getAccessToken();
       if (!token) {
-        // If we have a user from the SDK but no token, we might be in a weird state
-        // but we should still try to resolve the profile if the SDK says we are logged in.
-        console.warn("[AUTH_TRACE] No access token available for authorization check. Attempting profile lookup anyway.");
+        console.warn("[AUTH_TRACE] No access token available for authorization check.");
+        // If we are on the public login page, we can settle to unauthenticated early
+        if (typeof window !== "undefined" && window.location.pathname === "/login") {
+           setUser(null);
+           setAuthState("unauthenticated");
+           setLoading(false);
+           setHydrationComplete(true);
+           clearTimeout(timeoutId);
+           return;
+        }
       }
 
       // 1. User Profile Lookup/Creation
@@ -331,7 +338,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [resolveUser]);
 
   const login = async (provider: 'google', portal: string = "customer", options: { prompt?: 'select_account' | 'consent' | 'none' } = {}) => {
-    if (provider === 'google') await loginWithGoogle(portal, options);
+    if (provider === 'google') {
+      setAuthState("oauth_callback_in_progress");
+      await loginWithGoogle(portal, options);
+    }
   };
 
   const logout = async () => {
