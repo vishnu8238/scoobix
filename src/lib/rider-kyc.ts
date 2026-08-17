@@ -35,12 +35,13 @@ export async function createRiderProfile(userId: string, data: {
     id: newUuid(),
     user_id: userId,
     name: data.name,
+    email: null, // confirmed column
     phone: data.phone,
     vehicle_type: data.vehicle_type,
     license_number: data.license_number,
     vehicle_number: data.vehicle_number || null,
-    verification_status: "pending",
-    docs_verified: false,
+    status: "pending",
+    is_online: false,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
