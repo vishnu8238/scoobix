@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 
 import { ImageUploader } from "@/components/cravio/ImageUploader";
 import type { ImageRef } from "@/lib/image-service";
-import { listTable } from "@/lib/insforge-crud";
+import { listTable, invalidateTable } from "@/lib/insforge-crud";
 import { cn } from "@/lib/format";
 import { getDisplayName } from "@/lib/identity-utils";
 import {
@@ -253,7 +253,6 @@ function OnboardingFlow() {
           status: String(extra.onboarding_status ?? "draft"),
           note: statusLabel,
         });
-        const { invalidateTable } = await import("@/lib/insforge-crud");
         invalidateTable("onboarding_events");
         invalidateTable("restaurants");
       }
