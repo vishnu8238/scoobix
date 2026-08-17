@@ -3,6 +3,7 @@ import { loginWithGoogle, logout as ifLogout } from "./insforge-auth";
 import { insforge, getAccessToken } from "./insforge";
 import { listTable } from "./insforge-crud";
 import { getDisplayName } from "./identity-utils";
+import { isAuthResolving } from "./auth-utils";
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
@@ -80,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("[AUTH_WATCHDOG] Auth resolution timed out after 10s");
       setLoading(false);
       setAuthState((prev) => {
-        if (prev === "session_resolving" || prev === "authorization_resolving" || prev === "initializing") {
+        if (isAuthResolving(prev)) {
           return "unauthenticated"; // Fallback to unauthenticated to allow UI to show login
         }
         return prev;

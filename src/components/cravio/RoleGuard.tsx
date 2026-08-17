@@ -3,6 +3,7 @@ import { useAuth, Role, getRequestedPortal } from "@/lib/auth-store";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isAuthResolving } from "@/lib/auth-utils";
 
 /**
  * SCOOBIX — ROLE GUARD
@@ -26,7 +27,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (loading || authState === "initializing" || authState === "session_resolving" || authState === "authorization_resolving") {
+      if (loading || isAuthResolving(authState)) {
         console.warn("[AUTH_GUARD] Watchdog timeout in RoleGuard. Portal:", portal);
         setTimedOut(true);
       }
@@ -44,7 +45,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     
     // AUTH HYDRATION PROTECTION: 
     // Do NOT trigger any redirects if auth is still initializing or resolving.
-    if (loading || authState === "initializing" || authState === "session_resolving" || authState === "authorization_resolving") return;
+    if (loading || isAuthResolving(authState)) return;
     
     // 1. Not logged in? 
     if (!user) {
@@ -77,7 +78,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     }
   }, [user, loading, portal, allow, navigate, pathname]);
 
-  if (loading || authState === "initializing" || authState === "session_resolving" || authState === "authorization_resolving") {
+  if (loading || isAuthResolving(authState)) {
     // If we are already on a login page, just show it.
     if (pathname.includes("/login")) {
       return <>{children}</>;
