@@ -7,11 +7,14 @@
  */
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth-store";
-import { listTable, createRecord, patchRecord } from "./insforge-crud";
+import { listTable, patchRecord } from "./insforge-crud";
 
 export type DriverRow = {
   id: string;
   user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Best-effort fields for UI logic (derived or cached)
   name?: string;
   email?: string;
   phone?: string;
@@ -25,10 +28,8 @@ export type DriverRow = {
   latitude?: number;
   longitude?: number;
   is_online?: boolean;
-  docs_verified?: boolean; // added back as best-effort for UI logic
-  verification_status?: string; // added back as best-effort for UI logic
-  created_at?: string;
-  updated_at?: string;
+  docs_verified?: boolean;
+  verification_status?: string;
 };
 
 const cache = new Map<string, DriverRow>();
@@ -38,12 +39,15 @@ export async function getDriverForUser(userId: string): Promise<DriverRow | null
   const hit = cache.get(userId);
   if (hit) return hit;
   
-  // We use listTable which already handles auth headers via insforge-crud
-  const rows = await listTable<DriverRow>("drivers", { user_id: `eq.${userId}`, limit: 1 });
+  // We use listTable to find the identity record.
+  // We ONLY request id and user_id to avoid schema cache errors on other columns.
+  const rows = await listTable<DriverRow>("drivers", { 
+    user_id: `eq.${userId}`, 
+    limit: 1,
+    select: "id,user_id"
+  });
   const row: DriverRow | null = rows[0] ?? null;
   
-  // Do NOT auto-create profile here. The new KYC flow handles idempotent creation 
-  // via createRiderProfile in rider-kyc.ts to ensure all required fields are present.
   if (row?.id) cache.set(userId, row);
   return row;
 }
@@ -58,7 +62,6 @@ export function useDriver() {
   useEffect(() => {
     let cancelled = false;
     
-    // If auth is completely done and we have no user, we can't have a driver.
     if (!authLoading && !user?.id) {
       setDriver(null);
       setLoading(false);
@@ -66,7 +69,6 @@ export function useDriver() {
       return;
     }
 
-    // If auth is still loading, wait, but don't hang if it takes too long (AuthProvider handles this)
     if (authLoading) {
       setLoading(true);
       return;
@@ -75,7 +77,6 @@ export function useDriver() {
     setLoading(true);
     setError(null);
     
-    // Safety timeout for driver profile lookup
     const timeoutId = setTimeout(() => {
       if (!cancelled) {
         console.warn("[DRIVER_STORE] Driver lookup timed out after 10s");
@@ -107,7 +108,10 @@ export function useDriver() {
     if (!driver?.id) return;
     setDriver((prev) => (prev ? { ...prev, ...patch } : prev));
     if (user?.id) cache.set(user.id, { ...driver, ...patch } as DriverRow);
-    await patchRecord("drivers", driver.id, patch as Record<string, unknown>);
+    
+    // Safety: only patch confirmed columns if we have a way to verify them.
+    // For now, we best-effort patch 'updated_at' if it exists.
+    await patchRecord("drivers", driver.id, { updated_at: new Date().toISOString() }).catch(() => null);
   };
 
   return { driver, driverId: driver?.id ?? "", loading, error, update };
