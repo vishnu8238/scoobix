@@ -78,7 +78,7 @@ export async function fetchGigs(params?: Record<string, any>) {
 export async function createGig(gig: Partial<Gig>) {
   const id = gig.id || newUuid();
   
-  // Map UI fields to database columns based on 'gigs' table schema
+  // Map UI fields to database columns based on 'delivery_gigs' table schema
   const record = {
     id,
     payout: gig.payout || gig.reward_amount || 0,
