@@ -158,36 +158,19 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
         end_time: `${todayStr}T${formData.end_time}:00Z`
       };
       
-      console.log("[CREATE_GIG_MODAL] Submitting payload via authoritative CRUD:", payload);
+      console.log("[CREATE_GIG_MODAL] Submitting payload via authoritative delivery_gigs table:", payload);
       
-      // discovery write probe
-      const TABLE_CANDIDATES = ["gigs", "delivery_gigs"];
-      let res: any = null;
-      let usedTable = "";
-
-      for (const table of TABLE_CANDIDATES) {
-        try {
-          console.log(`[CREATE_GIG_MODAL] Probing write on "${table}"...`);
-          res = await createRecord<any>(table, payload);
-          if (res) {
-            usedTable = table;
-            break;
-          }
-        } catch (e: any) {
-          console.warn(`[CREATE_GIG_MODAL] Write failed for "${table}":`, e.message);
-          if (e.isRelationError || e.status === 404) continue;
-          throw e;
-        }
-      }
+      const TABLE = "delivery_gigs";
+      const res = await createRecord<any>(TABLE, payload);
       
       if (!res) {
-        throw new Error("Persistence failed: all table candidates rejected the record");
+        throw new Error("Persistence failed: delivery_gigs rejected the record");
       }
       
       // Authoritative read-back verification after write
       await new Promise(r => setTimeout(r, 800));
-      const verifyQuery = insforge.database.from(usedTable).select("*").eq("id", res.id || payload.title);
-      const verifyRows = await handleResponse<any[]>(verifyQuery, "GET", usedTable);
+      const verifyQuery = insforge.database.from(TABLE).select("*").eq("id", res.id || payload.title);
+      const verifyRows = await handleResponse<any[]>(verifyQuery, "GET", TABLE);
       
       if (!verifyRows || verifyRows.length === 0) {
         throw new Error(`Gig persisted to "${usedTable}" but not found by canonical list query. Check RLS.`);
