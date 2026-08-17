@@ -205,7 +205,7 @@ export async function handleResponse(promise, method, table) {
             status: status,
         });
         if (error) {
-            // Production fix: Relation "public.gigs" error indicates the SDK/DB configuration
+            // Production: relation errors indicate the SDK/DB configuration
             // is adding an incorrect schema prefix or the table exists under a different name.
             console.error(`[DB_ERROR] ${method} ${table} failed. Full error:`, JSON.stringify(error, null, 2), "status:", status, "statusText:", statusText);
             const msg = String(error.message || "").toLowerCase();
