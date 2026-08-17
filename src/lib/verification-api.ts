@@ -79,14 +79,12 @@ export const RESTAURANT_DOCS: KycDocDef[] = [
 ];
 
 export const RIDER_DOCS: KycDocDef[] = [
-  { type: "aadhaar", label: "Aadhaar", hint: "Identity proof (front & back)", mandatory: true, numberLabel: "Aadhaar number" },
-  { type: "pan", label: "PAN card", hint: "Required for payouts", mandatory: true, numberLabel: "PAN number" },
-  { type: "driving_licence", label: "Driving licence", hint: "Valid two-wheeler licence", mandatory: true, numberLabel: "Licence number", expiry: true },
+  { type: "aadhaar_front", label: "Aadhaar Front", hint: "Identity proof front side", mandatory: true, numberLabel: "Aadhaar number" },
+  { type: "aadhaar_back", label: "Aadhaar Back", hint: "Identity proof back side", mandatory: true, numberLabel: "Aadhaar number" },
+  { type: "driving_licence_front", label: "DL Front", hint: "Driving licence front side", mandatory: true, numberLabel: "Licence number", expiry: true },
+  { type: "driving_licence_back", label: "DL Back", hint: "Driving licence back side", mandatory: true, numberLabel: "Licence number" },
   { type: "vehicle_rc", label: "Vehicle RC", hint: "Registration certificate", mandatory: true, numberLabel: "Vehicle number" },
-  { type: "insurance", label: "Vehicle insurance", hint: "Active policy document", mandatory: true, numberLabel: "Policy number", expiry: true },
-  { type: "bank_account", label: "Bank account", hint: "Passbook or cancelled cheque", mandatory: true, numberLabel: "Account number" },
-  { type: "photo", label: "Profile photo", hint: "Clear selfie for customer trust", mandatory: true, numberLabel: "Reference (optional)" },
-  { type: "police_verification", label: "Police verification", hint: "Optional — speeds up onboarding", mandatory: false, numberLabel: "Reference number" },
+  { type: "selfie", label: "Selfie", hint: "Clear profile photo", mandatory: true, numberLabel: "Reference (optional)" },
 ];
 
 export const MANAGER_DOCS: KycDocDef[] = [

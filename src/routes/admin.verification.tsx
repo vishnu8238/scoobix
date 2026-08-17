@@ -171,7 +171,7 @@ function AdminVerification() {
               </button>
 
               {selected === s.id && (
-                <div className="mt-3">
+                <div className="mt-4 animate-fade-down">
                   <VerificationReviewPanel
                     subject={tab}
                     subjectId={s.id}
