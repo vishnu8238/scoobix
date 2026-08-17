@@ -317,7 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
       console.log(`[AUTH_TRACE] SDK State Change: ${event}`);
       if (event === 'signedIn' || event === 'TOKEN_REFRESHED') {
-        resolveUser(true);
+        resolveUser(false); // don't reset state to session_resolving during active use
       } else if (event === 'signedOut') {
         setUser(null);
         setAuthState("unauthenticated");
