@@ -213,7 +213,7 @@ function LogisticsGigs() {
 
       console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on 'gigs'...");
       
-      const TABLE = "gigs";
+      const TABLE = "delivery_gigs";
       let successRes: any = null;
 
       try {

@@ -160,7 +160,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
       
       console.log("[CREATE_GIG_MODAL] Submitting payload via authoritative 'gigs' table:", payload);
       
-      const TABLE = "gigs";
+      const TABLE = "delivery_gigs";
       const res = await createRecord<any>(TABLE, payload);
       
       if (!res) {

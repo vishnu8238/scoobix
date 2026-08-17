@@ -39,7 +39,7 @@ export type GigParticipant = {
   created_at: string;
 };
 
-const AUTHORITATIVE_TABLE = "gigs";
+const AUTHORITATIVE_TABLE = "delivery_gigs";
 
 export async function fetchGigs(params?: Record<string, any>) {
   const { id, ...rest } = params || {};
