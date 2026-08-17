@@ -25,7 +25,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
 
     try {
       // Step 0: Authoritative schema discovery
-      const tables = ["gigs", "cities", "zones", "logistics_zones", "delivery_zones", "subzones", "restaurants", "orders", "users"];
+      const tables = ["gigs", "cities", "zones", "subzones", "restaurants", "orders", "users"];
       for (const table of tables) {
         try {
           // Check for relation existence
@@ -59,8 +59,8 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
 
       // Step 2: Idempotent seed for cities and zones
       // We probe for the writable table
-      const cityTableCandidates = ["cities", "logistics_cities", "delivery_cities"];
-      const zoneTableCandidates = ["zones", "logistics_zones", "delivery_zones"];
+      const cityTableCandidates = ["cities"];
+      const zoneTableCandidates = ["zones"];
       
       for (const table of cityTableCandidates) {
         try {
