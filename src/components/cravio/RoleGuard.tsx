@@ -53,7 +53,9 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
       // If we are strictly unauthenticated (no session), go to login
       const loginPath = `/login?portal=${portal}`;
       console.log("[AUTH_DEBUG] RoleGuard: Unauthenticated, redirecting to login:", loginPath);
-      window.location.replace(new URL(loginPath, window.location.origin).href);
+      
+      // Use router navigate for internal routes if possible, fallback to replace
+      navigate({ to: "/login", search: { portal } });
       return;
     }
 

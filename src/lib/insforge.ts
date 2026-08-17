@@ -150,14 +150,13 @@ export const requireAuthenticatedInsforgeUser = async (): Promise<string> => {
   if (token && (!insforge.auth.session || insforge.auth.session.accessToken !== token)) {
     console.log("[INSFORGE_AUTH] Synchronizing SDK session with authoritative token...");
     try {
-      // We manually set the session in the SDK if the token is available
-      // but the singleton object is missing.
-      const { data } = await insforge.auth.setSession({
-        access_token: token,
-        refresh_token: "", // SDK allows partial session update in some versions
-      }).catch(() => ({ data: null }));
-      
-      if (data?.user?.id) return data.user.id;
+      // Use setSession if possible to force SDK alignment
+      if (insforge.auth.setSession) {
+        await insforge.auth.setSession({
+          access_token: token,
+          refresh_token: "",
+        }).catch(() => ({ data: null }));
+      }
     } catch (e) {
       console.warn("[INSFORGE_AUTH] Session sync failed:", e);
     }

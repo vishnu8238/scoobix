@@ -150,10 +150,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ensure we have an active token for authorization reads
       const token = await getAccessToken();
       if (!token) {
-        console.warn("[AUTH_TRACE] No access token available for authorization check.");
-        setUser(null);
-        setAuthState("unauthenticated");
-        return;
+        // If we have a user from the SDK but no token, we might be in a weird state
+        // but we should still try to resolve the profile if the SDK says we are logged in.
+        console.warn("[AUTH_TRACE] No access token available for authorization check. Attempting profile lookup anyway.");
       }
 
       // 1. User Profile Lookup/Creation
