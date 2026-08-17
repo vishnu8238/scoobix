@@ -494,7 +494,7 @@ function LogisticsGigs() {
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4 lg:grid-cols-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground uppercase text-[8px] font-black">Canonical Table</span>
-                    <span className="text-primary font-bold text-xs">{diagnostics.activeTable || "delivery_gigs"}</span>
+                    <span className="text-primary font-bold text-xs">{diagnostics.activeTable || "gigs"}</span>
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-muted-foreground uppercase text-[8px] font-black">Verified Persistence</span>
