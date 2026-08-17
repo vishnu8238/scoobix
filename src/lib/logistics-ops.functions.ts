@@ -25,7 +25,7 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
 
     try {
       // Step 0: Authoritative schema discovery
-      const tables = ["gigs", "cities", "zones", "logistics_zones", "delivery_zones", "subzones", "restaurants", "orders", "users"];
+      const tables = ["gigs", "cities", "zones", "subzones", "restaurants", "orders", "users"];
       for (const table of tables) {
         try {
           // Check for relation existence
