@@ -340,22 +340,14 @@ export async function saveOnboardingDraft(
   const isUuid = (val: any) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
   const safeId = id && isUuid(id) ? id : null;
 
-  // Identity safety: ensure we have an authenticated user ID
-  let session = insforge.auth.session;
-  let authId = session?.user?.id;
-
-  // Await session resolution if missing
-  if (!authId) {
-    console.log("[MANAGER_API] Session missing, awaiting resolution...");
-    const { ensureAuthHydrated } = await import("./insforge");
-    await ensureAuthHydrated();
-    session = insforge.auth.session;
-    authId = session?.user?.id;
-  }
+  // Authoritative identity resolution
+  const { requireAuthenticatedInsforgeUser } = await import("./insforge");
+  const authId = await requireAuthenticatedInsforgeUser();
 
   if (!authId) {
     throw new Error("Manager authentication required. Please sign in again.");
   }
+
 
   // Idempotency: If no ID provided, check for an existing draft by this owner/manager
   let targetId = safeId;
@@ -415,17 +407,9 @@ export async function updateManagerProfile(patch: {
   phone?: string;
   avatar_url?: string;
 }) {
-  let session = insforge.auth.session;
-  let authId = session?.user?.id;
-  
-  if (!authId) {
-    const { ensureAuthHydrated } = await import("./insforge");
-    await ensureAuthHydrated();
-    session = insforge.auth.session;
-    authId = session?.user?.id;
-  }
-  
-  if (!authId) throw new Error("Unauthorized");
+  const { requireAuthenticatedInsforgeUser } = await import("./insforge");
+  const authId = await requireAuthenticatedInsforgeUser();
+
 
   // 1. Update the 'users' profile row (public.users)
   await patchRecord("users", authId, {

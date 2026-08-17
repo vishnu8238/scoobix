@@ -351,8 +351,16 @@ export function createRecord<T = Record<string, unknown>>(
   return withRetry<T | null>(table, async () => {
     // SECURITY: Sanitise input and enforce owner scope for user-owned tables
     const sanitized = sanitizeRecord(record);
+    const token = await getAccessToken();
     const session = insforge.auth.session;
     const authId = session?.user?.id;
+
+    // Attach current token if available to the SDK instance headers for this request
+    if (token && (!session || session.accessToken !== token)) {
+       (insforge as any).realtime?.setAuth(token);
+       // The SDK database client usually handles the header, but we force it for safety
+    }
+
     
     // Explicit server-side simulation of RLS: if the table has an owner_id or user_id column,
     // and we have an authenticated user, we ensure it's set correctly.
