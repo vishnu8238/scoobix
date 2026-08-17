@@ -1,76 +1,80 @@
-import { createRecord, listTable, patchRecord } from "./insforge-crud";
+import { listTable, createRecord, patchRecord } from "./insforge-crud";
 import { newUuid } from "./orders-api";
-import { 
-  fetchDocs, 
-  submitDoc, 
-  DOC_CATALOG, 
-  VerifySubject, 
-  mergeDocs, 
-  summarize, 
-  syncSubjectStatus,
-  Actor
-} from "./verification-api";
 
-export async function getRiderProfile(userId: string) {
-  const rows = await listTable<any>("drivers", { user_id: `eq.${userId}`, limit: 1 });
-  return rows[0] || null;
-}
+/**
+ * Rider Profile Persistence (External to 'drivers' table)
+ * 
+ * We use 'rider_profiles' to store onboarding data because the 'drivers' table
+ * columns are unreliable in the production schema cache.
+ */
+export const RIDER_PROFILE_TABLE = "rider_profiles";
 
-export async function createRiderProfile(userId: string, data: {
+export type RiderProfileData = {
   name: string;
   phone: string;
   vehicle_type: string;
   license_number: string;
   vehicle_number?: string;
-}) {
-  if (!userId) throw new Error("User identity required for profile creation");
+};
 
-  // Idempotent check
-  const existing = await getRiderProfile(userId);
-  if (existing) return existing;
+/**
+ * Idempotent Rider Profile resolution.
+ */
+export async function createRiderProfile(userId: string, data: RiderProfileData) {
+  if (!userId) throw new Error("User ID is required for rider profile creation");
 
-  // Use the exact authoritative UUID from the session
-  // authoritative column mapping confirmed via schema inspection
+  // 1. Check if profile already exists for this user
+  const existing = await listTable<any>(RIDER_PROFILE_TABLE, { 
+    user_id: `eq.${userId}`, 
+    limit: 1 
+  }).catch(() => []);
+
+  if (existing && existing.length > 0) {
+    return patchRecord(RIDER_PROFILE_TABLE, existing[0].id, {
+      ...data,
+      updated_at: new Date().toISOString()
+    });
+  }
+
+  // 2. Ensure a driver record exists first (identity anchor)
+  let driverRecord = await listTable<any>("drivers", { 
+    user_id: `eq.${userId}`, 
+    limit: 1,
+    select: "id"
+  }).catch(() => []);
+
+  let driverId: string;
+  if (!driverRecord || driverRecord.length === 0) {
+    const created = await createRecord<any>("drivers", {
+      id: newUuid(),
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
+    driverId = created?.id || newUuid();
+  } else {
+    driverId = driverRecord[0].id;
+  }
+
+  // 3. Create the profile record
   const payload = {
     id: newUuid(),
     user_id: userId,
-    name: data.name,
-    email: null,
-    phone: data.phone,
-    vehicle_type: data.vehicle_type,
-    license_number: data.license_number,
-    vehicle_number: data.vehicle_number || null,
-    status: "pending",
-    is_online: false,
-    rating: 5.0,
-    total_deliveries: 0,
+    driver_id: driverId,
+    ...data,
+    verification_status: "pending",
+    docs_verified: false,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
 
-  console.log("[RIDER_KYC] Creating rider profile with user_id:", userId);
-  return createRecord("drivers", payload);
+  return createRecord(RIDER_PROFILE_TABLE, payload);
 }
 
-export async function submitRiderKycDoc(
-  driverId: string, 
-  docType: string, 
-  fileUrl: string, 
-  fileName: string,
-  actor: Actor
-) {
-  const def = DOC_CATALOG.rider.find(d => d.type === docType);
-  if (!def) throw new Error(`Invalid document type: ${docType}`);
-
-  const docs = await fetchDocs("rider", driverId);
-  const existing = docs.find(d => d.doc_type === docType) || null;
-
-  return submitDoc("rider", driverId, def, {
-    file_url: fileUrl,
-    file_name: fileName
-  }, existing, actor);
-}
-
-export async function finalizeRiderKycSubmission(driverId: string) {
-  return syncSubjectStatus("rider", driverId);
+export async function getRiderProfile(userId: string) {
+  const rows = await listTable<any>(RIDER_PROFILE_TABLE, { 
+    user_id: `eq.${userId}`, 
+    limit: 1 
+  });
+  return rows[0] || null;
 }
