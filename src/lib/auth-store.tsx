@@ -338,7 +338,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [resolveUser]);
 
   const login = async (provider: 'google', portal: string = "customer", options: { prompt?: 'select_account' | 'consent' | 'none' } = {}) => {
-    if (provider === 'google') await loginWithGoogle(portal, options);
+    if (provider === 'google') {
+      setAuthState("oauth_callback_in_progress");
+      await loginWithGoogle(portal, options);
+    }
   };
 
   const logout = async () => {
