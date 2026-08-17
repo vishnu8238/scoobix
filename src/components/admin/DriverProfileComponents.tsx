@@ -58,8 +58,8 @@ export function DriverProfileHeader({ driver }: DriverProfileHeaderProps) {
           </div>
           <div className={cn(
             "absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-2 border-background shadow-sm",
-            driver.online_status ? "bg-emerald-500" : "bg-zinc-400"
-          )} title={driver.online_status ? "Online" : "Offline"} />
+            driver.is_online ? "bg-emerald-500" : "bg-zinc-400"
+          )} title={driver.is_online ? "Online" : "Offline"} />
         </div>
         
         <div className="flex-1">
@@ -174,7 +174,7 @@ export function PersonalInfoSection({ driver }: { driver: ExtendedDriver }) {
                   <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <Map className="h-3.5 w-3.5" /> GPS Coordinates
                   </p>
-                  {driver.online_status && (
+                  {driver.is_online && (
                     <span className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-600">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" /> Live Location
                     </span>
@@ -183,18 +183,18 @@ export function PersonalInfoSection({ driver }: { driver: ExtendedDriver }) {
                <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="rounded-2xl bg-background/50 p-3 ring-1 ring-border/40">
                     <p className="text-[9px] font-bold text-muted-foreground uppercase mb-0.5">Latitude</p>
-                    <p className="font-mono text-xs font-bold">{driver.current_lat || "—"}</p>
+                    <p className="font-mono text-xs font-bold">{driver.latitude || "—"}</p>
                   </div>
                   <div className="rounded-2xl bg-background/50 p-3 ring-1 ring-border/40">
                     <p className="text-[9px] font-bold text-muted-foreground uppercase mb-0.5">Longitude</p>
-                    <p className="font-mono text-xs font-bold">{driver.current_lng || "—"}</p>
+                    <p className="font-mono text-xs font-bold">{driver.longitude || "—"}</p>
                   </div>
                </div>
                
                {/* Location Preview Placeholder */}
                <div className="aspect-video w-full rounded-2xl bg-muted relative overflow-hidden ring-1 ring-border/40 group">
-                  {driver.current_lat && driver.current_lng ? (
-                    <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=' + driver.current_lat + ',' + driver.current_lng + '&zoom=14&size=600x300&markers=color:blue%7Clabel:D%7C' + driver.current_lat + ',' + driver.current_lng + '&key=')] bg-cover bg-center grayscale opacity-60 group-hover:grayscale-0 transition-all duration-500" />
+                  {driver.latitude && driver.longitude ? (
+                    <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=' + driver.latitude + ',' + driver.longitude + '&zoom=14&size=600x300&markers=color:blue%7Clabel:D%7C' + driver.latitude + ',' + driver.longitude + '&key=')] bg-cover bg-center grayscale opacity-60 group-hover:grayscale-0 transition-all duration-500" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground font-bold uppercase tracking-widest">Location Unavailable</div>
                   )}

@@ -75,7 +75,7 @@ function RiderProfile() {
         
         <div className="mt-4 flex gap-2">
           <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary">
-            {driver?.online_status ? "Online" : "Offline"}
+            {driver?.is_online ? "Online" : "Offline"}
           </span>
           <span className="rounded-full bg-card px-3 py-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground ring-1 ring-border/60">
             Gold Member

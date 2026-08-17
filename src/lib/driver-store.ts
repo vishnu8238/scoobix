@@ -12,17 +12,22 @@ import { listTable, createRecord, patchRecord } from "./insforge-crud";
 export type DriverRow = {
   id: string;
   user_id?: string;
+  name?: string;
+  phone?: string;
   vehicle_type?: string;
   vehicle_number?: string;
-  online_status?: boolean;
+  license_number?: string;
+  status?: string;
+  is_online?: boolean;
   rating?: number;
   total_deliveries?: number;
-  pending_earnings?: number;
-  current_lat?: number;
-  current_lng?: number;
-  current_order_id?: string | null;
+  assigned_zone_id?: string | null;
+  latitude?: number;
+  longitude?: number;
   docs_verified?: boolean;
   verification_status?: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 const cache = new Map<string, DriverRow>();
