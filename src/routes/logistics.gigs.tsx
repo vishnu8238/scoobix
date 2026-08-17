@@ -264,7 +264,7 @@ function LogisticsGigs() {
         setTimeout(() => void load(), 1000);
 
       } else {
-        throw new Error("createRecord returned null/empty for 'delivery_gigs'");
+        throw new Error(`createRecord returned null/empty for '${TABLE}'`);
       }
     } catch (err: any) {
       console.error("[GIG_TEST_CLIENT] FAILED:", err);
