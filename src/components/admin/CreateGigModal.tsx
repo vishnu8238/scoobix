@@ -173,7 +173,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
       const verifyRows = await handleResponse<any[]>(verifyQuery, "GET", TABLE);
       
       if (!verifyRows || verifyRows.length === 0) {
-        throw new Error(`Gig persisted to "${usedTable}" but not found by canonical list query. Check RLS.`);
+        throw new Error(`Gig persisted to "${TABLE}" but not found by canonical list query. Check RLS.`);
       }
 
       console.log("[CREATE_GIG_MODAL] Verified result:", verifyRows[0]);
