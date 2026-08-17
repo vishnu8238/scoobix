@@ -44,9 +44,7 @@ export async function createRiderProfile(userId: string, data: RiderProfileData)
   if (!driverRecord || driverRecord.length === 0) {
     const created = await createRecord<any>("drivers", {
       id: newUuid(),
-      user_id: userId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      user_id: userId
     });
     driverId = created?.id || newUuid();
   } else {
@@ -60,9 +58,7 @@ export async function createRiderProfile(userId: string, data: RiderProfileData)
     driver_id: driverId,
     ...data,
     verification_status: "pending",
-    docs_verified: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    docs_verified: false
   };
 
   return createRecord(RIDER_PROFILE_TABLE, payload);

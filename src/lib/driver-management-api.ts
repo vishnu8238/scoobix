@@ -38,7 +38,7 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
   const [driver] = await listTable<ExtendedDriver>("drivers", { 
     id: `eq.${driverId}`, 
     limit: 1,
-    select: "id,user_id,created_at"
+    select: "id,user_id"
   }, { fresh: true });
   
   if (!driver) return null;
@@ -75,7 +75,7 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
 
 export async function updateDriverStatus(driverId: string, status: string, reason?: string, adminId?: string) {
   // Best-effort update to a metadata-style status or just update updated_at
-  await patchRecord("drivers", driverId, { updated_at: new Date().toISOString() }).catch(() => null);
+  await patchRecord("drivers", driverId, {}).catch(() => null);
   
   if (adminId) {
     await createRecord("loyalty_audit_logs", {
