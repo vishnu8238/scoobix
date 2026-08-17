@@ -55,7 +55,7 @@ function AdminVerification() {
 
       if (tab === "restaurant") {
         const rows = await listTable<{ id: string; name?: string | null; code?: string | null; city?: string | null }>(
-          "restaurants", { order: "created_at.desc", limit: 100 },
+          "restaurants", { limit: 100 },
         );
         base.push(...rows.map((r) => ({
           id: r.id, title: r.name || "Unnamed restaurant", subtitle: r.code || r.city || "Restaurant",
@@ -63,7 +63,7 @@ function AdminVerification() {
         })));
       } else if (tab === "rider") {
         const rows = await listTable<{ id: string; user_id?: string | null; vehicle_number?: string | null; verification_status?: string | null }>(
-          "drivers", { order: "created_at.desc", limit: 100 },
+          "drivers", { limit: 100 },
         );
         base.push(...rows.map((r) => ({
           id: r.id, title: r.vehicle_number || `Rider ${r.id.slice(0, 6)}`,
@@ -72,7 +72,7 @@ function AdminVerification() {
         })));
       } else {
         const rows = await listTable<{ id: string; name?: string | null; email?: string | null; region?: string | null; verification_status?: string | null }>(
-          "merchant_managers", { order: "created_at.desc", limit: 100 },
+          "merchant_managers", { limit: 100 },
         );
         base.push(...rows.map((r) => ({
           id: r.id, title: r.name || "Manager", subtitle: r.email || r.region || "Merchant manager",

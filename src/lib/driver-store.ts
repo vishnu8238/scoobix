@@ -109,9 +109,9 @@ export function useDriver() {
     setDriver((prev) => (prev ? { ...prev, ...patch } : prev));
     if (user?.id) cache.set(user.id, { ...driver, ...patch } as DriverRow);
     
-    // Safety: only patch confirmed columns if we have a way to verify them.
-    // For now, we best-effort patch 'updated_at' if it exists.
-    await patchRecord("drivers", driver.id, { updated_at: new Date().toISOString() }).catch(() => null);
+    // Safety: only patch confirmed identity anchor (drivers.id)
+    // We avoid patching 'updated_at' or any other columns on 'drivers' to prevent schema cache errors.
+    await patchRecord("drivers", driver.id, {}).catch(() => null);
   };
 
   return { driver, driverId: driver?.id ?? "", loading, error, update };

@@ -30,10 +30,7 @@ export async function createRiderProfile(userId: string, data: RiderProfileData)
   }).catch(() => []);
 
   if (existing && existing.length > 0) {
-    return patchRecord(RIDER_PROFILE_TABLE, existing[0].id, {
-      ...data,
-      updated_at: new Date().toISOString()
-    });
+    return patchRecord(RIDER_PROFILE_TABLE, existing[0].id, data);
   }
 
   // 2. Ensure a driver record exists first (identity anchor)
@@ -47,9 +44,7 @@ export async function createRiderProfile(userId: string, data: RiderProfileData)
   if (!driverRecord || driverRecord.length === 0) {
     const created = await createRecord<any>("drivers", {
       id: newUuid(),
-      user_id: userId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      user_id: userId
     });
     driverId = created?.id || newUuid();
   } else {
@@ -63,9 +58,7 @@ export async function createRiderProfile(userId: string, data: RiderProfileData)
     driver_id: driverId,
     ...data,
     verification_status: "pending",
-    docs_verified: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    docs_verified: false
   };
 
   return createRecord(RIDER_PROFILE_TABLE, payload);

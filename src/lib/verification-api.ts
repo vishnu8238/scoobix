@@ -37,7 +37,6 @@ export type KycRow = {
   reviewed_at?: string | null;
   reviewed_by?: string | null;
   created_at?: string | null;
-  updated_at?: string | null;
 };
 
 export type KycAuditRow = {
@@ -163,7 +162,6 @@ export async function fetchDocs(subject: VerifySubject, subjectId: string): Prom
   if (!subjectId) return [];
   return listTable<KycRow>(VERIFICATION_TABLE, {
     ...subjectParams(subject, subjectId),
-    order: "created_at.desc", // Latest first
     limit: 200,
   }, { fresh: true }); // Always fresh for KYC
 }
@@ -276,7 +274,6 @@ export async function submitDoc(
     submitted_at: now,
     reviewed_at: null,
     reviewed_by: null,
-    updated_at: now,
   };
 
   let kycId = existing?.id ?? null;
@@ -329,7 +326,7 @@ export async function reviewDoc(
     remarks: remarks || null,
     reviewed_at: now,
     reviewed_by: actor.name ?? actor.id ?? "admin",
-    updated_at: now,
+    
   };
 
   let row: KycRow | null = existing;

@@ -8,10 +8,10 @@ export type RiderStatus = "ONLINE" | "OFFLINE";
  * We try to patch 'drivers' best-effort, but don't fail if columns are missing.
  */
 export async function setRiderAvailability(riderId: string, online: boolean) {
-  // We use a very narrow patch to avoid schema cache errors on guessed columns
-  return patchRecord("drivers", riderId, {
-    updated_at: new Date().toISOString()
-  }).catch(() => null);
+  // We use a completely empty patch to drivers just to trigger any side effects if needed,
+  // or we can simply return success if we're moving all state to rider_profiles.
+  // For now, we avoid touching drivers columns entirely.
+  return { success: true };
 }
 
 export async function getRiderPreferences(riderId: string) {
