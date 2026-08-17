@@ -75,7 +75,12 @@ if (typeof window !== "undefined") {
     const session = insforge.auth.session;
     const token = session?.accessToken || null;
     console.log(`[INSFORGE_AUTH] Auth event: ${event} | Token present: ${!!token}`);
-    cachedAccessToken = token;
+    
+    if (token) {
+      cachedAccessToken = token;
+    } else if (event === 'signedOut') {
+      cachedAccessToken = null;
+    }
   });
   
   // Start hydration immediately on load

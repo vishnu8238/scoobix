@@ -165,9 +165,9 @@ function AuthCallback() {
         // and picked up by the background state listener in the AuthProvider.
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Use window.location.assign to ensure a clean portal load and skip the history entry.
-        // assign() is more reliable for cross-portal navigation than router.navigate.
-        window.location.assign(dest);
+        // Use window.location.replace to ensure a clean portal load and skip the history entry.
+        // replace() is critical to avoid back-button loops into the callback.
+        window.location.replace(dest);
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
