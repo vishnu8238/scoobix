@@ -341,8 +341,18 @@ export async function saveOnboardingDraft(
   const safeId = id && isUuid(id) ? id : null;
 
   // Identity safety: ensure we have an authenticated user ID
-  const session = insforge.auth.session;
-  const authId = session?.user?.id;
+  let session = insforge.auth.session;
+  let authId = session?.user?.id;
+
+  // Await session resolution if missing
+  if (!authId) {
+    console.log("[MANAGER_API] Session missing, awaiting resolution...");
+    const { ensureAuthHydrated } = await import("./insforge");
+    await ensureAuthHydrated();
+    session = insforge.auth.session;
+    authId = session?.user?.id;
+  }
+
   if (!authId) {
     throw new Error("Manager authentication required. Please sign in again.");
   }
@@ -405,8 +415,16 @@ export async function updateManagerProfile(patch: {
   phone?: string;
   avatar_url?: string;
 }) {
-  const session = insforge.auth.session;
-  const authId = session?.user?.id;
+  let session = insforge.auth.session;
+  let authId = session?.user?.id;
+  
+  if (!authId) {
+    const { ensureAuthHydrated } = await import("./insforge");
+    await ensureAuthHydrated();
+    session = insforge.auth.session;
+    authId = session?.user?.id;
+  }
+  
   if (!authId) throw new Error("Unauthorized");
 
   // 1. Update the 'users' profile row (public.users)
@@ -494,7 +512,14 @@ export function useManager() {
 
   const refresh = useCallback(async () => {
     // Authoritative check from session first to avoid stale hook states
-    const session = insforge.auth.session;
+    let session = insforge.auth.session;
+    
+    if (!session?.user?.id) {
+      const { ensureAuthHydrated } = await import("./insforge");
+      await ensureAuthHydrated();
+      session = insforge.auth.session;
+    }
+    
     const authId = session?.user?.id || user?.id;
 
     if (!authId) {

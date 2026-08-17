@@ -94,13 +94,11 @@ export const getAccessToken = async () => {
     // Proactively check SDK session memory
     const sdkSession = insforge.auth.session;
     if (sdkSession?.accessToken) {
-      console.log("[INSFORGE_AUTH] getAccessToken: using SDK session token");
       return sdkSession.accessToken;
     }
 
     // Attempt authoritative session recovery from SDK
-    console.log("[INSFORGE_AUTH] getAccessToken: memory stale, fetching session...");
-    const { data } = await insforge.auth.getSession();
+    const { data } = await insforge.auth.getSession().catch(() => ({ data: null }));
     if (data?.session?.accessToken) {
       console.log("[INSFORGE_AUTH] getAccessToken: recovered SDK session token");
       return data.session.accessToken;
@@ -114,7 +112,6 @@ export const getAccessToken = async () => {
       `sb-${INSFORGE_PROJECT_ID}-auth-token`
     ];
 
-    // Scan all localStorage keys for anything that looks like a token
     for (let i = 0; i < window.localStorage.length; i++) {
       const k = window.localStorage.key(i);
       if (k && (k.includes("auth-token") || k.includes("session") || k.includes("insforge"))) {
@@ -124,7 +121,6 @@ export const getAccessToken = async () => {
             const parsed = JSON.parse(stored);
             const token = parsed?.accessToken || parsed?.access_token || parsed?.session?.accessToken || parsed?.session?.access_token || (typeof parsed === 'string' ? parsed : null);
             if (token && typeof token === 'string' && token.length > 50) {
-              console.log(`[INSFORGE_AUTH] getAccessToken: recovered token from dynamic key ${k}`);
               return token;
             }
           }
@@ -135,7 +131,6 @@ export const getAccessToken = async () => {
     console.warn("[INSFORGE_AUTH] getAccessToken error:", e);
   }
 
-  console.warn("[INSFORGE_AUTH] getAccessToken: NO TOKEN FOUND");
   return null;
 };
 

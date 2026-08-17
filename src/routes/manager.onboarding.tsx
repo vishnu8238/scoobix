@@ -210,8 +210,16 @@ function OnboardingFlow() {
     }
     
     // Authoritative manager resolution before write
-    const session = insforge.auth.session;
-    const authoritativeManagerId = manager?.id || session?.user?.id;
+    let session = insforge.auth.session;
+    let authoritativeManagerId = manager?.id || session?.user?.id;
+
+    if (!authoritativeManagerId) {
+      console.log("[ONBOARDING_PERSIST] Session missing, awaiting resolution...");
+      const { ensureAuthHydrated } = await import("@/lib/insforge");
+      await ensureAuthHydrated();
+      session = insforge.auth.session;
+      authoritativeManagerId = manager?.id || session?.user?.id;
+    }
     
     if (!authoritativeManagerId) {
       console.error("[ONBOARDING_SUBMIT] No manager ID found in session or hook state");
