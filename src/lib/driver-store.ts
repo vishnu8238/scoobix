@@ -17,17 +17,19 @@ export type DriverRow = {
   vehicle_type?: string;
   vehicle_number?: string;
   license_number?: string;
-  status?: string;
-  is_online?: boolean;
   rating?: number;
   total_deliveries?: number;
   assigned_zone_id?: string | null;
-  latitude?: number;
-  longitude?: number;
   docs_verified?: boolean;
   verification_status?: string | null;
   created_at?: string;
   updated_at?: string;
+  // Dynamic fields that might not exist in all schema versions
+  is_online?: boolean;
+  online_status?: boolean;
+  status?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 const cache = new Map<string, DriverRow>();
