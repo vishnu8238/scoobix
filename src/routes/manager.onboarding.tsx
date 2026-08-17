@@ -253,7 +253,6 @@ function OnboardingFlow() {
           status: String(extra.onboarding_status ?? "draft"),
           note: statusLabel,
         });
-        const { invalidateTable } = await import("@/lib/insforge-crud");
         invalidateTable("onboarding_events");
         invalidateTable("restaurants");
       }
