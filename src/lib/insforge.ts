@@ -98,7 +98,7 @@ export const getAccessToken = async () => {
     }
 
     // Attempt authoritative session recovery from SDK
-    const { data, error } = await insforge.auth.getSession();
+    const { data } = await insforge.auth.getSession().catch(() => ({ data: null }));
     if (data?.session?.accessToken) {
       console.log("[INSFORGE_AUTH] getAccessToken: recovered SDK session token");
       return data.session.accessToken;
