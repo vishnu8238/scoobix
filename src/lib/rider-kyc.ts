@@ -24,13 +24,16 @@ export async function createRiderProfile(userId: string, data: {
   vehicle_number?: string;
   email?: string;
 }) {
+  if (!userId) throw new Error("User identity required for profile creation");
+
   // Idempotent check
   const existing = await getRiderProfile(userId);
   if (existing) return existing;
 
-  return createRecord("drivers", {
+  // Use the exact authoritative UUID from the session
+  const payload = {
     id: newUuid(),
-    user_id: userId,
+    user_id: userId, // Authoritative foreign key
     name: data.name,
     phone: data.phone,
     vehicle_type: data.vehicle_type,
@@ -41,7 +44,10 @@ export async function createRiderProfile(userId: string, data: {
     verification_status: "pending",
     docs_verified: false,
     created_at: new Date().toISOString()
-  });
+  };
+
+  console.log("[RIDER_KYC] Creating rider profile with user_id:", userId);
+  return createRecord("drivers", payload);
 }
 
 export async function submitRiderKycDoc(
