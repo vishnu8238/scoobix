@@ -158,9 +158,9 @@ export const requireAuthenticatedInsforgeUser = async (): Promise<string> => {
       // Use setSession if possible to force SDK alignment
       if (insforge.auth.setSession) {
         await insforge.auth.setSession({
-          access_token: token,
-          refresh_token: "",
-        }).catch(() => ({ data: null }));
+          accessToken: token,
+          refreshToken: "",
+        } as any).catch(() => ({ data: null }));
       }
     } catch (e) {
       console.warn("[INSFORGE_AUTH] Session sync failed:", e);
