@@ -62,13 +62,17 @@ function AdminVerification() {
           status: "pending" as KycStatus, percent: 0,
         })));
       } else if (tab === "rider") {
-        const rows = await listTable<{ id: string; user_id?: string | null; vehicle_number?: string | null; verification_status?: string | null }>(
-          "drivers", { limit: 100 },
+        // Authoritative resolution: Pull from rider_profiles which is schema-safe
+        const profiles = await listTable<any>(
+          "rider_profiles", { limit: 100 }
         );
-        base.push(...rows.map((r) => ({
-          id: r.id, title: r.vehicle_number || `Rider ${r.id.slice(0, 6)}`,
-          subtitle: r.user_id ? `User ${r.user_id.slice(0, 8)}` : "Rider",
-          status: normalizeStatus(r.verification_status), percent: 0,
+        base.push(...profiles.map((p) => ({
+          id: p.id, 
+          title: p.name || p.vehicle_number || `Rider ${p.id.slice(0, 6)}`,
+          subtitle: p.phone || (p.user_id ? `User ${p.user_id.slice(0, 8)}` : "Rider"),
+          status: normalizeStatus(p.verification_status), 
+          percent: 0,
+          driver_id: p.driver_id
         })));
       } else {
         const rows = await listTable<{ id: string; name?: string | null; email?: string | null; region?: string | null; verification_status?: string | null }>(
@@ -81,8 +85,10 @@ function AdminVerification() {
       }
 
       // Roll up each subject's document state so the queue is sortable.
-      const withState = await Promise.all(base.map(async (s) => {
-        const sum = summarize(tab, await fetchDocs(tab, s.id));
+      const withState = await Promise.all(base.map(async (s: any) => {
+        // For riders, if we have a driver_id, we check docs against that; otherwise we fallback to profile ID
+        const docSubjectId = (tab === "rider" && s.driver_id) ? s.driver_id : s.id;
+        const sum = summarize(tab, await fetchDocs(tab, docSubjectId));
         const status: KycStatus = sum.complete
           ? "verified"
           : sum.blocked ? "reupload" : sum.underReview ? "under_review" : "pending";

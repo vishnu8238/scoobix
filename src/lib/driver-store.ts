@@ -109,9 +109,9 @@ export function useDriver() {
     setDriver((prev) => (prev ? { ...prev, ...patch } : prev));
     if (user?.id) cache.set(user.id, { ...driver, ...patch } as DriverRow);
     
-    // Safety: only patch confirmed identity anchor (drivers.id)
-    // We avoid patching 'updated_at' or any other columns on 'drivers' to prevent schema cache errors.
-    await patchRecord("drivers", driver.id, {}).catch(() => null);
+    // Safety: No speculative writes to 'drivers' table.
+    // We store all volatile and profile state in 'rider_profiles'.
+    return;
   };
 
   return { driver, driverId: driver?.id ?? "", loading, error, update };

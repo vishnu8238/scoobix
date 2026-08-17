@@ -576,7 +576,7 @@ function RiderOnboardingFlow() {
         <div className="space-y-4">
           <VerificationUploadCard 
             subject="rider"
-            subjectId={driver?.id}
+            subjectId={driver?.id || user?.id}
             actor={{ id: user?.id, name: user?.name, role: 'rider' }}
             title="Required Documents"
             note="Our compliance team will review your submission within 24-48 hours. You will receive a notification once verified."
