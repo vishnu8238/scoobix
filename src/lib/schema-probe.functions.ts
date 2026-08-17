@@ -12,11 +12,8 @@ export const probeProductionSchema = createServerFn({ method: "GET" })
     const results: any[] = [];
     
     const tables = [
-      "cities", "logistics_cities", "delivery_cities",
-      "zones", "logistics_zones", "delivery_zones",
-      "subzones", "delivery_subzones",
-      "gigs", "delivery_gigs", "slots",
-      "restaurants", "orders", "users"
+      "cities", "zones", "subzones",
+      "gigs", "restaurants", "orders", "users"
     ];
 
     for (const table of tables) {
