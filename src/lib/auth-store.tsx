@@ -3,6 +3,7 @@ import { loginWithGoogle, logout as ifLogout } from "./insforge-auth";
 import { insforge, getAccessToken } from "./insforge";
 import { listTable } from "./insforge-crud";
 import { getDisplayName } from "./identity-utils";
+import { isAuthResolving } from "./auth-utils";
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
@@ -80,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("[AUTH_WATCHDOG] Auth resolution timed out after 10s");
       setLoading(false);
       setAuthState((prev) => {
-        if (prev === "session_resolving" || prev === "authorization_resolving" || prev === "initializing") {
+        if (isAuthResolving(prev)) {
           return "unauthenticated"; // Fallback to unauthenticated to allow UI to show login
         }
         return prev;
@@ -150,10 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ensure we have an active token for authorization reads
       const token = await getAccessToken();
       if (!token) {
-        console.warn("[AUTH_TRACE] No access token available for authorization check.");
-        setUser(null);
-        setAuthState("unauthenticated");
-        return;
+        // If we have a user from the SDK but no token, we might be in a weird state
+        // but we should still try to resolve the profile if the SDK says we are logged in.
+        console.warn("[AUTH_TRACE] No access token available for authorization check. Attempting profile lookup anyway.");
       }
 
       // 1. User Profile Lookup/Creation
@@ -318,7 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
       console.log(`[AUTH_TRACE] SDK State Change: ${event}`);
       if (event === 'signedIn' || event === 'TOKEN_REFRESHED') {
-        resolveUser(true);
+        resolveUser(false); // don't reset state to session_resolving during active use
       } else if (event === 'signedOut') {
         setUser(null);
         setAuthState("unauthenticated");
