@@ -22,7 +22,6 @@ export async function createRiderProfile(userId: string, data: {
   vehicle_type: string;
   license_number: string;
   vehicle_number?: string;
-  email?: string;
 }) {
   if (!userId) throw new Error("User identity required for profile creation");
 
@@ -31,6 +30,7 @@ export async function createRiderProfile(userId: string, data: {
   if (existing) return existing;
 
   // Use the exact authoritative UUID from the session
+  // Removed 'email' field to fix schema mismatch (Could not find 'email' column in 'drivers')
   const payload = {
     id: newUuid(),
     user_id: userId, // Authoritative foreign key
@@ -39,7 +39,6 @@ export async function createRiderProfile(userId: string, data: {
     vehicle_type: data.vehicle_type,
     license_number: data.license_number,
     vehicle_number: data.vehicle_number || null,
-    email: data.email || null,
     status: "OFFLINE",
     verification_status: "pending",
     docs_verified: false,
