@@ -337,7 +337,7 @@ export async function saveOnboardingDraft(
   id: string | null,
   values: Record<string, unknown>,
 ): Promise<ManagedRestaurant | null> {
-  const isUuid = (val: any) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  const isUuid = (val: any) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
   const safeId = id && isUuid(id) ? id : null;
 
   // Identity safety: ensure we have an authenticated user ID
@@ -347,46 +347,88 @@ export async function saveOnboardingDraft(
     throw new Error("Manager authentication required. Please sign in again.");
   }
 
-  // Authoritative ownership: always overwrite manager_id with the authenticated user ID
+  // Idempotency: If no ID provided, check for an existing draft by this owner/manager
+  let targetId = safeId;
+  if (!targetId) {
+    const existing = await listTable<ManagedRestaurant>("restaurants", {
+      manager_id: `eq.${authId}`,
+      status: "eq.pending",
+      limit: 1,
+    }, { fresh: true });
+    if (existing[0]?.id) {
+      console.info(`[MANAGER_API] Resuming existing draft: ${existing[0].id}`);
+      targetId = existing[0].id;
+    }
+  }
+
+  // Authoritative ownership: always overwrite manager_id and onboarded_by
   const payload = {
     ...values,
     manager_id: authId,
     onboarded_by: authId,
+    updated_at: new Date().toISOString(),
   };
 
   try {
-    if (safeId) {
-      console.info(`[MANAGER_API] Updating existing restaurant draft: ${safeId}`);
-      await patchRecord("restaurants", safeId, payload);
-      const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${safeId}`, limit: 1 }, { fresh: true });
+    if (targetId) {
+      console.info(`[MANAGER_API] Updating restaurant record: ${targetId}`);
+      await patchRecord("restaurants", targetId, payload);
+      const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${targetId}`, limit: 1 }, { fresh: true });
       return rows[0] ?? null;
     }
 
     console.info(`[MANAGER_API] Creating new restaurant draft`);
-    const created = await createRecord<ManagedRestaurant>("restaurants", payload);
+    const created = await createRecord<ManagedRestaurant>("restaurants", {
+      ...payload,
+      created_at: new Date().toISOString(),
+    });
     
     if (created && isUuid(created.id)) {
-      console.info(`[MANAGER_API] Created record with ID: ${created.id}`);
       return created;
     }
 
-    // Fallback: If creation response is ambiguous, look for the most recent record for this manager
-    console.warn(`[MANAGER_API] createRecord returned ambiguous ID, checking manager history...`);
     const latest = await listTable<ManagedRestaurant>("restaurants", {
       manager_id: `eq.${authId}`,
       order: "created_at.desc",
       limit: 1,
     }, { fresh: true });
     
-    if (latest[0] && isUuid(latest[0].id)) {
-      return latest[0];
-    }
-    return null;
+    return latest[0] || null;
   } catch (err) {
     console.error(`[MANAGER_API] saveOnboardingDraft failed:`, err);
     throw err;
   }
 }
+
+export async function updateManagerProfile(patch: {
+  name?: string;
+  phone?: string;
+  avatar_url?: string;
+}) {
+  const session = insforge.auth.session;
+  const authId = session?.user?.id;
+  if (!authId) throw new Error("Unauthorized");
+
+  // 1. Update the 'users' profile row (public.users)
+  await patchRecord("users", authId, {
+    ...patch,
+    updated_at: new Date().toISOString()
+  });
+
+  // 2. Update the 'merchant_managers' record if it exists
+  const managers = await listTable<MerchantManager>("merchant_managers", {
+    user_id: `eq.${authId}`,
+    limit: 1
+  });
+  
+  if (managers[0]?.id) {
+    await patchRecord("merchant_managers", managers[0].id, {
+      ...patch,
+      updated_at: new Date().toISOString()
+    });
+  }
+}
+
 
 export async function logOnboardingEvent(input: {
   restaurantId: string;
