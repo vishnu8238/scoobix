@@ -1,40 +1,66 @@
-import { ArrowLeft } from "lucide-react";
+import React from "react";
+import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useAuth } from "@/lib/auth-store";
+import { getDisplayName, getInitials } from "@/lib/identity-utils";
 
-export function PageHeader({
-  title,
-  subtitle,
-  right,
-  back = true,
-  onBack,
-}: {
+interface PageHeaderProps {
   title: string;
   subtitle?: string;
-  right?: ReactNode;
-  back?: boolean;
-  onBack?: () => void;
-}) {
+  backTo?: string;
+  back?: boolean | string; // Compatibility
+  right?: React.ReactNode;
+  showProfile?: boolean;
+}
+
+export function PageHeader({ title, subtitle, backTo, back, right, showProfile = true }: PageHeaderProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const displayName = getDisplayName(user);
+  const initials = getInitials(displayName);
+
+  const backPath = backTo || (typeof back === 'string' ? back : back === true ? -1 : undefined);
+
   return (
-    <header className="sticky top-0 z-30 glass px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-        {back ? (
-          <button
-            onClick={() => (onBack ? onBack() : history.length > 1 ? history.back() : navigate({ to: "/app" }))}
-            aria-label="Back"
-            className="grid h-10 w-10 place-items-center rounded-full bg-secondary"
+    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-md px-5 py-4 flex items-center justify-between border-b border-border/40">
+      <div className="flex items-center gap-3">
+        {backPath && (
+          <button 
+            onClick={() => backPath === -1 ? window.history.back() : navigate({ to: backPath as any })}
+            className="p-2 -ml-2 rounded-full hover:bg-secondary/50 transition-colors"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </button>
-        ) : (
-          <span />
         )}
-        <div className="min-w-0 text-center">
-          <h1 className="truncate font-display text-base font-bold">{title}</h1>
-          {subtitle && <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>}
+        <div>
+          <h1 className="font-display text-lg font-extrabold tracking-tight uppercase italic leading-none">{title}</h1>
+          {subtitle && <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
-        <div className="min-w-[40px] text-right">{right}</div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {right}
+        {showProfile && user && (
+          <button 
+            onClick={() => navigate({ to: "/manager/profile" as any })}
+            className="group flex items-center gap-2 text-left"
+          >
+            <div className="hidden sm:block text-right">
+              <p className="text-[10px] font-extrabold uppercase tracking-tighter leading-none group-hover:text-primary transition-colors">
+                {displayName}
+              </p>
+              <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">Manager</p>
+            </div>
+            <div className="h-8 w-8 rounded-xl bg-primary-soft flex items-center justify-center text-[10px] font-bold text-primary ring-1 ring-primary/10 group-hover:ring-primary/30 transition-all">
+              {user.avatar ? (
+                <img src={user.avatar} alt={displayName} className="h-full w-full rounded-xl object-cover" />
+              ) : (
+                initials
+              )}
+            </div>
+          </button>
+        )}
       </div>
     </header>
   );

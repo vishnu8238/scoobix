@@ -221,16 +221,24 @@ function OnboardingFlow() {
 
     setBusy(true);
     try {
+      // 1. Await all doc slots that are currently uploading (ImageUploader handles individual states)
+      // For Scoobix, we assume if the URL is in form, the upload finished or we're using the existing one.
+      
       const rst = record?.rst_code || (await nextRstCode());
       console.info(`[ONBOARDING_SUBMIT] Persisting record. RST: ${rst}, Manager: ${authoritativeManagerId}`);
       
+      // Filter out optional fields if toggles are off
+      const finalPayload = { ...payload };
+      if (!form.has_cover) finalPayload.cover_url = null;
+      
       const saved = await saveOnboardingDraft(record?.id ?? id ?? null, {
-        ...payload,
+        ...finalPayload,
         rst_code: rst,
         manager_id: authoritativeManagerId,
         onboarded_by: authoritativeManagerId,
         ...extra,
       });
+
 
       if (saved && saved.id) {
         setRecord(saved);
@@ -315,6 +323,7 @@ function OnboardingFlow() {
         },
         "Submitted for admin approval",
       );
+
 
       if (!saved || !saved.id) {
         console.error("[ONBOARDING_SUBMIT] Final persist failed or returned no ID");
