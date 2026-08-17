@@ -5,21 +5,28 @@ import { insforge } from "./insforge";
 
 export type Gig = {
   id: string;
+  driver_id?: string;
+  order_id?: string;
+  gig_type: string;
+  status: string;
+  pickup_location?: string;
+  dropoff_location?: string;
+  distance_km?: number;
+  estimated_time_minutes?: number;
+  payout: number;
+  tips?: number;
+  zone_id?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  // UI Aliases
   title?: string;
   description?: string;
-  payout: number;
-  reward_amount?: number; // UI alias
+  reward_amount?: number;
   target_deliveries?: number;
   start_time?: string;
   end_time?: string;
-  status: "pending" | "in_progress" | "completed" | "cancelled" | "ACTIVE" | "SCHEDULED" | string;
-  zone_id?: string;
-  city_id?: string;
   capacity?: number;
-  metadata?: Record<string, any>;
-  created_at: string;
-  driver_id?: string;
-  order_id?: string;
 };
 
 export type GigParticipant = {
