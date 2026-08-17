@@ -8,23 +8,26 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   backTo?: string;
+  back?: boolean | string; // Compatibility
   right?: React.ReactNode;
   showProfile?: boolean;
 }
 
-export function PageHeader({ title, subtitle, backTo, right, showProfile = true }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, backTo, back, right, showProfile = true }: PageHeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const displayName = getDisplayName(user);
   const initials = getInitials(displayName);
 
+  const backPath = backTo || (typeof back === 'string' ? back : back === true ? -1 : undefined);
+
   return (
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-md px-5 py-4 flex items-center justify-between border-b border-border/40">
       <div className="flex items-center gap-3">
-        {backTo && (
+        {backPath && (
           <button 
-            onClick={() => navigate({ to: backTo as any })}
+            onClick={() => backPath === -1 ? window.history.back() : navigate({ to: backPath as any })}
             className="p-2 -ml-2 rounded-full hover:bg-secondary/50 transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
