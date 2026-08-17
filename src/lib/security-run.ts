@@ -1,5 +1,6 @@
-import { performAutomatedSecurityAudit } from "./lib/security-fix.functions";
-import { insforge } from "./lib/insforge";
+import { performAutomatedSecurityAudit } from "./security-fix.functions";
+import { insforge } from "./insforge";
+
 
 async function main() {
   const session = insforge.auth.session;
