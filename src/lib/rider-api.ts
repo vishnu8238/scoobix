@@ -4,8 +4,12 @@ import { newUuid } from "./orders-api";
 export type RiderStatus = "ONLINE" | "OFFLINE";
 
 export async function setRiderAvailability(riderId: string, online: boolean) {
+  // Use a targeted patch that includes multiple candidate columns for online status
+  // the patchRecord handler in insforge-crud will filter out columns that don't exist
   return patchRecord("drivers", riderId, {
+    is_online: online,
     online_status: online,
+    status: online ? "online" : "offline",
     last_ping: new Date().toISOString()
   });
 }

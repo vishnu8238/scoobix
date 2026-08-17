@@ -39,8 +39,6 @@ export async function createRiderProfile(userId: string, data: {
     vehicle_type: data.vehicle_type,
     license_number: data.license_number,
     vehicle_number: data.vehicle_number || null,
-    status: "offline",
-    is_online: false,
     verification_status: "pending",
     docs_verified: false,
     created_at: new Date().toISOString(),

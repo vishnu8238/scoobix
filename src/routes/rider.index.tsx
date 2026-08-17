@@ -81,7 +81,8 @@ function RiderHomeContent() {
   const version = useTableVersion(["orders", "drivers"]);
 
   useEffect(() => { 
-    setOnline(Boolean(driver?.is_online)); 
+    setOnline(Boolean(driver?.is_online || (driver as any)?.online_status)); 
+
   }, [driver?.is_online]);
 
   // Check geolocation permission on mount
@@ -165,7 +166,9 @@ function RiderHomeContent() {
       setOnline(next);
       if (driverId) {
         await setRiderAvailability(driverId, next);
+        // Best-effort local state update
         await update({ is_online: next });
+
         toast.success(next ? "You are now ONLINE" : "You are now OFFLINE");
       }
     } catch (err) {
