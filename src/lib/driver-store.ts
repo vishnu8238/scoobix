@@ -25,6 +25,8 @@ export type DriverRow = {
   latitude?: number;
   longitude?: number;
   is_online?: boolean;
+  docs_verified?: boolean; // added back as best-effort for UI logic
+  verification_status?: string; // added back as best-effort for UI logic
   created_at?: string;
   updated_at?: string;
 };
