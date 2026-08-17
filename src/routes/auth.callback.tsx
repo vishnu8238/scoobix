@@ -164,7 +164,11 @@ function AuthCallback() {
         // Use window.location.replace to ensure the callback page is removed from history
         // and to trigger a clean load of the destination portal shell.
         // Use router navigate for internal transition if possible, or location replace
-        navigate({ to: destPath as any });
+        // Ensure the store has a moment to pick up the session before we leave
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Use window.location.replace to ensure a clean portal load and skip the history entry
+        window.location.replace(dest);
 
       } catch (err: any) {
         console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
