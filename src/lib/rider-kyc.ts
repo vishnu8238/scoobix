@@ -30,10 +30,7 @@ export async function createRiderProfile(userId: string, data: RiderProfileData)
   }).catch(() => []);
 
   if (existing && existing.length > 0) {
-    return patchRecord(RIDER_PROFILE_TABLE, existing[0].id, {
-      ...data,
-      updated_at: new Date().toISOString()
-    });
+    return patchRecord(RIDER_PROFILE_TABLE, existing[0].id, data);
   }
 
   // 2. Ensure a driver record exists first (identity anchor)
