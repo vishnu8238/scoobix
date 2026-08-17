@@ -445,9 +445,9 @@ function RiderOnboardingFlow() {
     
     setSubmitting(true);
     try {
+      // Removed email from payload to match drivers schema
       await createRiderProfile(user.id, {
-        ...formData,
-        email: user.email || ""
+        ...formData
       });
       toast.success("Profile created! Now let's verify your documents.");
       setStep("kyc");
