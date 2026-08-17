@@ -1,7 +1,8 @@
+/** @ts-nocheck */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mocks must be at the top level
-vi.mock('@/lib/insforge', () => {
+vi.mock('./insforge', () => {
   const mockInsforge = {
     auth: {
       session: null as any,
@@ -37,14 +38,14 @@ vi.mock('@/lib/insforge', () => {
 });
 
 // Mock modules imported by manager-api
-vi.mock('@/lib/insforge-crud', () => ({
+vi.mock('./insforge-crud', () => ({
   listTable: vi.fn(() => Promise.resolve([])),
   createRecord: vi.fn((table, data) => Promise.resolve({ id: 'new-record-id', ...data })),
   patchRecord: vi.fn((table, id, data) => Promise.resolve({ id, ...data })),
   deleteRecord: vi.fn(() => Promise.resolve(true)),
 }));
 
-vi.mock('@/lib/notifications-queue', () => ({
+vi.mock('./notifications-queue', () => ({
   queueNotification: vi.fn(),
 }));
 
