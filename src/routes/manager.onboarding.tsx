@@ -210,20 +210,14 @@ function OnboardingFlow() {
     }
     
     // Authoritative manager resolution before write
-    let session = insforge.auth.session;
-    let authoritativeManagerId = manager?.id || session?.user?.id;
-
-    if (!authoritativeManagerId) {
-      console.log("[ONBOARDING_PERSIST] Session missing, awaiting resolution...");
-      const { ensureAuthHydrated } = await import("@/lib/insforge");
-      await ensureAuthHydrated();
-      session = insforge.auth.session;
-      authoritativeManagerId = manager?.id || session?.user?.id;
-    }
+    const { requireAuthenticatedInsforgeUser } = await import("@/lib/insforge");
+    let authoritativeManagerId: string;
     
-    if (!authoritativeManagerId) {
-      console.error("[ONBOARDING_SUBMIT] No manager ID found in session or hook state");
-      toast.error("Your manager session has expired. Please sign in again.");
+    try {
+      authoritativeManagerId = await requireAuthenticatedInsforgeUser();
+    } catch (err: any) {
+      console.error("[ONBOARDING_SUBMIT] Auth resolution failed:", err);
+      toast.error(err.message || "Your manager session has expired. Please sign in again.");
       return null;
     }
 
