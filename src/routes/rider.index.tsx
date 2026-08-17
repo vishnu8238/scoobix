@@ -1,15 +1,69 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-store";
 import { useDriver } from "@/lib/driver-store";
 import { createRiderProfile } from "@/lib/rider-kyc";
 import { VerificationUploadCard } from "@/components/cravio/VerificationPanel";
-import { Bike, ShieldCheck, User, Phone, Clipboard, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { Bike, ShieldCheck, User, Phone, Clipboard, CheckCircle2, Loader2, AlertCircle, TrendingUp, Clock, Package, ChevronRight, Star, MapPin, Zap, ExternalLink, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/format";
+import { cn, formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { listTable } from "@/lib/insforge-crud";
+import { useTableVersion } from "@/lib/realtime-hooks";
+import { getDisplayName } from "@/lib/identity-utils";
+import { setRiderAvailability } from "@/lib/rider-api";
+
+type OrderRow = {
+  id: string;
+  status?: string;
+  driver_id?: string | null;
+  delivery_fee?: number;
+  delivery_address?: string;
+  created_at?: string;
+};
+
+const ACTIVE = ["ASSIGNED", "ACCEPTED", "READY", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
+
+function isToday(iso?: string) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+
+function ProgressStat({ label, value, color }: { label: string; value: string; color: "primary" | "sky" | "amber" }) {
+  const colors = {
+    primary: "bg-primary/5 text-primary ring-primary/10",
+    sky: "bg-sky-50 text-sky-700 ring-sky-100",
+    amber: "bg-amber-50 text-amber-700 ring-amber-100",
+  };
+  
+  return (
+    <div className={cn("rounded-2xl p-4 ring-1 flex flex-col items-center text-center", colors[color])}>
+      <p className="font-display text-lg font-black tracking-tight">{value}</p>
+      <p className="mt-1 text-[9px] font-black uppercase tracking-widest opacity-60">{label}</p>
+    </div>
+  );
+}
+
+function PromoCard({ title, desc, icon: Icon, color, to, url }: any) {
+  const content = (
+    <div className={cn("flex min-w-[200px] flex-col rounded-3xl p-5 text-white shadow-soft transition active:scale-95", color)}>
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+        <Icon className="h-5 w-5 text-white" />
+      </div>
+      <p className="font-display text-sm font-extrabold tracking-tight">{title}</p>
+      <p className="mt-1 text-[10px] text-white/80 leading-snug">{desc}</p>
+    </div>
+  );
+
+  if (url) return <a href={url} target="_blank" rel="noopener noreferrer">{content}</a>;
+  if (to) return <Link to={to}>{content}</Link>;
+  return content;
+}
+
 
 export const Route = createFileRoute("/rider/")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Home" }] }),
