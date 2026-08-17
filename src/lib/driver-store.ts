@@ -31,12 +31,13 @@ export async function getDriverForUser(userId: string): Promise<DriverRow | null
   if (!userId) return null;
   const hit = cache.get(userId);
   if (hit) return hit;
+  
+  // We use listTable which already handles auth headers via insforge-crud
   const rows = await listTable<DriverRow>("drivers", { user_id: `eq.${userId}`, limit: 1 });
-  let row: DriverRow | null = rows[0] ?? null;
-  if (!row) {
-    // First sign-in for this driver — create their profile row.
-    row = await createRecord<DriverRow>("drivers", { user_id: userId, online_status: false });
-  }
+  const row: DriverRow | null = rows[0] ?? null;
+  
+  // Do NOT auto-create profile here. The new KYC flow handles idempotent creation 
+  // via createRiderProfile in rider-kyc.ts to ensure all required fields are present.
   if (row?.id) cache.set(userId, row);
   return row;
 }
