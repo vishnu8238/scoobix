@@ -33,29 +33,21 @@ export async function createRiderProfile(userId: string, data: RiderProfileData)
     return patchRecord(RIDER_PROFILE_TABLE, existing[0].id, data);
   }
 
-  // 2. Ensure a driver record exists first (identity anchor)
-  let driverRecord = await listTable<any>("drivers", { 
+  // 2. Identity Resolution: Check if a driver record exists (identity anchor)
+  const driverRecord = await listTable<any>("drivers", { 
     user_id: `eq.${userId}`, 
     limit: 1,
     select: "id"
   }).catch(() => []);
 
-  let driverId: string;
-  if (!driverRecord || driverRecord.length === 0) {
-    const created = await createRecord<any>("drivers", {
-      id: newUuid(),
-      user_id: userId
-    });
-    driverId = created?.id || newUuid();
-  } else {
-    driverId = driverRecord[0].id;
-  }
+  const driverId = driverRecord && driverRecord.length > 0 ? driverRecord[0].id : null;
+
 
   // 3. Create the profile record
   const payload = {
     id: newUuid(),
     user_id: userId,
-    driver_id: driverId,
+    driver_id: driverId, // May be null if no drivers entry exists yet
     ...data,
     verification_status: "pending",
     docs_verified: false
