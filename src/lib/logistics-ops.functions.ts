@@ -59,8 +59,8 @@ export const seedLogisticsPrerequisites = createServerFn({ method: "POST" })
 
       // Step 2: Idempotent seed for cities and zones
       // We probe for the writable table
-      const cityTableCandidates = ["cities", "logistics_cities", "delivery_cities"];
-      const zoneTableCandidates = ["zones", "logistics_zones", "delivery_zones"];
+      const cityTableCandidates = ["cities"];
+      const zoneTableCandidates = ["zones"];
       
       for (const table of cityTableCandidates) {
         try {
