@@ -211,7 +211,7 @@ function LogisticsGigs() {
         created_at: now.toISOString()
       };
 
-      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on delivery_gigs...");
+      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on 'gigs'...");
       
       const TABLE = "gigs";
       let successRes: any = null;
@@ -264,7 +264,7 @@ function LogisticsGigs() {
         setTimeout(() => void load(), 1000);
 
       } else {
-        throw new Error("createRecord returned null/empty for delivery_gigs");
+        throw new Error("createRecord returned null/empty for 'gigs'");
       }
     } catch (err: any) {
       console.error("[GIG_TEST_CLIENT] FAILED:", err);
