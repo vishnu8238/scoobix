@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth, Role } from "@/lib/auth-store";
+import { isAuthResolving } from "@/lib/auth-utils";
 import { cn } from "@/lib/format";
 
 export const Route = createFileRoute("/login")({
