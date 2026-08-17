@@ -119,7 +119,7 @@ export const performProductionGigTest = createServerFn({ method: "POST" })
   .middleware([requireInsForgeAuth])
   .handler(async ({ context }) => {
     const { insforge } = context;
-    const TABLE = "delivery_gigs";
+    const TABLE = "gigs";
     const testId = newUuid();
     const now = new Date();
     const tomorrow = new Date(now);
