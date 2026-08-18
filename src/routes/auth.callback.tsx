@@ -81,8 +81,8 @@ function AuthCallback() {
             throw e;
           });
           
-          if (authUser && authUser.id && authUser.email) {
-            return authUser;
+          if (userData && userData.id && userData.email) {
+            return userData;
           }
           
           if (retryCount < maxRetries) {
