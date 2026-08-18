@@ -126,9 +126,9 @@ function OnboardingFlow() {
         const r = rows[0];
         if (cancelled || !r) { setLoading(false); return; }
         setRecord(r);
-        const docs = Array.isArray(r.documents) ? (r.documents as Form["documents"]) : [];
+        const docs = Array.isArray((r as any).documents) ? ((r as any).documents as Form["documents"]) : [];
         const hasGallery = docs.some(d => d.label === "Gallery / Guest Image");
-        const coverUrl = r.cover_url || r.cover_image || "";
+        const coverUrl = (r as any).cover_url || (r as any).cover_image || "";
         
         setForm({
           ...EMPTY,
@@ -146,7 +146,7 @@ function OnboardingFlow() {
           longitude: r.longitude ?? null,
           opening_time: r.opening_time ?? "10:00",
           closing_time: r.closing_time ?? "23:00",
-          logo_url: r.logo_url || r.logo || "",
+          logo_url: (r as any).logo_url || (r as any).logo || "",
           cover_url: coverUrl,
           documents: docs,
           bank_holder: r.bank_holder ?? "",
@@ -155,10 +155,10 @@ function OnboardingFlow() {
           bank_name: r.bank_name ?? "",
           gst_number: r.gst_number ?? "",
           fssai_number: r.fssai_number ?? "",
-          pan_number: (r as { pan_number?: string | null }).pan_number ?? "",
-          aadhaar_number: (r as { aadhaar_number?: string | null }).aadhaar_number ?? "",
-          cancelled_cheque_ref: (r as { cancelled_cheque_ref?: string | null }).cancelled_cheque_ref ?? "",
-          branch_name: (r as { branch_name?: string | null }).branch_name ?? "",
+          pan_number: "",
+          aadhaar_number: "",
+          cancelled_cheque_ref: "",
+          branch_name: "",
           delivery_radius: String(r.delivery_radius ?? 5),
           commission: String(r.commission ?? 20),
           has_cover: !!coverUrl,
@@ -200,9 +200,9 @@ function OnboardingFlow() {
       bank_name: form.bank_name.trim() || null,
       gst_number: form.gst_number.trim().toUpperCase() || null,
       fssai_number: form.fssai_number.trim() || null,
-      pan_number: form.pan_number.trim().toUpperCase() || null,
-      aadhaar_number: form.aadhaar_number.trim() || null,
-      cancelled_cheque_ref: form.cancelled_cheque_ref.trim() || null,
+      pan_number: form.pan_number.trim().toUpperCase(),
+      aadhaar_number: form.aadhaar_number.trim(),
+      cancelled_cheque_ref: form.cancelled_cheque_ref.trim(),
       delivery_radius: Number(form.delivery_radius) || 5,
       commission: Number(form.commission) || 20,
       manager_id: manager?.id ?? null,
@@ -238,11 +238,13 @@ function OnboardingFlow() {
       console.info(`[ONBOARDING_SUBMIT] Persisting record. RST: ${rst}, Manager: ${authoritativeManagerId}`);
       
       // 1. Authorize and Save main restaurant record
-      const finalPayload = { ...payload };
-      if (!form.has_cover) finalPayload.cover_url = null;
+      const { pan_number, aadhaar_number, cancelled_cheque_ref, ...sanitizedPayload } = payload;
+      if (!form.has_cover) (sanitizedPayload as any).cover_url = null;
+      (sanitizedPayload as any).documents = form.documents;
+      (sanitizedPayload as any).logo_url = form.logo_url;
       
       const saved = await saveOnboardingDraft(record?.id ?? id ?? null, {
-        ...finalPayload,
+        ...sanitizedPayload,
         rst_code: rst,
         manager_id: authoritativeManagerId,
         onboarded_by: authoritativeManagerId,
