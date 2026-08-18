@@ -157,8 +157,6 @@ function OnboardingFlow() {
           fssai_number: r.fssai_number ?? "",
           pan_number: "", 
           aadhaar_number: "",
-          bank_account: r.bank_account ?? "",
-          bank_ifsc: r.bank_ifsc ?? "",
           cancelled_cheque_ref: "",
           branch_name: "",
           delivery_radius: String(r.delivery_radius ?? 5),
