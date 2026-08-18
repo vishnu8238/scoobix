@@ -312,6 +312,72 @@ export type Database = {
           },
         ]
       }
+      kyc_audit_logs: {
+        Row: {
+          action: string | null
+          actor_id: string | null
+          actor_name: string | null
+          actor_role: string | null
+          created_at: string | null
+          doc_type: string | null
+          from_status: string | null
+          id: string
+          kyc_id: string | null
+          remarks: string | null
+          restaurant_id: string | null
+          subject_id: string | null
+          subject_type: string | null
+          to_status: string | null
+        }
+        Insert: {
+          action?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          created_at?: string | null
+          doc_type?: string | null
+          from_status?: string | null
+          id?: string
+          kyc_id?: string | null
+          remarks?: string | null
+          restaurant_id?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          action?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          created_at?: string | null
+          doc_type?: string | null
+          from_status?: string | null
+          id?: string
+          kyc_id?: string | null
+          remarks?: string | null
+          restaurant_id?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_audit_logs_kyc_id_fkey"
+            columns: ["kyc_id"]
+            isOneToOne: false
+            referencedRelation: "restaurant_kyc"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kyc_audit_logs_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_tracking: {
         Row: {
           accuracy: number | null
@@ -608,6 +674,74 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      restaurant_kyc: {
+        Row: {
+          created_at: string | null
+          doc_number: string | null
+          doc_type: string | null
+          expires_at: string | null
+          file_name: string | null
+          file_url: string | null
+          id: string
+          mandatory: boolean | null
+          remarks: string | null
+          restaurant_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          subject_id: string | null
+          subject_type: string | null
+          submitted_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          doc_number?: string | null
+          doc_type?: string | null
+          expires_at?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          mandatory?: boolean | null
+          remarks?: string | null
+          restaurant_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+          submitted_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          doc_number?: string | null
+          doc_type?: string | null
+          expires_at?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          mandatory?: boolean | null
+          remarks?: string | null
+          restaurant_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+          submitted_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_kyc_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       restaurants: {
         Row: {

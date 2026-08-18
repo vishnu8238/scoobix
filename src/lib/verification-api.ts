@@ -258,7 +258,7 @@ export async function submitDoc(
 ): Promise<void> {
   if (!subjectId) return;
   const now = new Date().toISOString();
-  const payload = {
+  const payload: any = {
     restaurant_id: subject === "restaurant" ? subjectId : null,
     subject_type: subject,
     subject_id: subjectId,
@@ -321,12 +321,11 @@ export async function reviewDoc(
   actor: Actor = {},
 ): Promise<KycRow | null> {
   const now = new Date().toISOString();
-  const patch = {
+  const patch: any = {
     status,
     remarks: remarks || null,
     reviewed_at: now,
     reviewed_by: actor.name ?? actor.id ?? "admin",
-    
   };
 
   let row: KycRow | null = existing;
