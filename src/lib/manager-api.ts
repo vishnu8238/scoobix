@@ -375,6 +375,7 @@ export async function saveOnboardingDraft(
     ...restValues,
     manager_id: authId,
     onboarded_by: authId,
+    // Ensure rst_code is NEVER updated after creation
   };
 
   try {
