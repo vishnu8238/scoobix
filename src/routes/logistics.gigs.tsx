@@ -156,7 +156,7 @@ function LogisticsGigs() {
 
         try {
           // Compare YYYY-MM-DD to handle ISO strings while respecting local day boundaries
-          const gigDateStr = g.start_time.split('T')[0];
+          const gigDateStr = g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time;
           return gigDateStr === localDateStr;
         } catch (e) {
           return false;
@@ -327,7 +327,7 @@ function LogisticsGigs() {
 
     const rows = filteredGigs.map(g => ({
       id: g.id,
-      date: g.start_time ? g.start_time.split('T')[0] : "",
+      date: g.start_time ? (g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time) : "",
       start_time: g.start_time || "",
       end_time: g.end_time || "",
       duration: "N/A", // Not in schema, keeping as placeholder
