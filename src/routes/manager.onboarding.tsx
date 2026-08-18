@@ -173,9 +173,9 @@ function OnboardingFlow() {
           
           setForm(prev => ({
             ...prev,
-            pan_number: panRow?.doc_number ?? "",
-            aadhaar_number: aadhaarRow?.doc_number ?? "",
-            cancelled_cheque_ref: chqRow?.doc_number ?? "",
+            pan_number: panRow?.doc_number || "",
+            aadhaar_number: aadhaarRow?.doc_number || "",
+            cancelled_cheque_ref: chqRow?.doc_number || "",
           }));
         } catch (kycErr) {
           console.error("[LOAD_KYC_ERROR]", kycErr);
@@ -292,14 +292,15 @@ function OnboardingFlow() {
             if (def.type === 'cancelled_cheque') docNumber = form.cancelled_cheque_ref;
 
             // Save if we have a URL OR if we have a number that needs updating
-            if (formLine?.url || (docNumber && docNumber !== existingRow?.doc_number)) {
+            // RELIABLE REPAIR: Always upsert if a value exists, matching the Admin Verification requirement
+            if (formLine?.url || docNumber) {
               await submitDoc(
                 "restaurant",
                 saved.id,
                 def,
                 { 
                   file_url: formLine?.url || existingRow?.file_url || null,
-                  doc_number: docNumber || existingRow?.doc_number || "Submitted"
+                  doc_number: docNumber || existingRow?.doc_number || null
                 },
                 existingRow || null,
                 { id: authoritativeManagerId, name: manager?.name, role: "manager" }
