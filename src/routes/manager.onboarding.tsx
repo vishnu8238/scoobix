@@ -280,8 +280,6 @@ function OnboardingFlow() {
           const currentKyc = await fetchDocs("restaurant", saved.id);
           const docPromises = RESTAURANT_DOCS.map(async (def) => {
             const formLine = form.documents.find(d => d.label === def.label);
-            if (!formLine?.url) return;
-
             const existingRow = currentKyc.find(r => r.doc_type === def.type);
             
             // Map form fields to doc numbers
@@ -293,17 +291,20 @@ function OnboardingFlow() {
             if (def.type === 'gst') docNumber = form.gst_number;
             if (def.type === 'cancelled_cheque') docNumber = form.cancelled_cheque_ref;
 
-            await submitDoc(
-              "restaurant",
-              saved.id,
-              def,
-              { 
-                file_url: formLine.url,
-                doc_number: docNumber || "Submitted"
-              },
-              existingRow || null,
-              { id: authoritativeManagerId, name: manager?.name, role: "manager" }
-            );
+            // Save if we have a URL OR if we have a number that needs updating
+            if (formLine?.url || (docNumber && docNumber !== existingRow?.doc_number)) {
+              await submitDoc(
+                "restaurant",
+                saved.id,
+                def,
+                { 
+                  file_url: formLine?.url || existingRow?.file_url || null,
+                  doc_number: docNumber || existingRow?.doc_number || "Submitted"
+                },
+                existingRow || null,
+                { id: authoritativeManagerId, name: manager?.name, role: "manager" }
+              );
+            }
           });
           await Promise.all(docPromises);
         } catch (docErr) {
