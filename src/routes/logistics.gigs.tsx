@@ -41,6 +41,7 @@ export const Route = createFileRoute("/logistics/gigs")({
 function LogisticsGigs() {
   const [activeTab, setActiveTab] = useState<"fleet" | "slots" | "capacity">("fleet");
   const [gigs, setGigs] = useState<Gig[]>([]);
+  const [enrollmentCounts, setEnrollmentCounts] = useState<Record<string, number>>({});
   const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -140,7 +141,8 @@ function LogisticsGigs() {
 
       // 2. Fetch authoritative enrollment counts
       const gigIds = all.map(g => g.id);
-      const enrollmentCounts = await fetchGigEnrollmentCounts(gigIds);
+      const counts = await fetchGigEnrollmentCounts(gigIds);
+      setEnrollmentCounts(counts);
       
       // 3. Local date normalization
       const localDateStr = format(selectedDate, "yyyy-MM-dd");
@@ -148,7 +150,12 @@ function LogisticsGigs() {
       // 4. Normalized filtering & data enrichment
       const data = all.filter(g => {
         if (!g.start_time) return false;
+        // Handle only active/scheduled or uppercase variants
+        const s = g.status?.toUpperCase();
+        if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
+
         try {
+          // Compare YYYY-MM-DD to handle ISO strings while respecting local day boundaries
           const gigDateStr = g.start_time.split('T')[0];
           return gigDateStr === localDateStr;
         } catch (e) {
@@ -156,11 +163,10 @@ function LogisticsGigs() {
         }
       }).map(g => ({
         ...g,
-        enrolled_count: enrollmentCounts[g.id] || 0
+        enrolled_count: counts[g.id] || 0
       }));
       
       setGigs(data);
-      
       setAllGigsCount(all.length);
       
       setDiagnostics({
