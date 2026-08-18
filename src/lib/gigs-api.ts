@@ -65,7 +65,7 @@ export async function fetchGigs(params?: Record<string, any>) {
       target_deliveries: r.target_deliveries || r.metadata?.target_deliveries || 1,
       start_time: r.start_time || r.metadata?.start_time || r.created_at,
       end_time: r.end_time || r.metadata?.end_time || r.created_at,
-      capacity: r.capacity || r.metadata?.capacity || 1,
+      capacity: r.capacity || r.metadata?.capacity || 50,
       city_id: r.city_id || r.metadata?.city_id || "unknown",
       status: r.status
     }));

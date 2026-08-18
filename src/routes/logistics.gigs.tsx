@@ -41,6 +41,7 @@ export const Route = createFileRoute("/logistics/gigs")({
 function LogisticsGigs() {
   const [activeTab, setActiveTab] = useState<"fleet" | "slots" | "capacity">("fleet");
   const [gigs, setGigs] = useState<Gig[]>([]);
+  const [enrollmentCounts, setEnrollmentCounts] = useState<Record<string, number>>({});
   const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -140,7 +141,8 @@ function LogisticsGigs() {
 
       // 2. Fetch authoritative enrollment counts
       const gigIds = all.map(g => g.id);
-      const enrollmentCounts = await fetchGigEnrollmentCounts(gigIds);
+      const counts = await fetchGigEnrollmentCounts(gigIds);
+      setEnrollmentCounts(counts);
       
       // 3. Local date normalization
       const localDateStr = format(selectedDate, "yyyy-MM-dd");
@@ -148,19 +150,23 @@ function LogisticsGigs() {
       // 4. Normalized filtering & data enrichment
       const data = all.filter(g => {
         if (!g.start_time) return false;
+        // Handle only active/scheduled or uppercase variants
+        const s = g.status?.toUpperCase();
+        if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
+
         try {
-          const gigDateStr = g.start_time.split('T')[0];
+          // Compare YYYY-MM-DD to handle ISO strings while respecting local day boundaries
+          const gigDateStr = g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time;
           return gigDateStr === localDateStr;
         } catch (e) {
           return false;
         }
       }).map(g => ({
         ...g,
-        enrolled_count: enrollmentCounts[g.id] || 0
+        enrolled_count: counts[g.id] || 0
       }));
       
       setGigs(data);
-      
       setAllGigsCount(all.length);
       
       setDiagnostics({
@@ -321,14 +327,14 @@ function LogisticsGigs() {
 
     const rows = filteredGigs.map(g => ({
       id: g.id,
-      date: g.start_time ? g.start_time.split('T')[0] : "",
+      date: g.start_time ? (g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time) : "",
       start_time: g.start_time || "",
       end_time: g.end_time || "",
       duration: "N/A", // Not in schema, keeping as placeholder
       city: g.city_id || "",
       zone: g.zone_id || "",
       reward_amount: g.reward_amount || 0,
-      enrolled: 0, // Not in schema, placeholder
+      enrolled: enrollmentCounts[g.id] || 0,
       capacity: g.capacity || 0,
       completion_percentage: "0%", // Placeholder
       slot_id: g.metadata?.slot_id || "",
@@ -357,7 +363,7 @@ function LogisticsGigs() {
         <div className="flex flex-wrap items-center gap-3">
           <GigStats 
             totalGigs={allGigsCount ?? gigs.length} 
-            needed={1080} 
+            needed={gigs.reduce((acc, g) => acc + (g.capacity || 50), 0)} 
             enrolled={gigs.reduce((acc, g) => acc + (g as any).enrolled_count || 0, 0)} 
             fullyBooked={gigs.filter(g => (g as any).enrolled_count >= (g.capacity || 50)).length} 
           />
@@ -458,7 +464,7 @@ function LogisticsGigs() {
                   <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Gigs for {format(selectedDate, "EEEE").toUpperCase()}
+                  Gigs for {format(selectedDate, "EEE dd MMM").toUpperCase()}
                 </h2>
               </div>
               <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
