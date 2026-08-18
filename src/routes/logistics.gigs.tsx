@@ -328,7 +328,7 @@ function LogisticsGigs() {
       city: g.city_id || "",
       zone: g.zone_id || "",
       reward_amount: g.reward_amount || 0,
-      enrolled: 0, // Not in schema, placeholder
+      enrolled: enrollmentCounts[g.id] || 0,
       capacity: g.capacity || 0,
       completion_percentage: "0%", // Placeholder
       slot_id: g.metadata?.slot_id || "",
@@ -357,7 +357,7 @@ function LogisticsGigs() {
         <div className="flex flex-wrap items-center gap-3">
           <GigStats 
             totalGigs={allGigsCount ?? gigs.length} 
-            needed={1080} 
+            needed={gigs.reduce((acc, g) => acc + (g.capacity || 50), 0)} 
             enrolled={gigs.reduce((acc, g) => acc + (g as any).enrolled_count || 0, 0)} 
             fullyBooked={gigs.filter(g => (g as any).enrolled_count >= (g.capacity || 50)).length} 
           />

@@ -67,7 +67,11 @@ export async function fetchGigs(params?: Record<string, any>) {
       end_time: r.end_time || r.metadata?.end_time || r.created_at,
       capacity: r.capacity || r.metadata?.capacity || 1,
       city_id: r.city_id || r.metadata?.city_id || "unknown",
-      status: r.status
+      status: r.status,
+      // Metadata fallbacks for direct access
+      capacity: r.capacity || r.metadata?.capacity || 50,
+      reward_amount: r.payout || r.reward_amount || 0,
+      payout: r.payout || r.reward_amount || 0,
     }));
   } catch (err: any) {
     console.error(`[GIGS_API] Fetch failed for ${AUTHORITATIVE_TABLE}:`, err.message);
