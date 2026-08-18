@@ -102,11 +102,12 @@ export const getAccessToken = async () => {
       return sdkSession.accessToken;
     }
 
-    // Attempt authoritative session recovery from SDK
-    const { data } = await insforge.auth.getSession().catch(() => ({ data: null }));
-    if (data?.session?.accessToken) {
-      console.log("[INSFORGE_AUTH] getAccessToken: recovered SDK session token");
-      return data.session.accessToken;
+    // Attempt authoritative session recovery from SDK memory or storage
+    // Note: getSession() is NOT a valid SDK method on this version.
+    // We use current session properties or storage fallback.
+    const sdkSession = insforge.auth.session;
+    if (sdkSession?.accessToken) {
+      return sdkSession.accessToken;
     }
 
     // Fallback: Check local storage for known InsForge keys
