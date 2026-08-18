@@ -1,13 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { 
   Bike, Home, Wallet, History, ChevronRight, 
-  Info, X, Check, ArrowRight, MapPin, 
-  Calendar, ShoppingBag, ShieldCheck, User
+  Info, Check, User, Bell, AlertTriangle
 } from "lucide-react";
-import { cn } from "@/lib/format";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/rider/demo")({
   head: () => ({ 
@@ -20,45 +16,15 @@ export const Route = createFileRoute("/rider/demo")({
 });
 
 const DEMO_STEPS = [
-  { 
-    title: "Welcome to Scoobix", 
-    desc: "Your portal for managing deliveries, tracking earnings, and boosting your income. This is a read-only preview.",
-    tab: "Home"
-  },
-  { 
-    title: "KYC & Verification", 
-    desc: "Experience the onboarding flow. Upload documents like Aadhaar and DL to get verified.",
-    tab: "Home"
-  },
-  { 
-    title: "Dashboard & Status", 
-    desc: "Toggle your status to 'Online' to start receiving delivery requests from nearby restaurants.",
-    tab: "Home"
-  },
-  { 
-    title: "Trip History", 
-    desc: "Review all your past successful deliveries and earnings for every trip.",
-    tab: "History"
-  },
-  { 
-    title: "Pocket Earnings", 
-    desc: "Check your daily and weekly payouts, including tips and incentives.",
-    tab: "Pocket"
-  },
-  { 
-    title: "More & Support", 
-    desc: "Access 24/7 support, manage your vehicle profile, and view settings.",
-    tab: "More"
-  },
-];
-
-const GIGS = [
-  { id: 1, title: "Breakfast Rush", zone: "Sayajigunj", reward: "₹450", time: "07:00 - 11:00" },
-  { id: 2, title: "Lunch Peak", zone: "Alkapuri", reward: "₹600", time: "12:00 - 16:00" },
+  { title: "Welcome to Scoobix", desc: "Your portal for managing deliveries and tracking earnings. This is a read-only preview.", tab: "Home" },
+  { title: "KYC & Verification", desc: "Experience the onboarding flow. Upload documents like Aadhaar to get verified.", tab: "Home" },
+  { title: "Dashboard & Status", desc: "Toggle your status to 'Online' to start receiving delivery requests.", tab: "Home" },
+  { title: "Trip History", desc: "Review all your past successful deliveries and earnings for every trip.", tab: "History" },
+  { title: "Pocket Earnings", desc: "Check your daily and weekly payouts, including tips and incentives.", tab: "Pocket" },
+  { title: "More & Support", desc: "Access 24/7 support and manage your vehicle profile.", tab: "More" },
 ];
 
 function RiderDemo() {
-  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [tab, setTab] = useState("Home");
 
@@ -75,269 +41,200 @@ function RiderDemo() {
   };
 
   return (
-    <div className="flex flex-col items-center w-full min-h-full">
-      {/* Demo Overlay Guide */}
-      <div className="w-full max-w-[430px] p-4 bg-emerald-600/10 border-b border-emerald-600/20 z-[60]">
-        <div className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-emerald-600/20">
-           <div className="flex items-center justify-between mb-2">
-              <h3 className="font-display text-sm font-black italic uppercase text-emerald-600">{DEMO_STEPS[step].title}</h3>
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{step + 1} / {DEMO_STEPS.length}</span>
-           </div>
-           <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed font-medium">{DEMO_STEPS[step].desc}</p>
-           <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={prevStep} 
-                disabled={step === 0}
-                className="flex-1 rounded-xl text-[10px] font-bold uppercase tracking-widest h-9"
-              >
-                Back
-              </Button>
-              <Button 
-                size="sm" 
-                onClick={nextStep}
-                disabled={step === DEMO_STEPS.length - 1}
-                className="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-widest h-9"
-              >
-                {step === DEMO_STEPS.length - 1 ? "Guided Complete" : "Next Step"}
-              </Button>
-           </div>
+    <div className="flex flex-col items-center w-full min-h-svh bg-[#0A0A0A] overflow-x-hidden text-white font-sans">
+      {/* 430px Mobile Shell Container */}
+      <div className="relative w-full max-w-[430px] min-h-svh bg-[#121212] shadow-2xl flex flex-col ring-1 ring-white/5 overflow-hidden">
+        
+        {/* Static Header */}
+        <header className="sticky top-0 z-[70] flex h-16 w-full items-center justify-between border-b border-white/5 bg-[#121212]/90 px-4 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3B82F6] text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]">
+              <Bike className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="text-sm font-black italic tracking-tighter text-[#3B82F6] uppercase">SCOOBIX</span>
+              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 leading-none">Rider Demo</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-rose-500/10 text-rose-500"><AlertTriangle className="h-5 w-5" /></div>
+            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400"><Bell className="h-5 w-5" /></div>
+            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400"><User className="h-5 w-5" /></div>
+          </div>
+        </header>
+
+        {/* Demo Overlay Guide */}
+        <div className="w-full p-4 bg-[#3B82F6]/10 border-b border-[#3B82F6]/20 z-[60]">
+          <div className="rounded-2xl bg-[#1A1A1A] p-4 shadow-xl ring-1 ring-white/10">
+             <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-black italic uppercase text-[#3B82F6]">{DEMO_STEPS[step].title}</h3>
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{step + 1} / {DEMO_STEPS.length}</span>
+             </div>
+             <p className="text-[11px] text-zinc-400 mb-4 leading-relaxed font-medium">{DEMO_STEPS[step].desc}</p>
+             <div className="flex gap-2">
+                <button 
+                  onClick={prevStep} 
+                  disabled={step === 0}
+                  className="flex-1 rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 border border-white/10 bg-transparent disabled:opacity-20"
+                >
+                  Back
+                </button>
+                <button 
+                  onClick={nextStep}
+                  disabled={step === DEMO_STEPS.length - 1}
+                  className="flex-1 rounded-xl bg-[#3B82F6] text-white text-[10px] font-bold uppercase tracking-widest h-9 disabled:opacity-20"
+                >
+                  {step === DEMO_STEPS.length - 1 ? "Complete" : "Next Step"}
+                </button>
+             </div>
+          </div>
         </div>
-      </div>
 
-      {/* Demo Badge */}
-      <div className="w-full max-w-[430px] bg-emerald-600 text-white py-1.5 px-4 text-center">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] italic">Rider Demo · Read Only</p>
-      </div>
+        {/* Main Content Area */}
+        <main className="flex-1 w-full overflow-y-auto p-4 space-y-6 pb-24">
+          <h1 className="text-2xl font-black italic uppercase tracking-tight text-white mt-2">Rider Demo Mode</h1>
+          
+          {tab === "Home" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Status Card */}
+              <div className="rounded-[2.5rem] bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] p-8 text-white shadow-xl relative overflow-hidden">
+                 <div className="absolute -right-4 -bottom-4 opacity-10">
+                   <Bike className="h-32 w-32 rotate-12" />
+                 </div>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Current Status</p>
+                 <div className="flex items-center gap-3 mt-2">
+                   <div className="h-3 w-3 rounded-full bg-white animate-pulse shadow-[0_0_12px_rgba(255,255,255,0.8)]" />
+                   <h2 className="text-4xl font-black italic uppercase tracking-tighter">Online</h2>
+                 </div>
+                 <button className="mt-8 rounded-full bg-white/20 backdrop-blur-md px-7 py-3 text-[10px] font-black uppercase tracking-widest hover:bg-white/30 transition shadow-lg">Go Offline</button>
+              </div>
 
-      {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-[430px] overflow-y-auto p-4 space-y-5 pb-24">
-        {tab === "Home" && (
-          <>
-            {/* Status Card */}
-            <div className="rounded-[2.5rem] bg-gradient-to-br from-emerald-500 to-emerald-700 p-8 text-white shadow-glow relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-8 opacity-10">
-                 <Bike className="h-24 w-24 rotate-12" />
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="rounded-3xl bg-[#1A1A1A] p-5 border border-white/5 shadow-sm">
+                    <p className="text-[9px] font-black uppercase text-zinc-500 tracking-widest">Earnings Today</p>
+                    <p className="text-2xl font-black mt-1 italic text-[#3B82F6] tracking-tight">₹1,240</p>
+                    <p className="text-[9px] font-bold text-zinc-600 mt-1 uppercase">5 TRIPS</p>
+                 </div>
+                 <div className="rounded-3xl bg-[#1A1A1A] p-5 border border-white/5 shadow-sm">
+                    <p className="text-[9px] font-black uppercase text-zinc-500 tracking-widest">Driver Rating</p>
+                    <p className="text-2xl font-black mt-1 italic text-amber-500 tracking-tight">4.9</p>
+                    <p className="text-[9px] font-bold text-zinc-600 mt-1 uppercase">EXCELLENT</p>
+                 </div>
+              </div>
+
+              {/* KYC Progress */}
+              <div className="rounded-[2rem] bg-[#1A1A1A] p-6 border border-white/5 shadow-sm">
+                 <div className="flex items-center justify-between mb-5">
+                    <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Verification Progress</h4>
+                    <span className="text-[10px] font-black text-[#3B82F6] uppercase bg-[#3B82F6]/10 px-2 py-0.5 rounded-full">80%</span>
+                 </div>
+                 <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-[#242424] border border-white/5">
+                       <span className="text-[11px] font-bold uppercase text-zinc-300">Aadhaar Card</span>
+                       <div className="bg-emerald-500/10 p-1 rounded-full"><Check className="h-3 w-3 text-emerald-500" /></div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-[#242424] border border-white/5">
+                       <span className="text-[11px] font-bold uppercase text-zinc-300">Vehicle RC</span>
+                       <div className="h-4 w-4 rounded-full border border-dashed border-amber-500/50" />
+                    </div>
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {tab === "History" && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h3 className="text-xl font-black italic uppercase tracking-tight text-white">Trip History</h3>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-3xl bg-[#1A1A1A] p-5 border border-white/5 shadow-sm">
+                   <div className="flex justify-between items-start mb-2">
+                      <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest">Order #SC-{8290 + i}</p>
+                      <div className="bg-emerald-500/10 text-emerald-500 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest">Delivered</div>
+                   </div>
+                   <p className="text-sm font-black mt-2 tracking-tight">Sayajigunj → Akota Gardens</p>
+                   <div className="flex justify-between items-center mt-5 pt-4 border-t border-dashed border-white/5 text-[10px]">
+                      <span className="font-bold text-zinc-500 uppercase">Aug 18, 2026 • 12:4{i} PM</span>
+                      <span className="font-black text-[#3B82F6] text-sm">₹14{i}.00</span>
+                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === "Pocket" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+               <div className="rounded-[2.5rem] bg-gradient-to-b from-[#242424] to-[#121212] p-10 text-white shadow-xl text-center border border-white/5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Available for Payout</p>
+                  <h2 className="text-5xl font-black italic tracking-tighter mt-3 tracking-tighter">₹5,420.00</h2>
+                  <button className="w-full mt-10 bg-white text-black hover:bg-zinc-200 rounded-2xl h-14 font-black uppercase tracking-widest text-[11px] transition-all active:scale-95">Withdraw to Bank</button>
                </div>
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Current Status</p>
-               <div className="flex items-center gap-3 mt-2">
-                 <div className="h-3 w-3 rounded-full bg-white animate-pulse shadow-[0_0_12px_rgba(255,255,255,0.8)]" />
-                 <h2 className="text-3xl font-black italic uppercase tracking-tighter">Online</h2>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="p-5 rounded-3xl bg-[#1A1A1A] border border-white/5">
+                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Base Pay</p>
+                    <p className="text-xl font-black italic mt-1">₹3,800</p>
+                  </div>
+                  <div className="p-5 rounded-3xl bg-[#1A1A1A] border border-white/5">
+                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Tips</p>
+                    <p className="text-xl font-black italic mt-1 text-amber-500">₹420</p>
+                  </div>
+               </div>
+            </div>
+          )}
+
+          {tab === "More" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+               <div className="flex items-center gap-5 p-5 rounded-[2rem] bg-[#1A1A1A] border border-white/5 shadow-sm">
+                  <div className="h-20 w-20 rounded-3xl bg-[#242424] flex items-center justify-center border border-white/5 shadow-inner">
+                    <User className="h-10 w-10 text-zinc-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black italic uppercase tracking-tight text-white">Demo Rider</h3>
+                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mt-1">ID: #SCO-99-DEMO</p>
+                  </div>
+               </div>
+               <div className="space-y-2.5">
+                  {["Vehicle Management", "Insurance Details", "Availability", "Help & Support"].map(m => (
+                    <button key={m} className="w-full flex items-center justify-between p-5 rounded-2xl bg-[#1A1A1A] border border-white/5 text-[11px] font-black uppercase tracking-widest hover:bg-[#242424] transition-all active:scale-[0.98]">
+                      <span className="text-zinc-300">{m}</span>
+                      <ChevronRight className="h-4 w-4 text-zinc-700" />
+                    </button>
+                  ))}
                </div>
                <button 
-                 onClick={() => toast.info("Demo only — sign in to change status.")}
-                 className="mt-6 rounded-full bg-white/20 backdrop-blur-md px-6 py-2.5 text-[10px] font-black uppercase tracking-widest hover:bg-white/30 transition shadow-soft"
+                 className="w-full text-rose-500 font-black uppercase tracking-widest text-[11px] h-14 rounded-2xl bg-rose-500/5 border border-rose-500/20 mt-4 transition-all hover:bg-rose-500/10 active:scale-95"
+                 onClick={() => window.location.replace("/login?portal=rider")}
                >
-                 Go Offline
+                 Exit Demo Mode
                </button>
             </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 gap-4">
-               <StatCard label="Today's Earnings" value="₹1,240" sub="5 Trips" color="text-emerald-600" />
-               <StatCard label="Rating" value="4.9" sub="Excellent" color="text-amber-500" />
-            </div>
-
-            {/* Verification Status */}
-            <div className="rounded-3xl bg-card p-5 border border-border/60 shadow-soft">
-               <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Verification Progress</h4>
-                  <span className="text-[10px] font-bold text-emerald-600 uppercase">80% Done</span>
-               </div>
-               <div className="space-y-3">
-                  <VerificationItem label="Aadhaar Card" status="verified" />
-                  <VerificationItem label="Driving License" status="verified" />
-                  <VerificationItem label="Vehicle RC" status="pending" />
-               </div>
-               <Button 
-                 variant="ghost" 
-                 className="w-full mt-4 text-[10px] font-black uppercase tracking-widest text-primary"
-                 onClick={() => toast.info("Demo only — sign in to upload documents.")}
-               >
-                 View All Documents <ArrowRight className="h-3 w-3 ml-2" />
-               </Button>
-            </div>
-
-            {/* Upcoming Gigs */}
-            <div className="space-y-3">
-               <h4 className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">Available Gigs</h4>
-               {GIGS.map(gig => (
-                 <div key={gig.id} className="rounded-2xl bg-card p-4 border border-border/60 shadow-soft flex items-center justify-between">
-                    <div>
-                       <p className="text-xs font-black uppercase italic tracking-tight">{gig.title}</p>
-                       <p className="text-[9px] text-muted-foreground font-bold mt-0.5">{gig.zone} • {gig.time}</p>
-                    </div>
-                    <div className="text-right">
-                       <p className="text-xs font-black text-emerald-600 tracking-tighter">{gig.reward}</p>
-                       <button onClick={() => toast.info("Demo only — sign in to book gigs.")} className="text-[9px] font-black text-primary uppercase tracking-widest mt-1">Book</button>
-                    </div>
-                 </div>
-               ))}
-            </div>
-          </>
-        )}
-
-        {tab === "History" && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h3 className="font-display text-lg font-black italic uppercase tracking-tight">Trip History</h3>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-2xl bg-card p-4 border border-border shadow-soft">
-                 <div className="flex justify-between items-start mb-2">
-                    <div>
-                       <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Order #SC-{8290 + i}</p>
-                       <p className="text-xs font-bold mt-1">Sayajigunj → Akota</p>
-                    </div>
-                    <div className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">Delivered</div>
-                 </div>
-                 <div className="flex justify-between items-center mt-4 pt-3 border-t border-dashed border-border">
-                    <span className="text-[10px] font-bold text-muted-foreground">Aug 18, 2026 • 12:4{i} PM</span>
-                    <span className="text-xs font-black text-emerald-600">₹14{i}.00</span>
-                 </div>
-              </div>
-            ))}
-            <Button 
-              variant="outline" 
-              className="w-full rounded-2xl h-12 text-[10px] font-black uppercase tracking-widest"
-              onClick={() => toast.info("Demo only — sign in to view full history.")}
-            >
-              Load Older Trips
-            </Button>
-          </div>
-        )}
-
-        {tab === "Pocket" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-             <div className="rounded-[2.5rem] bg-zinc-900 p-8 text-white shadow-glow text-center border border-white/5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Balance Available</p>
-                <h2 className="text-4xl font-black italic tracking-tighter mt-2">₹5,420.00</h2>
-                <div className="flex gap-2 mt-8">
-                   <Button className="flex-1 bg-white text-black hover:bg-zinc-200 rounded-2xl h-12 font-black uppercase tracking-widest text-[10px]" onClick={() => toast.info("Demo only — payouts disabled.")}>Withdraw</Button>
-                   <Button variant="outline" className="flex-1 rounded-2xl h-12 font-black uppercase tracking-widest text-[10px] border-white/20 hover:bg-white/10" onClick={() => toast.info("Demo only.")}>Details</Button>
-                </div>
-             </div>
-
-             <div className="space-y-3">
-                <h4 className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">Weekly Summary</h4>
-                <div className="grid grid-cols-2 gap-3">
-                   <StatCard label="Base Pay" value="₹3,800" sub="Total Trips" color="text-foreground" />
-                   <StatCard label="Incentives" value="₹1,200" sub="Gig Bonuses" color="text-emerald-500" />
-                   <StatCard label="Tips" value="₹420" sub="From Customers" color="text-amber-500" />
-                   <StatCard label="Adjustments" value="₹0" sub="No penalties" color="text-blue-500" />
-                </div>
-             </div>
-          </div>
-        )}
-
-        {tab === "More" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-             <div className="flex items-center gap-4 p-4 rounded-3xl bg-card border border-border shadow-soft">
-                <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center overflow-hidden">
-                   <User className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <div>
-                   <h3 className="text-lg font-black italic uppercase tracking-tight">Demo Rider</h3>
-                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">ID: #DEMO-991</p>
-                </div>
-             </div>
-
-             <div className="grid grid-cols-1 gap-2">
-                <MenuAction icon={ShieldCheck} label="Insurance Details" onClick={() => toast.info("Demo only.")} />
-                <MenuAction icon={Bike} label="Vehicle Management" onClick={() => toast.info("Demo only.")} />
-                <MenuAction icon={Calendar} label="Availability Calendar" onClick={() => toast.info("Demo only.")} />
-                <MenuAction icon={ShoppingBag} label="Scoobix Bazaar" onClick={() => toast.info("Demo only.")} />
-                <MenuAction icon={Info} label="Help & Support" onClick={() => toast.info("Demo only.")} />
-             </div>
-
-             <Button 
-               variant="ghost" 
-               className="w-full text-rose-500 hover:text-rose-600 hover:bg-rose-50 font-black uppercase tracking-widest text-[11px] h-14 rounded-2xl"
-               onClick={() => {
-                 window.location.replace("/login?portal=rider");
-               }}
-             >
-               Exit Demo Mode
-             </Button>
-          </div>
-        )}
-      </main>
-
-      {/* Bottom Navigation Emulator */}
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 flex h-20 w-full max-w-[430px] items-center justify-around border-t border-border bg-card/95 backdrop-blur-md px-2 shadow-glow">
-        {[
-          { label: "Home", icon: Home },
-          { label: "History", icon: History },
-          { label: "Pocket", icon: Wallet },
-          { label: "More", icon: Info },
-        ].map((n) => {
-          const active = tab === n.label;
-          return (
-            <button
-              key={n.label}
-              onClick={() => setTab(n.label)}
-              className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1.5 transition-all duration-300",
-                active ? "text-emerald-600" : "text-muted-foreground hover:text-emerald-500"
-              )}
-            >
-              <div className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-300",
-                active ? "bg-emerald-50 text-emerald-600 shadow-glow" : "bg-transparent"
-              )}>
-                <n.icon className="h-5 w-5" />
-              </div>
-              <span className={cn("text-[9px] font-black uppercase tracking-widest", active ? "opacity-100" : "opacity-60")}>
-                {n.label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-    </div>
-  );
-}
-
-function StatCard({ label, value, sub, color }: { label: string; value: string; sub: string; color: string }) {
-  return (
-    <div className="rounded-2xl bg-card p-4 border border-border/60 shadow-soft">
-      <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">{label}</p>
-      <p className={cn("font-display text-xl font-black mt-1 italic tracking-tight", color)}>{value}</p>
-      <p className="text-[9px] font-bold text-muted-foreground/60 mt-1 uppercase">{sub}</p>
-    </div>
-  );
-}
-
-function VerificationItem({ label, status }: { label: string; status: 'verified' | 'pending' }) {
-  return (
-    <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/20">
-       <span className="text-[10px] font-bold uppercase text-muted-foreground">{label}</span>
-       <div className="flex items-center gap-2">
-          {status === 'verified' ? (
-            <Check className="h-3 w-3 text-emerald-600" />
-          ) : (
-            <div className="h-3 w-3 rounded-full border border-dashed border-amber-500" />
           )}
-          <span className={cn("text-[9px] font-black uppercase tracking-widest", status === 'verified' ? "text-emerald-600" : "text-amber-500")}>
-            {status}
-          </span>
-       </div>
-    </div>
-  );
-}
+        </main>
 
-function MenuAction({ icon: Icon, label, onClick }: { icon: any; label: string; onClick: () => void }) {
-  return (
-    <button 
-      onClick={onClick}
-      className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border/60 shadow-soft hover:bg-muted/30 transition-all active:scale-[0.98]"
-    >
-       <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-             <Icon className="h-4 w-4" />
-          </div>
-          <span className="text-[11px] font-bold uppercase tracking-widest">{label}</span>
-       </div>
-       <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
-    </button>
+        {/* Static Bottom Navigation */}
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 flex h-24 w-full max-w-[430px] items-center justify-around border-t border-white/5 bg-[#121212]/95 pb-4 backdrop-blur-xl px-2 z-[70] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+          {[
+            { label: "Home", icon: Home },
+            { label: "History", icon: History },
+            { label: "Pocket", icon: Wallet },
+            { label: "More", icon: Info },
+          ].map((n) => {
+            const active = tab === n.label;
+            return (
+              <button
+                key={n.label}
+                onClick={() => setTab(n.label)}
+                className={`flex flex-1 flex-col items-center justify-center gap-2 transition-all duration-300 ${active ? "text-[#3B82F6]" : "text-zinc-600 hover:text-zinc-400"}`}
+              >
+                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-300 ${active ? "bg-[#3B82F6]/10 shadow-[0_0_20px_rgba(59,130,246,0.1)]" : "bg-transparent"}`}>
+                  <n.icon className={`h-5 w-5 ${active ? "stroke-[2.5px]" : "stroke-[2px]"}`} />
+                </div>
+                <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${active ? "opacity-100" : "opacity-40"}`}>{n.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
   );
 }
