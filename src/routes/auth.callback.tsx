@@ -76,8 +76,10 @@ function AuthCallback() {
         const maxRetries = 15; // ~7.5 seconds total (reduced from 30)
         
         const waitForUser = async (): Promise<any> => {
-          const { data: userData, error: userError } = await insforge.auth.getCurrentUser();
-          const authUser = userData?.user;
+          const { data: userData, error: userError } = await insforge.auth.getCurrentUser().catch((e: any) => {
+            if (e?.message?.includes("fetch") || e?.status === 0) return { data: null, error: e };
+            throw e;
+          });
           
           if (authUser && authUser.id && authUser.email) {
             return authUser;

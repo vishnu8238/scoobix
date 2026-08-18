@@ -103,7 +103,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await ensureAuthHydrated();
       }
 
-      const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => ({ data: null, error: e }));
+      const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => {
+        // Handle transient fetch failures
+        if (e?.message?.includes("Failed to fetch") || e?.message?.includes("Network request failed")) {
+          console.error("[AUTH_CRITICAL] Network request failed during getCurrentUser. Retrying in 1s...");
+          return new Promise(resolve => setTimeout(resolve, 1000)).then(() => 
+            insforge.auth.getCurrentUser().catch((err: any) => ({ data: null, error: err }))
+          );
+        }
+        return { data: null, error: e };
+      });
       
       if (currentUserError || !userData?.user) {
          const errorMsg = currentUserError?.message || "";
