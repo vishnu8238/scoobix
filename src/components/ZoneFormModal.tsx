@@ -251,7 +251,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
           </div>
         </form>
 
-        <footer className="p-6 border-t border-border/60 flex justify-end gap-3 bg-muted/20">
+        <footer className="sticky bottom-0 p-6 border-t border-border/60 flex justify-end gap-3 bg-zinc-950/90 backdrop-blur-md z-10">
           <button 
             type="button" 
             onClick={onClose}
