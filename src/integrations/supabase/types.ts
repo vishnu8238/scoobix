@@ -510,51 +510,6 @@ export type Database = {
         }
         Relationships: []
       }
-      onboarding_events: {
-        Row: {
-          actor_role: string | null
-          created_at: string | null
-          id: string
-          manager_id: string | null
-          note: string | null
-          restaurant_id: string | null
-          status: string | null
-        }
-        Insert: {
-          actor_role?: string | null
-          created_at?: string | null
-          id?: string
-          manager_id?: string | null
-          note?: string | null
-          restaurant_id?: string | null
-          status?: string | null
-        }
-        Update: {
-          actor_role?: string | null
-          created_at?: string | null
-          id?: string
-          manager_id?: string | null
-          note?: string | null
-          restaurant_id?: string | null
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "onboarding_events_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "merchant_managers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "onboarding_events_restaurant_id_fkey"
-            columns: ["restaurant_id"]
-            isOneToOne: false
-            referencedRelation: "restaurants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       orders: {
         Row: {
           actual_delivery_time: string | null
