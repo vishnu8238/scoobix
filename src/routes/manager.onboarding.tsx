@@ -344,24 +344,31 @@ function OnboardingFlow() {
             console.debug("[KYC_PERSIST_COMPLETE]", { id: saved.id });
           }
         } catch (docErr) {
-          console.error("[ONBOARDING_SUBMIT] KYC persistence failed:", docErr);
-          throw new Error(`Compliance persistence failed: ${docErr instanceof Error ? docErr.message : "Unknown error"}`);
+          console.error("[ONBOARDING_SUBMIT] KYC persistence failed (likely RLS):", docErr);
+          // If the actual KYC write failed, we MUST report it
+          throw new Error(`Compliance save failed: You do not have permission to update this restaurant's KYC.`);
         }
 
-        await logOnboardingEvent({
-          restaurantId: saved.id,
-          managerId: authoritativeManagerId,
-          status: String(extra.onboarding_status ?? "draft"),
-          note: statusLabel,
-        });
+        // Post-save audit events should NOT block the success message if KYC succeeded
+        try {
+          await logOnboardingEvent({
+            restaurantId: saved.id,
+            managerId: authoritativeManagerId,
+            status: String(extra.onboarding_status ?? "draft"),
+            note: statusLabel,
+          });
+        } catch (auditErr) {
+          console.warn("[ONBOARDING_SUBMIT] Non-critical audit log failed:", auditErr);
+          // Don't throw - KYC and restaurant records are already saved
+        }
       }
       return saved;
     } catch (err: any) {
       console.error("[ONBOARDING_SUBMIT_ERROR]", err);
-      // Surface real errors from KYC writes specifically
       const msg = err.message || "";
-      if (msg.includes("row-level security") || msg.includes("permission denied")) {
-        toast.error("Compliance save failed: You do not have permission to update this restaurant's KYC.");
+      // Only show the specific permission error if it was the one we threw for KYC
+      if (msg.includes("Compliance save failed")) {
+        toast.error(msg);
       } else {
         toast.error(msg || "Failed to save restaurant details");
       }
