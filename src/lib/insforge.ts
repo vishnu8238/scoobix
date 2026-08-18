@@ -2,7 +2,7 @@ import { createClient } from "@insforge/sdk";
 
 export const INSFORGE_URL = (import.meta as any).env.VITE_INSFORGE_URL || "https://awvs3seh.us-east.insforge.app";
 export const INSFORGE_PROJECT_ID = (import.meta as any).env.VITE_INSFORGE_PROJECT_ID || "9d873abd-530b-47a7-8a36-b38cc54dbdf5";
-export const INSFORGE_ANON_KEY = (import.meta as any).env.VITE_INSFORGE_ANON_KEY || "sb_publishable_FIPSldMe55J2LJ_hczRqag_orYaOaTT";
+export const INSFORGE_ANON_KEY = (import.meta as any).env.VITE_INSFORGE_ANON_KEY || "anon_f8c2fce9afe385f45eb6d00d434eb365833a70386175df3707743df3b751b102";
 export const INSFORGE_API_KEY = (import.meta as any).env.VITE_INSFORGE_API_KEY || "";
 
 // Fail clearly if required configuration is missing
