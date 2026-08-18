@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useRouterState, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState, useNavigate, useLocation } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Bike, Wallet, Bell, AlertTriangle, X, PhoneCall, Shield, HelpCircle, ChevronRight, User, LogOut, Info, Calendar, ShoppingBag, History } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
@@ -25,7 +25,8 @@ const NAV = [
 ];
 
 function RiderLayout() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const location = useLocation();
+  const pathname = location.pathname;
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { driver } = useDriver();
@@ -64,7 +65,7 @@ function RiderLayout() {
   };
 
   return (
-    <RoleGuard allow="rider" transitionLabel="Accessing Rider Portal..." bypass={pathname.includes("/rider/demo")}>
+    <RoleGuard allow="rider" transitionLabel="Accessing Rider Portal..." bypass={pathname === "/rider/demo"}>
       <div className="relative min-h-svh bg-background flex flex-col items-center">
         {/* Mobile App Container */}
         <div className="relative w-full min-h-svh max-w-[430px] bg-card shadow-2xl flex flex-col ring-1 ring-border/10 overflow-hidden">

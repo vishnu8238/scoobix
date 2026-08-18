@@ -77,7 +77,7 @@ function RiderDemo() {
   return (
     <div className="flex flex-col items-center w-full min-h-full">
       {/* Demo Overlay Guide */}
-      <div className="w-full max-w-[430px] p-4 bg-emerald-600/10 border-b border-emerald-600/20">
+      <div className="w-full max-w-[430px] p-4 bg-emerald-600/10 border-b border-emerald-600/20 z-[60]">
         <div className="rounded-2xl bg-card p-4 shadow-soft ring-1 ring-emerald-600/20">
            <div className="flex items-center justify-between mb-2">
               <h3 className="font-display text-sm font-black italic uppercase text-emerald-600">{DEMO_STEPS[step].title}</h3>
