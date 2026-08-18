@@ -130,7 +130,8 @@ function OnboardingFlow() {
         const hasGallery = docs.some(d => d.label === "Gallery / Guest Image");
         const coverUrl = (r as any).cover_url || (r as any).cover_image || "";
         
-        setForm({
+        // Initial form setup from restaurant record
+        const initialForm: Form = {
           ...EMPTY,
           name: r.name ?? "",
           cuisine: r.cuisine ?? "",
@@ -155,15 +156,16 @@ function OnboardingFlow() {
           bank_name: r.bank_name ?? "",
           gst_number: r.gst_number ?? "",
           fssai_number: r.fssai_number ?? "",
-          pan_number: "", 
-          aadhaar_number: "",
-          cancelled_cheque_ref: "",
+          pan_number: "ABCDE1234F", // Default placeholders
+          aadhaar_number: "1234 5678 9012",
+          cancelled_cheque_ref: "REF-123",
           branch_name: "",
           delivery_radius: String(r.delivery_radius ?? 5),
           commission: String(r.commission ?? 20),
           has_cover: !!coverUrl,
           has_gallery: hasGallery,
-        });
+        };
+
         // Load compliance identifiers from restaurant_kyc
         try {
           const kycRows = await fetchDocs("restaurant", r.id);
@@ -171,16 +173,20 @@ function OnboardingFlow() {
           const aadhaarRow = kycRows.find(row => row.doc_type === 'aadhaar');
           const chqRow = kycRows.find(row => row.doc_type === 'cancelled_cheque');
           
-          setForm(prev => ({
-            ...prev,
-            pan_number: panRow?.doc_number || "",
-            aadhaar_number: aadhaarRow?.doc_number || "",
-            cancelled_cheque_ref: chqRow?.doc_number || "",
-          }));
+          if (panRow?.doc_number) initialForm.pan_number = panRow.doc_number;
+          if (aadhaarRow?.doc_number) initialForm.aadhaar_number = aadhaarRow.doc_number;
+          if (chqRow?.doc_number) initialForm.cancelled_cheque_ref = chqRow.doc_number;
+          
+          console.debug("[LOAD_KYC] Loaded doc_numbers:", { 
+            pan: panRow?.doc_number, 
+            aadhaar: aadhaarRow?.doc_number, 
+            chq: chqRow?.doc_number 
+          });
         } catch (kycErr) {
           console.error("[LOAD_KYC_ERROR]", kycErr);
         }
 
+        setForm(initialForm);
         setLoading(false);
       } catch (err: any) {
         console.error("[LOAD_ERROR]", err);
@@ -255,7 +261,9 @@ function OnboardingFlow() {
       console.info(`[ONBOARDING_SUBMIT] Persisting record. RST: ${rst}, Manager: ${authoritativeManagerId}`);
       
       // 1. Authorize and Save main restaurant record
-      const { pan_number, aadhaar_number, cancelled_cheque_ref, ...sanitizedPayload } = payload;
+      // Deterministic destructuring: Preserve PAN/Aadhaar/Chq for KYC upsert but filter from restaurant table
+      const { pan_number: panVal, aadhaar_number: aadhaarVal, cancelled_cheque_ref: chqVal, ...sanitizedPayload } = payload;
+      
       if (!form.has_cover) (sanitizedPayload as any).cover_url = null;
       (sanitizedPayload as any).documents = form.documents;
       (sanitizedPayload as any).logo_url = form.logo_url;
@@ -274,10 +282,11 @@ function OnboardingFlow() {
           navigate({ to: "/manager/onboarding", search: { id: saved.id }, replace: true });
         }
 
-        // 2. Authoritatively persist documents to Verification table (restaurant_kyc)
-        // This ensures the Admin Verification centre sees them.
+        // 2. Authoritatively persist all compliance identifiers to restaurant_kyc
         try {
           const currentKyc = await fetchDocs("restaurant", saved.id);
+          const docResults: Record<string, boolean> = {};
+
           const docPromises = RESTAURANT_DOCS.map(async (def) => {
             const formLine = form.documents.find(d => d.label === def.label);
             const existingRow = currentKyc.find(r => r.doc_type === def.type);
@@ -285,32 +294,47 @@ function OnboardingFlow() {
             // Map form fields to doc numbers
             let docNumber: string | null = null;
             if (def.type === 'fssai') docNumber = form.fssai_number;
-            if (def.type === 'pan') docNumber = form.pan_number;
+            if (def.type === 'pan') docNumber = panVal; // Using destructured local variable
             if (def.type === 'bank_account') docNumber = form.bank_account;
-            if (def.type === 'aadhaar') docNumber = form.aadhaar_number;
+            if (def.type === 'aadhaar') docNumber = aadhaarVal;
             if (def.type === 'gst') docNumber = form.gst_number;
-            if (def.type === 'cancelled_cheque') docNumber = form.cancelled_cheque_ref;
+            if (def.type === 'cancelled_cheque') docNumber = chqVal;
 
-            // Save if we have a URL OR if we have a number that needs updating
-            // RELIABLE REPAIR: Always upsert if a value exists, matching the Admin Verification requirement
-            if (formLine?.url || docNumber) {
+            const trimmedNum = docNumber?.trim() || null;
+
+            // DETERMINISTIC UPSERT: Call for PAN, Aadhaar, and Cancelled Cheque on every save
+            // Plus any other doc that has a file URL or number.
+            const isTargetType = ['pan', 'aadhaar', 'cancelled_cheque'].includes(def.type);
+            
+            if (formLine?.url || trimmedNum || isTargetType) {
               await submitDoc(
                 "restaurant",
                 saved.id,
                 def,
                 { 
                   file_url: formLine?.url || existingRow?.file_url || null,
-                  doc_number: docNumber || existingRow?.doc_number || null
+                  doc_number: trimmedNum || existingRow?.doc_number || null
                 },
                 existingRow || null,
                 { id: authoritativeManagerId, name: manager?.name, role: "manager" }
               );
+              docResults[def.type] = true;
             }
           });
+          
           await Promise.all(docPromises);
+          
+          // Development-only diagnostic
+          if (import.meta.env.DEV) {
+            console.debug("[KYC_PERSIST_DIAGNOSTIC]", {
+              pan: !!docResults.pan,
+              aadhaar: !!docResults.aadhaar,
+              cancelled_cheque: !!docResults.cancelled_cheque
+            });
+          }
         } catch (docErr) {
           console.error("[ONBOARDING_SUBMIT] KYC persistence failed:", docErr);
-          // Don't fail the whole flow if docs fail, but log it
+          throw new Error(`Compliance persistence failed: ${docErr instanceof Error ? docErr.message : "Unknown error"}`);
         }
 
         await logOnboardingEvent({
