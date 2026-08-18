@@ -268,7 +268,8 @@ function OnboardingFlow() {
       (sanitizedPayload as any).documents = form.documents;
       (sanitizedPayload as any).logo_url = form.logo_url;
       
-      const saved = await saveOnboardingDraft(record?.id ?? id ?? null, {
+      const targetRecordId = record?.id ?? id ?? null;
+      const saved = await saveOnboardingDraft(targetRecordId, {
         ...sanitizedPayload,
         rst_code: rst,
         manager_id: authoritativeManagerId,

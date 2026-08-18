@@ -353,7 +353,6 @@ export async function saveOnboardingDraft(
     throw new Error("Manager authentication required. Please sign in again.");
   }
 
-
   // Idempotency: If no ID provided, check for an existing draft by this owner/manager
   let targetId = safeId;
   if (!targetId) {
@@ -370,7 +369,7 @@ export async function saveOnboardingDraft(
 
   // Authoritative ownership: always overwrite manager_id and onboarded_by
   // Filter out compliance identifiers that don't belong in restaurants table
-  const { pan_number, aadhaar_number, cancelled_cheque_ref, bank_account, bank_ifsc, ...restValues } = values;
+  const { pan_number, aadhaar_number, cancelled_cheque_ref, bank_account, bank_ifsc, rst_code, ...restValues } = values;
   
   const payload = {
     ...restValues,
@@ -381,14 +380,18 @@ export async function saveOnboardingDraft(
   try {
     if (targetId) {
       console.info(`[MANAGER_API] Updating restaurant record: ${targetId}`);
+      // When updating an existing record, never send rst_code to avoid unique constraint violations
+      // even if the payload contains one (e.g. from state).
       await patchRecord("restaurants", targetId, payload);
       const rows = await listTable<ManagedRestaurant>("restaurants", { id: `eq.${targetId}`, limit: 1 }, { fresh: true });
       return rows[0] ?? null;
     }
 
     console.info(`[MANAGER_API] Creating new restaurant draft`);
+    // Only set rst_code on initial creation
     const created = await createRecord<ManagedRestaurant>("restaurants", {
       ...payload,
+      rst_code: rst_code as string,
       created_at: new Date().toISOString(),
     });
     
