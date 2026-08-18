@@ -126,9 +126,9 @@ function OnboardingFlow() {
         const r = rows[0];
         if (cancelled || !r) { setLoading(false); return; }
         setRecord(r);
-        const docs = Array.isArray(r.documents) ? (r.documents as Form["documents"]) : [];
+        const docs = Array.isArray((r as any).documents) ? ((r as any).documents as Form["documents"]) : [];
         const hasGallery = docs.some(d => d.label === "Gallery / Guest Image");
-        const coverUrl = r.cover_url || r.cover_image || "";
+        const coverUrl = (r as any).cover_url || (r as any).cover_image || "";
         
         setForm({
           ...EMPTY,
@@ -146,7 +146,7 @@ function OnboardingFlow() {
           longitude: r.longitude ?? null,
           opening_time: r.opening_time ?? "10:00",
           closing_time: r.closing_time ?? "23:00",
-          logo_url: r.logo_url || r.logo || "",
+          logo_url: (r as any).logo_url || (r as any).logo || "",
           cover_url: coverUrl,
           documents: docs,
           bank_holder: r.bank_holder ?? "",
@@ -240,6 +240,8 @@ function OnboardingFlow() {
       // 1. Authorize and Save main restaurant record
       const { pan_number, aadhaar_number, cancelled_cheque_ref, ...sanitizedPayload } = payload;
       if (!form.has_cover) (sanitizedPayload as any).cover_url = null;
+      (sanitizedPayload as any).documents = form.documents;
+      (sanitizedPayload as any).logo_url = form.logo_url;
       
       const saved = await saveOnboardingDraft(record?.id ?? id ?? null, {
         ...sanitizedPayload,
