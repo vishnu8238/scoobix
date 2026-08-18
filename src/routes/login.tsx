@@ -167,6 +167,7 @@ function ConsolidatedLogin() {
       </div>
 
       <div className="w-full space-y-4">
+      <div className="w-full space-y-4">
         <Button 
           onClick={handleLogin}
           className="h-14 w-full rounded-2xl bg-white text-black ring-1 ring-border shadow-soft hover:bg-zinc-50 font-bold flex items-center justify-center gap-3 transition-all active:scale-95"
@@ -174,6 +175,19 @@ function ConsolidatedLogin() {
           <img src="https://www.google.com/favicon.ico" className="h-5 w-5" alt="" />
           Continue to {PORTALS.find(p => p.id === selectedPortal)?.label}
         </Button>
+
+        {selectedPortal === "rider" && (
+          <div className="pt-2">
+            <Button
+              variant="ghost"
+              className="w-full text-xs font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+              onClick={() => navigate({ to: "/rider/demo" as any })}
+            >
+              View Rider Demo (no sign-in)
+            </Button>
+          </div>
+        )}
+      </div>
       </div>
 
       {user && (

@@ -40,6 +40,7 @@ import { Route as RiderIncentivesRouteImport } from './routes/rider.incentives'
 import { Route as RiderHistoryRouteImport } from './routes/rider.history'
 import { Route as RiderGigsRouteImport } from './routes/rider.gigs'
 import { Route as RiderEarningsRouteImport } from './routes/rider.earnings'
+import { Route as RiderDemoRouteImport } from './routes/rider.demo'
 import { Route as RiderBazaarRouteImport } from './routes/rider.bazaar'
 import { Route as RiderAnalyticsRouteImport } from './routes/rider.analytics'
 import { Route as RiderActiveRouteImport } from './routes/rider.active'
@@ -326,6 +327,11 @@ const RiderGigsRoute = RiderGigsRouteImport.update({
 const RiderEarningsRoute = RiderEarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
+  getParentRoute: () => RiderRoute,
+} as any)
+const RiderDemoRoute = RiderDemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => RiderRoute,
 } as any)
 const RiderBazaarRoute = RiderBazaarRouteImport.update({
@@ -1127,6 +1133,7 @@ export interface FileRoutesByFullPath {
   '/rider/active': typeof RiderActiveRoute
   '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/bazaar': typeof RiderBazaarRoute
+  '/rider/demo': typeof RiderDemoRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/gigs': typeof RiderGigsRoute
   '/rider/history': typeof RiderHistoryRoute
@@ -1286,6 +1293,7 @@ export interface FileRoutesByTo {
   '/rider/active': typeof RiderActiveRoute
   '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/bazaar': typeof RiderBazaarRoute
+  '/rider/demo': typeof RiderDemoRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/gigs': typeof RiderGigsRoute
   '/rider/history': typeof RiderHistoryRoute
@@ -1452,6 +1460,7 @@ export interface FileRoutesById {
   '/rider/active': typeof RiderActiveRoute
   '/rider/analytics': typeof RiderAnalyticsRoute
   '/rider/bazaar': typeof RiderBazaarRoute
+  '/rider/demo': typeof RiderDemoRoute
   '/rider/earnings': typeof RiderEarningsRoute
   '/rider/gigs': typeof RiderGigsRoute
   '/rider/history': typeof RiderHistoryRoute
@@ -1619,6 +1628,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/analytics'
     | '/rider/bazaar'
+    | '/rider/demo'
     | '/rider/earnings'
     | '/rider/gigs'
     | '/rider/history'
@@ -1778,6 +1788,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/analytics'
     | '/rider/bazaar'
+    | '/rider/demo'
     | '/rider/earnings'
     | '/rider/gigs'
     | '/rider/history'
@@ -1943,6 +1954,7 @@ export interface FileRouteTypes {
     | '/rider/active'
     | '/rider/analytics'
     | '/rider/bazaar'
+    | '/rider/demo'
     | '/rider/earnings'
     | '/rider/gigs'
     | '/rider/history'
@@ -2206,6 +2218,13 @@ declare module '@tanstack/react-router' {
       path: '/earnings'
       fullPath: '/rider/earnings'
       preLoaderRoute: typeof RiderEarningsRouteImport
+      parentRoute: typeof RiderRoute
+    }
+    '/rider/demo': {
+      id: '/rider/demo'
+      path: '/demo'
+      fullPath: '/rider/demo'
+      preLoaderRoute: typeof RiderDemoRouteImport
       parentRoute: typeof RiderRoute
     }
     '/rider/bazaar': {
@@ -3496,6 +3515,7 @@ interface RiderRouteChildren {
   RiderActiveRoute: typeof RiderActiveRoute
   RiderAnalyticsRoute: typeof RiderAnalyticsRoute
   RiderBazaarRoute: typeof RiderBazaarRoute
+  RiderDemoRoute: typeof RiderDemoRoute
   RiderEarningsRoute: typeof RiderEarningsRoute
   RiderGigsRoute: typeof RiderGigsRoute
   RiderHistoryRoute: typeof RiderHistoryRoute
@@ -3516,6 +3536,7 @@ const RiderRouteChildren: RiderRouteChildren = {
   RiderActiveRoute: RiderActiveRoute,
   RiderAnalyticsRoute: RiderAnalyticsRoute,
   RiderBazaarRoute: RiderBazaarRoute,
+  RiderDemoRoute: RiderDemoRoute,
   RiderEarningsRoute: RiderEarningsRoute,
   RiderGigsRoute: RiderGigsRoute,
   RiderHistoryRoute: RiderHistoryRoute,
