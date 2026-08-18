@@ -272,8 +272,6 @@ function OnboardingFlow() {
       if (!form.has_cover) (sanitizedPayload as any).cover_url = null;
       (sanitizedPayload as any).documents = form.documents;
       (sanitizedPayload as any).logo_url = form.logo_url;
-      
-      const targetRecordId = record?.id ?? id ?? null;
       const saved = await saveOnboardingDraft(targetRecordId, {
         ...sanitizedPayload,
         rst_code: rst,
