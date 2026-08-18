@@ -367,7 +367,7 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
           </div>
 
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="sticky bottom-0 flex justify-end gap-3 pt-4 pb-6 px-6 -mx-6 bg-card/90 backdrop-blur-md z-10 border-t border-border/60">
             <button 
               type="button" 
               onClick={onClose}
