@@ -210,6 +210,7 @@ export async function provisionAccount(input: {
 
 
   let userId: string | undefined;
+  let rawBody: any = null;
   try {
     const res = await fetch(`${INSFORGE_URL}/api/auth/users?client_type=mobile`, {
       method: "POST",
@@ -220,16 +221,21 @@ export async function provisionAccount(input: {
       },
       body: JSON.stringify({ email, password, name: input.name }),
     });
-    const body = await res.json().catch(() => null);
-    const payload = body?.data ?? body;
+    rawBody = await res.json().catch(() => null);
+    // InsForge response normalization: accept id from data, user, or root payload
+    const payload = rawBody?.data ?? rawBody;
     if (!res.ok) {
       return { ok: false, password, message: payload?.message || payload?.error || "Could not create account" };
     }
-    userId = payload?.user?.id ?? payload?.id;
+    userId = payload?.user?.id ?? payload?.id ?? payload?.userId ?? rawBody?.id;
   } catch (err) {
     return { ok: false, password, message: err instanceof Error ? err.message : "Network error" };
   }
-  if (!userId) return { ok: false, password, message: "Account created without an id" };
+
+  if (!userId) {
+    console.error("[PROVISION_ACCOUNT] Missing identifier in response:", JSON.stringify(rawBody));
+    return { ok: false, password, message: "Account created without an id" };
+  }
 
   await createRecord("users", {
     id: userId,

@@ -310,13 +310,20 @@ function OnboardingFlow() {
         return;
       }
 
-      console.info("[ONBOARDING_SUBMIT] Account provisioned. ID:", account.userId);
+      const userId = account.userId;
+      if (!userId) {
+        console.error("[ONBOARDING_SUBMIT] Account created but userId missing in result object");
+        toast.error("Account created without an identifier. Please contact support.");
+        return;
+      }
+
+      console.info("[ONBOARDING_SUBMIT] Account provisioned. ID:", userId);
 
       const saved = await persist(
         {
           onboarding_status: "submitted",
           status: "pending",
-          owner_id: account.userId ?? null,
+          owner_id: userId,
           submitted_at: new Date().toISOString(),
           ...extra,
         },
