@@ -15,8 +15,9 @@ import { toast } from "sonner";
 const CATS = ["Starters", "Main Course", "Drinks", "Desserts"] as const;
 
 export const Route = createFileRoute("/restaurant/$id")({
-  loader: ({ params }): Restaurant => {
-    const r = findRestaurant(params.id);
+  loader: async ({ params }) => {
+    const data = await fetchCustomerData();
+    const r = data?.restaurants.find(res => res.id === params.id);
     if (!r) throw notFound();
     return r;
   },
@@ -40,13 +41,8 @@ function RestaurantPage() {
   const [r, setR] = useState<Restaurant>(loaderR);
   
   useEffect(() => {
-    fetchCustomerData().then(data => {
-      if (data) {
-        const liveR = data.restaurants.find(res => res.id === loaderR.id);
-        if (liveR) setR(liveR as any);
-      }
-    });
-  }, [loaderR.id]);
+    setR(loaderR);
+  }, [loaderR]);
 
 
   const navigate = useNavigate();

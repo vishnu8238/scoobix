@@ -81,10 +81,10 @@ function Home() {
   }, []);
 
 
-  const restaurants = liveData?.restaurants || mockRestaurants;
-  const dishes = liveData?.allDishes || mockAllDishes();
-  const trending = mockTrendingIds.map((id) => dishes.find((d) => d.id === id)).filter((d): d is any => !!d);
-  const recommended = mockRecommendedIds.map((id) => dishes.find((d) => d.id === id)).filter((d): d is any => !!d);
+  const restaurants = liveData?.restaurants || [];
+  const dishes = liveData?.allDishes || [];
+  const trending = dishes.filter(d => d.popular).slice(0, 6);
+  const recommended = dishes.slice(0, 6);
 
   const sectionEnabled = (key: string) =>
     sections.find((s) => s.key === key)?.active !== false;
