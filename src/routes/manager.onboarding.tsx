@@ -102,7 +102,7 @@ const EMPTY: Form = {
   has_cover: false, has_gallery: false,
 };
 
-const DOC_SLOTS = ["FSSAI licence", "GST certificate", "Owner ID proof"];
+const DOC_SLOTS = ["FSSAI licence", "GST certificate", "Owner ID proof", "Bank account proof", "Cancelled cheque"];
 
 function OnboardingFlow() {
   const navigate = useNavigate();
@@ -701,7 +701,9 @@ function OnboardingFlow() {
               </div>
               <Field label="GSTIN" value={form.gst_number} onChange={(v) => set({ gst_number: v })} placeholder="27ABCDE1234F1Z5" />
               <Field label="FSSAI licence number" value={form.fssai_number} onChange={(v) => set({ fssai_number: v })} placeholder="11223344556677" />
-              <Field label="PAN (optional)" value={form.pan_number} onChange={(v) => set({ pan_number: v })} placeholder="ABCDE1234F" />
+              <Field label="PAN number" value={form.pan_number} onChange={(v) => set({ pan_number: v })} placeholder="ABCDE1234F" />
+              <Field label="Aadhaar number" value={form.aadhaar_number} onChange={(v) => set({ aadhaar_number: v })} placeholder="1234 5678 9012" />
+              <Field label="Cancelled cheque / Reference no." value={form.cancelled_cheque_ref} onChange={(v) => set({ cancelled_cheque_ref: v })} placeholder="CHQ-001" />
             </>
           )}
 
