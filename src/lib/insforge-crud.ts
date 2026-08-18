@@ -440,7 +440,16 @@ export function createRecords<T = Record<string, unknown>>(
   if (!records.length) return Promise.resolve([]);
   invalidateTable(table);
   return withRetry<T[] | null>(table, async () => {
-    const query = (insforge.database.from(table) as any).insert(records).select();
+    const session = insforge.auth.session;
+    const authId = session?.user?.id;
+    const securedRecords = records.map(r => {
+      const secured = { ...r };
+      if (authId && table === 'onboarding_events') {
+        secured.manager_id = authId;
+      }
+      return secured;
+    });
+    const query = (insforge.database.from(table) as any).insert(securedRecords).select();
     try {
       const res = await handleResponse<T[]>(query, "POST", table);
       announce(table, "insert", (Array.isArray(res) ? res[0] : records[0]) as Record<string, unknown>);
