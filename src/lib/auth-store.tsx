@@ -115,8 +115,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (currentUserError || !userData?.user) {
-         const errorMsg = currentUserError?.message || "";
-         console.log("[AUTH_TRACE] No active session found.", errorMsg);
+         // Attempt one last deep check of SDK memory/storage before giving up
+         const sdkSession = insforge.auth.session || insforge.auth.getSession()?.session;
+         if (sdkSession?.user?.id) {
+           console.log("[AUTH_TRACE] Session found in SDK memory fallback.");
+           // Proceed with sdkSession.user
+         } else {
+           const errorMsg = currentUserError?.message || "";
+           console.log("[AUTH_TRACE] No active session found.", errorMsg);
          
          // iOS Safeguard: Clear storage on definitive refresh/session failures
          const isRefreshError = errorMsg.includes("refresh token") || 

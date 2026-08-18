@@ -65,28 +65,36 @@ function AuthCallback() {
                throw new Error(exchangeError.message || "Failed to exchange authorization code.");
              }
              console.log("[AUTH_TRACE] Session already present despite exchange error (likely background resolution).");
-          } else if (data?.accessToken) {
-            console.log("[AUTH_TRACE] Code exchange successful.");
+          } else if (data?.session) {
+            console.log("[AUTH_TRACE] Code exchange successful. Session detected.");
           }
         }
 
         // 3. Wait for the SDK to process the callback and emit a user
-        // We use a simple loop to wait for the user session to be established by the SDK automatically
         let retryCount = 0;
-        const maxRetries = 15; // ~7.5 seconds total (reduced from 30)
+        const maxRetries = 20; // ~10 seconds total
         
         const waitForUser = async (): Promise<any> => {
+          // Check session directly first as it's most reliable for hydration
+          const session = insforge.auth.session || insforge.auth.getSession()?.session;
+          if (session?.user?.id) {
+            console.log("[AUTH_TRACE] Session found in SDK memory.");
+            return session.user;
+          }
+
+          // Fallback to getCurrentUser which might trigger a background refresh
           const { data: userData, error: userError } = await insforge.auth.getCurrentUser().catch((e: any) => {
             if (e?.message?.includes("fetch") || e?.status === 0) return { data: null, error: e };
             throw e;
           });
           
-          if (userData && userData.id && userData.email) {
-            return userData;
+          if (userData?.user?.id) {
+            return userData.user;
           }
           
           if (retryCount < maxRetries) {
             retryCount++;
+            console.log(`[AUTH_TRACE] Waiting for session... attempt ${retryCount}/${maxRetries}`);
             await new Promise(resolve => setTimeout(resolve, 500));
             return waitForUser();
           }
@@ -94,7 +102,7 @@ function AuthCallback() {
           throw new Error(userError?.message || "Authentication timed out. No session established.");
         };
 
-        console.log("[AUTH_TRACE] Waiting for InsForge SDK to establish session...");
+        console.log("[AUTH_TRACE] Resolving user session...");
         const authUser = await waitForUser();
 
         console.log("[AUTH_TRACE] [SESSION_VERIFIED] ID:", authUser.id, "Email:", authUser.email);
