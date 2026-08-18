@@ -7,7 +7,7 @@ import {
 } from "@vis.gl/react-google-maps";
 import { MapPin } from "lucide-react";
 import type { LatLng } from "@/lib/geo";
-import { interpolate } from "@/lib/geo";
+import { interpolate, LOGISTICS_DEFAULT_CENTER } from "@/lib/geo";
 import { GoogleMapsProvider } from "./GoogleMapsProvider";
 
 type MarkerKind = "restaurant" | "customer" | "rider" | "pickup" | "drop" | "pin";
@@ -210,7 +210,16 @@ function GoogleMapInner({
     if (center) return center;
     if (pickedAt) return pickedAt;
     if (route) return interpolate(route.from, route.to, 0.5);
-    return { lat: 12.9716, lng: 77.5946 };
+    
+    // Check if we are in a Logistics or Admin context by URL
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path.startsWith("/logistics") || path.startsWith("/admin")) {
+        return LOGISTICS_DEFAULT_CENTER;
+      }
+    }
+    
+    return { lat: 12.9716, lng: 77.5946 }; // Legacy Bengaluru fallback
   }, [center, pickedAt, route]);
 
   return (
