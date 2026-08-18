@@ -27,6 +27,11 @@ const NAV = [
 function RiderLayout() {
   const location = useLocation();
   const pathname = location.pathname;
+
+  if (pathname === "/rider/demo") {
+    return <Outlet />;
+  }
+
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { driver } = useDriver();
