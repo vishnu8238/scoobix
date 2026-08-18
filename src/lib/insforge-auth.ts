@@ -122,12 +122,14 @@ export async function logout(): Promise<void> {
  * Helper to get the current session from the SDK.
  */
 export async function getSession() {
-  await insforge.auth.getCurrentUser();
-  const session = insforge.auth.getSession();
-  if (!session?.user) {
+  const { data } = await insforge.auth.getCurrentUser();
+  const session = insforge.auth.session;
+  if (!session?.user && !data?.user) {
     return null;
   }
-  return { user: session.user, accessToken: session.accessToken };
+  const user = session?.user || data?.user;
+  const token = session?.accessToken || (data as any)?.accessToken;
+  return { user, accessToken: token };
 }
 
 
