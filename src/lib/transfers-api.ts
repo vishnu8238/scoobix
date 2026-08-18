@@ -83,6 +83,7 @@ export async function requestOwnershipTransfer(input: {
     row = latest[0] ?? null;
   }
   if (row && input.restaurant.id) {
+    // logOnboardingEvent handles missing table gracefully
     await logOnboardingEvent({
       restaurantId: input.restaurant.id,
       managerId: input.restaurant.manager_id ?? null,
@@ -135,6 +136,7 @@ export async function setTransferStatus(input: {
   }
 
   if (transfer.restaurant_id) {
+    // logOnboardingEvent handles missing table gracefully
     await logOnboardingEvent({
       restaurantId: transfer.restaurant_id,
       managerId: status === "approved" ? transfer.to_manager_id : transfer.from_manager_id,

@@ -323,13 +323,17 @@ export async function assignRestaurant(restaurantId: string, managerId: string |
 
 export async function deleteManagedRestaurant(id: string): Promise<boolean> {
   try {
-    // Audit log before deletion
-    await createRecord("onboarding_events", {
-      restaurant_id: id,
-      status: "deleted",
-      note: "Restaurant record deleted by manager",
-      actor_role: "manager",
-    });
+    // Log deletion event if table exists (handled gracefully if dropped)
+    try {
+      await createRecord("onboarding_events", {
+        restaurant_id: id,
+        status: "deleted",
+        note: "Restaurant record deleted by manager",
+        actor_role: "manager",
+      });
+    } catch (e) {
+      console.warn("Audit log for deletion failed (onboarding_events may be missing)");
+    }
     await deleteRecord("restaurants", id);
     return true;
   } catch (err) {
@@ -448,20 +452,29 @@ export async function logOnboardingEvent(input: {
   note?: string;
   actorRole?: string;
 }) {
-  await createRecord("onboarding_events", {
-    restaurant_id: input.restaurantId,
-    manager_id: input.managerId ?? null,
-    status: input.status,
-    note: input.note ?? null,
-    actor_role: input.actorRole ?? "manager",
-  });
+  try {
+    await createRecord("onboarding_events", {
+      restaurant_id: input.restaurantId,
+      manager_id: input.managerId ?? null,
+      status: input.status,
+      note: input.note ?? null,
+      actor_role: input.actorRole ?? "manager",
+    });
+  } catch (err) {
+    console.warn("[MANAGER_API] Failed to log onboarding event (onboarding_events may be missing):", err);
+  }
 }
 
 export async function listOnboardingHistory(restaurantId?: string, managerId?: string) {
-  const params: Record<string, string | number> = { order: "created_at.desc", limit: 300 };
-  if (restaurantId) params.restaurant_id = `eq.${restaurantId}`;
-  if (managerId) params.manager_id = `eq.${managerId}`;
-  return listTable<OnboardingEvent>("onboarding_events", params);
+  try {
+    const params: Record<string, string | number> = { order: "created_at.desc", limit: 300 };
+    if (restaurantId) params.restaurant_id = `eq.${restaurantId}`;
+    if (managerId) params.manager_id = `eq.${managerId}`;
+    return await listTable<OnboardingEvent>("onboarding_events", params);
+  } catch (err) {
+    console.warn("[MANAGER_API] Failed to list onboarding history (onboarding_events may be missing):", err);
+    return [];
+  }
 }
 
 /** Notify a manager that admin approved / rejected one of their restaurants. */
