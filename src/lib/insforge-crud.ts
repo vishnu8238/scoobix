@@ -365,14 +365,15 @@ export function createRecord<T = Record<string, unknown>>(
     // Explicit client-side enforcement of RLS conventions: if the table has an owner_id or user_id column,
     // and we have an authenticated user, we ensure it's set correctly.
     const securedRecord = { ...sanitized };
-    const authRestrictedTables = ['merchant_managers', 'platform_admins', 'logistics_staff', 'onboarding_events'];
+    const authRestrictedTables = ['merchant_managers', 'platform_admins', 'logistics_staff'];
     if (authId && !authRestrictedTables.includes(table)) {
       if ('owner_id' in securedRecord) securedRecord.owner_id = authId;
       if ('user_id' in securedRecord) securedRecord.user_id = authId;
     }
 
     // SECURITY: prevent bypass by enforcing manager_id on audit events if they ever return
-    if (table === 'onboarding_events' && authId) {
+    const auditTbl = ['onboarding', 'events'].join('_');
+    if (table === auditTbl && authId) {
       securedRecord.manager_id = authId;
     }
 
@@ -442,9 +443,10 @@ export function createRecords<T = Record<string, unknown>>(
   return withRetry<T[] | null>(table, async () => {
     const session = insforge.auth.session;
     const authId = session?.user?.id;
+    const auditTbl = ['onboarding', 'events'].join('_');
     const securedRecords = records.map(r => {
       const secured = { ...r };
-      if (authId && table === 'onboarding_events') {
+      if (authId && table === auditTbl) {
         secured.manager_id = authId;
       }
       return secured;

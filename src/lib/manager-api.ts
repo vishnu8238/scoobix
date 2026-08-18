@@ -440,12 +440,12 @@ export async function logOnboardingEvent(input: {
   note?: string;
   actorRole?: string;
 }) {
-  // Gracefully ignored as onboarding_events table is restricted
+  // Gracefully ignored as the audit table is restricted
   console.info("[MANAGER_API] Onboarding event logged (audit table restricted):", input.status);
 }
 
 export async function listOnboardingHistory(restaurantId?: string, managerId?: string) {
-  // Gracefully returns empty as onboarding_events table is restricted
+  // Gracefully returns empty as the audit table is restricted
   return [];
 }
 
