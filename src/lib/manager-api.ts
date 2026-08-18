@@ -323,13 +323,17 @@ export async function assignRestaurant(restaurantId: string, managerId: string |
 
 export async function deleteManagedRestaurant(id: string): Promise<boolean> {
   try {
-    // Audit log before deletion
-    await createRecord("onboarding_events", {
-      restaurant_id: id,
-      status: "deleted",
-      note: "Restaurant record deleted by manager",
-      actor_role: "manager",
-    });
+    // Log deletion event if table exists (handled gracefully if dropped)
+    try {
+      await createRecord("onboarding_events", {
+        restaurant_id: id,
+        status: "deleted",
+        note: "Restaurant record deleted by manager",
+        actor_role: "manager",
+      });
+    } catch (e) {
+      console.warn("Audit log for deletion failed (onboarding_events may be missing)");
+    }
     await deleteRecord("restaurants", id);
     return true;
   } catch (err) {
