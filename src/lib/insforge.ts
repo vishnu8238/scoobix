@@ -102,13 +102,8 @@ export const getAccessToken = async () => {
       return sdkSession.accessToken;
     }
 
-    // Attempt authoritative session recovery from SDK memory or storage
-    // Note: getSession() is NOT a valid SDK method on this version.
-    // We use current session properties or storage fallback.
-    const sdkSession = insforge.auth.session;
-    if (sdkSession?.accessToken) {
-      return sdkSession.accessToken;
-    }
+    // Attempt authoritative session recovery from storage fallbacks 
+    // when SDK memory is empty. (Note: getSession() is not supported).
 
     // Fallback: Check local storage for known InsForge keys
     const storageKeys = [
