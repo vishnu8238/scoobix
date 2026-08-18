@@ -452,13 +452,17 @@ export async function logOnboardingEvent(input: {
   note?: string;
   actorRole?: string;
 }) {
-  await createRecord("onboarding_events", {
-    restaurant_id: input.restaurantId,
-    manager_id: input.managerId ?? null,
-    status: input.status,
-    note: input.note ?? null,
-    actor_role: input.actorRole ?? "manager",
-  });
+  try {
+    await createRecord("onboarding_events", {
+      restaurant_id: input.restaurantId,
+      manager_id: input.managerId ?? null,
+      status: input.status,
+      note: input.note ?? null,
+      actor_role: input.actorRole ?? "manager",
+    });
+  } catch (err) {
+    console.warn("[MANAGER_API] Failed to log onboarding event (onboarding_events may be missing):", err);
+  }
 }
 
 export async function listOnboardingHistory(restaurantId?: string, managerId?: string) {
