@@ -114,43 +114,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { data: null, error: e };
       });
       
-      if (currentUserError || !userData?.user) {
-         // Attempt one last deep check of SDK memory/storage before giving up
-         const sdkSession = insforge.auth.session || insforge.auth.getSession()?.session;
-         if (sdkSession?.user?.id) {
-           console.log("[AUTH_TRACE] Session found in SDK memory fallback.");
-           // Proceed with sdkSession.user
-         } else {
-           const errorMsg = currentUserError?.message || "";
-           console.log("[AUTH_TRACE] No active session found.", errorMsg);
-         
-         // iOS Safeguard: Clear storage on definitive refresh/session failures
-         const isRefreshError = errorMsg.includes("refresh token") || 
-                               errorMsg.includes("session_not_found") ||
-                               errorMsg.includes("invalid_grant");
+      let sessionUser = userData?.user;
 
-         if (isRefreshError) {
-           console.warn("[AUTH_TRACE] Refresh token invalid/missing. Clearing session.");
-           // We don't call signOut() here because it might attempt a network request that fails,
-           // instead we manually clear known SDK storage keys and local session flags.
-           if (typeof window !== "undefined") {
-             localStorage.removeItem('scoobix_auth_token');
-             // Clear all InsForge related storage to ensure a clean slate
-             for (let i = 0; i < localStorage.length; i++) {
-               const key = localStorage.key(i);
-               if (key && (key.includes('insforge') || (key.startsWith('sb-') && key.endsWith('-code-verifier')))) {
-                 localStorage.removeItem(key);
-               }
-             }
-           }
-         }
-         
-         setUser(null);
-         setAuthState("unauthenticated");
-         return;
+      if (currentUserError || !sessionUser) {
+        // Attempt one last deep check of SDK memory/storage before giving up
+        const sdkSession = insforge.auth.session || insforge.auth.getSession()?.session;
+        if (sdkSession?.user?.id) {
+          console.log("[AUTH_TRACE] Session found in SDK memory fallback.");
+          sessionUser = sdkSession.user;
+        } else {
+          const errorMsg = currentUserError?.message || "";
+          console.log("[AUTH_TRACE] No active session found.", errorMsg);
+          
+          // iOS Safeguard: Clear storage on definitive refresh/session failures
+          const isRefreshError = errorMsg.includes("refresh token") || 
+                                errorMsg.includes("session_not_found") ||
+                                errorMsg.includes("invalid_grant");
+
+          if (isRefreshError) {
+            console.warn("[AUTH_TRACE] Refresh token invalid/missing. Clearing session.");
+            if (typeof window !== "undefined") {
+              localStorage.removeItem('scoobix_auth_token');
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('insforge') || (key.startsWith('sb-') && key.endsWith('-code-verifier')))) {
+                  localStorage.removeItem(key);
+                }
+              }
+            }
+          }
+          
+          setUser(null);
+          setAuthState("unauthenticated");
+          return;
+        }
       }
       
-      const sessionUser = userData.user;
       const authId = sessionUser.id;
       const userEmail = sessionUser.email?.toLowerCase().trim();
       
