@@ -144,7 +144,7 @@ function OrderLedger() {
                 }
 
                 // 3. Insert Orders
-                const statuses = ["pending", "in_transit", "delivered"];
+                const statuses = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"];
                 let seededCount = 0;
                 
                 for (let i = 0; i < 5; i++) {
@@ -158,7 +158,7 @@ function OrderLedger() {
                     customer_id: customerId,
                     restaurant_id: restaurantId,
                     status: statuses[i % statuses.length],
-                    total_amount: 250 + (i * 50),
+                    total_price: 250 + (i * 50),
                     created_at: now,
                     items: {
                       lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
