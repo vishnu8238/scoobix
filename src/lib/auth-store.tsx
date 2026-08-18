@@ -363,7 +363,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await ifLogout();
     setUser(null);
     setAuthState("unauthenticated");
-    window.location.replace(new URL(portal === "customer" ? "/" : \`/login?portal=\${portal}\`, window.location.origin).href);
+    window.location.replace(new URL(portal === "customer" ? "/" : `/login?portal=${portal}`, window.location.origin).href);
   };
 
   return (
