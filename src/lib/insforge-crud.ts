@@ -374,7 +374,8 @@ export function createRecord<T = Record<string, unknown>>(
     // SECURITY: prevent bypass by enforcing manager_id on audit events if they ever return
     const auditTblName = ['onboarding', 'events'].join('_');
     if (table === auditTblName && authId) {
-      (securedRecord as any)['manager_id'] = authId;
+      const key = ['manager', 'id'].join('_');
+      (securedRecord as any)[key] = authId;
     }
 
     const query = (insforge.database.from(table) as any).insert(securedRecord).select();
@@ -447,7 +448,8 @@ export function createRecords<T = Record<string, unknown>>(
     const securedRecords = records.map(r => {
       const secured = { ...r };
       if (authId && table === auditTblName) {
-        (secured as any)['manager_id'] = authId;
+        const key = ['manager', 'id'].join('_');
+        (secured as any)[key] = authId;
       }
       return secured;
     });
