@@ -256,6 +256,7 @@ function OrderLedger() {
 type OrderRow = {
   id: string;
   status?: string;
+  total_price?: number;
   total_amount?: number;
   restaurant_id?: string;
   customer_id?: string;
