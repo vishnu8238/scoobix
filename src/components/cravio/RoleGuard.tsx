@@ -1,6 +1,6 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import { useAuth, Role, getRequestedPortal } from "@/lib/auth-store";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isAuthResolving } from "@/lib/auth-utils";
@@ -23,7 +23,7 @@ export function RoleGuard({ allow, children, fallback, bypass }: RoleGuardProps)
   const { user, loading, authState } = useAuth();
   const navigate = useNavigate();
   const portal = getRequestedPortal();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
