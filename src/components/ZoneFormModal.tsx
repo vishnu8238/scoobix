@@ -317,7 +317,7 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
 
   return (
     <div className="fixed inset-0 z-[9999] grid place-items-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl rounded-3xl bg-card shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/60">
+      <div className="w-full max-w-2xl rounded-3xl bg-card shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/60 overflow-hidden flex flex-col max-h-[90vh]">
         <header className="flex items-center justify-between p-6 border-b border-border/60">
           <h2 className="font-display text-xl font-extrabold">{initialData ? "Edit Subzone" : "Add Subzone"}</h2>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition">
