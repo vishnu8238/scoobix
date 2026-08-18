@@ -125,11 +125,39 @@ export async function updateGig(id: string, patch: Partial<Gig>) {
 }
 
 export async function fetchGigParticipants(gigId: string) {
-  // Fallback to empty if table doesn't exist
   try {
-    return await listTable<GigParticipant>("rider_gig_enrollments", { gig_id: `eq.${gigId}`, order: "completed_deliveries.desc" });
+    const data = await listTable<GigParticipant>("rider_gig_enrollments", { 
+      gig_id: `eq.${gigId}`, 
+      order: "completed_deliveries.desc" 
+    }, { fresh: true, ttl: 0 });
+    return Array.isArray(data) ? data : [];
   } catch {
     return [];
+  }
+}
+
+/**
+ * Fetches enrollment counts for a list of gig IDs from rider_gig_enrollments.
+ * Used for high-performance aggregate displays in Logistics.
+ */
+export async function fetchGigEnrollmentCounts(gigIds: string[]): Promise<Record<string, number>> {
+  if (!gigIds.length) return {};
+  try {
+    // InsForge/PostgREST doesn't support grouping natively in listTable yet,
+    // so we fetch the enrollment rows for these gigs and count them client-side.
+    // Given MAX_ROWS is 200 and we're filtering by specific IDs, this is safe.
+    const enrollments = await listTable<GigParticipant>("rider_gig_enrollments", {
+      gig_id: `in.(${gigIds.join(",")})`
+    }, { fresh: true, ttl: 0 });
+    
+    const counts: Record<string, number> = {};
+    enrollments.forEach(e => {
+      counts[e.gig_id] = (counts[e.gig_id] || 0) + 1;
+    });
+    return counts;
+  } catch (e) {
+    console.error("[GIGS_API] Failed to fetch enrollment counts:", e);
+    return {};
   }
 }
 

@@ -21,7 +21,7 @@ import {
   TrendingUp,
   Settings
 } from "lucide-react";
-import { fetchGigs, createGig, enrollInGig, type Gig } from "@/lib/gigs-api";
+import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, type Gig } from "@/lib/gigs-api";
 import { format, addDays, startOfToday, parseISO } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
@@ -137,25 +137,31 @@ function LogisticsGigs() {
       // 1. Authoritative fetch
       let all = await fetchGigs({ limit: 1000 });
       console.log(`[GIGS_PAGE] Loaded ${all.length} normalized rows.`);
+
+      // 2. Fetch authoritative enrollment counts
+      const gigIds = all.map(g => g.id);
+      const enrollmentCounts = await fetchGigEnrollmentCounts(gigIds);
       
-      setAllGigsCount(all.length);
-      
-      // 2. Local date normalization
+      // 3. Local date normalization
       const localDateStr = format(selectedDate, "yyyy-MM-dd");
       
-      // 3. Normalized filtering
+      // 4. Normalized filtering & data enrichment
       const data = all.filter(g => {
         if (!g.start_time) return false;
         try {
-          // Robust date matching: compare YYYY-MM-DD strings
           const gigDateStr = g.start_time.split('T')[0];
           return gigDateStr === localDateStr;
         } catch (e) {
           return false;
         }
-      });
+      }).map(g => ({
+        ...g,
+        enrolled_count: enrollmentCounts[g.id] || 0
+      }));
       
       setGigs(data);
+      
+      setAllGigsCount(all.length);
       
       setDiagnostics({
         lastLoad: new Date().toISOString(),
@@ -352,8 +358,8 @@ function LogisticsGigs() {
           <GigStats 
             totalGigs={allGigsCount ?? gigs.length} 
             needed={1080} 
-            enrolled={162} 
-            fullyBooked={0} 
+            enrolled={gigs.reduce((acc, g) => acc + (g as any).enrolled_count || 0, 0)} 
+            fullyBooked={gigs.filter(g => (g as any).enrolled_count >= (g.capacity || 50)).length} 
           />
           
           <div className="flex items-center gap-2 border-l border-border/60 pl-3">
@@ -475,7 +481,11 @@ function LogisticsGigs() {
             ) : (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredGigs.map((gig) => (
-                  <GigCard key={gig.id} gig={gig} />
+                  <GigCard 
+                    key={gig.id} 
+                    gig={gig} 
+                    enrollmentCount={(gig as any).enrolled_count || 0}
+                  />
                 ))}
               </div>
             )}
