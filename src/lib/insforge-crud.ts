@@ -371,6 +371,11 @@ export function createRecord<T = Record<string, unknown>>(
       if ('user_id' in securedRecord) securedRecord.user_id = authId;
     }
 
+    // SECURITY: prevent bypass by enforcing manager_id on audit events if they ever return
+    if (table === 'onboarding_events' && authId) {
+      securedRecord.manager_id = authId;
+    }
+
     const query = (insforge.database.from(table) as any).insert(securedRecord).select();
 
     try {
