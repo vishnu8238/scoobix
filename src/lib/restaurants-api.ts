@@ -28,7 +28,7 @@ export type Dish = {
   price: number;
   image: string;
   rating: number;
-  category: string;
+  category: "Starters" | "Main Course" | "Drinks" | "Desserts" | string;
   cuisineTag: string;
   veg?: boolean;
   popular?: boolean;

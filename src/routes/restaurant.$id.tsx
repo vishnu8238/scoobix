@@ -43,10 +43,11 @@ function RestaurantPage() {
     fetchCustomerData().then(data => {
       if (data) {
         const liveR = data.restaurants.find(res => res.id === loaderR.id);
-        if (liveR) setR(liveR);
+        if (liveR) setR(liveR as any);
       }
     });
   }, [loaderR.id]);
+
 
   const navigate = useNavigate();
   const { isRestaurantFav, toggleRestaurant } = useFavorites();

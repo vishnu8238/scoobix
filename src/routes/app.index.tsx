@@ -75,10 +75,11 @@ function Home() {
   useEffect(() => {
     fetchCustomerData().then(data => {
       if (data && data.restaurants.length > 0) {
-        setLiveData(data);
+        setLiveData(data as any);
       }
     });
   }, []);
+
 
   const restaurants = liveData?.restaurants || mockRestaurants;
   const dishes = liveData?.allDishes || mockAllDishes();
