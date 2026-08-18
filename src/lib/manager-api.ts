@@ -466,10 +466,15 @@ export async function logOnboardingEvent(input: {
 }
 
 export async function listOnboardingHistory(restaurantId?: string, managerId?: string) {
-  const params: Record<string, string | number> = { order: "created_at.desc", limit: 300 };
-  if (restaurantId) params.restaurant_id = `eq.${restaurantId}`;
-  if (managerId) params.manager_id = `eq.${managerId}`;
-  return listTable<OnboardingEvent>("onboarding_events", params);
+  try {
+    const params: Record<string, string | number> = { order: "created_at.desc", limit: 300 };
+    if (restaurantId) params.restaurant_id = `eq.${restaurantId}`;
+    if (managerId) params.manager_id = `eq.${managerId}`;
+    return await listTable<OnboardingEvent>("onboarding_events", params);
+  } catch (err) {
+    console.warn("[MANAGER_API] Failed to list onboarding history (onboarding_events may be missing):", err);
+    return [];
+  }
 }
 
 /** Notify a manager that admin approved / rejected one of their restaurants. */
