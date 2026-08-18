@@ -16,9 +16,10 @@ interface RoleGuardProps {
   loading?: ReactNode;
   fallback?: ReactNode;
   transitionLabel?: string;
+  bypass?: boolean;
 }
 
-export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
+export function RoleGuard({ allow, children, fallback, bypass }: RoleGuardProps) {
   const { user, loading, authState } = useAuth();
   const navigate = useNavigate();
   const portal = getRequestedPortal();
@@ -44,8 +45,8 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   useEffect(() => {
     
     // AUTH HYDRATION PROTECTION: 
-    // Do NOT trigger any redirects if auth is still initializing or resolving.
-    if (loading || isAuthResolving(authState)) return;
+    // Do NOT trigger any redirects if auth is still initializing or resolving, or if bypassed.
+    if (loading || isAuthResolving(authState) || bypass) return;
     
     // 1. Not logged in? 
     if (!user) {
@@ -78,7 +79,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
     }
   }, [user, loading, portal, allow, navigate, pathname]);
 
-  if (loading || isAuthResolving(authState)) {
+  if (!bypass && (loading || isAuthResolving(authState))) {
     // If we are already on a login page, just show it.
     if (pathname.includes("/login")) {
       return <>{children}</>;
@@ -115,7 +116,7 @@ export function RoleGuard({ allow, children, fallback }: RoleGuardProps) {
   }
 
   // 4. Denied / Disabled state handling
-  if (authState === "denied" || authState === "disabled") {
+  if (!bypass && (authState === "denied" || authState === "disabled")) {
      const portalLabel = portal.charAt(0).toUpperCase() + portal.slice(1);
      return (
       <div className="flex min-h-svh flex-col items-center justify-center bg-background p-6 text-center animate-fade-up">

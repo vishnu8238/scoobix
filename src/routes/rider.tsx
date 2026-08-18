@@ -64,7 +64,7 @@ function RiderLayout() {
   };
 
   return (
-    <RoleGuard allow="rider" transitionLabel="Accessing Rider Portal...">
+    <RoleGuard allow="rider" transitionLabel="Accessing Rider Portal..." bypass={pathname.includes("/rider/demo")}>
       <div className="relative min-h-svh bg-background flex flex-col items-center">
         {/* Mobile App Container */}
         <div className="relative w-full min-h-svh max-w-[430px] bg-card shadow-2xl flex flex-col ring-1 ring-border/10 overflow-hidden">
