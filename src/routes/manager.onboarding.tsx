@@ -260,6 +260,11 @@ function OnboardingFlow() {
       const rst = record?.rst_code || (await nextRstCode());
       console.info(`[ONBOARDING_SUBMIT] Persisting record. RST: ${rst}, Manager: ${authoritativeManagerId}`);
       
+      const targetRecordId = record?.id ?? id ?? null;
+      if (targetRecordId && !record?.rst_code) {
+        console.warn("[ONBOARDING_SUBMIT] Loaded existing ID without an rst_code; possible identity mismatch.");
+      }
+
       // 1. Authorize and Save main restaurant record
       // Deterministic destructuring: Preserve PAN/Aadhaar/Chq for KYC upsert but filter from restaurant table
       const { pan_number: panVal, aadhaar_number: aadhaarVal, cancelled_cheque_ref: chqVal, ...sanitizedPayload } = payload;
@@ -267,8 +272,7 @@ function OnboardingFlow() {
       if (!form.has_cover) (sanitizedPayload as any).cover_url = null;
       (sanitizedPayload as any).documents = form.documents;
       (sanitizedPayload as any).logo_url = form.logo_url;
-      
-      const saved = await saveOnboardingDraft(record?.id ?? id ?? null, {
+      const saved = await saveOnboardingDraft(targetRecordId, {
         ...sanitizedPayload,
         rst_code: rst,
         manager_id: authoritativeManagerId,
