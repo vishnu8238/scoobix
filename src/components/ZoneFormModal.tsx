@@ -325,7 +325,7 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Parent Zone</label>
