@@ -4,8 +4,18 @@
 
 export type LatLng = { lat: number; lng: number };
 
-// Bengaluru as the base city for all demo coordinates.
+/** 
+ * AUTHORITATIVE DEFAULT CENTER: Vadodara, Gujarat, India.
+ * Used as the primary fallback for Logistics and Admin maps when no 
+ * entity or user location is provided.
+ */
+export const VADODARA_CENTER: LatLng = { lat: 22.3072, lng: 73.1812 };
+
+// Bengaluru as the base city for all demo coordinates (Legacy fallback).
 export const CITY_CENTER: LatLng = { lat: 12.9716, lng: 77.5946 };
+
+// Default fallback for Logistics/Admin context.
+export const LOGISTICS_DEFAULT_CENTER = VADODARA_CENTER;
 
 // Default "home" delivery location used across the customer + rider screens.
 export const DEFAULT_CUSTOMER: LatLng = { lat: 12.9784, lng: 77.6408 };
