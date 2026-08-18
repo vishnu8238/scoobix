@@ -93,6 +93,11 @@ export type ManagedRestaurant = {
   bank_holder?: string | null;
   gst_number?: string | null;
   fssai_number?: string | null;
+  documents?: unknown;
+  logo?: string | null;
+  logo_url?: string | null;
+  cover_url?: string | null;
+  cover_image?: string | null;
   status?: string | null;
   onboarding_status?: OnboardingStatus | string | null;
   rejection_reason?: string | null;
