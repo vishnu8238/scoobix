@@ -144,7 +144,7 @@ function OrderLedger() {
                 }
 
                 // 3. Insert Orders
-                const statuses = ["pending", "in_transit", "delivered"];
+                const statuses = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"];
                 let seededCount = 0;
                 
                 for (let i = 0; i < 5; i++) {
@@ -158,7 +158,7 @@ function OrderLedger() {
                     customer_id: customerId,
                     restaurant_id: restaurantId,
                     status: statuses[i % statuses.length],
-                    total_amount: 250 + (i * 50),
+                    total_price: 250 + (i * 50),
                     created_at: now,
                     items: {
                       lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
@@ -230,7 +230,7 @@ function OrderLedger() {
 
               <span key={`name${o.id}`} className="font-bold">{userById[String(o.customer_id)] || "—"}</span>,
               <span key={`owner${o.id}`} className="text-muted-foreground">{nameById[String(o.restaurant_id)] || "—"}</span>,
-              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_amount || 0)}</span>,
+              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price || o.total_amount || 0)}</span>,
               <StatusBadge key={`status${o.id}`} label={String(o.status || "PLACED")} />,
               <span key={`mgr${o.id}`} className="text-[10px] font-medium text-muted-foreground">{(o.created_at ?? "").slice(11, 16)}</span>,
               <Link 
@@ -256,6 +256,7 @@ function OrderLedger() {
 type OrderRow = {
   id: string;
   status?: string;
+  total_price?: number;
   total_amount?: number;
   restaurant_id?: string;
   customer_id?: string;
