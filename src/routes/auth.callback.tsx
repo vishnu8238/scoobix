@@ -76,7 +76,7 @@ function AuthCallback() {
         
         const waitForUser = async (): Promise<any> => {
           // Check session directly first as it's most reliable for hydration
-          const session = insforge.auth.session || insforge.auth.getSession()?.session;
+          const session = insforge.auth.session;
           if (session?.user?.id) {
             console.log("[AUTH_TRACE] Session found in SDK memory.");
             return session.user;
