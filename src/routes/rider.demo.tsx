@@ -42,7 +42,7 @@ function RiderDemo() {
             </div>
           </div>
           <button 
-            onClick={() => { setDemoOpen(false); navigate({ to: "/login" as any, search: { portal: "rider" } }); }}
+            onClick={() => { setDemoOpen(false); window.location.href = "/login?portal=rider"; }}
             className="flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
           >
             Exit Demo <X className="h-3 w-3" />
