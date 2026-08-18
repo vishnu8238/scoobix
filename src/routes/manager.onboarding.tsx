@@ -358,7 +358,13 @@ function OnboardingFlow() {
       return saved;
     } catch (err: any) {
       console.error("[ONBOARDING_SUBMIT_ERROR]", err);
-      toast.error(err.message || "Failed to save restaurant details");
+      // Surface real errors from KYC writes specifically
+      const msg = err.message || "";
+      if (msg.includes("row-level security") || msg.includes("permission denied")) {
+        toast.error("Compliance save failed: You do not have permission to update this restaurant's KYC.");
+      } else {
+        toast.error(msg || "Failed to save restaurant details");
+      }
       return null;
     } finally {
       setBusy(false);
