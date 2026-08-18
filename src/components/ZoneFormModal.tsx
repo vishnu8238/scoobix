@@ -103,7 +103,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 overflow-y-auto">
       <div 
-        className="relative w-full max-w-5xl bg-zinc-950 rounded-[2.5rem] border border-white/10 shadow-[2xl] overflow-hidden flex flex-col my-auto"
+        className="relative w-full max-w-5xl bg-zinc-950 rounded-[2.5rem] border border-white/10 shadow-[2xl] overflow-hidden flex flex-col my-auto max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         <header className="flex items-center justify-between p-6 border-b border-border/60">
@@ -251,7 +251,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
           </div>
         </form>
 
-        <footer className="p-6 border-t border-border/60 flex justify-end gap-3 bg-muted/20">
+        <footer className="sticky bottom-0 p-6 border-t border-border/60 flex justify-end gap-3 bg-zinc-950/90 backdrop-blur-md z-10">
           <button 
             type="button" 
             onClick={onClose}
@@ -317,7 +317,7 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
 
   return (
     <div className="fixed inset-0 z-[9999] grid place-items-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl rounded-3xl bg-card shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/60">
+      <div className="w-full max-w-2xl rounded-3xl bg-card shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-border/60 overflow-hidden flex flex-col max-h-[90vh]">
         <header className="flex items-center justify-between p-6 border-b border-border/60">
           <h2 className="font-display text-xl font-extrabold">{initialData ? "Edit Subzone" : "Add Subzone"}</h2>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition">
@@ -325,7 +325,7 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">Parent Zone</label>
@@ -367,7 +367,7 @@ export function SubzoneFormModal({ isOpen, onClose, onSuccess, zoneId, zones, in
           </div>
 
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="sticky bottom-0 flex justify-end gap-3 pt-4 pb-6 px-6 -mx-6 bg-card/90 backdrop-blur-md z-10 border-t border-border/60">
             <button 
               type="button" 
               onClick={onClose}
