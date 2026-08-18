@@ -369,8 +369,11 @@ export async function saveOnboardingDraft(
   }
 
   // Authoritative ownership: always overwrite manager_id and onboarded_by
+  // Filter out compliance identifiers that don't belong in restaurants table
+  const { pan_number, aadhaar_number, cancelled_cheque_ref, ...restValues } = values;
+  
   const payload = {
-    ...values,
+    ...restValues,
     manager_id: authId,
     onboarded_by: authId,
   };

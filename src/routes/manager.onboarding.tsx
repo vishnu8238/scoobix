@@ -155,7 +155,7 @@ function OnboardingFlow() {
           bank_name: r.bank_name ?? "",
           gst_number: r.gst_number ?? "",
           fssai_number: r.fssai_number ?? "",
-          pan_number: "",
+          pan_number: "", // Will be filled from restaurant_kyc below
           aadhaar_number: "",
           cancelled_cheque_ref: "",
           branch_name: "",
@@ -164,6 +164,23 @@ function OnboardingFlow() {
           has_cover: !!coverUrl,
           has_gallery: hasGallery,
         });
+        // Load compliance identifiers from restaurant_kyc
+        try {
+          const kycRows = await fetchDocs("restaurant", r.id);
+          const panRow = kycRows.find(row => row.doc_type === 'pan');
+          const aadhaarRow = kycRows.find(row => row.doc_type === 'aadhaar');
+          const chqRow = kycRows.find(row => row.doc_type === 'cancelled_cheque');
+          
+          setForm(prev => ({
+            ...prev,
+            pan_number: panRow?.doc_number ?? "",
+            aadhaar_number: aadhaarRow?.doc_number ?? "",
+            cancelled_cheque_ref: chqRow?.doc_number ?? "",
+          }));
+        } catch (kycErr) {
+          console.error("[LOAD_KYC_ERROR]", kycErr);
+        }
+
         setLoading(false);
       } catch (err: any) {
         console.error("[LOAD_ERROR]", err);
