@@ -163,7 +163,6 @@ export async function getManagerByUser(userId: string): Promise<MerchantManager 
 export async function updateManager(id: string, patch: Partial<MerchantManager>) {
   await patchRecord("merchant_managers", id, {
     ...patch,
-    updated_at: new Date().toISOString(),
   } as Record<string, unknown>);
 }
 
@@ -368,7 +367,6 @@ export async function saveOnboardingDraft(
     ...values,
     manager_id: authId,
     onboarded_by: authId,
-    updated_at: new Date().toISOString(),
   };
 
   try {
@@ -414,7 +412,6 @@ export async function updateManagerProfile(patch: {
   // 1. Update the 'users' profile row (public.users)
   await patchRecord("users", authId, {
     ...patch,
-    updated_at: new Date().toISOString()
   });
 
   // 2. Update the 'merchant_managers' record if it exists
@@ -426,7 +423,6 @@ export async function updateManagerProfile(patch: {
   if (managers[0]?.id) {
     await patchRecord("merchant_managers", managers[0].id, {
       ...patch,
-      updated_at: new Date().toISOString()
     });
   }
 }
