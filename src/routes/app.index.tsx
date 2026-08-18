@@ -1,18 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Search, SlidersHorizontal, Sparkles, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { TopBar } from "@/components/cravio/TopBar";
 import { HeroCarousel } from "@/components/cravio/HeroCarousel";
 import { CategoryRail, QuickOffers, SectionHeader } from "@/components/cravio/CategoryRail";
 import { RestaurantCard } from "@/components/cravio/RestaurantCard";
 import { DishCard } from "@/components/cravio/DishCard";
-import { restaurants, allDishes, trendingDishIds, recommendedDishIds, type Restaurant } from "@/lib/mock-data";
+import { restaurants as mockRestaurants, allDishes as mockAllDishes, trendingDishIds as mockTrendingIds, recommendedDishIds as mockRecommendedIds, type Restaurant } from "@/lib/mock-data";
 import { useCms, type FilterOption } from "@/lib/cms-store";
 import { useAppUI } from "@/lib/stores";
 import { useSpotlight } from "@/lib/scoobix-extras";
 import { DiscoverMore, TrendingNow } from "@/components/cravio/DiscoverMore";
 import { CampaignBanners } from "@/components/cravio/CampaignBanners";
+import { fetchCustomerData } from "@/lib/restaurants-api";
+
 
 import {
   filterVeg, filterVegDishes, isPureVeg, extrasFor,
@@ -67,13 +69,25 @@ function Home() {
   const navigate = useNavigate();
   const { filters, sections, closedRestaurants, pureVegOverrides } = useCms();
   const { vegMode } = useAppUI();
+  
+  const [liveData, setLiveData] = useState<{ restaurants: Restaurant[], allDishes: any[] } | null>(null);
+
+  useEffect(() => {
+    fetchCustomerData().then(data => {
+      if (data && data.restaurants.length > 0) {
+        setLiveData(data as any);
+      }
+    });
+  }, []);
+
+
+  const restaurants = liveData?.restaurants || mockRestaurants;
+  const dishes = liveData?.allDishes || mockAllDishes();
+  const trending = mockTrendingIds.map((id) => dishes.find((d) => d.id === id)).filter((d): d is any => !!d);
+  const recommended = mockRecommendedIds.map((id) => dishes.find((d) => d.id === id)).filter((d): d is any => !!d);
 
   const sectionEnabled = (key: string) =>
     sections.find((s) => s.key === key)?.active !== false;
-
-  const dishes = allDishes();
-  const trending = trendingDishIds.map((id) => dishes.find((d) => d.id === id)).filter((d): d is any => !!d);
-  const recommended = recommendedDishIds.map((id) => dishes.find((d) => d.id === id)).filter((d): d is any => !!d);
 
   const homeChips = (filters.find((g) => g.key === "home")?.options ?? []).filter((o) => o.active);
   const [activeChips, setActiveChips] = useState<string[]>([]);
@@ -82,6 +96,7 @@ function Home() {
 
   const toggleChip = (id: string) =>
     setActiveChips((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
 
   const applyAdv = (list: Restaurant[]): Restaurant[] => {
     let out = list;

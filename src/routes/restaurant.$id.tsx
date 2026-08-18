@@ -1,7 +1,8 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Bike, Clock, Heart, MapPin, Search, Share2, Star } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { findRestaurant, type Restaurant } from "@/lib/mock-data";
+import { fetchCustomerData } from "@/lib/restaurants-api";
 import { useCart, useFavorites } from "@/lib/stores";
 import { useCms } from "@/lib/cms-store";
 import { DishCard } from "@/components/cravio/DishCard";
@@ -35,7 +36,19 @@ export const Route = createFileRoute("/restaurant/$id")({
 });
 
 function RestaurantPage() {
-  const r = Route.useLoaderData() as Restaurant;
+  const loaderR = Route.useLoaderData() as Restaurant;
+  const [r, setR] = useState<Restaurant>(loaderR);
+  
+  useEffect(() => {
+    fetchCustomerData().then(data => {
+      if (data) {
+        const liveR = data.restaurants.find(res => res.id === loaderR.id);
+        if (liveR) setR(liveR as any);
+      }
+    });
+  }, [loaderR.id]);
+
+
   const navigate = useNavigate();
   const { isRestaurantFav, toggleRestaurant } = useFavorites();
   const { items, totals } = useCart();
@@ -48,6 +61,7 @@ function RestaurantPage() {
   const dishes = useMemo(() => {
     return r.menu.filter((d) => d.category === cat && (!query || `${d.name} ${d.description}`.toLowerCase().includes(query.toLowerCase())));
   }, [r.menu, cat, query]);
+
 
   const hasCart = items.length > 0 && items[0].restaurantId === r.id;
 
