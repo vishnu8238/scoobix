@@ -23,6 +23,7 @@ import {
   ONBOARDING_TONE,
   type ManagedRestaurant,
 } from "@/lib/manager-api";
+import { submitDoc, fetchDocs, RESTAURANT_DOCS } from "@/lib/verification-api";
 import { useAuth } from "@/lib/auth-store";
 import { logDuplicateCheck, nextBranchCode } from "@/lib/duplicate-api";
 import { requestOwnershipTransfer } from "@/lib/transfers-api";
@@ -73,13 +74,15 @@ type Form = {
   logo_url: string;
   cover_url: string;
   documents: { label: string; url: string }[];
+  gst_number: string;
+  fssai_number: string;
+  pan_number: string;
+  aadhaar_number: string;
   bank_holder: string;
   bank_account: string;
   bank_ifsc: string;
   bank_name: string;
-  gst_number: string;
-  fssai_number: string;
-  pan_number: string;
+  cancelled_cheque_ref: string;
   branch_name: string;
   delivery_radius: string;
   commission: string;
@@ -92,9 +95,10 @@ const EMPTY: Form = {
   contact_phone: "", contact_email: "", address: "", city: "", pincode: "",
   latitude: null, longitude: null, opening_time: "10:00", closing_time: "23:00",
   logo_url: "", cover_url: "", documents: [],
+  gst_number: "", fssai_number: "", pan_number: "", aadhaar_number: "",
   bank_holder: "", bank_account: "", bank_ifsc: "", bank_name: "",
-  gst_number: "", fssai_number: "", pan_number: "", branch_name: "",
-  delivery_radius: "5", commission: "20",
+  cancelled_cheque_ref: "",
+  branch_name: "", delivery_radius: "5", commission: "20",
   has_cover: false, has_gallery: false,
 };
 
@@ -152,6 +156,8 @@ function OnboardingFlow() {
           gst_number: r.gst_number ?? "",
           fssai_number: r.fssai_number ?? "",
           pan_number: (r as { pan_number?: string | null }).pan_number ?? "",
+          aadhaar_number: (r as { aadhaar_number?: string | null }).aadhaar_number ?? "",
+          cancelled_cheque_ref: (r as { cancelled_cheque_ref?: string | null }).cancelled_cheque_ref ?? "",
           branch_name: (r as { branch_name?: string | null }).branch_name ?? "",
           delivery_radius: String(r.delivery_radius ?? 5),
           commission: String(r.commission ?? 20),
@@ -195,6 +201,8 @@ function OnboardingFlow() {
       gst_number: form.gst_number.trim().toUpperCase() || null,
       fssai_number: form.fssai_number.trim() || null,
       pan_number: form.pan_number.trim().toUpperCase() || null,
+      aadhaar_number: form.aadhaar_number.trim() || null,
+      cancelled_cheque_ref: form.cancelled_cheque_ref.trim() || null,
       delivery_radius: Number(form.delivery_radius) || 5,
       commission: Number(form.commission) || 20,
       manager_id: manager?.id ?? null,
@@ -229,7 +237,7 @@ function OnboardingFlow() {
       const rst = record?.rst_code || (await nextRstCode());
       console.info(`[ONBOARDING_SUBMIT] Persisting record. RST: ${rst}, Manager: ${authoritativeManagerId}`);
       
-      // Filter out optional fields if toggles are off
+      // 1. Authorize and Save main restaurant record
       const finalPayload = { ...payload };
       if (!form.has_cover) finalPayload.cover_url = null;
       
@@ -241,12 +249,49 @@ function OnboardingFlow() {
         ...extra,
       });
 
-
       if (saved && saved.id) {
         setRecord(saved);
         if (id !== saved.id) {
           navigate({ to: "/manager/onboarding", search: { id: saved.id }, replace: true });
         }
+
+        // 2. Authoritatively persist documents to Verification table (restaurant_kyc)
+        // This ensures the Admin Verification centre sees them.
+        try {
+          const currentKyc = await fetchDocs("restaurant", saved.id);
+          const docPromises = RESTAURANT_DOCS.map(async (def) => {
+            const formLine = form.documents.find(d => d.label === def.label);
+            if (!formLine?.url) return;
+
+            const existingRow = currentKyc.find(r => r.doc_type === def.type);
+            
+            // Map form fields to doc numbers
+            let docNumber: string | null = null;
+            if (def.type === 'fssai') docNumber = form.fssai_number;
+            if (def.type === 'pan') docNumber = form.pan_number;
+            if (def.type === 'bank_account') docNumber = form.bank_account;
+            if (def.type === 'aadhaar') docNumber = form.aadhaar_number;
+            if (def.type === 'gst') docNumber = form.gst_number;
+            if (def.type === 'cancelled_cheque') docNumber = form.cancelled_cheque_ref;
+
+            await submitDoc(
+              "restaurant",
+              saved.id,
+              def,
+              { 
+                file_url: formLine.url,
+                doc_number: docNumber || "Submitted"
+              },
+              existingRow || null,
+              { id: authoritativeManagerId, name: manager?.name, role: "manager" }
+            );
+          });
+          await Promise.all(docPromises);
+        } catch (docErr) {
+          console.error("[ONBOARDING_SUBMIT] KYC persistence failed:", docErr);
+          // Don't fail the whole flow if docs fail, but log it
+        }
+
         await logOnboardingEvent({
           restaurantId: saved.id,
           managerId: authoritativeManagerId,
