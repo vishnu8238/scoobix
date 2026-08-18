@@ -60,7 +60,7 @@ function AuthCallback() {
           if (exchangeError) {
              console.error("[AUTH_TRACE] Code exchange failed:", exchangeError);
              // Safety check: if exchange fails, see if the SDK background listener already established a session
-             const session = insforge.auth.getSession();
+             const session = insforge.auth.session;
              if (!session?.user) {
                throw new Error(exchangeError.message || "Failed to exchange authorization code.");
              }
@@ -76,7 +76,7 @@ function AuthCallback() {
         
         const waitForUser = async (): Promise<any> => {
           // Check session directly first as it's most reliable for hydration
-          const session = insforge.auth.session || insforge.auth.getSession()?.session;
+          const session = insforge.auth.session;
           if (session?.user?.id) {
             console.log("[AUTH_TRACE] Session found in SDK memory.");
             return session.user;

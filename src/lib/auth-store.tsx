@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (currentUserError || !sessionUser) {
         // Attempt one last deep check of SDK memory/storage before giving up
-        const sdkSession = insforge.auth.session || insforge.auth.getSession()?.session;
+        const sdkSession = insforge.auth.session;
         if (sdkSession?.user?.id) {
           console.log("[AUTH_TRACE] Session found in SDK memory fallback.");
           sessionUser = sdkSession.user;
