@@ -155,7 +155,7 @@ function OnboardingFlow() {
           bank_name: r.bank_name ?? "",
           gst_number: r.gst_number ?? "",
           fssai_number: r.fssai_number ?? "",
-          pan_number: "", // Will be filled from restaurant_kyc below
+          pan_number: "", 
           aadhaar_number: "",
           cancelled_cheque_ref: "",
           branch_name: "",
