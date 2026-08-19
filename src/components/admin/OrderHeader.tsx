@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { 
   RefreshCw, History, UserPlus, FileEdit, Map as MapIcon, 
@@ -22,6 +23,7 @@ export function OrderHeader({
 }: OrderHeaderProps) {
   const status = (order.status || "PLACED") as OrderStatus;
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const navigate = useNavigate();
 
   const availableTransitions = useMemo(() => {
     return STATUS_TRANSITIONS[status] || [];
@@ -30,6 +32,13 @@ export function OrderHeader({
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
       <div className="flex items-center gap-4">
+        <button 
+          onClick={() => navigate({ to: "/logistics/orders" })}
+          className="flex h-12 w-12 rounded-2xl bg-muted items-center justify-center text-muted-foreground hover:bg-muted/80 transition active:scale-95"
+          title="Back to Orders"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </button>
         <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold">
           #{order.id.slice(-5).toUpperCase()}
         </div>
