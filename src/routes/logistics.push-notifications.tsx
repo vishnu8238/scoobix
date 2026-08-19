@@ -138,13 +138,13 @@ function SendView() {
     
     setIsSending(true);
     try {
-      const selectedRiders = riders.filter(r => selection.has(r.id));
-      await dispatchNotificationCampaign(title, message, selectedRiders, {
+      const selectedRiderIds = Array.from(selection);
+      await dispatchNotificationCampaign(title, message, selectedRiderIds, {
         status: statusFilter,
         zoneId: zones.find(z => z.name === zoneFilter)?.id || null
       });
       
-      toast.success(`Successfully dispatched to ${selectedRiders.length} recipients`);
+      toast.success(`Successfully dispatched to ${selectedRiderIds.length} recipients`);
       setTitle("");
       setMessage("");
       setSelection(new Set());
