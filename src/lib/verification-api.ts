@@ -326,8 +326,8 @@ export async function saveRestaurantComplianceDoc(
   existing: KycRow | null,
   actor: Actor,
 ): Promise<KycRow> {
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidPattern.test(restaurantId)) throw new Error("Restaurant save did not return a canonical UUID.");
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(restaurantId)) throw new Error("Restaurant identity is not a valid UUID.");
   if (!actor.id) throw new Error("Manager authentication is required for compliance updates.");
 
   if (existing) {
