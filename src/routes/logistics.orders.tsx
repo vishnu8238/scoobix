@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { formatPrice } from "@/lib/format";
 import { StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
@@ -21,6 +22,17 @@ const STATUS_TABS = [
   { id: "SHIPPED", label: "Shipped" },
   { id: "REACHED_DROP", label: "Reached drop" },
 ];
+
+/**
+ * STATUS MAPPING:
+ * Live = all (except DELIVERED)
+ * Unassigned = PLACED (and no driver_id)
+ * Assigned = PREPARING
+ * Driver confirmed = READY
+ * Reached shop = READY (alias for confirmed/ready state in this simplified flow)
+ * Shipped = OUT_FOR_DELIVERY
+ * Reached drop = DELIVERED
+ */
 
 function LogisticsOrders() {
   const routerState = useRouterState();
@@ -84,20 +96,19 @@ function OrderLedger() {
         return !o.driver_id && s === "PLACED";
       }
       if (activeTab === "ASSIGNED") {
-        return !!o.driver_id && (s === "PREPARING" || s === "READY" || s === "ACCEPTED");
+        return s === "PREPARING";
       }
       if (activeTab === "DRIVER_CONFIRMED") {
-        // Operational mapping: Use meta or timestamps if available, otherwise 0/empty logic handled by stats
-        return false; 
+        return s === "READY";
       }
       if (activeTab === "REACHED_SHOP") {
-        return s === "AT_PICKUP";
+        return s === "READY";
       }
       if (activeTab === "SHIPPED") {
         return s === "OUT_FOR_DELIVERY";
       }
       if (activeTab === "REACHED_DROP") {
-        return s === "ARRIVED";
+        return s === "DELIVERED";
       }
       
       return true;
@@ -113,11 +124,13 @@ function OrderLedger() {
       
       if (s !== "DELIVERED") res.ALL++;
       if (!o.driver_id && s === "PLACED") res.UNASSIGNED++;
-      if (!!o.driver_id && (s === "PREPARING" || s === "READY" || s === "ACCEPTED")) res.ASSIGNED++;
-      if (s === "AT_PICKUP") res.REACHED_SHOP++;
+      if (s === "PREPARING") res.ASSIGNED++;
+      if (s === "READY") {
+        res.DRIVER_CONFIRMED++;
+        res.REACHED_SHOP++;
+      }
       if (s === "OUT_FOR_DELIVERY") res.SHIPPED++;
-      if (s === "ARRIVED") res.REACHED_DROP++;
-      // DRIVER_CONFIRMED intentionally stays 0 if no clear mapping exists
+      if (s === "DELIVERED") res.REACHED_DROP++;
     });
     return res;
   }, [orders]);
@@ -127,7 +140,7 @@ function OrderLedger() {
     try {
       const { createRecord } = await import("@/lib/insforge-crud");
       const now = new Date().toISOString();
-      const statuses = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "ARRIVED", "AT_PICKUP"];
+      const statuses = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"];
       
       for (let i = 0; i < 3; i++) {
         await createRecord("orders", {
@@ -307,27 +320,28 @@ function OrderLedger() {
                       <th className="px-6 py-4 text-left font-black">Order ID</th>
                       <th className="px-6 py-4 text-left font-black">Trip ID</th>
                       <th className="px-6 py-4 text-left font-black">External Order ID</th>
-                      <th className="px-6 py-4 text-left font-black">State</th>
+                      <th className="px-6 py-4 text-left font-black">Current Status</th>
                       <th className="px-6 py-4 text-left font-black">Driver / Rider ID</th>
-                      <th className="px-6 py-4 text-left font-black">Order Type</th>
-                      <th className="px-6 py-4 text-left font-black">Seller / Restaurant</th>
-                      <th className="px-6 py-4 text-left font-black">Customer Locality</th>
-                      <th className="px-6 py-4 text-left font-black">Time</th>
+                      <th className="px-6 py-4 text-left font-black">City</th>
+                      <th className="px-6 py-4 text-left font-black">Zone</th>
+                      <th className="px-6 py-4 text-left font-black">Restaurant</th>
+                      <th className="px-6 py-4 text-left font-black">Customer</th>
+                      <th className="px-6 py-4 text-right font-black">Total Price</th>
+                      <th className="px-6 py-4 text-left font-black">Created</th>
+                      <th className="px-6 py-4 text-left font-black">Updated</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#F9F9F7]">
                     {filteredOrders.map(o => (
                       <tr 
                         key={o.id} 
-                        className="text-[11px] font-medium hover:bg-[#F9F9F7]/50 transition-colors group cursor-pointer"
-                        onClick={() => {}}
+                        className="text-[11px] font-medium hover:bg-[#F9F9F7]/50 transition-colors group"
                       >
                         <td className="px-6 py-5 whitespace-nowrap">
                           <Link 
                             to="/logistics/orders/$orderId" 
                             params={{ orderId: o.id }} 
                             className="font-mono font-black text-[#1E9A62] underline decoration-[#1E9A62]/20 underline-offset-4 hover:decoration-[#1E9A62] transition-all"
-                            onClick={(e) => e.stopPropagation()}
                           >
                             #{o.id.slice(0, 8).toUpperCase()}
                           </Link>
@@ -352,16 +366,25 @@ function OrderLedger() {
                           )}
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-[#666666]">
-                          {o.order_type || "Standard"}
+                          Vadodara
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-[#666666]">
+                          {o.zone_id ? `Zone-${o.zone_id.slice(0, 4)}` : "All Zones"}
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-[#333333] font-bold">
                           {restNames[o.restaurant_id] || "Scoobix Kitchen"}
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-[#666666]">
-                          {String(o.delivery_address || "").split(",")[0] || "—"}
+                          {String(o.delivery_address || "").split(",")[0] || "Guest"}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-right text-[#333333] font-black">
+                          {formatPrice(o.total_price || 0)}
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-[#999999] font-mono">
-                          {(o.created_at || "").slice(11, 16)}
+                          {o.created_at ? format(new Date(o.created_at), "HH:mm") : "—"}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-[#999999] font-mono">
+                          {o.updated_at ? format(new Date(o.updated_at), "HH:mm") : "—"}
                         </td>
                       </tr>
                     ))}
