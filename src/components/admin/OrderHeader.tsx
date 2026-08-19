@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { 
   RefreshCw, History, UserPlus, FileEdit, Map as MapIcon, 
-  CheckCircle2, Clock, AlertCircle, XCircle, ChevronDown, ChevronRight 
+  CheckCircle2, Clock, AlertCircle, XCircle, ChevronDown, ChevronRight, ArrowLeft
 } from "lucide-react";
 import { StatusBadge } from "@/components/cravio/AdminTable";
 import { cn } from "@/lib/format";
