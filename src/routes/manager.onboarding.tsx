@@ -292,7 +292,7 @@ function OnboardingFlow() {
 
         // 2. Authoritatively persist all compliance identifiers to restaurant_kyc
         try {
-          const currentKyc = await fetchDocs("restaurant", canonicalId);
+          const currentKyc = await fetchDocs("restaurant", activeId);
           
           // Deterministic mapping for the three critical compliance identifiers
           const COMPLIANCE_TARGETS = [
@@ -309,7 +309,7 @@ function OnboardingFlow() {
             const trimmedNum = target.value?.trim() || null;
             // Always upsert these three types if we have a value or an existing row
             await saveRestaurantComplianceDoc(
-              canonicalId,
+              activeId,
               def,
               { 
                 doc_number: trimmedNum,
@@ -347,7 +347,7 @@ function OnboardingFlow() {
           await Promise.all([...kycPromises, ...otherPromises]);
           
           if (import.meta.env.DEV) {
-            console.debug("[KYC_PERSIST_COMPLETE]", { id: canonicalId });
+            console.debug("[KYC_PERSIST_COMPLETE]", { id: activeId });
           }
         } catch (docErr) {
           console.error("[ONBOARDING_SUBMIT] KYC persistence failed:", docErr);
@@ -358,7 +358,7 @@ function OnboardingFlow() {
         // Post-save audit events should NOT block the success message if KYC succeeded
         try {
           await logOnboardingEvent({
-            restaurantId: canonicalId,
+            restaurantId: activeId,
             managerId: authoritativeManagerId,
             status: String(extra.onboarding_status ?? "draft"),
             note: statusLabel,
@@ -370,8 +370,11 @@ function OnboardingFlow() {
       } else {
         console.error("[ONBOARDING_SUBMIT] Restaurant save failed to return a canonical ID");
         throw new Error("Restaurant save failed to return a canonical identity. Please try again.");
+      } else {
+        console.error("[ONBOARDING_SUBMIT] Restaurant save failed to return a canonical ID");
+        throw new Error("Restaurant save failed to return a canonical identity. Please try again.");
       }
-      return saved;
+      return saved || record;
     } catch (err: any) {
       console.error("[ONBOARDING_SUBMIT_ERROR]", err);
       const msg = err.message || "";
