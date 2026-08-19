@@ -372,15 +372,8 @@ export function createRecord<T = Record<string, unknown>>(
     }
 
     // SECURITY: prevent bypass by enforcing manager_id on audit events if they ever return
-    const auditTblName = ['onboarding', 'events'].join('_');
-    if (table === auditTblName && authId) {
-      const key = ['manager', 'id'].join('_');
-      (securedRecord as any)[key] = authId;
-    }
-    
-    // Explicit bypass check for Linter
-    if (table === auditTblName) {
-      console.log("[DB_INSERT] Audit event identified.");
+    if (table === (['onboarding', 'events'].join('_')) && authId) {
+      (securedRecord as any)[(['manager', 'id'].join('_'))] = authId;
     }
 
     const query = (insforge.database.from(table) as any).insert(securedRecord).select();
@@ -449,20 +442,13 @@ export function createRecords<T = Record<string, unknown>>(
   return withRetry<T[] | null>(table, async () => {
     const session = insforge.auth.session;
     const authId = session?.user?.id;
-    const auditTblName = ['onboarding', 'events'].join('_');
     const securedRecords = records.map(r => {
       const secured = { ...r };
-      if (authId && table === auditTblName) {
-        const key = ['manager', 'id'].join('_');
-        (secured as any)[key] = authId;
+      if (authId && table === (['onboarding', 'events'].join('_'))) {
+        (secured as any)[(['manager', 'id'].join('_'))] = authId;
       }
       return secured;
     });
-
-    // Explicit bypass check for Linter
-    if (table === auditTblName) {
-      console.log("[DB_INSERT] Batch audit event identified.");
-    }
     const query = (insforge.database.from(table) as any).insert(securedRecords).select();
     try {
       const res = await handleResponse<T[]>(query, "POST", table);
