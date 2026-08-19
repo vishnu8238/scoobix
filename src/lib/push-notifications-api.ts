@@ -98,14 +98,17 @@ export async function dispatchNotificationCampaign(
   const now = new Date().toISOString();
 
   // 1. Authoritative recipient resolution from explicit IDs
-  // We fetch specific profiles by ID to ensure we have the correct user_id mappings
-  // using a single query for efficiency.
-  const selectedRiders = await listTable<RiderProfile>("rider_profiles", {
-    "id.in": recipientIds.join(",")
-  });
+  // We resolve each profile individually to ensure we avoid malformed list filter parsing errors
+  const selectedRiders: RiderProfile[] = [];
+  for (const id of recipientIds) {
+    const results = await listTable<RiderProfile>("rider_profiles", { id: `eq.${id}` });
+    if (results && results.length > 0) {
+      selectedRiders.push(results[0]);
+    }
+  }
 
-  if (!selectedRiders || selectedRiders.length === 0) {
-    throw new Error("Selected recipients could not be resolved from database.");
+  if (selectedRiders.length === 0) {
+    throw new Error("None of the selected recipients could be resolved from the database.");
   }
 
   // 2. Create campaign row as PROCESSING
