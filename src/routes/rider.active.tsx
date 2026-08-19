@@ -363,14 +363,16 @@ function RiderActive() {
                   </button>
                   <button 
                     onClick={() => startNavigation({ 
-                      lat: order.pickup_latitude ? Number(order.pickup_latitude) : null,
-                      lng: order.pickup_longitude ? Number(order.pickup_longitude) : null,
-                      address: restaurant?.address || (order.pickup_address as string)
+                      lat: restaurant?.latitude ? Number(restaurant.latitude) : null,
+                      lng: restaurant?.longitude ? Number(restaurant.longitude) : null,
+                      address: restaurant?.address || (order.pickup_address as string),
+                      label: "Restaurant"
                     })} 
                     className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-sm font-black uppercase tracking-widest text-white shadow-glow transition active:scale-95"
                   >
                     <Navigation className="h-4 w-4" /> Navigate to Restaurant
                   </button>
+
                 </>
               )}
 
@@ -404,12 +406,14 @@ function RiderActive() {
                     onClick={() => startNavigation({ 
                       lat: order.delivery_latitude ? Number(order.delivery_latitude) : null,
                       lng: order.delivery_longitude ? Number(order.delivery_longitude) : null,
-                      address: (order.delivery_address as string) || "" 
+                      address: (order.delivery_address as string) || "",
+                      label: "Customer"
                     })} 
                     className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-sm font-black uppercase tracking-widest text-white shadow-glow transition active:scale-95"
                   >
                     <Navigation className="h-4 w-4" /> Navigate to Customer
                   </button>
+
                   <button onClick={() => setShowFailedModal(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3 text-xs font-bold uppercase tracking-widest text-rose-600 transition active:scale-95">
                     <AlertTriangle className="h-4 w-4" /> Unable to Deliver
                   </button>

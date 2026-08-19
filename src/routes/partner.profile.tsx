@@ -91,8 +91,14 @@ function PartnerProfile() {
             latitude={form.latitude} 
             longitude={form.longitude} 
             address={form.address}
-            onChange={(lat, lng, addr) => setForm({ ...form, latitude: lat, longitude: lng, address: addr })} 
+            onChange={(lat, lng, addr) => setForm(f => ({ 
+              ...f, 
+              latitude: lat, 
+              longitude: lng, 
+              address: addr ?? f.address 
+            }))} 
           />
+
         </section>
 
         <section className="space-y-4 rounded-3xl bg-card p-5 shadow-soft ring-1 ring-border/60">
