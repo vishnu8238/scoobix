@@ -132,6 +132,8 @@ export function rowToOrder(row: OrderRow): Order {
     pickup_latitude: row.pickup_latitude ? num(row.pickup_latitude) : undefined,
     pickup_longitude: row.pickup_longitude ? num(row.pickup_longitude) : undefined,
     pickup_address: row.pickup_address ? String(row.pickup_address) : undefined,
+    delivery_latitude: row.delivery_latitude ? num(row.delivery_latitude) : undefined,
+    delivery_longitude: row.delivery_longitude ? num(row.delivery_longitude) : undefined,
   };
 }
 
@@ -189,6 +191,8 @@ export type PlaceOrderInput = {
   notes?: string;
   couponCode?: string;
   etaMins?: number;
+  delivery_latitude?: number | null;
+  delivery_longitude?: number | null;
   // Zone context
   zoneId?: string;
   subzoneId?: string;
@@ -258,6 +262,8 @@ export async function createOrder(input: PlaceOrderInput): Promise<Order | null>
     pickup_latitude: pickupLat,
     pickup_longitude: pickupLng,
     pickup_address: pickupAddr,
+    delivery_latitude: input.delivery_latitude,
+    delivery_longitude: input.delivery_longitude,
     payment_method: input.paymentMethod,
     payment_status: "PENDING",
     assignment_status: "SEARCHING",

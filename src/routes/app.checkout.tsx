@@ -59,7 +59,19 @@ function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [scheduledFor, setScheduledFor] = useState<string>("");
   const [useWalletBalance, setUseWalletBalance] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const { balance: walletBalance, debit: walletDebit, credit: walletCredit } = useMyWallet();
+
+  // Attempt to capture device coordinates for delivery_latitude/longitude
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => console.warn("[CHECKOUT] Geolocation capture failed:", err.message),
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
+  }, []);
 
 
   // Keep the campaign engine in sync with the selected payment method so
@@ -115,6 +127,8 @@ function CheckoutPage() {
       contactless,
       notes: notes.trim() || undefined,
       couponCode: coupon?.code,
+      delivery_latitude: coords?.lat,
+      delivery_longitude: coords?.lng,
     });
 
     if (!res.ok || !res.orderId) {
