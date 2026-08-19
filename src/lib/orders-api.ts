@@ -53,14 +53,14 @@ export type OrderRow = Record<string, unknown> & { id?: string };
 /* ---------------- status mapping ---------------- */
 
 const LOCAL: OrderStatus[] = [
-  "PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED",
+  "PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED",
 ];
 
 export function mapStatus(s: unknown, fallback: OrderStatus = "PLACED"): OrderStatus {
   const v = String(s ?? "").toUpperCase();
   if ((LOCAL as string[]).includes(v)) return v as OrderStatus;
   if (v === "ASSIGNING" || v === "NO_DRIVERS") return "READY";
-  if (v === "ARRIVED" || v === "TO_DROP" || v === "TO_PICKUP" || v === "AT_PICKUP") return "ON_THE_WAY";
+  if (v === "ARRIVED" || v === "TO_DROP" || v === "TO_PICKUP" || v === "AT_PICKUP") return "OUT_FOR_DELIVERY";
   if (v === "REJECTED") return "CANCELLED";
   if (v === "COMPLETED") return "DELIVERED";
   return fallback;
@@ -327,18 +327,20 @@ export type { OrderStatus };
 // OrderStatus is now managed in stores.tsx to prevent duplication conflicts.
 
 export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PLACED: ["ACCEPTED", "CANCELLED"],
-  ACCEPTED: ["PREPARING", "CANCELLED"],
+  PLACED: ["PREPARING", "CANCELLED"],
   PREPARING: ["READY", "CANCELLED"],
-  READY: ["ASSIGNING", "CANCELLED"],
-  ASSIGNING: ["ASSIGNED", "READY", "CANCELLED"],
-  ASSIGNED: ["AT_PICKUP", "ASSIGNING", "CANCELLED"],
-  AT_PICKUP: ["PICKED_UP", "CANCELLED"],
-  PICKED_UP: ["ON_THE_WAY", "CANCELLED"],
-  ON_THE_WAY: ["ARRIVED", "CANCELLED"],
-  ARRIVED: ["DELIVERED", "CANCELLED"],
+  READY: ["OUT_FOR_DELIVERY", "CANCELLED"],
+  OUT_FOR_DELIVERY: ["DELIVERED", "CANCELLED"],
   DELIVERED: [],
   CANCELLED: [],
+  // Legacy or unused in admin workspace
+  ACCEPTED: ["PREPARING", "CANCELLED"],
+  ASSIGNING: ["READY", "CANCELLED"],
+  ASSIGNED: ["READY", "CANCELLED"],
+  AT_PICKUP: ["READY", "CANCELLED"],
+  PICKED_UP: ["OUT_FOR_DELIVERY", "CANCELLED"],
+  ON_THE_WAY: ["DELIVERED", "CANCELLED"],
+  ARRIVED: ["DELIVERED", "CANCELLED"],
   REJECTED: [],
 };
 

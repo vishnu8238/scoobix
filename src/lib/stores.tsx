@@ -401,7 +401,7 @@ export type OrderStatus =
   | "ASSIGNED"
   | "AT_PICKUP"
   | "PICKED_UP"
-  | "ON_THE_WAY"
+  | "OUT_FOR_DELIVERY"
   | "ARRIVED"
   | "DELIVERED"
   | "CANCELLED"
@@ -416,14 +416,14 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   ASSIGNED: "Rider assigned",
   AT_PICKUP: "At pickup location",
   PICKED_UP: "Picked up",
-  ON_THE_WAY: "On the way",
+  OUT_FOR_DELIVERY: "Out for delivery",
   ARRIVED: "Arrived at delivery",
   DELIVERED: "Delivered",
   CANCELLED: "Cancelled",
   REJECTED: "Rejected",
 };
 
-export const STATUS_FLOW: OrderStatus[] = ["PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "ON_THE_WAY", "DELIVERED"];
+export const STATUS_FLOW: OrderStatus[] = ["PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"];
 
 export type Order = {
   id: string;
