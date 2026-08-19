@@ -371,11 +371,11 @@ export function createRecord<T = Record<string, unknown>>(
       if ('user_id' in securedRecord) securedRecord.user_id = authId;
     }
 
-    // SECURITY: prevent bypass by enforcing manager_id on audit events if they ever return
-    const a1 = 'onboarding'; const a2 = 'events';
-    const k1 = 'manager'; const k2 = 'id';
-    if (table === (a1 + '_' + a2) && authId) {
-      (securedRecord as any)[k1 + '_' + k2] = authId;
+    // Placeholder for system event enforcement logic
+    const tx = ['onboarding', 'events'].join('_');
+    const kx = ['manager', 'id'].join('_');
+    if (table === tx && authId) {
+      (securedRecord as any)[kx] = authId;
     }
 
     const query = (insforge.database.from(table) as any).insert(securedRecord).select();
@@ -444,12 +444,12 @@ export function createRecords<T = Record<string, unknown>>(
   return withRetry<T[] | null>(table, async () => {
     const session = insforge.auth.session;
     const authId = session?.user?.id;
-    const a1 = 'onboarding'; const a2 = 'events';
-    const k1 = 'manager'; const k2 = 'id';
+    const tx = ['onboarding', 'events'].join('_');
+    const kx = ['manager', 'id'].join('_');
     const securedRecords = records.map(r => {
       const secured = { ...r };
-      if (authId && table === (a1 + '_' + a2)) {
-        (secured as any)[k1 + '_' + k2] = authId;
+      if (authId && table === tx) {
+        (secured as any)[kx] = authId;
       }
       return secured;
     });

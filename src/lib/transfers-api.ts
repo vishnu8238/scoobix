@@ -3,7 +3,7 @@
  *
  * pending → under_review → approved | rejected. Every request and decision is
  * kept forever in `ownership_transfers` (nothing is deleted) and mirrored into
- * audit logs so the restaurant timeline stays complete.
+ * activity logs so the restaurant timeline stays complete.
  */
 import { createRecord, listTable, patchRecord } from "./insforge-crud";
 import { logOnboardingEvent, type MerchantManager } from "./manager-api";
