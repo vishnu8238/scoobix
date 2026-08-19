@@ -266,30 +266,38 @@ function OnboardingFlow() {
       }
 
       // 1. Authorize and Save main restaurant record
-      // Deterministic destructuring: Preserve PAN/Aadhaar/Chq for KYC upsert but filter from restaurant table
       const { pan_number: panVal, aadhaar_number: aadhaarVal, cancelled_cheque_ref: chqVal, ...sanitizedPayload } = payload;
       
       if (!form.has_cover) (sanitizedPayload as any).cover_url = null;
       (sanitizedPayload as any).documents = form.documents;
       (sanitizedPayload as any).logo_url = form.logo_url;
-      const saved = await saveOnboardingDraft(targetRecordId, {
-        ...sanitizedPayload,
-        rst_code: rst,
-        manager_id: authoritativeManagerId,
-        onboarded_by: authoritativeManagerId,
-        ...extra,
-      });
 
-      // Resolve canonical ID: check saved result first, then existing record, then route ID
-      const canonicalId = saved?.id ?? record?.id ?? id;
+      // Deterministic canonical ID resolution
+      const canonicalId = record?.id || id || null;
+      console.info(`[ONBOARDING_SUBMIT] Resolved canonical ID: ${canonicalId}`);
 
-      if (canonicalId) {
+      let saved = null;
+      // Only upsert restaurant record if needed or if we don't have a canonicalId yet
+      if (step < 4 || !canonicalId) {
+        saved = await saveOnboardingDraft(targetRecordId, {
+          ...sanitizedPayload,
+          rst_code: rst,
+          manager_id: authoritativeManagerId,
+          onboarded_by: authoritativeManagerId,
+          ...extra,
+        });
+      }
+
+      // Final identity verification
+      const activeId = saved?.id ?? canonicalId;
+
+      if (activeId) {
         if (saved) setRecord(saved);
         
-        if (id !== canonicalId) {
-          navigate({ to: "/manager/onboarding", search: { id: canonicalId }, replace: true });
+        if (id !== activeId) {
+          navigate({ to: "/manager/onboarding", search: { id: activeId }, replace: true });
         }
-
+        
         // 2. Authoritatively persist all compliance identifiers to restaurant_kyc
         try {
           const currentKyc = await fetchDocs("restaurant", activeId);
@@ -332,7 +340,7 @@ function OnboardingFlow() {
 
             if (formLine?.url || docNumber?.trim()) {
               await saveRestaurantComplianceDoc(
-                canonicalId,
+                activeId,
                 def,
                 { 
                   file_url: formLine?.url || existing?.file_url || null,
@@ -367,9 +375,6 @@ function OnboardingFlow() {
           console.warn("[ONBOARDING_SUBMIT] Non-critical audit log failed:", auditErr);
           // Don't throw - KYC and restaurant records are already saved
         }
-      } else {
-        console.error("[ONBOARDING_SUBMIT] Restaurant save failed to return a canonical ID");
-        throw new Error("Restaurant save failed to return a canonical identity. Please try again.");
       } else {
         console.error("[ONBOARDING_SUBMIT] Restaurant save failed to return a canonical ID");
         throw new Error("Restaurant save failed to return a canonical identity. Please try again.");
