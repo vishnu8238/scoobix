@@ -266,31 +266,41 @@ function OnboardingFlow() {
       }
 
       // 1. Authorize and Save main restaurant record
-      // Deterministic destructuring: Preserve PAN/Aadhaar/Chq for KYC upsert but filter from restaurant table
       const { pan_number: panVal, aadhaar_number: aadhaarVal, cancelled_cheque_ref: chqVal, ...sanitizedPayload } = payload;
       
       if (!form.has_cover) (sanitizedPayload as any).cover_url = null;
       (sanitizedPayload as any).documents = form.documents;
       (sanitizedPayload as any).logo_url = form.logo_url;
-      const saved = await saveOnboardingDraft(targetRecordId, {
-        ...sanitizedPayload,
-        rst_code: rst,
-        manager_id: authoritativeManagerId,
-        onboarded_by: authoritativeManagerId,
-        ...extra,
-      });
 
-      if (saved && saved.id) {
-        setRecord(saved);
-        const canonicalId = saved.id;
+      // Deterministic canonical ID resolution
+      const canonicalId = record?.id || id || null;
+      console.info(`[ONBOARDING_SUBMIT] Resolved canonical ID: ${canonicalId}`);
+
+      let saved = null;
+      // Only upsert restaurant record if needed or if we don't have a canonicalId yet
+      if (step < 4 || !canonicalId) {
+        saved = await saveOnboardingDraft(targetRecordId, {
+          ...sanitizedPayload,
+          rst_code: rst,
+          manager_id: authoritativeManagerId,
+          onboarded_by: authoritativeManagerId,
+          ...extra,
+        });
+      }
+
+      // Final identity verification
+      const activeId = saved?.id ?? canonicalId;
+
+      if (activeId) {
+        if (saved) setRecord(saved);
         
-        if (id !== canonicalId) {
-          navigate({ to: "/manager/onboarding", search: { id: canonicalId }, replace: true });
+        if (id !== activeId) {
+          navigate({ to: "/manager/onboarding", search: { id: activeId }, replace: true });
         }
-
+        
         // 2. Authoritatively persist all compliance identifiers to restaurant_kyc
         try {
-          const currentKyc = await fetchDocs("restaurant", canonicalId);
+          const currentKyc = await fetchDocs("restaurant", activeId);
           
           // Deterministic mapping for the three critical compliance identifiers
           const COMPLIANCE_TARGETS = [
@@ -307,7 +317,7 @@ function OnboardingFlow() {
             const trimmedNum = target.value?.trim() || null;
             // Always upsert these three types if we have a value or an existing row
             await saveRestaurantComplianceDoc(
-              canonicalId,
+              activeId,
               def,
               { 
                 doc_number: trimmedNum,
@@ -330,7 +340,7 @@ function OnboardingFlow() {
 
             if (formLine?.url || docNumber?.trim()) {
               await saveRestaurantComplianceDoc(
-                canonicalId,
+                activeId,
                 def,
                 { 
                   file_url: formLine?.url || existing?.file_url || null,
@@ -345,7 +355,7 @@ function OnboardingFlow() {
           await Promise.all([...kycPromises, ...otherPromises]);
           
           if (import.meta.env.DEV) {
-            console.debug("[KYC_PERSIST_COMPLETE]", { id: canonicalId });
+            console.debug("[KYC_PERSIST_COMPLETE]", { id: activeId });
           }
         } catch (docErr) {
           console.error("[ONBOARDING_SUBMIT] KYC persistence failed:", docErr);
@@ -356,7 +366,7 @@ function OnboardingFlow() {
         // Post-save audit events should NOT block the success message if KYC succeeded
         try {
           await logOnboardingEvent({
-            restaurantId: canonicalId,
+            restaurantId: activeId,
             managerId: authoritativeManagerId,
             status: String(extra.onboarding_status ?? "draft"),
             note: statusLabel,
@@ -365,8 +375,11 @@ function OnboardingFlow() {
           console.warn("[ONBOARDING_SUBMIT] Non-critical audit log failed:", auditErr);
           // Don't throw - KYC and restaurant records are already saved
         }
+      } else {
+        console.error("[ONBOARDING_SUBMIT] Restaurant save failed to return a canonical ID");
+        throw new Error("Restaurant save failed to return a canonical identity. Please try again.");
       }
-      return saved;
+      return saved || record;
     } catch (err: any) {
       console.error("[ONBOARDING_SUBMIT_ERROR]", err);
       const msg = err.message || "";
