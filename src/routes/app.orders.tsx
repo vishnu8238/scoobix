@@ -106,7 +106,7 @@ function OrdersPage() {
                     <Button size="sm" className="h-8 rounded-full px-3 text-xs font-bold gradient-primary text-primary-foreground">Track</Button>
                   </Link>
                 )}
-                {o.status !== "DELIVERED" && o.status !== "CANCELLED" && o.status !== "PICKED_UP" && o.status !== "ON_THE_WAY" && (
+                {o.status !== "DELIVERED" && o.status !== "CANCELLED" && o.status !== "PICKED_UP" && o.status !== "OUT_FOR_DELIVERY" && (
                   <Button
                     size="sm"
                     variant="outline"
