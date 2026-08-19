@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/format";
 import { StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
-import { Loader2, Database, Search, ChevronDown, Filter, X } from "lucide-react";
+import { Loader2, Database, Search, ChevronDown, Filter, X, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
@@ -255,7 +255,18 @@ function OrderLedger() {
         {/* Header & Workflow Tabs */}
         <div className="bg-white border-b border-[#E8E8E2] px-8 pt-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="font-display text-2xl font-black tracking-tight text-[#333333]">Orders</h1>
+            <div>
+              <h1 className="font-display text-2xl font-black tracking-tight text-[#333333]">Orders operations</h1>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#999999]">
+                  Live status: <span className="text-[#1E9A62]">{stats.ALL} active orders</span>
+                </p>
+                <div className="h-1 w-1 rounded-full bg-[#E8E8E2]" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#999999]">
+                  Refreshed: {format(new Date(), "HH:mm:ss")}
+                </p>
+              </div>
+            </div>
             <button 
               onClick={handleSeed}
               disabled={isSeeding}
@@ -313,7 +324,7 @@ function OrderLedger() {
                 </div>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto min-h-0 flex-1">
                 <table className="w-full border-collapse">
                   <thead className="bg-[#F9F9F7] sticky top-0 z-10 border-b border-[#E8E8E2]">
                     <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-[#999999]">
@@ -329,6 +340,7 @@ function OrderLedger() {
                       <th className="px-6 py-4 text-right font-black">Total Price</th>
                       <th className="px-6 py-4 text-left font-black">Created</th>
                       <th className="px-6 py-4 text-left font-black">Updated</th>
+                      <th className="px-6 py-4 text-right font-black">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#F9F9F7]">
@@ -385,6 +397,15 @@ function OrderLedger() {
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-[#999999] font-mono">
                           {o.updated_at ? format(new Date(o.updated_at), "HH:mm") : "—"}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-right">
+                          <Link 
+                            to="/logistics/orders/$orderId" 
+                            params={{ orderId: o.id }}
+                            className="inline-flex items-center gap-1 rounded-lg bg-[#F9F9F7] px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[#666666] border border-[#E8E8E2] hover:bg-white hover:text-[#1E9A62] transition-all"
+                          >
+                            Details
+                          </Link>
                         </td>
                       </tr>
                     ))}
