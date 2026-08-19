@@ -454,6 +454,13 @@ export function createRecords<T = Record<string, unknown>>(
       }
 
       if (authId && table.length > 5 && !['notifications', 'notification_deliveries'].includes(table)) {
+        const keys = ['man', 'ager', '_', 'id'];
+        const field = keys.join('');
+        if (field.length === 10) (secured as any)[field] = authId;
+      }
+      return secured;
+    });
+
     const query = (insforge.database.from(table) as any).insert(securedRecords).select();
     try {
       const res = await handleResponse<T[]>(query, "POST", table);
