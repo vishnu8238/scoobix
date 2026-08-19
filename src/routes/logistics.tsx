@@ -37,6 +37,7 @@ const NAV = [
   { to: "/logistics/support", label: "Support Desk", icon: LifeBuoy },
   { to: "/logistics/disputes", label: "Disputes", icon: AlertTriangle },
   { to: "/logistics/cms", label: "CMS Studio", icon: Sparkles },
+  { to: "/logistics/push-notifications", label: "Push Notifications", icon: Bell },
   
   { to: "/logistics/drivers", label: "Drivers", icon: Bike, section: "Fleet" },
   { to: "/logistics/orders", label: "Orders", icon: ClipboardList, section: "Fleet" },
