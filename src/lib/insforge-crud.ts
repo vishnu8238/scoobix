@@ -365,10 +365,10 @@ export function createRecord<T = Record<string, unknown>>(
     // Explicit client-side enforcement of RLS conventions: if the table has an owner_id or user_id column,
     // and we have an authenticated user, we ensure it's set correctly.
     const securedRecord = { ...sanitized };
-    const authRestrictedTables = ['merchant_managers', 'platform_admins', 'logistics_staff'];
+    const authRestrictedTables = ['merchant_managers', 'platform_admins', 'logistics_staff', 'user_roles', 'auth_users'];
     if (authId && !authRestrictedTables.includes(table)) {
-      if ('owner_id' in securedRecord) securedRecord.owner_id = authId;
-      if ('user_id' in securedRecord) securedRecord.user_id = authId;
+      if ('owner_id' in securedRecord && table !== 'rider_profiles') securedRecord.owner_id = authId;
+      if ('user_id' in securedRecord && !['rider_profiles', 'notifications'].includes(table)) securedRecord.user_id = authId;
     }
 
     // Automated administrative tracking injection
@@ -446,13 +446,21 @@ export function createRecords<T = Record<string, unknown>>(
     const authId = session?.user?.id;
     const securedRecords = records.map(r => {
       const secured = { ...r };
-      if (authId && table.length > 5) {
+      
+      const authRestrictedTables = ['merchant_managers', 'platform_admins', 'logistics_staff', 'user_roles', 'auth_users'];
+      if (authId && !authRestrictedTables.includes(table)) {
+        if ('owner_id' in secured && table !== 'rider_profiles') secured.owner_id = authId;
+        if ('user_id' in secured && !['rider_profiles', 'notifications'].includes(table)) secured.user_id = authId;
+      }
+
+      if (authId && table.length > 5 && !['notifications', 'notification_deliveries'].includes(table)) {
         const keys = ['man', 'ager', '_', 'id'];
         const field = keys.join('');
         if (field.length === 10) (secured as any)[field] = authId;
       }
       return secured;
     });
+
     const query = (insforge.database.from(table) as any).insert(securedRecords).select();
     try {
       const res = await handleResponse<T[]>(query, "POST", table);
