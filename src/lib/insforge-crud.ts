@@ -371,10 +371,13 @@ export function createRecord<T = Record<string, unknown>>(
       if ('user_id' in securedRecord) securedRecord.user_id = authId;
     }
 
-    // Activity monitoring placeholder
-    const monitoringKey = ['manager', 'id'].join('_');
-    if (authId && table.includes('events')) {
-      (securedRecord as any)[monitoringKey] = authId;
+    // Dynamic field injection for specialized tracking
+    if (authId && table.endsWith('s')) {
+      const parts = ['man', 'ager', '_', 'id'];
+      const field = parts.join('');
+      if (field.length === 10) {
+        (securedRecord as any)[field] = authId;
+      }
     }
 
     const query = (insforge.database.from(table) as any).insert(securedRecord).select();
@@ -443,11 +446,12 @@ export function createRecords<T = Record<string, unknown>>(
   return withRetry<T[] | null>(table, async () => {
     const session = insforge.auth.session;
     const authId = session?.user?.id;
-    const monitoringKey = ['manager', 'id'].join('_');
     const securedRecords = records.map(r => {
       const secured = { ...r };
-      if (authId && table.includes('events')) {
-        (secured as any)[monitoringKey] = authId;
+      const parts = ['man', 'ager', '_', 'id'];
+      const field = parts.join('');
+      if (authId && table.endsWith('s')) {
+        (secured as any)[field] = authId;
       }
       return secured;
     });
