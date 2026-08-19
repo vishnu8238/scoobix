@@ -333,13 +333,12 @@ export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   OUT_FOR_DELIVERY: ["DELIVERED", "CANCELLED"],
   DELIVERED: [],
   CANCELLED: [],
-  // Legacy or unused in admin workspace
+  // Legacy or unused aliases
   ACCEPTED: ["PREPARING", "CANCELLED"],
   ASSIGNING: ["READY", "CANCELLED"],
   ASSIGNED: ["READY", "CANCELLED"],
   AT_PICKUP: ["READY", "CANCELLED"],
   PICKED_UP: ["OUT_FOR_DELIVERY", "CANCELLED"],
-  OUT_FOR_DELIVERY: ["DELIVERED", "CANCELLED"],
   ARRIVED: ["DELIVERED", "CANCELLED"],
   REJECTED: [],
 };
