@@ -37,7 +37,6 @@ const NAV = [
   { to: "/logistics/support", label: "Support Desk", icon: LifeBuoy },
   { to: "/logistics/disputes", label: "Disputes", icon: AlertTriangle },
   { to: "/logistics/cms", label: "CMS Studio", icon: Sparkles },
-  { to: "/logistics/push-notifications", label: "Push Notifications", icon: Bell },
   
   { to: "/logistics/drivers", label: "Drivers", icon: Bike, section: "Fleet" },
   { to: "/logistics/orders", label: "Orders", icon: ClipboardList, section: "Fleet" },
@@ -55,6 +54,7 @@ const NAV = [
   { to: "/logistics/security", label: "Security & Audit", icon: ShieldCheck, section: "Admin" },
   
   { to: "/logistics/marketing", label: "Marketing", icon: Megaphone, section: "Growth" },
+  { to: "/logistics/push-notifications", label: "Push Notifications", icon: Bell, section: "Growth" },
   { to: "/logistics/coupons", label: "Coupons", icon: Tag, section: "Growth" },
   { to: "/logistics/ads", label: "Ads", icon: Megaphone, section: "Growth" },
   
