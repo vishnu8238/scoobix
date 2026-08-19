@@ -230,7 +230,7 @@ function OrderLedger() {
 
               <span key={`name${o.id}`} className="font-bold">{userById[String(o.customer_id)] || "—"}</span>,
               <span key={`owner${o.id}`} className="text-muted-foreground">{nameById[String(o.restaurant_id)] || "—"}</span>,
-              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price || o.total_amount || 0)}</span>,
+              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price || 0)}</span>,
               <StatusBadge key={`status${o.id}`} label={String(o.status || "PLACED")} />,
               <span key={`mgr${o.id}`} className="text-[10px] font-medium text-muted-foreground">{(o.created_at ?? "").slice(11, 16)}</span>,
               <Link 
@@ -257,7 +257,6 @@ type OrderRow = {
   id: string;
   status?: string;
   total_price?: number;
-  total_amount?: number;
   restaurant_id?: string;
   customer_id?: string;
   created_at?: string;
@@ -271,5 +270,5 @@ type DemoRestaurantInsert = {
   city: string;
 };
 
-const IN_PROGRESS = ["PLACED", "CONFIRMED", "ACCEPTED", "PREPARING", "READY", "ASSIGNING", "ASSIGNED", "AT_PICKUP", "PICKED_UP", "ON_THE_WAY", "ARRIVED"];
+const IN_PROGRESS = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY"];
 
