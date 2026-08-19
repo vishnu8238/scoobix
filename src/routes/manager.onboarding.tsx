@@ -23,7 +23,7 @@ import {
   ONBOARDING_TONE,
   type ManagedRestaurant,
 } from "@/lib/manager-api";
-import { submitDoc, fetchDocs, RESTAURANT_DOCS } from "@/lib/verification-api";
+import { fetchDocs, RESTAURANT_DOCS, saveRestaurantComplianceDoc } from "@/lib/verification-api";
 import { useAuth } from "@/lib/auth-store";
 import { logDuplicateCheck, nextBranchCode } from "@/lib/duplicate-api";
 import { requestOwnershipTransfer } from "@/lib/transfers-api";
@@ -306,15 +306,14 @@ function OnboardingFlow() {
 
             const trimmedNum = target.value?.trim() || null;
             // Always upsert these three types if we have a value or an existing row
-            await submitDoc(
-              "restaurant",
+            await saveRestaurantComplianceDoc(
               canonicalId,
               def,
               { 
                 doc_number: trimmedNum,
                 file_url: existing?.file_url || null
               },
-              existing || null,
+              existing ?? null,
               { id: authoritativeManagerId, name: manager?.name, role: "manager" }
             );
           });
@@ -330,15 +329,14 @@ function OnboardingFlow() {
             if (def.type === 'bank_account') docNumber = form.bank_account;
 
             if (formLine?.url || docNumber?.trim()) {
-              await submitDoc(
-                "restaurant",
+              await saveRestaurantComplianceDoc(
                 canonicalId,
                 def,
                 { 
                   file_url: formLine?.url || existing?.file_url || null,
                   doc_number: docNumber?.trim() || existing?.doc_number || null
                 },
-                existing || null,
+                existing ?? null,
                 { id: authoritativeManagerId, name: manager?.name, role: "manager" }
               );
             }
@@ -350,9 +348,9 @@ function OnboardingFlow() {
             console.debug("[KYC_PERSIST_COMPLETE]", { id: canonicalId });
           }
         } catch (docErr) {
-          console.error("[ONBOARDING_SUBMIT] KYC persistence failed (likely RLS):", docErr);
-          // If the actual KYC write failed, we MUST report it
-          throw new Error(`Compliance save failed: You do not have permission to update this restaurant's KYC.`);
+          console.error("[ONBOARDING_SUBMIT] KYC persistence failed:", docErr);
+          const reason = docErr instanceof Error ? docErr.message : "Unknown compliance write error";
+          throw new Error(`Compliance save failed: ${reason}`);
         }
 
         // Post-save audit events should NOT block the success message if KYC succeeded

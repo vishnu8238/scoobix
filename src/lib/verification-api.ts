@@ -10,7 +10,7 @@
  * and not expired. Reviews are admin-only for riders/managers; managers may
  * also review the restaurants assigned to them.
  */
-import { createRecord, listTable, patchRecord } from "./insforge-crud";
+import { createRecord, createRecordExact, listTable, patchRecord } from "./insforge-crud";
 
 export const VERIFICATION_TABLE = "restaurant_kyc";
 export const VERIFICATION_LOG_TABLE = "kyc_audit_logs";
@@ -308,6 +308,84 @@ export async function submitDoc(
     actor_name: actor.name ?? null,
     actor_role: actor.role ?? subject,
   });
+}
+
+/**
+ * Manager onboarding compliance save.
+ *
+ * Existing rows are changed only through their authoritative row UUID, without
+ * rewriting restaurant/subject linkage. Missing rows are inserted with the
+ * canonical restaurant UUID through the exact authenticated insert path.
+ * Audit logging is deliberately best-effort: an audit-table restriction must
+ * never turn a successful compliance write into a false save failure.
+ */
+export async function saveRestaurantComplianceDoc(
+  restaurantId: string,
+  def: KycDocDef,
+  data: { doc_number?: string | null; file_url?: string | null; file_name?: string | null; expires_at?: string | null },
+  existing: KycRow | null,
+  actor: Actor,
+): Promise<KycRow> {
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(restaurantId)) throw new Error("Restaurant save did not return a canonical UUID.");
+  if (!actor.id) throw new Error("Manager authentication is required for compliance updates.");
+
+  if (existing) {
+    if (!uuidPattern.test(existing.id)) throw new Error("Compliance row is missing its authoritative UUID.");
+    const linkedRestaurantId = existing.restaurant_id ?? existing.subject_id;
+    if (linkedRestaurantId !== restaurantId) throw new Error("Compliance row does not belong to this restaurant.");
+  }
+
+  const now = new Date().toISOString();
+  const mutableFields = {
+    doc_number: data.doc_number ?? existing?.doc_number ?? null,
+    file_url: data.file_url ?? existing?.file_url ?? null,
+    file_name: data.file_name ?? existing?.file_name ?? null,
+    expires_at: data.expires_at ?? existing?.expires_at ?? null,
+    status: "pending",
+    mandatory: def.mandatory,
+    remarks: null,
+    uploaded_by: actor.id,
+    submitted_at: now,
+    reviewed_at: null,
+    reviewed_by: null,
+  };
+
+  let row: KycRow | null;
+  if (existing) {
+    row = await patchRecord<KycRow>(VERIFICATION_TABLE, existing.id, mutableFields);
+    if (!row) row = { ...existing, ...mutableFields };
+  } else {
+    row = await createRecordExact<KycRow>(VERIFICATION_TABLE, {
+      restaurant_id: restaurantId,
+      subject_type: "restaurant",
+      subject_id: restaurantId,
+      doc_type: def.type,
+      ...mutableFields,
+      created_at: now,
+    });
+    if (!row?.id) throw new Error(`Compliance ${def.type} insert returned no row UUID.`);
+  }
+
+  try {
+    await log({
+      restaurant_id: restaurantId,
+      subject_type: "restaurant",
+      subject_id: restaurantId,
+      kyc_id: row.id,
+      doc_type: def.type,
+      action: existing ? "resubmitted" : "submitted",
+      from_status: existing ? normalizeStatus(existing.status) : null,
+      to_status: "pending",
+      actor_id: actor.id,
+      actor_name: actor.name ?? null,
+      actor_role: actor.role ?? "manager",
+    });
+  } catch (auditError) {
+    console.warn("[KYC_AUDIT_NON_BLOCKING] Compliance row saved but audit logging was denied:", auditError);
+  }
+
+  return row;
 }
 
 /** Reviewer decision on a document. */
