@@ -434,6 +434,25 @@ export function createRecord<T = Record<string, unknown>>(
   });
 }
 
+/**
+ * Insert an already-authorized record without generic ownership or tracking
+ * mutation. Use only when the caller has assembled the table's canonical
+ * identity fields and database access rules remain the authorization boundary.
+ */
+export function createRecordExact<T = Record<string, unknown>>(
+  table: string,
+  record: Record<string, unknown>,
+): Promise<T | null> {
+  invalidateTable(table);
+  return withRetry<T | null>(table, async () => {
+    const query = (insforge.database.from(table) as any).insert(sanitizeRecord(record)).select();
+    const rows = await handleResponse<T[]>(query, "POST", table);
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    announce(table, "insert", (row as Record<string, unknown> | null) ?? record);
+    return (row ?? null) as T | null;
+  });
+}
+
 /** Batch insert — one round trip instead of N. */
 export function createRecords<T = Record<string, unknown>>(
   table: string,
