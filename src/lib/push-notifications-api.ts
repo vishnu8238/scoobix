@@ -87,21 +87,22 @@ export async function fetchCampaignHistory() {
 export async function dispatchNotificationCampaign(
   title: string,
   message: string,
-  recipients: RiderProfile[],
+  recipientIds: string[], // Pass IDs directly to ensure selection source of truth
   targetScope: { status: string; zoneId: string | null }
 ) {
   const userId = await requireAuthenticatedInsforgeUser();
   const now = new Date().toISOString();
 
   // 1. Create campaign row as PROCESSING
+  // Persist target_status as uppercase
   const campaign = await createRecord<NotificationCampaign>("notification_campaigns", {
     title,
     message,
-    target_status: targetScope.status,
+    target_status: (targetScope.status || "ALL").toUpperCase() as any,
     target_zone_id: targetScope.zoneId,
     created_by: userId,
     campaign_status: "PROCESSING",
-    total_count: recipients.length,
+    total_count: recipientIds.length,
     sent_count: 0,
     failed_count: 0,
     created_at: now
@@ -112,12 +113,16 @@ export async function dispatchNotificationCampaign(
   let sentCount = 0;
   let failedCount = 0;
 
-  // Process dispatches
-  // Note: We do this in a loop or batch for the demo behavior requirement
-  for (const rider of recipients) {
+  // 2. Fetch full rider profiles for selected IDs to get user_ids
+  // This ensures the selection is the source of truth
+  const { riders: allRiders } = await fetchPushRecipients();
+  const selectedRiders = allRiders.filter(r => recipientIds.includes(r.id));
+
+  for (const rider of selectedRiders) {
     try {
       let notificationId: string | null = null;
       
+      // Create in-app notification if user_id exists
       if (rider.user_id) {
         const notif = await createRecord<any>("notifications", {
           user_id: rider.user_id,
@@ -131,6 +136,7 @@ export async function dispatchNotificationCampaign(
         }
       }
 
+      // Create delivery record
       if (notificationId) {
         await createRecord<NotificationDelivery>("notification_deliveries", {
           campaign_id: campaign.id,
@@ -156,15 +162,19 @@ export async function dispatchNotificationCampaign(
       }
     } catch (err: any) {
       console.error(`Failed dispatch to rider ${rider.id}:`, err);
-      await createRecord<NotificationDelivery>("notification_deliveries", {
-        campaign_id: campaign.id,
-        rider_profile_id: rider.id,
-        recipient_user_id: rider.user_id || null,
-        notification_id: null,
-        delivery_status: "FAILED",
-        error_message: err.message || "Unknown error",
-        created_at: now
-      });
+      try {
+        await createRecord<NotificationDelivery>("notification_deliveries", {
+          campaign_id: campaign.id,
+          rider_profile_id: rider.id,
+          recipient_user_id: rider.user_id || null,
+          notification_id: null,
+          delivery_status: "FAILED",
+          error_message: err.message || "Unknown error",
+          created_at: now
+        });
+      } catch (innerErr) {
+        console.error("Critical: Failed to record delivery failure", innerErr);
+      }
       failedCount++;
     }
   }
