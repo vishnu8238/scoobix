@@ -339,7 +339,6 @@ export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   ASSIGNED: ["READY", "CANCELLED"],
   AT_PICKUP: ["READY", "CANCELLED"],
   PICKED_UP: ["OUT_FOR_DELIVERY", "CANCELLED"],
-  ARRIVED: ["DELIVERED", "CANCELLED"],
   REJECTED: [],
 };
 
