@@ -87,14 +87,28 @@ export async function fetchCampaignHistory() {
 export async function dispatchNotificationCampaign(
   title: string,
   message: string,
-  recipientIds: string[], // Pass IDs directly to ensure selection source of truth
+  recipientIds: string[],
   targetScope: { status: string; zoneId: string | null }
 ) {
+  if (!recipientIds.length) {
+    throw new Error("Cannot dispatch campaign: No recipients selected.");
+  }
+
   const userId = await requireAuthenticatedInsforgeUser();
   const now = new Date().toISOString();
 
-  // 1. Create campaign row as PROCESSING
-  // Persist target_status as uppercase
+  // 1. Authoritative recipient resolution from explicit IDs
+  // We fetch specific profiles by ID to ensure we have the correct user_id mappings
+  // using a single query for efficiency.
+  const selectedRiders = await listTable<RiderProfile>("rider_profiles", {
+    "id.in": recipientIds.join(",")
+  });
+
+  if (!selectedRiders || selectedRiders.length === 0) {
+    throw new Error("Selected recipients could not be resolved from database.");
+  }
+
+  // 2. Create campaign row as PROCESSING
   const campaign = await createRecord<NotificationCampaign>("notification_campaigns", {
     title,
     message,
@@ -112,21 +126,6 @@ export async function dispatchNotificationCampaign(
 
   let sentCount = 0;
   let failedCount = 0;
-
-  // 2. Authoritative recipient resolution from explicit IDs
-  const { riders: allRiders } = await fetchPushRecipients();
-  const selectedRiders = allRiders.filter(r => recipientIds.includes(r.id));
-
-  if (selectedRiders.length === 0) {
-    await patchRecord<NotificationCampaign>("notification_campaigns", campaign.id, {
-      campaign_status: "FAILED",
-      total_count: 0,
-      sent_count: 0,
-      failed_count: recipientIds.length,
-      sent_at: now
-    });
-    throw new Error("No valid delivery partners could be resolved from selection");
-  }
 
   for (const rider of selectedRiders) {
     try {
