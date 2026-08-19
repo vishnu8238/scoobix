@@ -53,14 +53,14 @@ export type OrderRow = Record<string, unknown> & { id?: string };
 /* ---------------- status mapping ---------------- */
 
 const LOCAL: OrderStatus[] = [
-  "PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED",
+  "PLACED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED",
 ];
 
 export function mapStatus(s: unknown, fallback: OrderStatus = "PLACED"): OrderStatus {
   const v = String(s ?? "").toUpperCase();
   if ((LOCAL as string[]).includes(v)) return v as OrderStatus;
   if (v === "ASSIGNING" || v === "NO_DRIVERS") return "READY";
-  if (v === "ARRIVED" || v === "TO_DROP" || v === "TO_PICKUP" || v === "AT_PICKUP") return "ON_THE_WAY";
+  if (v === "ARRIVED" || v === "TO_DROP" || v === "TO_PICKUP" || v === "AT_PICKUP") return "OUT_FOR_DELIVERY";
   if (v === "REJECTED") return "CANCELLED";
   if (v === "COMPLETED") return "DELIVERED";
   return fallback;
