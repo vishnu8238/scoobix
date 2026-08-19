@@ -16,7 +16,7 @@ import { pingDriverLocation } from "@/lib/insforge";
 import { useCms } from "@/lib/cms-store";
 import { useAuth } from "@/lib/auth-store";
 import { listTable } from "@/lib/insforge-crud";
-import { patchOrder, patchPaymentByOrder, type OrderRow } from "@/lib/orders-api";
+import { patchOrder, patchPaymentByOrder, type OrderRow, mapStatus } from "@/lib/orders-api";
 import { startNavigation } from "@/lib/navigation";
 import { finalizeOrder } from "@/lib/order-completion";
 import { updateOrderState } from "@/lib/rider-api";
@@ -361,8 +361,15 @@ function RiderActive() {
                   <button onClick={() => handleStatusChange("ARRIVED_AT_RESTAURANT")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition">
                     I've Arrived at Restaurant
                   </button>
-                  <button onClick={() => startNavigation({ address: restaurant?.address || order.pickup_address })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
-                    <Navigation className="h-4 w-4" /> Navigate to Pickup
+                  <button 
+                    onClick={() => startNavigation({ 
+                      lat: order.pickup_latitude ? Number(order.pickup_latitude) : null,
+                      lng: order.pickup_longitude ? Number(order.pickup_longitude) : null,
+                      address: restaurant?.address || (order.pickup_address as string)
+                    })} 
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-sm font-black uppercase tracking-widest text-white shadow-glow transition active:scale-95"
+                  >
+                    <Navigation className="h-4 w-4" /> Navigate to Restaurant
                   </button>
                 </>
               )}
@@ -393,7 +400,14 @@ function RiderActive() {
                   <button onClick={() => handleStatusChange("ARRIVED_AT_CUSTOMER")} className="w-full rounded-2xl bg-primary py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-glow active:scale-95 transition">
                     I've Arrived at Customer
                   </button>
-                  <button onClick={() => startNavigation({ address: (order.delivery_address as string) || "" })} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-muted py-3 text-xs font-bold uppercase tracking-widest text-foreground transition active:scale-95">
+                  <button 
+                    onClick={() => startNavigation({ 
+                      lat: order.delivery_latitude ? Number(order.delivery_latitude) : null,
+                      lng: order.delivery_longitude ? Number(order.delivery_longitude) : null,
+                      address: (order.delivery_address as string) || "" 
+                    })} 
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-sm font-black uppercase tracking-widest text-white shadow-glow transition active:scale-95"
+                  >
                     <Navigation className="h-4 w-4" /> Navigate to Customer
                   </button>
                   <button onClick={() => setShowFailedModal(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3 text-xs font-bold uppercase tracking-widest text-rose-600 transition active:scale-95">

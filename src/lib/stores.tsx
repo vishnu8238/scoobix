@@ -455,6 +455,8 @@ export type Order = {
   pickup_latitude?: number;
   pickup_longitude?: number;
   pickup_address?: string;
+  delivery_latitude?: number;
+  delivery_longitude?: number;
 };
 
 type OrdersCtx = {
@@ -473,6 +475,8 @@ type OrdersCtx = {
     contactless?: boolean;
     notes?: string;
     couponCode?: string;
+    delivery_latitude?: number | null;
+    delivery_longitude?: number | null;
   }) => Promise<{ ok: boolean; orderId?: string; message?: string }>;
   getOrder: (id: string) => Order | undefined;
   reorder: (id: string) => CartItem[] | null;

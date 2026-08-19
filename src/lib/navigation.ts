@@ -28,14 +28,12 @@ const hasCoords = (t: NavTarget): t is NavTarget & { lat: number; lng: number } 
 
 /** Build the best navigation URL for the current device. */
 export function navigationUrl(target: NavTarget): string | null {
+  // Always prefer Google Maps driving URL as requested
   if (hasCoords(target)) {
-    const { lat, lng } = target;
-    if (isIOS()) return `maps://?daddr=${lat},${lng}&dirflg=d`;
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}&travelmode=driving`;
   }
   const q = (target.address ?? "").trim();
   if (!q) return null;
-  if (isIOS()) return `maps://?daddr=${encodeURIComponent(q)}&dirflg=d`;
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}&travelmode=driving`;
 }
 
