@@ -1,34 +1,48 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-
+import { Button } from "@/components/ui/button";
+import { MapPin } from "lucide-react";
 import { reverseGeocode } from "@/lib/maps-service";
-import { LatLng } from "@/lib/geo";
+import { toast } from "sonner";
 
 interface LocationPickerProps {
   latitude: number | null;
   longitude: number | null;
-  onChange: (lat: number, lng: number, address: string) => void;
+  onChange: (lat: number | null, lng: number | null, address?: string) => void;
   address?: string;
+  showCurrentLocation?: boolean;
 }
 
-export function LocationPicker({ latitude, longitude, onChange, address: initialAddress }: LocationPickerProps) {
+export function LocationPicker({ 
+  latitude, 
+  longitude, 
+  onChange, 
+  address: initialAddress,
+  showCurrentLocation = true 
+}: LocationPickerProps) {
   const [latInput, setLatInput] = useState(latitude?.toString() || "");
   const [lngInput, setLngInput] = useState(longitude?.toString() || "");
-  const [resolvedAddress, setResolvedAddress] = useState(initialAddress || "");
   const [error, setError] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
-    if (latitude !== null) setLatInput(latitude.toString());
-    if (longitude !== null) setLngInput(longitude.toString());
+    setLatInput(latitude?.toString() || "");
+    setLngInput(longitude?.toString() || "");
   }, [latitude, longitude]);
 
-  const validateAndSync = async (latStr: string, lngStr: string) => {
+  const validateAndSync = (latStr: string, lngStr: string) => {
+    if (!latStr.trim() && !lngStr.trim()) {
+      setError(null);
+      onChange(null, null);
+      return;
+    }
+
     const lat = parseFloat(latStr);
     const lng = parseFloat(lngStr);
 
     if (isNaN(lat) || isNaN(lng)) {
-      setError("Please enter valid numeric coordinates.");
+      setError("Enter valid numeric coordinates or leave both empty.");
       return;
     }
 
@@ -43,11 +57,41 @@ export function LocationPicker({ latitude, longitude, onChange, address: initial
     }
 
     setError(null);
-    const address = await reverseGeocode(lat, lng);
-    setResolvedAddress(address);
-    onChange(lat, lng, address);
+    onChange(lat, lng);
   };
 
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        setLatInput(lat.toString());
+        setLngInput(lng.toString());
+        setError(null);
+        
+        let address: string | undefined;
+        try {
+          address = await reverseGeocode(lat, lng);
+        } catch (err) {
+          console.warn("Reverse geocoding failed", err);
+        }
+        
+        onChange(lat, lng, address);
+        setLocating(false);
+        toast.success("Location detected");
+      },
+      (err) => {
+        setLocating(false);
+        toast.error("Failed to detect location: " + err.message);
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -57,7 +101,7 @@ export function LocationPicker({ latitude, longitude, onChange, address: initial
           <Input 
             type="number" 
             step="any"
-            placeholder="22.3072" 
+            placeholder="e.g. 22.3072" 
             value={latInput} 
             onChange={e => {
               setLatInput(e.target.value);
@@ -71,7 +115,7 @@ export function LocationPicker({ latitude, longitude, onChange, address: initial
           <Input 
             type="number" 
             step="any"
-            placeholder="73.1812" 
+            placeholder="e.g. 73.1812" 
             value={lngInput} 
             onChange={e => {
               setLngInput(e.target.value);
@@ -84,7 +128,20 @@ export function LocationPicker({ latitude, longitude, onChange, address: initial
 
       {error && <p className="text-[11px] font-bold text-rose-500">{error}</p>}
 
-
+      {showCurrentLocation && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={locating}
+          onClick={useCurrentLocation}
+          className="h-10 w-full rounded-2xl border-dashed bg-transparent text-[10px] font-black uppercase tracking-widest active:scale-[0.98]"
+        >
+          <MapPin className={`mr-2 h-3.5 w-3.5 ${locating ? "animate-pulse" : ""}`} />
+          {locating ? "Detecting..." : "Use Current Location"}
+        </Button>
+      )}
     </div>
   );
 }
+
