@@ -4,7 +4,7 @@ import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
-import { Loader2, ExternalLink, Database } from "lucide-react";
+import { Loader2, ExternalLink, Database, Search, ChevronDown, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
@@ -12,47 +12,49 @@ export const Route = createFileRoute("/logistics/orders")({
   component: LogisticsOrders,
 });
 
+const STATUS_TABS = [
+  { id: "ALL", label: "Live" },
+  { id: "UNASSIGNED", label: "Unassigned" },
+  { id: "ASSIGNED", label: "Assigned" },
+  { id: "PICKED_UP", label: "Driver Confirmed" },
+  { id: "AT_PICKUP", label: "Reached Shop" },
+  { id: "OUT_FOR_DELIVERY", label: "Shipped" },
+  { id: "ARRIVED", label: "Reached Drop" },
+];
+
 function LogisticsOrders() {
   const routerState = useRouterState();
   const isDetail = routerState.location.pathname !== "/logistics/orders";
 
-  if (isDetail) {
-    return <Outlet />;
-  }
+  if (isDetail) return <Outlet />;
 
   return <OrderLedger />;
 }
 
 function OrderLedger() {
-  const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [restaurants, setRestaurants] = useState<NamedRow[]>([]);
-  const [users, setUsers] = useState<NamedRow[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("ALL");
+  const [activeTab, setActiveTab] = useState("ALL");
   const [isSeeding, setIsSeeding] = useState(false);
+  
+  // Filter states
+  const [orderIdSearch, setOrderIdSearch] = useState("");
+  const [driverIdSearch, setDriverIdSearch] = useState("");
+  const [cityFilter, setCityFilter] = useState("ALL");
+  const [zoneFilter, setZoneFilter] = useState("ALL");
+  
   const version = useTableVersion(["orders"]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [o, r, u] = await Promise.all([
-        listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
-        listTable<NamedRow>("restaurants", { limit: 500 }),
-        listTable<NamedRow>("users", { limit: 1000 }),
+      const [o, r] = await Promise.all([
+        listTable<any>("orders", { order: "created_at.desc", limit: 300 }),
+        listTable<any>("restaurants", { limit: 500 }),
       ]);
-      
-      let finalOrders = o;
-      if (o.length === 0) {
-        const { getLogisticsDemoData } = await import("@/lib/logistics-ops.functions");
-        const demo = await getLogisticsDemoData();
-        if (demo?.orders?.length) {
-          finalOrders = demo.orders as OrderRow[];
-        }
-      }
-
-      setOrders(finalOrders); 
-      setRestaurants(r); 
-      setUsers(u);
+      setOrders(o);
+      setRestaurants(r);
     } catch (e) {
       console.error("[ORDERS_LOAD_ERROR]", e);
     } finally {
@@ -60,215 +62,235 @@ function OrderLedger() {
     }
   }, []);
 
+  useEffect(() => { load(); }, [load, version]);
 
-  useEffect(() => {
-    void load();
-  }, [load, version]);
+  const restNames = useMemo(() => Object.fromEntries(restaurants.map(r => [r.id, r.name])), [restaurants]);
 
-  const nameById = useMemo(() => Object.fromEntries(restaurants.map((r) => [String(r.id), r.name ?? "—"])), [restaurants]);
-  const userById = useMemo(() => Object.fromEntries(users.map((u) => [String(u.id), u.name ?? "—"])), [users]);
-
-  const today = new Date().toISOString().slice(0, 10);
-  const status = (o: OrderRow) => String(o.status ?? "PLACED").toUpperCase();
+  const filteredOrders = useMemo(() => {
+    return orders.filter(o => {
+      if (orderIdSearch && !o.id.toLowerCase().includes(orderIdSearch.toLowerCase())) return false;
+      if (driverIdSearch && !String(o.driver_id || "").toLowerCase().includes(driverIdSearch.toLowerCase())) return false;
+      
+      const s = String(o.status || "PLACED").toUpperCase();
+      if (activeTab === "UNASSIGNED") return !o.driver_id && s !== "DELIVERED";
+      if (activeTab === "ASSIGNED") return !!o.driver_id && s !== "DELIVERED";
+      if (activeTab !== "ALL" && s !== activeTab) return false;
+      if (activeTab === "ALL" && s === "DELIVERED") return false;
+      
+      return true;
+    });
+  }, [orders, activeTab, orderIdSearch, driverIdSearch]);
 
   const stats = useMemo(() => {
-    const todays = orders.filter((o) => (o.created_at ?? "").slice(0, 10) === today);
-    return [
-      { key: "ALL", label: "Placed today", value: todays.length },
-      { key: "PROGRESS", label: "In progress", value: orders.filter((o) => IN_PROGRESS.includes(status(o))).length },
-      { key: "DELIVERED", label: "Completed", value: orders.filter((o) => status(o) === "DELIVERED").length },
-      { key: "CANCELLED", label: "Cancelled", value: orders.filter((o) => status(o) === "CANCELLED").length },
-    ];
-  }, [orders, today]);
+    const res: Record<string, number> = { ALL: 0 };
+    STATUS_TABS.forEach(t => res[t.id] = 0);
+    
+    orders.forEach(o => {
+      const s = String(o.status || "PLACED").toUpperCase();
+      if (s !== "DELIVERED") res.ALL++;
+      if (!o.driver_id && s !== "DELIVERED") res.UNASSIGNED++;
+      if (!!o.driver_id && s !== "DELIVERED") res.ASSIGNED++;
+      if (res[s] !== undefined) res[s]++;
+    });
+    return res;
+  }, [orders]);
 
-  const visible = useMemo(() => {
-    if (filter === "ALL") return orders;
-    if (filter === "PROGRESS") return orders.filter((o) => IN_PROGRESS.includes(status(o)));
-    return orders.filter((o) => status(o) === filter);
-  }, [orders, filter]);
+  const handleSeed = async () => {
+    setIsSeeding(true);
+    try {
+      const { insforge: sdk } = await import("@/lib/insforge");
+      const { createRecord } = await import("@/lib/insforge-crud");
+      const now = new Date().toISOString();
+      const statuses = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY"];
+      
+      for (let i = 0; i < 3; i++) {
+        await createRecord("orders", {
+          id: crypto.randomUUID(),
+          status: statuses[i % statuses.length],
+          total_price: 300 + (i * 100),
+          created_at: now,
+          items: { lines: [{ name: "Demo Order", qty: 1, price: 300 }] },
+          delivery_address: `Demo St #${i}, Vadodara`,
+          payment_method: "CASH",
+          payment_status: "PAID"
+        });
+      }
+      toast.success("Demo orders seeded");
+      load();
+    } catch (e: any) {
+      toast.error(e.message || "Seed failed");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="eyebrow">Orders</p>
-        <div className="flex items-center justify-between mt-1">
-          <div>
-            <h1 className="font-display text-3xl font-extrabold tracking-tight">Live order ledger</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Monitor every order across the platform in real time.</p>
+    <div className="flex h-screen bg-[#F9F9F7] text-[#333333]">
+      {/* Sidebar Filters */}
+      <aside className="w-72 border-r border-[#E8E8E2] bg-white p-6 flex flex-col gap-6">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-[#1E9A62]" />
+          <h2 className="text-xs font-black uppercase tracking-widest text-[#666666]">Dispatch Filters</h2>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#999999]">Order Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#CCCCCC]" />
+              <input 
+                value={orderIdSearch}
+                onChange={e => setOrderIdSearch(e.target.value)}
+                placeholder="Order ID..." 
+                className="w-full rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-[#1E9A62] outline-none" 
+              />
+            </div>
           </div>
-          <button
-            onClick={async () => {
-              setIsSeeding(true);
-              try {
-                console.log("[LOGISTICS_ORDERS] Seeding directly via SDK client...");
-                const { insforge: sdk } = await import("@/lib/insforge");
-                const { createRecord } = await import("@/lib/insforge-crud");
-                
-                // Construct demo data
-                const zone1Id = "z1110000-0000-0000-0000-000000000001";
-                const now = new Date().toISOString();
-                
-                // 1. Ensure Restaurant
-                const { data: restData } = await sdk.database.from("restaurants").select("id").eq("name", "Scoobix Demo Kitchen").limit(1);
-                let restaurantId = restData?.[0]?.id;
-                
-                if (!restaurantId) {
-                  const rest: DemoRestaurantInsert = {
-                    id: crypto.randomUUID(),
-                    name: "Scoobix Demo Kitchen",
-                    address: "123 Logistics Hub, Vadodara",
-                    status: "ACTIVE",
-                    city: "Vadodara"
-                  };
-                  // Use createRecord for retries and normalization
-                  const created = await createRecord<any>("restaurants", rest);
-                  if (!created) throw new Error(`Restaurant creation failed: Empty response`);
-                  restaurantId = created.id || rest.id;
-                }
 
-                // 2. Ensure Customer
-                const { data: custData } = await sdk.database.from("users").select("id").eq("email", "demo.customer@scoobix.test").limit(1);
-                let customerId = custData?.[0]?.id;
-                
-                if (!customerId) {
-                  const cust = {
-                    id: crypto.randomUUID(),
-                    name: "Demo Customer",
-                    role: "CUSTOMER", // Uppercase to satisfy role constraint if strictly enforced
-                    email: "demo.customer@scoobix.test"
-                  };
-                  // Use createRecord for retries and normalization
-                  const created = await createRecord<any>("users", cust);
-                  if (!created) throw new Error(`Customer creation failed: Empty response`);
-                  customerId = created.id || cust.id;
-                }
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#999999]">Driver Search</label>
+            <input 
+              value={driverIdSearch}
+              onChange={e => setDriverIdSearch(e.target.value)}
+              placeholder="Trip / Driver ID..." 
+              className="w-full rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2 text-xs focus:ring-1 focus:ring-[#1E9A62] outline-none" 
+            />
+          </div>
 
-                // 3. Insert Orders
-                const statuses = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"];
-                let seededCount = 0;
-                
-                for (let i = 0; i < 5; i++) {
-                  const deliveryAddress = `123 Demo Street, Vadodara #${i}`;
-                  const { data: existing } = await sdk.database.from("orders").select("id").eq("delivery_address", deliveryAddress).limit(1);
-                  
-                  if (existing?.length) continue;
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#999999]">Geography</label>
+            <button className="flex w-full items-center justify-between rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2 text-xs">
+              Vadodara <ChevronDown className="h-3 w-3 text-[#CCCCCC]" />
+            </button>
+            <button className="flex w-full items-center justify-between rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2 text-xs">
+              All Zones <ChevronDown className="h-3 w-3 text-[#CCCCCC]" />
+            </button>
+          </div>
+        </div>
 
-                  const order = {
-                    id: crypto.randomUUID(),
-                    customer_id: customerId,
-                    restaurant_id: restaurantId,
-                    status: statuses[i % statuses.length],
-                    total_price: 250 + (i * 50),
-                    created_at: now,
-                    items: {
-                      lines: [{ id: "item1", name: "Demo Meal", price: 200, qty: 1 }],
-                      meta: { restaurantName: "Scoobix Demo Kitchen", addressLine: "123 Demo St" }
-                    },
-                    delivery_address: deliveryAddress,
-                    payment_method: "CASH",
-                    payment_status: i % 2 === 0 ? "PAID" : "PENDING"
-                  };
-
-                  const created = await createRecord<any>("orders", order);
-                  if (created) seededCount++;
-                }
-                
-                if (seededCount > 0) {
-                  toast.success(`Successfully seeded ${seededCount} demo orders`);
-                  window.location.reload();
-                } else {
-                  toast.info("Demo orders already exist in the ledger");
-                  void load();
-                }
-              } catch (e: any) {
-                console.error("[SEED_ORDER_ERROR]", e);
-                toast.error(`Backend seeding failed: ${e.message || "Unauthorized or RLS Blocked"}`);
-                void load();
-              } finally {
-                setIsSeeding(false);
-              }
-            }}
-            disabled={isSeeding}
-            className="flex items-center gap-2 rounded-2xl bg-amber-500/10 px-4 py-2.5 text-xs font-black text-amber-600 ring-1 ring-amber-500/20 transition hover:bg-amber-500/20 active:scale-95 disabled:opacity-50"
+        <div className="mt-auto flex flex-col gap-2">
+          <button 
+            onClick={() => { setOrderIdSearch(""); setDriverIdSearch(""); }}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F9F9F7] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[#666666] hover:bg-[#E8E8E2] transition"
           >
-            {isSeeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-            Seed Demo Orders
+            <X className="h-3 w-3" /> Clear All
           </button>
         </div>
-      </header>
+      </aside>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {stats.map((s) => (
-          <button
-            key={s.key}
-            onClick={() => setFilter(s.key)}
-            className={`rounded-3xl p-5 text-left shadow-soft ring-1 transition ${filter === s.key ? "bg-primary/5 ring-primary/40" : "bg-card ring-border/60"}`}
-          >
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{s.label}</p>
-            <p className="mt-2 font-display text-2xl font-extrabold">{s.value.toLocaleString()}</p>
-          </button>
-        ))}
-      </div>
-
-      <section className="rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/60">
-        {loading ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading orders…
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col p-8 overflow-hidden gap-6">
+        <header className="flex items-center justify-between">
+          <div className="flex gap-1 bg-[#E8E8E2]/50 p-1 rounded-2xl overflow-x-auto no-scrollbar">
+            {STATUS_TABS.map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button 
+                  key={tab.id} 
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-wider transition ${
+                    isActive 
+                      ? "bg-white text-[#1E9A62] shadow-sm" 
+                      : "text-[#666666] hover:text-[#333333]"
+                  }`}
+                >
+                  {tab.label}
+                  <span className={`rounded-md px-1.5 py-0.5 text-[9px] ${isActive ? "bg-[#1E9A62]/10" : "bg-black/5"}`}>
+                    {stats[tab.id] || 0}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        ) : visible.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">No orders in this view.</p>
-        ) : (
-          <DataTable
-            columns={["Order", "Customer", "Restaurant", "Total", "Status", "Time", "Action"]}
-            rows={visible.map((o) => [
-              <div key={`order_ref_${o.id}`} className="flex flex-col">
-                <code className="font-mono text-[10px] font-bold text-primary">#{o.id.slice(0, 8)}</code>
-                {(o as any).metadata?.is_demo && (
-                  <span className="text-[8px] font-black text-amber-500 uppercase tracking-tighter">Demo Data</span>
-                )}
-              </div>,
 
-              <span key={`name${o.id}`} className="font-bold">{userById[String(o.customer_id)] || "—"}</span>,
-              <span key={`owner${o.id}`} className="text-muted-foreground">{nameById[String(o.restaurant_id)] || "—"}</span>,
-              <span key={`rating${o.id}`} className="font-bold">{formatPrice(o.total_price || 0)}</span>,
-              <StatusBadge key={`status${o.id}`} label={String(o.status || "PLACED")} />,
-              <span key={`mgr${o.id}`} className="text-[10px] font-medium text-muted-foreground">{(o.created_at ?? "").slice(11, 16)}</span>,
-              <Link 
-                key={`act${o.id}`} 
-                to="/logistics/orders/$orderId" 
-                params={{ 
-                  orderId: o.id === "e433da54-560b-4c50-bf0b-7cd68acf11e6" 
-                    ? "e433da54-560c-4c50-bf0b-7cd68acf11e6" 
-                    : o.id 
-                }}
-                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:underline hover:cursor-pointer transition-all active:scale-95"
-              >
-                Manage <ExternalLink className="h-3 w-3" />
-              </Link>
-            ])}
-          />
-        )}
-      </section>
+          <button 
+            onClick={handleSeed}
+            disabled={isSeeding}
+            className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[11px] font-black uppercase tracking-wider text-[#1E9A62] ring-1 ring-[#1E9A62]/20 shadow-sm hover:bg-[#F9F9F7] active:scale-95 transition disabled:opacity-50"
+          >
+            {isSeeding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
+            Seed Data
+          </button>
+        </header>
+
+        <section className="flex-1 overflow-auto bg-white rounded-3xl shadow-sm border border-[#E8E8E2]">
+          {loading ? (
+            <div className="flex h-full items-center justify-center gap-3 text-[#999999]">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-xs font-bold uppercase tracking-widest">Hydrating Ledger...</span>
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center text-center gap-2 text-[#999999]">
+              <div className="h-12 w-12 rounded-full bg-[#F9F9F7] flex items-center justify-center border border-[#E8E8E2]">
+                <Search className="h-5 w-5 opacity-20" />
+              </div>
+              <p className="text-xs font-bold uppercase tracking-widest">No matching orders</p>
+            </div>
+          ) : (
+            <div className="min-w-full inline-block align-middle">
+              <table className="min-w-full divide-y divide-[#F9F9F7]">
+                <thead className="bg-[#F9F9F7]/50 sticky top-0 z-10">
+                  <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-[#999999]">
+                    <th className="px-6 py-4 text-left">Order / Ext ID</th>
+                    <th className="px-6 py-4 text-left">Trip / Driver</th>
+                    <th className="px-6 py-4 text-left">State</th>
+                    <th className="px-6 py-4 text-left">Restaurant</th>
+                    <th className="px-6 py-4 text-left">Locality</th>
+                    <th className="px-6 py-4 text-left">City / Zone</th>
+                    <th className="px-6 py-4 text-left">Created</th>
+                    <th className="px-6 py-4 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F9F9F7]">
+                  {filteredOrders.map(o => (
+                    <tr key={o.id} className="text-xs hover:bg-[#F9F9F7]/80 transition group">
+                      <td className="px-6 py-4">
+                        <Link to="/logistics/orders/$orderId" params={{ orderId: o.id }} className="flex flex-col gap-0.5">
+                          <code className="font-mono text-[10px] font-black text-[#1E9A62] group-hover:underline">
+                            #{o.id.slice(0, 8).toUpperCase()}
+                          </code>
+                          <span className="text-[9px] text-[#CCCCCC]">EXT: {o.external_id || "N/A"}</span>
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">
+                        {o.driver_id ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-bold text-[#333333]">DRV-{o.driver_id.slice(-4).toUpperCase()}</span>
+                            <span className="text-[9px] text-[#999999]">TRIP: {o.trip_id || "ACT-1"}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-black text-[#CCCCCC] italic">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge label={o.status || "PLACED"} />
+                      </td>
+                      <td className="px-6 py-4 text-[#666666] font-medium">
+                        {restNames[o.restaurant_id] || "Scoobix Kitchen"}
+                      </td>
+                      <td className="px-6 py-4 text-[#999999]">
+                        {String(o.delivery_address || "").split(",")[0]}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-[#333333]">Vadodara</span>
+                          <span className="text-[9px] text-[#999999]">Main Zone</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-[#999999] font-mono text-[10px]">
+                        {(o.created_at || "").slice(11, 16)}
+                      </td>
+                      <td className="px-6 py-4 text-right font-black text-[#333333]">
+                        {formatPrice(o.total_price || 0)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }
-
-type OrderRow = {
-  id: string;
-  status?: string;
-  total_price?: number;
-  restaurant_id?: string;
-  customer_id?: string;
-  created_at?: string;
-};
-type NamedRow = { id: string; name?: string };
-type DemoRestaurantInsert = {
-  id: string;
-  name: string;
-  address: string;
-  status: string;
-  city: string;
-};
-
-const IN_PROGRESS = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY"];
-
