@@ -113,10 +113,20 @@ export async function dispatchNotificationCampaign(
   let sentCount = 0;
   let failedCount = 0;
 
-  // 2. Fetch full rider profiles for selected IDs to get user_ids
-  // This ensures the selection is the source of truth
+  // 2. Authoritative recipient resolution from explicit IDs
   const { riders: allRiders } = await fetchPushRecipients();
   const selectedRiders = allRiders.filter(r => recipientIds.includes(r.id));
+
+  if (selectedRiders.length === 0) {
+    await patchRecord<NotificationCampaign>("notification_campaigns", campaign.id, {
+      campaign_status: "FAILED",
+      total_count: 0,
+      sent_count: 0,
+      failed_count: recipientIds.length,
+      sent_at: now
+    });
+    throw new Error("No valid delivery partners could be resolved from selection");
+  }
 
   for (const rider of selectedRiders) {
     try {
@@ -180,10 +190,12 @@ export async function dispatchNotificationCampaign(
   }
 
   // 4. Finalize campaign counters
+  // 4. Update campaign using actual created delivery outcomes
   const finalStatus = failedCount === 0 ? "SENT" : (sentCount === 0 ? "FAILED" : "PARTIAL");
   
   const updatedCampaign = await patchRecord<NotificationCampaign>("notification_campaigns", campaign.id, {
     campaign_status: finalStatus,
+    total_count: selectedRiders.length, // Authoritative selection total
     sent_count: sentCount,
     failed_count: failedCount,
     sent_at: now
