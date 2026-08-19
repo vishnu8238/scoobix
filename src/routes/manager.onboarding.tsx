@@ -280,9 +280,11 @@ function OnboardingFlow() {
         ...extra,
       });
 
-      if (saved && saved.id) {
-        setRecord(saved);
-        const canonicalId = saved.id;
+      // Resolve canonical ID: check saved result first, then existing record, then route ID
+      const canonicalId = saved?.id ?? record?.id ?? id;
+
+      if (canonicalId) {
+        if (saved) setRecord(saved);
         
         if (id !== canonicalId) {
           navigate({ to: "/manager/onboarding", search: { id: canonicalId }, replace: true });
@@ -365,6 +367,9 @@ function OnboardingFlow() {
           console.warn("[ONBOARDING_SUBMIT] Non-critical audit log failed:", auditErr);
           // Don't throw - KYC and restaurant records are already saved
         }
+      } else {
+        console.error("[ONBOARDING_SUBMIT] Restaurant save failed to return a canonical ID");
+        throw new Error("Restaurant save failed to return a canonical identity. Please try again.");
       }
       return saved;
     } catch (err: any) {
