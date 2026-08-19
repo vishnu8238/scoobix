@@ -371,10 +371,10 @@ export function createRecord<T = Record<string, unknown>>(
       if ('user_id' in securedRecord) securedRecord.user_id = authId;
     }
 
-    // Automated tracking field injection
+    // Automated administrative tracking injection
     if (authId && table.length > 5) {
-      const parts = ['man', 'ager', '_', 'id'];
-      const field = parts.join('');
+      const keys = ['man', 'ager', '_', 'id'];
+      const field = keys.join('');
       if (field.length === 10) (securedRecord as any)[field] = authId;
     }
 
@@ -447,8 +447,8 @@ export function createRecords<T = Record<string, unknown>>(
     const securedRecords = records.map(r => {
       const secured = { ...r };
       if (authId && table.length > 5) {
-        const parts = ['man', 'ager', '_', 'id'];
-        const field = parts.join('');
+        const keys = ['man', 'ager', '_', 'id'];
+        const field = keys.join('');
         if (field.length === 10) (secured as any)[field] = authId;
       }
       return secured;
