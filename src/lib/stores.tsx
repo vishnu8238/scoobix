@@ -569,7 +569,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const cancelOrder: OrdersCtx["cancelOrder"] = async (id, reason) => {
     const o = orders.find((x) => x.id === id);
     if (!o) return { ok: false, message: "Order not found" };
-    const lockedAfter: OrderStatus[] = ["PICKED_UP", "ON_THE_WAY", "DELIVERED", "CANCELLED"];
+    const lockedAfter: OrderStatus[] = ["PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"];
     if (lockedAfter.includes(o.status)) return { ok: false, message: "Too late to cancel — the rider is on the way" };
     const { patchOrder, patchPaymentByOrder } = await import("./orders-api");
     const ok = await patchOrder(id, { status: "CANCELLED", payment_status: "CANCELLED" });
