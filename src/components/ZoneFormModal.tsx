@@ -68,12 +68,11 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
       }
 
       const submission = {
-        ...formData,
-        pickup_radius_km: Number(formData.pickup_radius_km) || 1,
-        max_delivery_distance_km: Number(formData.max_delivery_distance_km) || 4,
-        boundary,
-        center_lat: boundary.coordinates?.[0]?.[0]?.[1] || 22.3072,
-        center_lng: boundary.coordinates?.[0]?.[0]?.[0] || 73.1812
+        name: formData.name,
+        city: formData.city,
+        status: formData.status,
+        radius_km: Number(formData.pickup_radius_km) || 1,
+        polygon_coords: boundary
       };
 
       const { insforge: sdk } = await import("@/lib/insforge");

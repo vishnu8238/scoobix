@@ -154,15 +154,10 @@ export const createNewZone = createServerFn({ method: "POST" })
     const payload = {
       name: data.name,
       city: data.city || "Vadodara",
-      description: data.description || "",
       status: data.status || "ACTIVE",
-      pickup_radius_km: data.pickup_radius_km ?? 1,
-      max_delivery_distance_km: data.max_delivery_distance_km ?? 4,
-      max_orders_per_rider: 3,
-      assignment_timeout_sec: 60,
-      center_lat: boundary.coordinates[0][0][1],
-      center_lng: boundary.coordinates[0][0][0],
-      boundary
+      radius_km: data.pickup_radius_km ?? 1,
+      polygon_coords: boundary,
+      manager_id: user.user.id
     };
 
     console.log("[ZONES_SERVER] Creating zone with payload:", JSON.stringify(payload));
