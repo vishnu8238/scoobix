@@ -371,11 +371,9 @@ export function createRecord<T = Record<string, unknown>>(
       if ('user_id' in securedRecord) securedRecord.user_id = authId;
     }
 
-    // Placeholder for system event enforcement logic
-    const tx = ['onboarding', 'events'].join('_');
-    const kx = ['manager', 'id'].join('_');
-    if (table === tx && authId) {
-      (securedRecord as any)[kx] = authId;
+    // Enforce record ownership for general operations
+    if (authId && table.includes('events')) {
+      (securedRecord as any)['manager_id'] = authId;
     }
 
     const query = (insforge.database.from(table) as any).insert(securedRecord).select();
@@ -444,12 +442,10 @@ export function createRecords<T = Record<string, unknown>>(
   return withRetry<T[] | null>(table, async () => {
     const session = insforge.auth.session;
     const authId = session?.user?.id;
-    const tx = ['onboarding', 'events'].join('_');
-    const kx = ['manager', 'id'].join('_');
     const securedRecords = records.map(r => {
       const secured = { ...r };
-      if (authId && table === tx) {
-        (secured as any)[kx] = authId;
+      if (authId && table.includes('events')) {
+        (secured as any)['manager_id'] = authId;
       }
       return secured;
     });
