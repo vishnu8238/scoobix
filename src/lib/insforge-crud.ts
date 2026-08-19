@@ -367,8 +367,8 @@ export function createRecord<T = Record<string, unknown>>(
     const securedRecord = { ...sanitized };
     const authRestrictedTables = ['merchant_managers', 'platform_admins', 'logistics_staff', 'user_roles', 'auth_users'];
     if (authId && !authRestrictedTables.includes(table)) {
-      if ('owner_id' in securedRecord && !['rider_profiles', 'notification_campaigns', 'notification_deliveries', 'notifications'].includes(table)) securedRecord.owner_id = authId;
-      if ('user_id' in securedRecord && !['rider_profiles', 'notification_campaigns', 'notification_deliveries', 'notifications'].includes(table)) securedRecord.user_id = authId;
+      if ('owner_id' in securedRecord && !['rider_profiles', 'notification_campaigns', 'notification_deliveries', 'notifications', 'restaurant_kyc'].includes(table)) securedRecord.owner_id = authId;
+      if ('user_id' in securedRecord && !['rider_profiles', 'notification_campaigns', 'notification_deliveries', 'notifications', 'restaurant_kyc'].includes(table)) securedRecord.user_id = authId;
     }
 
     // Automated administrative tracking injection

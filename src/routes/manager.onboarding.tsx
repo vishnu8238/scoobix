@@ -282,13 +282,15 @@ function OnboardingFlow() {
 
       if (saved && saved.id) {
         setRecord(saved);
-        if (id !== saved.id) {
-          navigate({ to: "/manager/onboarding", search: { id: saved.id }, replace: true });
+        const canonicalId = saved.id;
+        
+        if (id !== canonicalId) {
+          navigate({ to: "/manager/onboarding", search: { id: canonicalId }, replace: true });
         }
 
         // 2. Authoritatively persist all compliance identifiers to restaurant_kyc
         try {
-          const currentKyc = await fetchDocs("restaurant", saved.id);
+          const currentKyc = await fetchDocs("restaurant", canonicalId);
           
           // Deterministic mapping for the three critical compliance identifiers
           const COMPLIANCE_TARGETS = [
@@ -306,7 +308,7 @@ function OnboardingFlow() {
             // Always upsert these three types if we have a value or an existing row
             await submitDoc(
               "restaurant",
-              saved.id,
+              canonicalId,
               def,
               { 
                 doc_number: trimmedNum,
@@ -330,7 +332,7 @@ function OnboardingFlow() {
             if (formLine?.url || docNumber?.trim()) {
               await submitDoc(
                 "restaurant",
-                saved.id,
+                canonicalId,
                 def,
                 { 
                   file_url: formLine?.url || existing?.file_url || null,
@@ -345,7 +347,7 @@ function OnboardingFlow() {
           await Promise.all([...kycPromises, ...otherPromises]);
           
           if (import.meta.env.DEV) {
-            console.debug("[KYC_PERSIST_COMPLETE]", { id: saved.id });
+            console.debug("[KYC_PERSIST_COMPLETE]", { id: canonicalId });
           }
         } catch (docErr) {
           console.error("[ONBOARDING_SUBMIT] KYC persistence failed (likely RLS):", docErr);
@@ -356,7 +358,7 @@ function OnboardingFlow() {
         // Post-save audit events should NOT block the success message if KYC succeeded
         try {
           await logOnboardingEvent({
-            restaurantId: saved.id,
+            restaurantId: canonicalId,
             managerId: authoritativeManagerId,
             status: String(extra.onboarding_status ?? "draft"),
             note: statusLabel,
