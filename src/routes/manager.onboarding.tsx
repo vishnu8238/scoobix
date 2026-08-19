@@ -653,12 +653,21 @@ function OnboardingFlow() {
                 <Field label="City" value={form.city} onChange={(v) => set({ city: v })} placeholder="Mumbai" />
                 <Field label="Pincode" value={form.pincode} onChange={(v) => set({ pincode: v })} placeholder="400001" />
               </div>
-                <LocationPicker
-                  latitude={form.latitude}
-                  longitude={form.longitude}
-                  address={form.address}
-                  onChange={(lat: number, lng: number, addr: string) => set({ latitude: lat, longitude: lng, address: addr })}
-                />
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
+                    Restaurant Coordinates (Optional)
+                  </Label>
+                  <LocationPicker
+                    latitude={form.latitude}
+                    longitude={form.longitude}
+                    onChange={(lat, lng, addr) => {
+                      const patch: Partial<Form> = { latitude: lat, longitude: lng };
+                      if (addr) patch.address = addr;
+                      set(patch);
+                    }}
+                  />
+                </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Opens at" value={form.opening_time} onChange={(v) => set({ opening_time: v })} placeholder="10:00" />
                 <Field label="Closes at" value={form.closing_time} onChange={(v) => set({ closing_time: v })} placeholder="23:00" />
