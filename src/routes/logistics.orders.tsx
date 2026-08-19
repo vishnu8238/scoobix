@@ -1,10 +1,10 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
-import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
+import { StatusBadge } from "@/components/cravio/AdminTable";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
-import { Loader2, ExternalLink, Database, Search, ChevronDown, Filter, X } from "lucide-react";
+import { Loader2, Database, Search, ChevronDown, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/logistics/orders")({
@@ -16,10 +16,10 @@ const STATUS_TABS = [
   { id: "ALL", label: "Live" },
   { id: "UNASSIGNED", label: "Unassigned" },
   { id: "ASSIGNED", label: "Assigned" },
-  { id: "PICKED_UP", label: "Driver Confirmed" },
-  { id: "AT_PICKUP", label: "Reached Shop" },
-  { id: "OUT_FOR_DELIVERY", label: "Shipped" },
-  { id: "ARRIVED", label: "Reached Drop" },
+  { id: "DRIVER_CONFIRMED", label: "Driver confirmed" },
+  { id: "REACHED_SHOP", label: "Reached shop" },
+  { id: "SHIPPED", label: "Shipped" },
+  { id: "REACHED_DROP", label: "Reached drop" },
 ];
 
 function LogisticsOrders() {
@@ -40,9 +40,9 @@ function OrderLedger() {
   
   // Filter states
   const [orderIdSearch, setOrderIdSearch] = useState("");
+  const [tripIdSearch, setTripIdSearch] = useState("");
   const [driverIdSearch, setDriverIdSearch] = useState("");
-  const [cityFilter, setCityFilter] = useState("ALL");
-  const [zoneFilter, setZoneFilter] = useState("ALL");
+  const [externalIdSearch, setExternalIdSearch] = useState("");
   
   const version = useTableVersion(["orders"]);
 
@@ -68,29 +68,56 @@ function OrderLedger() {
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
+      // 1. Sidebar Filters
       if (orderIdSearch && !o.id.toLowerCase().includes(orderIdSearch.toLowerCase())) return false;
+      if (tripIdSearch && !String(o.trip_id || "").toLowerCase().includes(tripIdSearch.toLowerCase())) return false;
       if (driverIdSearch && !String(o.driver_id || "").toLowerCase().includes(driverIdSearch.toLowerCase())) return false;
+      if (externalIdSearch && !String(o.external_id || "").toLowerCase().includes(externalIdSearch.toLowerCase())) return false;
       
       const s = String(o.status || "PLACED").toUpperCase();
-      if (activeTab === "UNASSIGNED") return !o.driver_id && s !== "DELIVERED";
-      if (activeTab === "ASSIGNED") return !!o.driver_id && s !== "DELIVERED";
-      if (activeTab !== "ALL" && s !== activeTab) return false;
-      if (activeTab === "ALL" && s === "DELIVERED") return false;
+      
+      // 2. Tab filtering logic
+      if (activeTab === "ALL") {
+        return s !== "DELIVERED";
+      }
+      if (activeTab === "UNASSIGNED") {
+        return !o.driver_id && s === "PLACED";
+      }
+      if (activeTab === "ASSIGNED") {
+        return !!o.driver_id && (s === "PREPARING" || s === "READY" || s === "ACCEPTED");
+      }
+      if (activeTab === "DRIVER_CONFIRMED") {
+        // Operational mapping: Use meta or timestamps if available, otherwise 0/empty logic handled by stats
+        return false; 
+      }
+      if (activeTab === "REACHED_SHOP") {
+        return s === "AT_PICKUP";
+      }
+      if (activeTab === "SHIPPED") {
+        return s === "OUT_FOR_DELIVERY";
+      }
+      if (activeTab === "REACHED_DROP") {
+        return s === "ARRIVED";
+      }
       
       return true;
     });
-  }, [orders, activeTab, orderIdSearch, driverIdSearch]);
+  }, [orders, activeTab, orderIdSearch, tripIdSearch, driverIdSearch, externalIdSearch]);
 
   const stats = useMemo(() => {
-    const res: Record<string, number> = { ALL: 0 };
+    const res: Record<string, number> = {};
     STATUS_TABS.forEach(t => res[t.id] = 0);
     
     orders.forEach(o => {
       const s = String(o.status || "PLACED").toUpperCase();
+      
       if (s !== "DELIVERED") res.ALL++;
-      if (!o.driver_id && s !== "DELIVERED") res.UNASSIGNED++;
-      if (!!o.driver_id && s !== "DELIVERED") res.ASSIGNED++;
-      if (res[s] !== undefined) res[s]++;
+      if (!o.driver_id && s === "PLACED") res.UNASSIGNED++;
+      if (!!o.driver_id && (s === "PREPARING" || s === "READY" || s === "ACCEPTED")) res.ASSIGNED++;
+      if (s === "AT_PICKUP") res.REACHED_SHOP++;
+      if (s === "OUT_FOR_DELIVERY") res.SHIPPED++;
+      if (s === "ARRIVED") res.REACHED_DROP++;
+      // DRIVER_CONFIRMED intentionally stays 0 if no clear mapping exists
     });
     return res;
   }, [orders]);
@@ -98,24 +125,24 @@ function OrderLedger() {
   const handleSeed = async () => {
     setIsSeeding(true);
     try {
-      const { insforge: sdk } = await import("@/lib/insforge");
       const { createRecord } = await import("@/lib/insforge-crud");
       const now = new Date().toISOString();
-      const statuses = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY"];
+      const statuses = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "ARRIVED", "AT_PICKUP"];
       
       for (let i = 0; i < 3; i++) {
         await createRecord("orders", {
           id: crypto.randomUUID(),
           status: statuses[i % statuses.length],
-          total_price: 300 + (i * 100),
+          total_price: 350 + (i * 120),
           created_at: now,
-          items: { lines: [{ name: "Demo Order", qty: 1, price: 300 }] },
-          delivery_address: `Demo St #${i}, Vadodara`,
+          items: { lines: [{ name: "Operations Demo", qty: 1, price: 350 }] },
+          delivery_address: `Operation Sector #${i}, Vadodara`,
           payment_method: "CASH",
-          payment_status: "PAID"
+          payment_status: "PAID",
+          external_id: `EXT-${Math.floor(Math.random() * 90000)}`
         });
       }
-      toast.success("Demo orders seeded");
+      toast.success("Operational demo orders seeded");
       load();
     } catch (e: any) {
       toast.error(e.message || "Seed failed");
@@ -124,171 +151,225 @@ function OrderLedger() {
     }
   };
 
+  const resetFilters = () => {
+    setOrderIdSearch("");
+    setTripIdSearch("");
+    setDriverIdSearch("");
+    setExternalIdSearch("");
+  };
+
   return (
-    <div className="flex h-screen bg-[#F9F9F7] text-[#333333]">
-      {/* Sidebar Filters */}
-      <aside className="w-72 border-r border-[#E8E8E2] bg-white p-6 flex flex-col gap-6">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-[#1E9A62]" />
-          <h2 className="text-xs font-black uppercase tracking-widest text-[#666666]">Dispatch Filters</h2>
+    <div className="flex h-screen bg-[#F9F9F7] text-[#333333] font-sans overflow-hidden">
+      {/* 260px Left SEARCH panel */}
+      <aside className="w-[260px] border-r border-[#E8E8E2] bg-white p-6 flex flex-col gap-6 overflow-y-auto">
+        <div className="flex items-center gap-2 mb-2">
+          <Search className="h-4 w-4 text-[#1E9A62]" />
+          <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#666666]">Search</h2>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#999999]">Order Search</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#CCCCCC]" />
-              <input 
-                value={orderIdSearch}
-                onChange={e => setOrderIdSearch(e.target.value)}
-                placeholder="Order ID..." 
-                className="w-full rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-[#1E9A62] outline-none" 
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#999999]">Driver Search</label>
+        <div className="space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-[#999999]">Order ID</label>
             <input 
-              value={driverIdSearch}
-              onChange={e => setDriverIdSearch(e.target.value)}
-              placeholder="Trip / Driver ID..." 
-              className="w-full rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2 text-xs focus:ring-1 focus:ring-[#1E9A62] outline-none" 
+              value={orderIdSearch}
+              onChange={e => setOrderIdSearch(e.target.value)}
+              placeholder="e.g. 560c..." 
+              className="w-full rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2.5 text-xs font-medium focus:ring-1 focus:ring-[#1E9A62] outline-none transition-all placeholder:text-[#CCCCCC]" 
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#999999]">Geography</label>
-            <button className="flex w-full items-center justify-between rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2 text-xs">
-              Vadodara <ChevronDown className="h-3 w-3 text-[#CCCCCC]" />
-            </button>
-            <button className="flex w-full items-center justify-between rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2 text-xs">
-              All Zones <ChevronDown className="h-3 w-3 text-[#CCCCCC]" />
-            </button>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-[#999999]">Trip ID</label>
+            <input 
+              value={tripIdSearch}
+              onChange={e => setTripIdSearch(e.target.value)}
+              placeholder="e.g. T-102..." 
+              className="w-full rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2.5 text-xs font-medium focus:ring-1 focus:ring-[#1E9A62] outline-none transition-all placeholder:text-[#CCCCCC]" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-[#999999]">Driver / Rider ID</label>
+            <input 
+              value={driverIdSearch}
+              onChange={e => setDriverIdSearch(e.target.value)}
+              placeholder="e.g. DRV-..." 
+              className="w-full rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2.5 text-xs font-medium focus:ring-1 focus:ring-[#1E9A62] outline-none transition-all placeholder:text-[#CCCCCC]" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-[#999999]">External Order ID</label>
+            <input 
+              value={externalIdSearch}
+              onChange={e => setExternalIdSearch(e.target.value)}
+              placeholder="e.g. EXT-..." 
+              className="w-full rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2.5 text-xs font-medium focus:ring-1 focus:ring-[#1E9A62] outline-none transition-all placeholder:text-[#CCCCCC]" 
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-[#999999]">Geography</label>
+            <div className="space-y-2">
+              <button className="flex w-full items-center justify-between rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2.5 text-xs font-bold text-[#666666]">
+                Vadodara <ChevronDown className="h-3 w-3 text-[#CCCCCC]" />
+              </button>
+              <button className="flex w-full items-center justify-between rounded-xl border border-[#E8E8E2] bg-[#F9F9F7] px-3 py-2.5 text-xs font-bold text-[#666666]">
+                All Zones <ChevronDown className="h-3 w-3 text-[#CCCCCC]" />
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="mt-auto flex flex-col gap-2">
+        <div className="mt-4 flex flex-col gap-2">
           <button 
-            onClick={() => { setOrderIdSearch(""); setDriverIdSearch(""); }}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F9F9F7] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[#666666] hover:bg-[#E8E8E2] transition"
+            onClick={() => load()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1E9A62] px-3 py-3 text-[11px] font-black uppercase tracking-widest text-white shadow-glow hover:opacity-90 active:scale-[0.98] transition-all"
           >
-            <X className="h-3 w-3" /> Clear All
+            Apply
+          </button>
+          <button 
+            onClick={resetFilters}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F9F9F7] px-3 py-3 text-[10px] font-black uppercase tracking-widest text-[#999999] border border-transparent hover:border-[#E8E8E2] transition-all"
+          >
+            <X className="h-3 w-3" /> Reset
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col p-8 overflow-hidden gap-6">
-        <header className="flex items-center justify-between">
-          <div className="flex gap-1 bg-[#E8E8E2]/50 p-1 rounded-2xl overflow-x-auto no-scrollbar">
+      {/* Main Panel */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Header & Workflow Tabs */}
+        <div className="bg-white border-b border-[#E8E8E2] px-8 pt-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="font-display text-2xl font-black tracking-tight text-[#333333]">Orders</h1>
+            <button 
+              onClick={handleSeed}
+              disabled={isSeeding}
+              className="flex items-center gap-2 rounded-xl bg-[#F9F9F7] px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[#1E9A62] border border-[#1E9A62]/10 hover:bg-white transition disabled:opacity-50"
+            >
+              {isSeeding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
+              Seed Demo Orders
+            </button>
+          </div>
+
+          <div className="flex gap-8 overflow-x-auto no-scrollbar">
             {STATUS_TABS.map(tab => {
               const isActive = activeTab === tab.id;
               return (
                 <button 
                   key={tab.id} 
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-wider transition ${
-                    isActive 
-                      ? "bg-white text-[#1E9A62] shadow-sm" 
-                      : "text-[#666666] hover:text-[#333333]"
-                  }`}
+                  className={`relative pb-4 flex items-center gap-2 transition-all group whitespace-nowrap`}
                 >
-                  {tab.label}
-                  <span className={`rounded-md px-1.5 py-0.5 text-[9px] ${isActive ? "bg-[#1E9A62]/10" : "bg-black/5"}`}>
+                  <span className={`text-[11px] font-black uppercase tracking-widest transition-colors ${
+                    isActive ? "text-[#1E9A62]" : "text-[#999999] group-hover:text-[#666666]"
+                  }`}>
+                    {tab.label}
+                  </span>
+                  <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${
+                    isActive ? "bg-[#1E9A62] text-white" : "bg-[#F9F9F7] text-[#999999]"
+                  }`}>
                     {stats[tab.id] || 0}
                   </span>
+                  {isActive && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E9A62] rounded-t-full" />
+                  )}
                 </button>
               );
             })}
           </div>
+        </div>
 
-          <button 
-            onClick={handleSeed}
-            disabled={isSeeding}
-            className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-[11px] font-black uppercase tracking-wider text-[#1E9A62] ring-1 ring-[#1E9A62]/20 shadow-sm hover:bg-[#F9F9F7] active:scale-95 transition disabled:opacity-50"
-          >
-            {isSeeding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
-            Seed Data
-          </button>
-        </header>
-
-        <section className="flex-1 overflow-auto bg-white rounded-3xl shadow-sm border border-[#E8E8E2]">
-          {loading ? (
-            <div className="flex h-full items-center justify-center gap-3 text-[#999999]">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-xs font-bold uppercase tracking-widest">Hydrating Ledger...</span>
-            </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center text-center gap-2 text-[#999999]">
-              <div className="h-12 w-12 rounded-full bg-[#F9F9F7] flex items-center justify-center border border-[#E8E8E2]">
-                <Search className="h-5 w-5 opacity-20" />
+        {/* Operational Ledger Table */}
+        <section className="flex-1 overflow-auto p-8">
+          <div className="bg-white rounded-3xl shadow-soft border border-[#E8E8E2] overflow-hidden flex flex-col h-full">
+            {loading ? (
+              <div className="flex h-full items-center justify-center gap-3 text-[#999999]">
+                <Loader2 className="h-5 w-5 animate-spin text-[#1E9A62]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Hydrating Operations Ledger...</span>
               </div>
-              <p className="text-xs font-bold uppercase tracking-widest">No matching orders</p>
-            </div>
-          ) : (
-            <div className="min-w-full inline-block align-middle">
-              <table className="min-w-full divide-y divide-[#F9F9F7]">
-                <thead className="bg-[#F9F9F7]/50 sticky top-0 z-10">
-                  <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-[#999999]">
-                    <th className="px-6 py-4 text-left">Order / Ext ID</th>
-                    <th className="px-6 py-4 text-left">Trip / Driver</th>
-                    <th className="px-6 py-4 text-left">State</th>
-                    <th className="px-6 py-4 text-left">Restaurant</th>
-                    <th className="px-6 py-4 text-left">Locality</th>
-                    <th className="px-6 py-4 text-left">City / Zone</th>
-                    <th className="px-6 py-4 text-left">Created</th>
-                    <th className="px-6 py-4 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#F9F9F7]">
-                  {filteredOrders.map(o => (
-                    <tr key={o.id} className="text-xs hover:bg-[#F9F9F7]/80 transition group">
-                      <td className="px-6 py-4">
-                        <Link to="/logistics/orders/$orderId" params={{ orderId: o.id }} className="flex flex-col gap-0.5">
-                          <code className="font-mono text-[10px] font-black text-[#1E9A62] group-hover:underline">
-                            #{o.id.slice(0, 8).toUpperCase()}
-                          </code>
-                          <span className="text-[9px] text-[#CCCCCC]">EXT: {o.external_id || "N/A"}</span>
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4">
-                        {o.driver_id ? (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-bold text-[#333333]">DRV-{o.driver_id.slice(-4).toUpperCase()}</span>
-                            <span className="text-[9px] text-[#999999]">TRIP: {o.trip_id || "ACT-1"}</span>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] font-black text-[#CCCCCC] italic">Unassigned</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <StatusBadge label={o.status || "PLACED"} />
-                      </td>
-                      <td className="px-6 py-4 text-[#666666] font-medium">
-                        {restNames[o.restaurant_id] || "Scoobix Kitchen"}
-                      </td>
-                      <td className="px-6 py-4 text-[#999999]">
-                        {String(o.delivery_address || "").split(",")[0]}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-[#333333]">Vadodara</span>
-                          <span className="text-[9px] text-[#999999]">Main Zone</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-[#999999] font-mono text-[10px]">
-                        {(o.created_at || "").slice(11, 16)}
-                      </td>
-                      <td className="px-6 py-4 text-right font-black text-[#333333]">
-                        {formatPrice(o.total_price || 0)}
-                      </td>
+            ) : filteredOrders.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center text-center gap-4 py-20 text-[#999999]">
+                <div className="h-16 w-16 rounded-full bg-[#F9F9F7] flex items-center justify-center border border-[#E8E8E2]">
+                  <Search className="h-6 w-6 opacity-20 text-[#1E9A62]" />
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.1em] text-[#333333]">No operational records</p>
+                  <p className="text-[10px] font-medium text-[#999999] mt-1">Adjust filters or select a different workflow stage.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead className="bg-[#F9F9F7] sticky top-0 z-10 border-b border-[#E8E8E2]">
+                    <tr className="text-[10px] font-black uppercase tracking-[0.15em] text-[#999999]">
+                      <th className="px-6 py-4 text-left font-black">Order ID</th>
+                      <th className="px-6 py-4 text-left font-black">Trip ID</th>
+                      <th className="px-6 py-4 text-left font-black">External Order ID</th>
+                      <th className="px-6 py-4 text-left font-black">State</th>
+                      <th className="px-6 py-4 text-left font-black">Driver / Rider ID</th>
+                      <th className="px-6 py-4 text-left font-black">Order Type</th>
+                      <th className="px-6 py-4 text-left font-black">Seller / Restaurant</th>
+                      <th className="px-6 py-4 text-left font-black">Customer Locality</th>
+                      <th className="px-6 py-4 text-left font-black">Time</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-[#F9F9F7]">
+                    {filteredOrders.map(o => (
+                      <tr 
+                        key={o.id} 
+                        className="text-[11px] font-medium hover:bg-[#F9F9F7]/50 transition-colors group cursor-pointer"
+                        onClick={() => {}}
+                      >
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <Link 
+                            to="/logistics/orders/$orderId" 
+                            params={{ orderId: o.id }} 
+                            className="font-mono font-black text-[#1E9A62] underline decoration-[#1E9A62]/20 underline-offset-4 hover:decoration-[#1E9A62] transition-all"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            #{o.id.slice(0, 8).toUpperCase()}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-[#666666] font-bold">
+                          {o.trip_id || "—"}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-[#999999]">
+                          {o.external_id || "—"}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <StatusBadge label={o.status || "PLACED"} />
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          {o.driver_id ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-bold text-[#333333]">DRV-{o.driver_id.slice(-4).toUpperCase()}</span>
+                              <span className="text-[9px] text-[#999999] font-medium uppercase tracking-tighter">Identity Verified</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-black text-[#CCCCCC] uppercase tracking-widest italic">Unassigned</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-[#666666]">
+                          {o.order_type || "Standard"}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-[#333333] font-bold">
+                          {restNames[o.restaurant_id] || "Scoobix Kitchen"}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-[#666666]">
+                          {String(o.delivery_address || "").split(",")[0] || "—"}
+                        </td>
+                        <td className="px-6 py-5 whitespace-nowrap text-[#999999] font-mono">
+                          {(o.created_at || "").slice(11, 16)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </section>
       </main>
     </div>
