@@ -100,8 +100,16 @@ export async function dispatchNotificationCampaign(
   // 1. Authoritative recipient resolution from explicit IDs
   // We resolve each profile individually to ensure we avoid malformed list filter parsing errors
   const selectedRiders: RiderProfile[] = [];
-  for (const id of recipientIds) {
-    const results = await listTable<RiderProfile>("rider_profiles", { id: `eq.${id}` });
+  for (const rawProfileId of recipientIds) {
+    const profileId = String(rawProfileId).trim().replace(/^-+/, '');
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    if (!uuidRegex.test(profileId)) {
+      console.warn(`Skipping invalid profile ID: ${profileId}`);
+      continue;
+    }
+
+    const results = await listTable<RiderProfile>("rider_profiles", { id: `eq.${profileId}` });
     if (results && results.length > 0) {
       selectedRiders.push(results[0]);
     }
