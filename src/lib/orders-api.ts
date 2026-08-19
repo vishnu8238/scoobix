@@ -340,6 +340,7 @@ export const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   AT_PICKUP: ["READY", "CANCELLED"],
   PICKED_UP: ["OUT_FOR_DELIVERY", "CANCELLED"],
   REJECTED: [],
+  ARRIVED: [],
 };
 
 export { STATUS_LABEL } from "./stores";
