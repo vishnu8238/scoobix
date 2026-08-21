@@ -188,7 +188,8 @@ function LogisticsGigs() {
         lastLoad: new Date().toISOString(),
         total: all.length,
         filtered: data.length,
-        filterDate: localDateStr,
+        filterDate: selectedDateKey,
+        businessTimezone: 'Asia/Kolkata',
         firstGig: all[0] ? { id: all[0].id, title: all[0].title, isDemo: !!all[0].metadata?.is_demo } : "none",
         sessionActive: !!insforge.auth.session?.accessToken,
         tokenPrefix: insforge.auth.session?.accessToken ? insforge.auth.session.accessToken.substring(0, 10) : "none"
