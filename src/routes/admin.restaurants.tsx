@@ -22,6 +22,7 @@ import type { RestaurantRow } from "@/lib/partner-store";
 import { ChecklistList, ChecklistProgress, useGoLiveChecklist } from "@/components/cravio/GoLiveChecklist";
 import { AdminKycPanel } from "@/components/cravio/KycPanel";
 import { setGoLiveOverride, setRestaurantLive, setVerificationFlag, type ChecklistItem, type GoLiveRow } from "@/lib/go-live";
+import { PortalErrorBoundary } from "@/components/cravio/PortalErrorBoundary";
 
 export const Route = createFileRoute("/admin/restaurants")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Restaurants" }] }),
@@ -122,12 +123,13 @@ function AdminRestaurants() {
   };
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Restaurants</p>
-          <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Partner restaurants</h1>
-        </div>
+    <PortalErrorBoundary portal="Admin Restaurants">
+      <div className="space-y-6">
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">Restaurants</p>
+            <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight">Partner restaurants</h1>
+          </div>
         <div className="flex flex-wrap items-center gap-3">
           {selection.size > 0 && (
             <div className="flex items-center gap-3 rounded-2xl bg-primary/5 px-4 py-2 ring-1 ring-primary/20">
@@ -231,7 +233,8 @@ function AdminRestaurants() {
         const owner = r.owner_id ? owners[r.owner_id] : undefined;
         return <RestaurantDetail key={r.id} restaurant={r} owner={owner} onClose={() => setOpenDetail(null)} onSaveManager={saveManager} />;
       })()}
-    </div>
+      </div>
+    </PortalErrorBoundary>
   );
 }
 

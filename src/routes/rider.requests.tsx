@@ -13,6 +13,7 @@ import { fetchGigs, enrollInGig, cancelGigEnrollment, type Gig } from "@/lib/gig
 import { cn } from "@/lib/format";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { EmptyState } from "@/components/cravio/EmptyState";
+import { PortalErrorBoundary } from "@/components/cravio/PortalErrorBoundary";
 
 export const Route = createFileRoute("/rider/requests")({
   head: () => ({ meta: [{ title: "Scoobix Rider · Gigs & Scheduling" }] }),
@@ -127,7 +128,8 @@ function RiderRequestsPage() {
   }, [gigs, enrolledIds, tab, selectedDate]);
 
   return (
-    <div className="w-full min-h-svh pb-8">
+    <PortalErrorBoundary portal="Rider Gigs">
+      <div className="w-full min-h-svh pb-8">
       <PageHeader title="Gigs" subtitle="Schedule your delivery shifts" />
 
       {/* Tab Switcher */}
@@ -228,7 +230,8 @@ function RiderRequestsPage() {
            </div>
         </div>
       )}
-    </div>
+      </div>
+    </PortalErrorBoundary>
   );
 }
 

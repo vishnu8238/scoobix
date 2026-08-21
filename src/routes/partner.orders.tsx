@@ -9,6 +9,7 @@ import { nudgeTable } from "@/lib/realtime";
 import { useLiveOrders } from "@/lib/realtime-hooks";
 import { useDispatchDaemon } from "@/lib/dispatch-engine";
 import { useOrderFinalizationDaemon } from "@/lib/order-completion";
+import { PortalErrorBoundary } from "@/components/cravio/PortalErrorBoundary";
 
 export const Route = createFileRoute("/partner/orders")({
   head: () => ({ meta: [{ title: "Scoobix Partner · Orders" }] }),
@@ -96,11 +97,12 @@ function PartnerOrders() {
   };
 
   return (
-    <div className="animate-fade-up px-5 pt-7">
-      <header className="mb-5">
-        <p className="eyebrow">Orders</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">Manage orders</h1>
-      </header>
+    <PortalErrorBoundary portal="Partner Orders">
+      <div className="animate-fade-up px-5 pt-7">
+        <header className="mb-5">
+          <p className="eyebrow">Orders</p>
+          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight">Manage orders</h1>
+        </header>
 
       <div className="flex gap-2 rounded-full bg-muted p-1">
         {TABS.map((t) => (
@@ -219,6 +221,7 @@ function PartnerOrders() {
           );
         })}
       </div>
-    </div>
+      </div>
+    </PortalErrorBoundary>
   );
 }
