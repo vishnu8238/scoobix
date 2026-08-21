@@ -450,10 +450,10 @@ function LogisticsGigs() {
     }));
 
     exportExcel([{
-      title: `Gigs - ${format(selectedDate, "yyyy-MM-dd")}`,
+      title: `Gigs - ${selectedDateKey}`,
       columns,
       rows: rows as any[]
-    }], `scoobix-gigs-${format(selectedDate, "yyyy-MM-dd")}`);
+    }], `scoobix-gigs-${selectedDateKey}`);
     
     toast.success("Excel export started.");
   };
