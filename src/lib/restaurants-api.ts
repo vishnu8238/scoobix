@@ -44,7 +44,9 @@ export async function fetchCustomerData() {
     // 1. Fetch all restaurants that have potential to be live
     // We fetch a broader set and filter in JS to handle case-insensitivity and complex flags
     const restaurants = await listTable<any>("restaurants", {
-      limit: 100
+      limit: 100,
+      archived: "eq.false",
+      is_open: "eq.true"
     }, { ttl: 60 });
 
     // 2. Fetch all menu items for these restaurants
@@ -61,12 +63,10 @@ export async function fetchCustomerData() {
         const isApproved = status === "approved" || status === "active" || status === "live" || onboarding === "live";
 
         // Requirement: Canonical live/override flags (is_live OR go_live_override)
-        // Also ensure not archived and explicitly open
         const isLive = Boolean(r.is_live === true || r.is_live === "true" || r.go_live_override === true || r.go_live_override === "true");
-        const isNotArchived = !Boolean(r.archived === true || r.archived === "true");
-        const isOpen = r.is_open !== false && r.is_open !== "false";
-
-        return isApproved && isLive && isNotArchived && isOpen;
+        
+        // Note: archived and is_open are already filtered in the query above for efficiency
+        return isApproved && isLive;
       })
       .map(r => {
         const restaurantMenu = menuItems

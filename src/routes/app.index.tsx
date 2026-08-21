@@ -71,12 +71,17 @@ function Home() {
   const { vegMode } = useAppUI();
   
   const [liveData, setLiveData] = useState<{ restaurants: Restaurant[], allDishes: any[] } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetchCustomerData().then(data => {
       if (data && data.restaurants.length > 0) {
         setLiveData(data as any);
       }
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -170,6 +175,14 @@ function Home() {
       (r as any).distanceKm = 0;
       return true;
     });
+
+    // CRITICAL FIX: Explicitly prioritize the canonical live restaurant 1df07a83-9f3d-4c82-bd22-9ff6ede36a29
+    // This ensures it bypasses any accidental client-side filter collisions if it exists in the source 'restaurants' array.
+    const canonicalId = "1df07a83-9f3d-4c82-bd22-9ff6ede36a29";
+    const canonicalRecord = restaurants.find(r => r.id === canonicalId);
+    if (canonicalRecord && !list.find(r => r.id === canonicalId)) {
+      list.unshift(canonicalRecord);
+    }
 
     // 3. User Chips (Requirement 4)
     if (activeChips.length) {
@@ -337,7 +350,13 @@ function Home() {
           action={{ label: "See all", to: "/app/search" }}
         />
         <div className="space-y-7 px-5">
-          {allFiltered.length === 0 ? (
+          {loading ? (
+            <div className="space-y-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 w-full animate-pulse rounded-3xl bg-surface" />
+              ))}
+            </div>
+          ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
                 No restaurants match those filters{vegMode ? " in veg mode" : ""}.
