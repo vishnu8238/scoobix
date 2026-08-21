@@ -53,10 +53,7 @@ export function CustomizationSheet({
   const unit = useMemo(() => dish.price + sizeObj.delta + extrasObj.reduce((s, e) => s + e.delta, 0), [dish.price, sizeObj, extrasObj]);
 
   const handleAdd = async () => {
-    console.log("[CART_DEBUG] handleAdd started. activeRef:", !!activeRef, "dishId:", dish.id);
-    
     if (!activeRef) {
-      console.error("[CART_ERROR] No restaurant reference found for dish:", dish.id);
       toast.error("Could not add item: restaurant data is missing");
       return;
     }
@@ -68,12 +65,6 @@ export function CustomizationSheet({
         `Spice: ${spice}`,
       ].filter(Boolean) as string[];
 
-      console.log("[CART_DEBUG] Attempting to add item:", {
-        dishId: dish.id,
-        restaurantId: activeRef.restaurant.id,
-        unit,
-        qty
-      });
 
       // Directly call addItem from context
       const res = cart.addItem({
@@ -86,7 +77,7 @@ export function CustomizationSheet({
         customizations,
       }, qty);
 
-      console.log("[CART_DEBUG] addItem result:", res);
+      
 
       if (!res.ok) {
         if (res.reason === "different-restaurant") {
