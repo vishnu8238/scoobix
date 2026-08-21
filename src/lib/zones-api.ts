@@ -65,7 +65,7 @@ export async function fetchZones(params?: Record<string, any>) {
   for (const table of tables) {
     try {
       const zones = await listTable<DeliveryZone>(table, { 
-        select: "id,name,city,status,polygon_coords", 
+        select: "id,name,city,status,description,boundary,center_lat,center_lng,latitude,longitude,pickup_radius_km,max_delivery_distance_km,created_at,updated_at", 
         order: "name.asc", 
         ...params 
       });

@@ -89,20 +89,34 @@ function Polyline({ points, color, weight, dash }: { points: LatLng[]; color?: s
 
 function Polygon({ id, points, color, label, editable, onEdit }: { id: string; points: LatLng[]; color?: string; label?: string; editable?: boolean; onEdit?: (id: string, points: LatLng[]) => void }) {
   const map = useMap();
+  const polyRef = useRef<any>(null);
+  const editingRef = useRef(false);
+  const onEditRef = useRef(onEdit);
+  onEditRef.current = onEdit;
+  const pointsRef = useRef(points);
+  pointsRef.current = points;
+
+  // Create the polygon exactly once per map/id. Editing never recreates it.
   useEffect(() => {
-    if (!map || !points.length) return;
+    if (!map) return;
+    const initial = pointsRef.current;
+    if (!initial.length) return;
+
     const poly = new (window as any).google.maps.Polygon({
-      paths: points,
+      paths: initial,
       strokeColor: color || "#3B82F6",
       strokeOpacity: 0.8,
       strokeWeight: 2,
       fillColor: color || "#3B82F6",
       fillOpacity: 0.15,
       editable: editable || false,
+      draggable: false,
       map,
     });
+    polyRef.current = poly;
 
-    if (editable && onEdit) {
+    const listeners: any[] = [];
+    if (editable) {
       const update = () => {
         const path = poly.getPath();
         const newPoints: LatLng[] = [];
@@ -110,23 +124,40 @@ function Polygon({ id, points, color, label, editable, onEdit }: { id: string; p
           const p = path.getAt(i);
           newPoints.push({ lat: p.lat(), lng: p.lng() });
         }
-        onEdit(id, newPoints);
+        editingRef.current = true;
+        onEditRef.current?.(id, newPoints);
       };
-      
-      const listeners = [
-        poly.getPath().addListener("set_at", update),
-        poly.getPath().addListener("insert_at", update),
-        poly.getPath().addListener("remove_at", update),
-      ];
-      
-      return () => {
-        listeners.forEach(l => (window as any).google.maps.event.removeListener(l));
-        poly.setMap(null);
-      };
+      const path = poly.getPath();
+      listeners.push(
+        path.addListener("set_at", update),
+        path.addListener("insert_at", update),
+        path.addListener("remove_at", update),
+      );
     }
 
-    return () => poly.setMap(null);
-  }, [map, points, color, label, editable, onEdit, id]);
+    return () => {
+      listeners.forEach(l => (window as any).google.maps.event.removeListener(l));
+      poly.setMap(null);
+      polyRef.current = null;
+    };
+  }, [map, id, editable]);
+
+  // Sync external point changes without remounting; skip echoes of our own edits.
+  useEffect(() => {
+    const poly = polyRef.current;
+    if (!poly) return;
+    if (editingRef.current) {
+      editingRef.current = false;
+      return;
+    }
+    if (!points.length) return;
+    poly.setPaths(points);
+  }, [points]);
+
+  useEffect(() => {
+    polyRef.current?.setOptions({ strokeColor: color || "#3B82F6", fillColor: color || "#3B82F6" });
+  }, [color]);
+
   return null;
 }
 
@@ -163,8 +194,14 @@ function GoogleMapInner({
     }
   };
 
+  // When polygons are editable, auto-fit runs only once (initial polygon load/completion),
+  // never on vertex drag / insert / remove.
+  const isEditing = !!onPolygonEdit;
+  const didFitRef = useRef(false);
+
   useEffect(() => {
     if (!map) return;
+    if (isEditing && didFitRef.current) return;
     const bounds = new (window as any).google.maps.LatLngBounds();
     let hasPoints = false;
 
@@ -199,12 +236,13 @@ function GoogleMapInner({
     }
 
     if (hasPoints) {
+      didFitRef.current = true;
       map.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 });
       (window as any).google.maps.event.addListenerOnce(map, 'idle', () => {
         if (map.getZoom()! > 15) map.setZoom(15);
       });
     }
-  }, [map, markers, route, polygons, pickedAt]);
+  }, [map, markers, route, polygons, pickedAt, isEditing]);
 
   const defaultCenter = useMemo(() => {
     if (center) return center;

@@ -151,13 +151,27 @@ export const createNewZone = createServerFn({ method: "POST" })
           ]] 
         };
 
+    const ring: Array<[number, number]> = boundary.coordinates[0];
+    const openRing = ring.length > 1 &&
+      ring[0][0] === ring[ring.length - 1][0] &&
+      ring[0][1] === ring[ring.length - 1][1]
+        ? ring.slice(0, -1)
+        : ring;
+    const centerLng = openRing.reduce((s, c) => s + Number(c[0]), 0) / openRing.length;
+    const centerLat = openRing.reduce((s, c) => s + Number(c[1]), 0) / openRing.length;
+
     const payload = {
       name: data.name,
       city: data.city || "Vadodara",
       status: data.status || "ACTIVE",
-      radius_km: data.pickup_radius_km ?? 1,
-      polygon_coords: boundary,
-      manager_id: user.user.id
+      description: data.description ?? null,
+      boundary,
+      center_lat: centerLat,
+      center_lng: centerLng,
+      latitude: centerLat,
+      longitude: centerLng,
+      pickup_radius_km: data.pickup_radius_km ?? 1,
+      max_delivery_distance_km: data.max_delivery_distance_km ?? 4
     };
 
     console.log("[ZONES_SERVER] Creating zone with payload:", JSON.stringify(payload));

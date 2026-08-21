@@ -38,62 +38,68 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate geometry: at least 3 distinct vertices are required.
+    const rawRing: Array<[number, number]> = Array.isArray(formData.boundary?.coordinates?.[0])
+      ? formData.boundary.coordinates[0].filter(
+          (c: any) => Array.isArray(c) && Number.isFinite(Number(c[0])) && Number.isFinite(Number(c[1]))
+        ).map((c: any) => [Number(c[0]), Number(c[1])] as [number, number])
+      : [];
+
+    const unique = rawRing.filter((c, i, arr) => i === 0 || c[0] !== arr[i - 1][0] || c[1] !== arr[i - 1][1]);
+    const openRing = unique.length > 1 &&
+      unique[0][0] === unique[unique.length - 1][0] &&
+      unique[0][1] === unique[unique.length - 1][1]
+        ? unique.slice(0, -1)
+        : unique;
+
+    if (openRing.length < 3) {
+      toast.error("Draw a zone boundary with at least 3 points before saving.");
+      return;
+    }
+
+    // Closed GeoJSON ring, [lng, lat]
+    const ring = [...openRing, [...openRing[0]] as [number, number]];
+    const boundary = { type: "Polygon", coordinates: [ring] };
+
+    const centerLng = openRing.reduce((s, c) => s + c[0], 0) / openRing.length;
+    const centerLat = openRing.reduce((s, c) => s + c[1], 0) / openRing.length;
+
     setLoading(true);
     try {
-      // Robust boundary fallback for Logistics: allow creation with minimal deterministic coordinates
-      // if map/polygon is unavailable or fails to draw.
-      const DEFAULT_BOUNDARY = { 
-        type: "Polygon", 
-        coordinates: [[
-          [73.1812, 22.3072], 
-          [73.1912, 22.3072], 
-          [73.1912, 22.3172], 
-          [73.1812, 22.3172],
-          [73.1812, 22.3072]
-        ]] 
-      };
-
-      const boundary = hasMapPoints ? formData.boundary : DEFAULT_BOUNDARY;
-
-      // Ensure polygon closure: first coordinate must match the last
-      if (boundary.coordinates && boundary.coordinates.length > 0) {
-        const coords = boundary.coordinates[0];
-        if (coords.length >= 3) {
-          const first = coords[0];
-          const last = coords[coords.length - 1];
-          if (JSON.stringify(first) !== JSON.stringify(last)) {
-            coords.push([...first]);
-          }
-        }
-      }
-
       const submission = {
         name: formData.name,
         city: formData.city,
         status: formData.status,
-        radius_km: Number(formData.pickup_radius_km) || 1,
-        polygon_coords: boundary
+        description: formData.description || null,
+        boundary,
+        center_lat: centerLat,
+        center_lng: centerLng,
+        latitude: centerLat,
+        longitude: centerLng,
+        pickup_radius_km: Number(formData.pickup_radius_km) || 1,
+        max_delivery_distance_km: Number(formData.max_delivery_distance_km) || 4,
       };
 
       const { insforge: sdk } = await import("@/lib/insforge");
 
-      console.log("[ZONE_MODAL] Submitting zone directly via SDK client...");
-      const { data: result, error } = await sdk.database
+      const { error } = await sdk.database
         .from("logistics_zones")
         .insert([submission])
         .select()
         .single();
-      
+
       if (error) {
-        throw new Error(error.message || "Failed to create zone (Unauthorized or RLS)");
+        console.error("[ZONE_MODAL] Zone creation failed:", error.message);
+        throw new Error("We couldn't save this zone. Please check the boundary and try again.");
       }
-      
-      toast.success("Zone created and verified in database");
+
+      toast.success("Zone created");
       onSuccess();
       onClose();
     } catch (err: any) {
-      console.error("[ZONE_MODAL] Production creation error:", err);
-      toast.error(`Production Zone Error: ${err.message || "Unauthorized or RLS Blocked"}`);
+      console.error("[ZONE_MODAL] Zone creation error:", err);
+      toast.error(err?.message || "We couldn't save this zone. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -116,7 +116,7 @@ Scoobix is a multi-portal logistics and delivery platform built on TanStack Star
 26. **RIDER ONBOARDING:** Use `rider_profiles` for KYC data.
 27. **MANAGER ONBOARDING:** Maintain idempotent restaurant creation logic.
 28. **PWA INTEGRITY:** Keep `sw.js` and manifests updated for all portals.
-29. **LOGISTICS ZONES:** Always use `polygon_coords` for zone boundaries.
+29. **LOGISTICS ZONES:** Always use `boundary` (GeoJSON jsonb) for zone boundaries; `polygon_coords` does not exist.
 30. **MAINTENANCE RULE:** Record significant architecture changes in BRAIN.md with date and impact.
 
 ---
