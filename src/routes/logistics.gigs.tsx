@@ -311,7 +311,81 @@ function LogisticsGigs() {
     g.title?.toLowerCase().includes(q.toLowerCase())
   );
 
+  const handleSelectGig = (id: string, selected: boolean) => {
+    setSelectedGigIds(prev => 
+      selected ? [...prev, id] : prev.filter(x => x !== id)
+    );
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedGigIds(filteredGigs.map(g => g.id));
+    } else {
+      setSelectedGigIds([]);
+    }
+  };
+
+  const handleBulkCancel = async () => {
+    if (selectedGigIds.length === 0) return;
+    
+    const selectedGigs = gigs.filter(g => selectedGigIds.includes(g.id));
+    const startedGigs = selectedGigs.filter(g => g.start_time && isAfter(new Date(), new Date(g.start_time)));
+    
+    if (startedGigs.length > 0) {
+      toast.warning(`${startedGigs.length} gigs have already started and cannot be cancelled.`);
+    }
+
+    const cancellableIds = selectedGigs
+      .filter(g => !g.start_time || !isAfter(new Date(), new Date(g.start_time)))
+      .map(g => g.id);
+
+    if (cancellableIds.length === 0) return;
+
+    const totalEnrollments = cancellableIds.reduce((acc, id) => acc + (enrollmentCounts[id] || 0), 0);
+    
+    if (!confirm(`Are you sure you want to cancel ${cancellableIds.length} gigs? ${totalEnrollments} riders will be notified.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await bulkCancelGigs(cancellableIds);
+      toast.success(`${cancellableIds.length} gigs cancelled successfully`);
+      setSelectedGigIds([]);
+      load();
+    } catch (err: any) {
+      toast.error("Bulk cancellation failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteGig = async (gig: Gig) => {
+    const count = enrollmentCounts[gig.id] || 0;
+    const isStarted = gig.start_time && isAfter(new Date(), new Date(gig.start_time));
+    
+    if (isStarted) {
+      toast.error("Cannot cancel a gig that has already started.");
+      return;
+    }
+
+    const action = count > 0 ? "cancel" : "permanently delete";
+    if (!confirm(`Are you sure you want to ${action} this gig?`)) return;
+
+    setLoading(true);
+    try {
+      await deleteGig(gig.id, count);
+      toast.success(`Gig ${count > 0 ? "cancelled" : "deleted"} successfully`);
+      load();
+    } catch (err: any) {
+      toast.error("Operation failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleExport = () => {
+
     if (filteredGigs.length === 0) {
       toast.info("No gigs to export for the selected filters.");
       return;
