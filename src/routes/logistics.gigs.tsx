@@ -370,11 +370,15 @@ function LogisticsGigs() {
 
   const handleDeleteGig = async (gig: Gig) => {
     const count = enrollmentCounts[gig.id] || 0;
-    const isStarted = gig.start_time && isAfter(new Date(), new Date(gig.start_time));
     
-    if (isStarted) {
-      toast.error("Cannot cancel a gig that has already started.");
-      return;
+    // Per contract: 0 enrollment = permanent delete (even if past started)
+    // >0 enrollment = cancellation (past start check applies)
+    if (count > 0) {
+      const isStarted = gig.start_time && isAfter(new Date(), new Date(gig.start_time));
+      if (isStarted) {
+        toast.error("Cannot cancel a gig that has already started.");
+        return;
+      }
     }
 
     const action = count > 0 ? "cancel" : "permanently delete";
