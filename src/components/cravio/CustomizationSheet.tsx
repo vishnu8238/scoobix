@@ -148,7 +148,15 @@ export function CustomizationSheet({
               <span className="w-6 text-center text-sm font-bold">{qty}</span>
               <button onClick={() => setQty((q) => q + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-card shadow-soft"><Plus className="h-4 w-4" /></button>
             </div>
-            <Button onClick={handleAdd} className="h-12 flex-1 rounded-full gradient-primary text-base font-bold text-primary-foreground shadow-glow hover:opacity-95">
+            <Button 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAdd();
+              }} 
+              className="h-12 flex-1 rounded-full gradient-primary text-base font-bold text-primary-foreground shadow-glow hover:opacity-95"
+            >
               Add · {currency(unit * qty)}
             </Button>
           </div>
