@@ -26,6 +26,15 @@ function CartPage() {
   const restaurantClosed = restaurant ? !!closedRestaurants[restaurant.id] : false;
   const unavailableItems = items.filter((it) => dishAvailability[it.dishId] === false);
   const [code, setCode] = useState("");
+  const [showGate, setShowGate] = useState(false);
+
+  const handleCheckout = () => {
+    if (!user) {
+      setShowGate(true);
+      return;
+    }
+    navigate({ to: "/app/checkout" });
+  };
 
   const startGroup = async () => {
     if (!restaurant) return;
