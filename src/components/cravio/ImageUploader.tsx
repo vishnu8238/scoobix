@@ -36,6 +36,13 @@ export function ImageUploader({
     const isImage = file.type.startsWith("image/");
     const isPdf = file.type === "application/pdf";
     
+    // Strict image enforcement for standard pickers
+    if (type !== "banner" && !isImage) {
+      setError("Please choose a valid image file.");
+      setStatus("error");
+      return;
+    }
+
     if (!isImage && !isPdf) {
       setError("Please choose an image or PDF file.");
       setStatus("error");
@@ -205,7 +212,7 @@ export function ImageUploader({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*,application/pdf"
+        accept={type === "banner" ? "image/*,application/pdf" : "image/*"}
         className="hidden"
         onChange={onInput}
       />

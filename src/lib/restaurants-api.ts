@@ -73,13 +73,21 @@ export async function fetchCustomerData() {
           restaurant_id: r.id
         }));
 
+      // Delivery time parsing: extract first positive numeric token or use fallback
+      let deliveryMins = 25;
+      const rawTime = String(r.delivery_time || r.deliveryMins || "");
+      const match = rawTime.match(/\d+/);
+      if (match) {
+        deliveryMins = parseInt(match[0], 10);
+      }
+
       return {
         id: r.id,
         name: r.name || "Unnamed Restaurant",
         cuisine: r.cuisine || "Multi-cuisine",
         rating: Number(r.rating || 4.0),
         reviews: Number(r.reviews_count || r.reviews || 0),
-        deliveryMins: Number(r.delivery_time || r.deliveryMins || 25),
+        deliveryMins: deliveryMins,
         distanceKm: Number(r.distance_km || r.distanceKm || 1.2),
         priceLevel: (r.price_level || r.priceLevel || "₹₹") as any,
         cover: r.cover_url || r.cover_image || r.cover || "",
