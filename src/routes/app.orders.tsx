@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { currency, cn } from "@/lib/format";
 import { EmptyState } from "@/components/cravio/EmptyState";
 import { toast } from "sonner";
+import { RoleGuard } from "@/components/cravio/RoleGuard";
 
 export const Route = createFileRoute("/app/orders")({
   head: () => ({ meta: [{ title: "Scoobix · Orders" }] }),
