@@ -704,7 +704,24 @@ function LogisticsGigs() {
         onClose={() => setIsModalOpen(false)} 
         onSuccess={load}
       />
+
+      <EditGigModal 
+        gig={editingGig}
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingGig(null);
+        }}
+        onSuccess={load}
+      />
+
+      <ImportGigsModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={load}
+      />
     </div>
+
   );
 }
 
