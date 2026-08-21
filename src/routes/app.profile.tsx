@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { patchRecord } from "@/lib/insforge-crud";
 import { toast } from "sonner";
+import { cn } from "@/lib/format";
 import { MapPin, Plus, Trash2, Check, Smartphone, User, Mail, Loader2, Navigation } from "lucide-react";
 import { fetchAddresses, saveAddress, removeAddress, setDefaultAddress, type Address } from "@/lib/addresses-api";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
