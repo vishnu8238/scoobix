@@ -48,7 +48,7 @@ function LogisticsGigs() {
   const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [selectedDate, setSelectedDate] = useState(startOfToday());
+  const [selectedDateKey, setSelectedDateKey] = useState(format(startOfToday(), "yyyy-MM-dd"));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>({ initial: true });
   const [isTesting, setIsTesting] = useState(false);
