@@ -39,6 +39,7 @@ export const Route = createFileRoute("/restaurant/$id")({
 function RestaurantPage() {
   const loaderR = Route.useLoaderData() as Restaurant;
   const [r, setR] = useState<Restaurant>(loaderR);
+  console.log("[RESTAURANT_PAGE_DEBUG] loaderR:", loaderR.name, "r state:", r.name);
   
   useEffect(() => {
     setR(loaderR);
