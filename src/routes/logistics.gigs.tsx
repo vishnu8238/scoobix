@@ -48,7 +48,7 @@ function LogisticsGigs() {
   const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [selectedDate, setSelectedDate] = useState(startOfToday());
+  const [selectedDateKey, setSelectedDateKey] = useState(format(startOfToday(), "yyyy-MM-dd"));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>({ initial: true });
   const [isTesting, setIsTesting] = useState(false);
@@ -152,23 +152,30 @@ function LogisticsGigs() {
       const counts = await fetchGigEnrollmentCounts(gigIds);
       setEnrollmentCounts(counts);
       
-      // 3. Local date normalization
-      const localDateStr = format(selectedDate, "yyyy-MM-dd");
+      // 3. Date key normalization for Asia/Kolkata
+      const getKolkataDateKey = (dateInput: string | Date) => {
+        try {
+          const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+          if (isNaN(date.getTime())) return null;
+          return new Intl.DateTimeFormat('en-CA', { 
+            timeZone: 'Asia/Kolkata', 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          }).format(date);
+        } catch (e) {
+          return null;
+        }
+      };
       
       // 4. Normalized filtering & data enrichment
       const data = all.filter(g => {
         if (!g.start_time) return false;
-        // Handle only active/scheduled or uppercase variants
         const s = g.status?.toUpperCase();
         if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
 
-        try {
-          // Compare YYYY-MM-DD to handle ISO strings while respecting local day boundaries
-          const gigDateStr = g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time;
-          return gigDateStr === localDateStr;
-        } catch (e) {
-          return false;
-        }
+        const gigDateKey = getKolkataDateKey(g.start_time);
+        return gigDateKey === selectedDateKey;
       }).map(g => ({
         ...g,
         enrolled_count: counts[g.id] || 0
@@ -181,7 +188,8 @@ function LogisticsGigs() {
         lastLoad: new Date().toISOString(),
         total: all.length,
         filtered: data.length,
-        filterDate: localDateStr,
+        filterDate: selectedDateKey,
+        businessTimezone: 'Asia/Kolkata',
         firstGig: all[0] ? { id: all[0].id, title: all[0].title, isDemo: !!all[0].metadata?.is_demo } : "none",
         sessionActive: !!insforge.auth.session?.accessToken,
         tokenPrefix: insforge.auth.session?.accessToken ? insforge.auth.session.accessToken.substring(0, 10) : "none"
@@ -203,7 +211,7 @@ function LogisticsGigs() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDateKey]);
 
 
 
@@ -305,7 +313,13 @@ function LogisticsGigs() {
 
   useEffect(() => { void load(); }, [load, version]);
 
-  const dates = Array.from({ length: 7 }).map((_, i) => addDays(startOfToday(), i - 1));
+  const dates = Array.from({ length: 7 }).map((_, i) => {
+    const d = addDays(startOfToday(), i - 1);
+    return {
+      date: d,
+      key: format(d, "yyyy-MM-dd")
+    };
+  });
 
   const filteredGigs = gigs.filter(g => 
     g.title?.toLowerCase().includes(q.toLowerCase())
@@ -436,10 +450,10 @@ function LogisticsGigs() {
     }));
 
     exportExcel([{
-      title: `Gigs - ${format(selectedDate, "yyyy-MM-dd")}`,
+      title: `Gigs - ${selectedDateKey}`,
       columns,
       rows: rows as any[]
-    }], `scoobix-gigs-${format(selectedDate, "yyyy-MM-dd")}`);
+    }], `scoobix-gigs-${selectedDateKey}`);
     
     toast.success("Excel export started.");
   };
@@ -524,19 +538,19 @@ function LogisticsGigs() {
               </button>
               
               <div className="flex items-center gap-2 rounded-2xl bg-emerald-50/50 p-1 ring-1 ring-emerald-100 dark:bg-emerald-950/20 dark:ring-emerald-900/30">
-                {dates.map((date) => (
+                {dates.map((d) => (
                   <button
-                    key={date.toISOString()}
-                    onClick={() => setSelectedDate(date)}
+                    key={d.key}
+                    onClick={() => setSelectedDateKey(d.key)}
                     className={cn(
                       "flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black transition-all",
-                      format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
+                      d.key === selectedDateKey
                         ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
                         : "text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-400"
                     )}
                   >
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(date, "EEE, dd MMM, yyyy")}
+                    {format(d.date, "EEE, dd MMM, yyyy")}
                   </button>
                 ))}
               </div>
@@ -609,7 +623,7 @@ function LogisticsGigs() {
                   <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Gigs for {format(selectedDate, "EEE dd MMM").toUpperCase()}
+                  Gigs for {format(parseISO(selectedDateKey), "EEE dd MMM").toUpperCase()}
                 </h2>
               </div>
               <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
@@ -720,14 +734,14 @@ function LogisticsGigs() {
           city={city} setCity={setCity}
           entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
-          date={selectedDate}
+          date={parseISO(selectedDateKey)}
         />
       ) : (
         <CapacityChangeView 
           city={city} setCity={setCity}
           entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
-          date={selectedDate}
+          date={parseISO(selectedDateKey)}
         />
       )}
 
