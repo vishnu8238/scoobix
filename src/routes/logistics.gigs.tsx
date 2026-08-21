@@ -395,13 +395,18 @@ function LogisticsGigs() {
       }
     }
 
-    const action = count > 0 ? "cancel" : "permanently delete";
-    if (!confirm(`Are you sure you want to ${action} this gig?`)) return;
+    const outcome = count > 0 
+      ? "changing status to CANCELLED (enrollments will be preserved)" 
+      : "PERMANENTLY deleting this gig (zero enrollments)";
+    
+    if (!confirm(`Are you sure you want to proceed?\n\nReal Outcome: ${outcome}\n\nThis action cannot be undone.`)) return;
 
     setLoading(true);
     try {
       await deleteGig(gig.id, count);
       toast.success(`Gig ${count > 0 ? "cancelled" : "deleted"} successfully`);
+      setIsEditModalOpen(false);
+      setEditingGig(null);
       load();
     } catch (err: any) {
       toast.error("Operation failed: " + err.message);
