@@ -604,9 +604,17 @@ function LogisticsGigs() {
                     key={gig.id} 
                     gig={gig} 
                     enrollmentCount={(gig as any).enrolled_count || 0}
+                    selected={selectedGigIds.includes(gig.id)}
+                    onSelect={handleSelectGig}
+                    onEdit={(g) => {
+                      setEditingGig(g);
+                      setIsEditModalOpen(true);
+                    }}
+                    onDelete={handleDeleteGig}
                   />
                 ))}
               </div>
+
             )}
             {diagnostics && (
               <div className="mt-8 rounded-2xl bg-slate-900/5 p-6 text-[10px] font-mono text-slate-500 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
