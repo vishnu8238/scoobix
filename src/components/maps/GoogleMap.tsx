@@ -236,12 +236,13 @@ function GoogleMapInner({
     }
 
     if (hasPoints) {
+      didFitRef.current = true;
       map.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 });
       (window as any).google.maps.event.addListenerOnce(map, 'idle', () => {
         if (map.getZoom()! > 15) map.setZoom(15);
       });
     }
-  }, [map, markers, route, polygons, pickedAt]);
+  }, [map, markers, route, polygons, pickedAt, isEditing]);
 
   const defaultCenter = useMemo(() => {
     if (center) return center;
