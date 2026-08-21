@@ -112,7 +112,7 @@ function PartnerProfile() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Cover Banner</Label>
-              <ImageUploader type="cover" onChange={(r) => setForm(f => ({ ...f, cover_url: r?.image_url ?? "" }))} />
+              <ImageUploader type="logo" onChange={(r) => setForm(f => ({ ...f, cover_url: r?.image_url ?? "" }))} />
             </div>
           </div>
         </section>
