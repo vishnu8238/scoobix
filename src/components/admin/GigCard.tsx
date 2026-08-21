@@ -1,6 +1,6 @@
 import { type Gig } from "@/lib/gigs-api";
 import { format, parseISO, differenceInHours } from "date-fns";
-import { Clock, MapPin, Users, ChevronRight, MoreHorizontal, Edit2 } from "lucide-react";
+import { Clock, MapPin, Users, ChevronRight, MoreHorizontal, Edit2, XCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
