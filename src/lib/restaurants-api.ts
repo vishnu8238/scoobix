@@ -44,7 +44,9 @@ export async function fetchCustomerData() {
     // 1. Fetch all restaurants that have potential to be live
     // We fetch a broader set and filter in JS to handle case-insensitivity and complex flags
     const restaurants = await listTable<any>("restaurants", {
-      limit: 100
+      limit: 100,
+      archived: "eq.false",
+      is_open: "eq.true"
     }, { ttl: 60 });
 
     // 2. Fetch all menu items for these restaurants
