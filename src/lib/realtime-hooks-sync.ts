@@ -16,12 +16,13 @@ export function useRestaurantRealtime() {
   useEffect(() => {
     // Admin verification/restaurants, Customer discovery/menu, Partner dashboard
     const tables = ["restaurants", "restaurant_kyc", "menu_items", "menu_addons"];
-    return onTablesChange(tables, (payload) => {
+    const unsubscribe = onTablesChange(tables, (payload) => {
       if (payload?.table) {
         console.log(`[REALTIME_SYNC] Table change: ${payload.table}, invalidating...`);
         invalidateTable(payload.table);
       }
     });
+    return () => unsubscribe();
   }, []);
 }
 
@@ -56,11 +57,12 @@ export function useOrderRealtime(orderId?: string) {
 export function useGigRealtime() {
   useEffect(() => {
     const tables = ["delivery_gigs", "rider_gig_enrollments"];
-    return onTablesChange(tables, (payload) => {
+    const unsubscribe = onTablesChange(tables, (payload) => {
       if (payload?.table) {
         invalidateTable(payload.table);
       }
     });
+    return () => unsubscribe();
   }, []);
 }
 
@@ -94,11 +96,12 @@ export function useIdentityRealtime(userId?: string) {
 export function useNotificationRealtime(userId?: string) {
   useEffect(() => {
     const tables = ["notifications", "notification_deliveries", "notification_campaigns"];
-    return onTablesChange(tables, (payload) => {
+    const unsubscribe = onTablesChange(tables, (payload) => {
       if (payload?.table && (!userId || (payload.row && payload.row.user_id === userId))) {
         invalidateTable(payload.table);
       }
     });
+    return () => unsubscribe();
   }, [userId]);
 }
 
