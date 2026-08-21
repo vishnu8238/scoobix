@@ -182,11 +182,8 @@ export function EditGigModal({ gig, isOpen, onClose, onSuccess, onDelete }: Edit
             {onDelete && (
               <button 
                 type="button"
-                onClick={() => {
-                  onDelete(gig);
-                  onClose();
-                }}
-                className="mr-auto flex items-center gap-2 px-4 py-3 rounded-2xl text-xs font-black text-rose-600 hover:bg-rose-50 transition"
+                onClick={() => onDelete(gig)}
+                className="mr-auto flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black text-rose-600 border border-rose-200 bg-rose-50 hover:bg-rose-600 hover:text-white transition active:scale-95"
               >
                 {(gig as any).enrolled_count > 0 ? <XCircle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
                 {(gig as any).enrolled_count > 0 ? "Cancel Gig" : "Delete Gig"}
@@ -197,7 +194,7 @@ export function EditGigModal({ gig, isOpen, onClose, onSuccess, onDelete }: Edit
               onClick={onClose}
               className="px-6 py-3 rounded-2xl text-xs font-black bg-muted hover:bg-muted/80 transition"
             >
-              Cancel
+              Close
             </button>
             <button 
               type="submit"
