@@ -623,7 +623,7 @@ function LogisticsGigs() {
                   <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Gigs for {format(selectedDate, "EEE dd MMM").toUpperCase()}
+                  Gigs for {format(parseISO(selectedDateKey), "EEE dd MMM").toUpperCase()}
                 </h2>
               </div>
               <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
