@@ -774,9 +774,7 @@ function LogisticsGigs() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={load}
-      />
-      </PortalErrorBoundary>
-
+        </div>
       </PortalErrorBoundary>
     );
 }
