@@ -1,6 +1,6 @@
 import { type Gig } from "@/lib/gigs-api";
 import { format, parseISO, differenceInHours } from "date-fns";
-import { Clock, MapPin, Users, ChevronRight, MoreHorizontal, Edit2, XCircle } from "lucide-react";
+import { Clock, MapPin, Users, ChevronRight, MoreHorizontal, Edit2, XCircle, Trash2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -58,11 +58,14 @@ export function GigCard({
           <span className="text-[10px] font-medium text-muted-foreground/60">#{gig.id.slice(0, 5).toUpperCase()}</span>
           {onDelete && (
              <button 
-               onClick={() => onDelete(gig)}
+               onClick={(e) => {
+                 e.stopPropagation();
+                 onDelete(gig);
+               }}
                className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                title={enrollmentCount > 0 ? "Cancel Gig" : "Delete Gig"}
              >
-               <XCircle className="h-4 w-4" />
+               {enrollmentCount > 0 ? <XCircle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
              </button>
           )}
         </div>

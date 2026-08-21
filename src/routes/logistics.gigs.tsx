@@ -21,7 +21,7 @@ import {
   TrendingUp,
   Settings
 } from "lucide-react";
-import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, type Gig } from "@/lib/gigs-api";
+import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, bulkDeleteGigs, type Gig } from "@/lib/gigs-api";
 import { format, addDays, startOfToday, parseISO, isAfter } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
@@ -340,21 +340,29 @@ function LogisticsGigs() {
       .map(g => g.id);
 
     if (cancellableIds.length === 0) return;
-
-    const totalEnrollments = cancellableIds.reduce((acc, id) => acc + (enrollmentCounts[id] || 0), 0);
     
-    if (!confirm(`Are you sure you want to cancel ${cancellableIds.length} gigs? ${totalEnrollments} riders will be notified.`)) {
+    const zeroEnrollmentIds = cancellableIds.filter(id => (enrollmentCounts[id] || 0) === 0);
+    const enrolledIds = cancellableIds.filter(id => (enrollmentCounts[id] || 0) > 0);
+    const totalEnrollments = enrolledIds.reduce((acc, id) => acc + (enrollmentCounts[id] || 0), 0);
+    
+    if (!confirm(`Are you sure you want to process ${cancellableIds.length} gigs?\n- ${zeroEnrollmentIds.length} will be permanently deleted\n- ${enrolledIds.length} will be cancelled (${totalEnrollments} riders notified)`)) {
       return;
     }
 
     setLoading(true);
     try {
-      await bulkCancelGigs(cancellableIds);
-      toast.success(`${cancellableIds.length} gigs cancelled successfully`);
+      if (zeroEnrollmentIds.length > 0) {
+        await bulkDeleteGigs(zeroEnrollmentIds);
+      }
+      if (enrolledIds.length > 0) {
+        await bulkCancelGigs(enrolledIds);
+      }
+      
+      toast.success(`Processed ${cancellableIds.length} gigs successfully`);
       setSelectedGigIds([]);
       load();
     } catch (err: any) {
-      toast.error("Bulk cancellation failed: " + err.message);
+      toast.error("Bulk processing failed: " + err.message);
     } finally {
       setLoading(false);
     }

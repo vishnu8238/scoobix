@@ -7,7 +7,7 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
-import { Loader2, Edit2, AlertTriangle } from "lucide-react";
+import { Loader2, Edit2, AlertTriangle, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { updateGig, type Gig } from "@/lib/gigs-api";
 import { cn } from "@/lib/utils";
@@ -17,9 +17,10 @@ interface EditGigModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onDelete?: (gig: Gig) => void;
 }
 
-export function EditGigModal({ gig, isOpen, onClose, onSuccess }: EditGigModalProps) {
+export function EditGigModal({ gig, isOpen, onClose, onSuccess, onDelete }: EditGigModalProps) {
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -178,6 +179,19 @@ export function EditGigModal({ gig, isOpen, onClose, onSuccess }: EditGigModalPr
           )}
 
           <DialogFooter className="pt-6 border-t border-border/40 gap-3">
+            {onDelete && (
+              <button 
+                type="button"
+                onClick={() => {
+                  onDelete(gig);
+                  onClose();
+                }}
+                className="mr-auto flex items-center gap-2 px-4 py-3 rounded-2xl text-xs font-black text-rose-600 hover:bg-rose-50 transition"
+              >
+                {(gig as any).enrolled_count > 0 ? <XCircle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                {(gig as any).enrolled_count > 0 ? "Cancel Gig" : "Delete Gig"}
+              </button>
+            )}
             <button 
               type="button"
               onClick={onClose}
