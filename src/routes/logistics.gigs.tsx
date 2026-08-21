@@ -452,6 +452,13 @@ function LogisticsGigs() {
           
           <div className="flex items-center gap-2 border-l border-border/60 pl-3">
             <button 
+              onClick={() => setIsImportModalOpen(true)}
+              title="Import Gigs"
+              className="group flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 transition-all hover:bg-muted active:scale-95"
+            >
+              <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </button>
+            <button 
               onClick={() => handleExport()}
               disabled={loading || filteredGigs.length === 0}
               title="Export Excel"
@@ -459,6 +466,7 @@ function LogisticsGigs() {
             >
               <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </button>
+
             <button 
               onClick={() => load()}
               className="group flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 transition-all hover:bg-muted active:scale-95"
