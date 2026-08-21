@@ -316,15 +316,16 @@ export function useOrders() {
 
 
 import { ScoobixExtrasProviders } from "./scoobix-extras";
+import { ScoobixLoyaltyProviders } from "./scoobix-loyalty";
 
 /* Providers */
 export function ScoobixProviders({ children }: { children: ReactNode }) {
   return (
     <CmsProvider>
       <CartProvider>
-        <ScoobixExtrasProviders>
-          {children}
-        </ScoobixExtrasProviders>
+        <ScoobixLoyaltyProviders>
+          <ScoobixExtrasProviders>{children}</ScoobixExtrasProviders>
+        </ScoobixLoyaltyProviders>
       </CartProvider>
     </CmsProvider>
   );
