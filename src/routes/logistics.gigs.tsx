@@ -774,9 +774,10 @@ function LogisticsGigs() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={load}
-        </div>
-      </PortalErrorBoundary>
-    );
+      />
+      </div>
+    </PortalErrorBoundary>
+  );
 }
 
 function SlotsDetailsView({ city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
