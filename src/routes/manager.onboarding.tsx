@@ -864,9 +864,6 @@ function Field({
         placeholder={placeholder}
         className="h-11 rounded-2xl bg-secondary/50"
       />
-      </div>
     </div>
-  );
-}
   );
 }
