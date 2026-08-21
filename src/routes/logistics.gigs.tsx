@@ -21,7 +21,7 @@ import {
   TrendingUp,
   Settings
 } from "lucide-react";
-import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, type Gig } from "@/lib/gigs-api";
+import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, bulkDeleteGigs, type Gig } from "@/lib/gigs-api";
 import { format, addDays, startOfToday, parseISO, isAfter } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
@@ -340,21 +340,29 @@ function LogisticsGigs() {
       .map(g => g.id);
 
     if (cancellableIds.length === 0) return;
-
-    const totalEnrollments = cancellableIds.reduce((acc, id) => acc + (enrollmentCounts[id] || 0), 0);
     
-    if (!confirm(`Are you sure you want to cancel ${cancellableIds.length} gigs? ${totalEnrollments} riders will be notified.`)) {
+    const zeroEnrollmentIds = cancellableIds.filter(id => (enrollmentCounts[id] || 0) === 0);
+    const enrolledIds = cancellableIds.filter(id => (enrollmentCounts[id] || 0) > 0);
+    const totalEnrollments = enrolledIds.reduce((acc, id) => acc + (enrollmentCounts[id] || 0), 0);
+    
+    if (!confirm(`Are you sure you want to process ${cancellableIds.length} gigs?\n- ${zeroEnrollmentIds.length} will be permanently deleted\n- ${enrolledIds.length} will be cancelled (${totalEnrollments} riders notified)`)) {
       return;
     }
 
     setLoading(true);
     try {
-      await bulkCancelGigs(cancellableIds);
-      toast.success(`${cancellableIds.length} gigs cancelled successfully`);
+      if (zeroEnrollmentIds.length > 0) {
+        await bulkDeleteGigs(zeroEnrollmentIds);
+      }
+      if (enrolledIds.length > 0) {
+        await bulkCancelGigs(enrolledIds);
+      }
+      
+      toast.success(`Processed ${cancellableIds.length} gigs successfully`);
       setSelectedGigIds([]);
       load();
     } catch (err: any) {
-      toast.error("Bulk cancellation failed: " + err.message);
+      toast.error("Bulk processing failed: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -535,28 +543,18 @@ function LogisticsGigs() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 pr-4 border-r border-border/40">
+              <div className="flex items-center gap-2 rounded-xl bg-card p-2 ring-1 ring-border/60">
                 <input 
-                  type="checkbox" 
+                  type="checkbox"
                   checked={selectedGigIds.length === filteredGigs.length && filteredGigs.length > 0}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  ref={(el) => {
+                  ref={el => {
                     if (el) el.indeterminate = selectedGigIds.length > 0 && selectedGigIds.length < filteredGigs.length;
                   }}
-                  className="h-4 w-4 rounded-md border-border/60 bg-muted/50 accent-primary"
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="h-4 w-4 rounded-md border-border/60 bg-muted/50 accent-primary focus:ring-primary/40 transition-all cursor-pointer ml-2"
                 />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Select All</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mr-2">Select All</span>
               </div>
-
-              {selectedGigIds.length > 0 && (
-                <button 
-                  onClick={handleBulkCancel}
-                  className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-1.5 text-[10px] font-black text-rose-600 ring-1 ring-rose-200 transition-all hover:bg-rose-100 active:scale-95"
-                >
-                  <XCircle className="h-3.5 w-3.5" />
-                  Cancel Selected ({selectedGigIds.length})
-                </button>
-              )}
 
               <div className="relative flex h-10 items-center rounded-xl bg-card px-3 ring-1 ring-border/60 focus-within:ring-primary/40">
                 <Search className="h-4 w-4 text-muted-foreground" />
@@ -569,6 +567,36 @@ function LogisticsGigs() {
               </div>
             </div>
           </div>
+
+          {selectedGigIds.length > 0 && (
+            <div className="sticky top-4 z-20 mb-6 flex items-center justify-between rounded-[2rem] bg-slate-900 px-8 py-4 text-white shadow-2xl ring-1 ring-white/10 dark:bg-slate-900/90 dark:backdrop-blur-xl">
+              <div className="flex items-center gap-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-black tracking-tight">{selectedGigIds.length} Gigs Selected</p>
+                  <p className="text-[10px] font-bold text-white/50">Manage bulk actions for the selected fleet slots</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setSelectedGigIds([])}
+                  className="px-6 py-2.5 rounded-xl text-xs font-black hover:bg-white/10 transition active:scale-[0.98]"
+                >
+                  Clear Selection
+                </button>
+                <button 
+                  onClick={handleBulkCancel}
+                  className="flex items-center gap-2 rounded-xl bg-rose-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-rose-950/20 hover:bg-rose-700 transition active:scale-[0.98]"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Cancel Selected
+                </button>
+              </div>
+            </div>
+          )}
 
           <section>
             <div className="mb-8 flex items-center justify-between">

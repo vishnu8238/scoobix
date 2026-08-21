@@ -2,6 +2,7 @@ import { listTable, createRecord, patchRecord, deleteRecord } from "./insforge-c
 import { publishTableChange } from "./realtime-bus";
 import { newUuid } from "./orders-api";
 import { insforge } from "./insforge";
+import { publishRiderRefresh } from "./delivery-sync";
 
 export type Gig = {
   id: string;
@@ -104,6 +105,7 @@ export async function createGig(gig: Partial<Gig>) {
     const res = await createRecord<Gig>(AUTHORITATIVE_TABLE, record);
     if (res) {
       publishTableChange(AUTHORITATIVE_TABLE, "insert", res as any);
+      publishRiderRefresh();
       return res;
     }
     throw new Error(`Failed to create gig in ${AUTHORITATIVE_TABLE}`);
@@ -115,16 +117,11 @@ export async function createGig(gig: Partial<Gig>) {
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
   try {
-    // Correctly map UI fields to database columns for metadata consistency
     const dbPatch: any = { ...patch };
     
-    // Ensure metadata is synchronized if root fields are provided
     if (patch.reward_amount !== undefined) dbPatch.payout = patch.reward_amount;
     if (patch.payout !== undefined) dbPatch.reward_amount = patch.payout;
     
-    // Merge existing metadata if we have it to avoid wiping custom fields
-    // In a real app, we might fetch first, but for now we'll rely on patchRecord's shallow merge
-    // and explicitly map known UI fields into the metadata blob for UI parity
     const metadataUpdate: any = {};
     if (patch.title !== undefined) metadataUpdate.title = patch.title;
     if (patch.description !== undefined) metadataUpdate.description = patch.description;
@@ -139,7 +136,10 @@ export async function updateGig(id: string, patch: Partial<Gig>) {
     }
 
     const res = await patchRecord<Gig>(AUTHORITATIVE_TABLE, id, dbPatch);
-    if (res) return res;
+    if (res) {
+      publishRiderRefresh();
+      return res;
+    }
     throw new Error(`Gig ${id} not found in ${AUTHORITATIVE_TABLE}`);
   } catch (error: any) {
     console.error(`[GIGS_API] Update failed for ${AUTHORITATIVE_TABLE}:`, error.message);
@@ -152,15 +152,32 @@ export async function deleteGig(gigId: string, enrollmentCount: number) {
     if (enrollmentCount === 0) {
       const res = await deleteRecord(AUTHORITATIVE_TABLE, gigId);
       publishTableChange(AUTHORITATIVE_TABLE, "delete", { id: gigId });
+      publishRiderRefresh();
       return res;
     } else {
-      // If enrolled, transition to CANCELLED instead of hard delete
       const res = await patchRecord(AUTHORITATIVE_TABLE, gigId, { status: "CANCELLED" });
-      if (res) publishTableChange(AUTHORITATIVE_TABLE, "update", res as any);
+      if (res) {
+        publishTableChange(AUTHORITATIVE_TABLE, "update", res as any);
+        publishRiderRefresh();
+      }
       return res;
     }
   } catch (error: any) {
     console.error(`[GIGS_API] Delete/Cancel failed for ${AUTHORITATIVE_TABLE}:`, error.message);
+    throw error;
+  }
+}
+
+export async function bulkDeleteGigs(gigIds: string[]) {
+  try {
+    const results = await Promise.all(
+      gigIds.map(id => deleteRecord(AUTHORITATIVE_TABLE, id))
+    );
+    publishTableChange(AUTHORITATIVE_TABLE, "delete", { ids: gigIds } as any);
+    publishRiderRefresh();
+    return results;
+  } catch (error: any) {
+    console.error(`[GIGS_API] Bulk delete failed:`, error.message);
     throw error;
   }
 }
@@ -171,13 +188,13 @@ export async function bulkCancelGigs(gigIds: string[]) {
       gigIds.map(id => patchRecord(AUTHORITATIVE_TABLE, id, { status: "CANCELLED" }))
     );
     publishTableChange(AUTHORITATIVE_TABLE, "update", { ids: gigIds, status: "CANCELLED" } as any);
+    publishRiderRefresh();
     return results;
   } catch (error: any) {
     console.error(`[GIGS_API] Bulk cancel failed:`, error.message);
     throw error;
   }
 }
-
 
 export async function fetchGigParticipants(gigId: string) {
   try {
@@ -191,16 +208,9 @@ export async function fetchGigParticipants(gigId: string) {
   }
 }
 
-/**
- * Fetches enrollment counts for a list of gig IDs from rider_gig_enrollments.
- * Used for high-performance aggregate displays in Logistics.
- */
 export async function fetchGigEnrollmentCounts(gigIds: string[]): Promise<Record<string, number>> {
   if (!gigIds.length) return {};
   try {
-    // InsForge/PostgREST doesn't support grouping natively in listTable yet,
-    // so we fetch the enrollment rows for these gigs and count them client-side.
-    // Given MAX_ROWS is 200 and we're filtering by specific IDs, this is safe.
     const enrollments = await listTable<GigParticipant>("rider_gig_enrollments", {
       gig_id: `in.(${gigIds.join(",")})`
     }, { fresh: true, ttl: 0 });
@@ -219,7 +229,6 @@ export async function fetchGigEnrollmentCounts(gigIds: string[]): Promise<Record
 export async function enrollInGig(gigId: string, riderId: string) {
   const TABLE = "rider_gig_enrollments";
   
-  // 1. Authoritative checks
   const [gigRows] = await Promise.all([
     fetchGigs({ id: gigId })
   ]);
@@ -228,7 +237,6 @@ export async function enrollInGig(gigId: string, riderId: string) {
   if (!gig) throw new Error("Gig not found");
   if (gig.status.toUpperCase() !== "ACTIVE" && gig.status.toUpperCase() !== "SCHEDULED") throw new Error("Gig is not active for booking");
   
-  // Enrollment table might not exist yet in production schema
   try {
     const existing = await listTable<GigParticipant>(TABLE, { gig_id: `eq.${gigId}`, rider_id: `eq.${riderId}` });
     if (existing && existing.length > 0) return existing[0];

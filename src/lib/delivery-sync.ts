@@ -147,3 +147,10 @@ export async function reportDeliveryIssue(data: {
 
   return res;
 }
+
+/**
+ * Global signal for the Rider portal to refresh delivery-related data.
+ */
+export function publishRiderRefresh() {
+  publishTableChange("rider_profiles", "update", { refresh_signal: Date.now() } as any);
+}

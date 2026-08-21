@@ -32,18 +32,45 @@ export function ImportGigsModal({ isOpen, onClose, onSuccess }: ImportGigsModalP
     setLoading(true);
     try {
       const text = await file.text();
-      const rows = text.split("\n").map(line => line.split(",").map(cell => cell.trim()));
-      
-      // Basic CSV parser (assuming Scoobix format)
-      // Headers: id, title, description, payout, capacity, start_time, end_time, city_id, zone_id
-      const headers = rows[0];
-      const data = rows.slice(1).filter(r => r.length > 1).map(r => {
-        const obj: any = {};
-        headers.forEach((h, i) => {
-          obj[h.toLowerCase().replace(/ /g, "_")] = r[i];
+      let data: any[] = [];
+
+      // Check if it's the Excel export format (HTML table)
+      if (text.includes("<table") || text.includes("<TABLE")) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, "text/html");
+        const rows = Array.from(doc.querySelectorAll("tr"));
+        
+        if (rows.length > 1) {
+          const headers = Array.from(rows[0].querySelectorAll("th, td")).map(c => c.textContent?.trim().toLowerCase().replace(/ /g, "_") || "");
+          data = rows.slice(1).map(tr => {
+            const cells = Array.from(tr.querySelectorAll("td"));
+            const obj: any = {};
+            headers.forEach((h, i) => {
+              if (h) obj[h] = cells[i]?.textContent?.trim() || "";
+            });
+            return obj;
+          });
+        }
+      } else {
+        // Fallback to CSV
+        const rows = text.split("\n").map(line => line.split(",").map(cell => cell.trim()));
+        const headers = rows[0];
+        data = rows.slice(1).filter(r => r.length > 1).map(r => {
+          const obj: any = {};
+          headers.forEach((h, i) => {
+            obj[h.toLowerCase().replace(/ /g, "_")] = r[i];
+          });
+          return obj;
         });
-        return obj;
-      });
+      }
+
+      // Map common export headers to schema fields if necessary
+      data = data.map(item => ({
+        ...item,
+        id: item.gig_id || item.id,
+        reward_amount: item.payout || item.reward_amount,
+        capacity: item.capacity || item.total_capacity
+      }));
 
       // Validation
       const cities = await fetchCities();
@@ -135,10 +162,10 @@ export function ImportGigsModal({ isOpen, onClose, onSuccess }: ImportGigsModalP
           {step === "upload" ? (
             <div className="flex flex-col items-center justify-center border-2 border-dashed border-border/60 rounded-[2rem] p-12 bg-muted/20">
               <Upload className="h-12 w-12 text-muted-foreground/40 mb-4" />
-              <p className="text-sm font-bold text-muted-foreground mb-6">Select a CSV file matching the Scoobix format</p>
+              <p className="text-sm font-bold text-muted-foreground mb-6">Select a CSV or .xls file matching the Scoobix format</p>
               <input 
                 type="file" 
-                accept=".csv"
+                accept=".csv,.xls"
                 onChange={handleFileUpload}
                 className="hidden" 
                 id="gig-import-file" 
