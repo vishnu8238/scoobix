@@ -288,15 +288,20 @@ function OnboardingFlow() {
         });
       }
 
-      // Final identity verification
+      // Single, up-front identity guard: no canonical-UUID validation runs after KYC persistence.
       const activeId = saved?.id ?? canonicalId;
+      if (!activeId) {
+        console.error("[ONBOARDING_SUBMIT] No canonical restaurant identity available");
+        throw new Error("Restaurant identity is unavailable. Please try again.");
+      }
 
-      if (activeId) {
-        if (saved) setRecord(saved);
-        
-        if (id !== activeId) {
-          navigate({ to: "/manager/onboarding", search: { id: activeId }, replace: true });
-        }
+      if (saved) setRecord(saved);
+
+      if (id !== activeId) {
+        navigate({ to: "/manager/onboarding", search: { id: activeId }, replace: true });
+      }
+
+      {
         
         // 2. Authoritatively persist all compliance identifiers to restaurant_kyc
         try {
