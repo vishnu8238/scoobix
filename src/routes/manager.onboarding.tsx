@@ -31,6 +31,7 @@ import { DuplicateDialog, useDuplicateCheck, type DuplicateChoice } from "@/comp
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { LocationPicker } from "@/components/maps/LocationPicker";
 import { insforge } from "@/lib/insforge";
+import { PortalErrorBoundary } from "@/components/cravio/PortalErrorBoundary";
 
 type Search = { id?: string };
 
@@ -863,6 +864,7 @@ function Field({
         placeholder={placeholder}
         className="h-11 rounded-2xl bg-secondary/50"
       />
-    </div>
+      </div>
+    </PortalErrorBoundary>
   );
 }

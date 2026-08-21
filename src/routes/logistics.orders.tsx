@@ -7,6 +7,7 @@ import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2, Database, Search, ChevronDown, Filter, X, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { PortalErrorBoundary } from "@/components/cravio/PortalErrorBoundary";
 
 export const Route = createFileRoute("/logistics/orders")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Orders" }] }),
@@ -172,7 +173,8 @@ function OrderLedger() {
   };
 
   return (
-    <div className="flex h-screen bg-[#F9F9F7] text-[#333333] font-sans overflow-hidden">
+    <PortalErrorBoundary portal="Logistics Orders">
+      <div className="flex h-screen bg-[#F9F9F7] text-[#333333] font-sans overflow-hidden">
       {/* 260px Left SEARCH panel */}
       <aside className="w-[260px] border-r border-[#E8E8E2] bg-white p-6 flex flex-col gap-6 overflow-y-auto">
         <div className="flex items-center gap-2 mb-2">
@@ -417,5 +419,6 @@ function OrderLedger() {
         </section>
       </main>
     </div>
+  </PortalErrorBoundary>
   );
 }
