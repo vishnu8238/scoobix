@@ -1,18 +1,27 @@
 import { type Gig } from "@/lib/gigs-api";
 import { format, parseISO, differenceInHours } from "date-fns";
-import { Clock, MapPin, Users, ChevronRight, MoreHorizontal, Edit2 } from "lucide-react";
+import { Clock, MapPin, Users, ChevronRight, MoreHorizontal, Edit2, XCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 interface GigCardProps {
   gig: Gig;
   onEdit?: (gig: Gig) => void;
-  // In a real app, these would come from joined data or counts
+  onDelete?: (gig: Gig) => void;
   enrollmentCount?: number;
-  maxEnrollment?: number;
+  selected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
-export function GigCard({ gig, onEdit, enrollmentCount = 0 }: GigCardProps) {
+export function GigCard({ 
+  gig, 
+  onEdit, 
+  onDelete,
+  enrollmentCount = 0, 
+  selected = false,
+  onSelect
+}: GigCardProps) {
+
   const startStr = gig.start_time || new Date().toISOString();
   const endStr = gig.end_time || new Date().toISOString();
   const start = parseISO(startStr);
@@ -24,18 +33,41 @@ export function GigCard({ gig, onEdit, enrollmentCount = 0 }: GigCardProps) {
   return (
     <div className="group relative flex flex-col rounded-[2rem] bg-card p-6 shadow-sm ring-1 ring-border/50 transition-all hover:shadow-md hover:ring-primary/20">
       <div className="mb-6 flex items-start justify-between">
-        <div className="flex flex-col gap-2">
-          <span className={cn(
-            "inline-flex w-fit rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm",
-            gig.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" :
-            gig.status === "SCHEDULED" ? "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" :
-            "bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
-          )}>
-            {gig.status === "ACTIVE" ? "Open" : gig.status.toLowerCase()}
-          </span>
+        <div className="flex items-center gap-3">
+          {onSelect && (
+            <input 
+              type="checkbox" 
+              checked={selected}
+              onChange={(e) => onSelect(gig.id, e.target.checked)}
+              className="h-4 w-4 rounded-md border-border/60 bg-muted/50 accent-primary focus:ring-primary/40 transition-all cursor-pointer"
+            />
+          )}
+          <div className="flex flex-col gap-2">
+            <span className={cn(
+              "inline-flex w-fit rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm",
+              gig.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" :
+              gig.status === "SCHEDULED" ? "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" :
+              gig.status === "CANCELLED" ? "bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400" :
+              "bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+            )}>
+              {gig.status === "ACTIVE" ? "Open" : gig.status.toLowerCase()}
+            </span>
+          </div>
         </div>
-        <span className="text-[10px] font-medium text-muted-foreground/60">#{gig.id.slice(0, 5).toUpperCase()}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-medium text-muted-foreground/60">#{gig.id.slice(0, 5).toUpperCase()}</span>
+          {onDelete && (
+             <button 
+               onClick={() => onDelete(gig)}
+               className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+               title={enrollmentCount > 0 ? "Cancel Gig" : "Delete Gig"}
+             >
+               <XCircle className="h-4 w-4" />
+             </button>
+          )}
+        </div>
       </div>
+
 
       <div className="mb-6 space-y-4">
         <div className="flex items-center gap-3">

@@ -115,7 +115,30 @@ export async function createGig(gig: Partial<Gig>) {
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
   try {
-    const res = await patchRecord<Gig>(AUTHORITATIVE_TABLE, id, patch as any);
+    // Correctly map UI fields to database columns for metadata consistency
+    const dbPatch: any = { ...patch };
+    
+    // Ensure metadata is synchronized if root fields are provided
+    if (patch.reward_amount !== undefined) dbPatch.payout = patch.reward_amount;
+    if (patch.payout !== undefined) dbPatch.reward_amount = patch.payout;
+    
+    // Merge existing metadata if we have it to avoid wiping custom fields
+    // In a real app, we might fetch first, but for now we'll rely on patchRecord's shallow merge
+    // and explicitly map known UI fields into the metadata blob for UI parity
+    const metadataUpdate: any = {};
+    if (patch.title !== undefined) metadataUpdate.title = patch.title;
+    if (patch.description !== undefined) metadataUpdate.description = patch.description;
+    if (patch.target_deliveries !== undefined) metadataUpdate.target_deliveries = patch.target_deliveries;
+    if (patch.start_time !== undefined) metadataUpdate.start_time = patch.start_time;
+    if (patch.end_time !== undefined) metadataUpdate.end_time = patch.end_time;
+    if (patch.capacity !== undefined) metadataUpdate.capacity = patch.capacity;
+    if (patch.city_id !== undefined) metadataUpdate.city_id = patch.city_id;
+    
+    if (Object.keys(metadataUpdate).length > 0) {
+      dbPatch.metadata = metadataUpdate;
+    }
+
+    const res = await patchRecord<Gig>(AUTHORITATIVE_TABLE, id, dbPatch);
     if (res) return res;
     throw new Error(`Gig ${id} not found in ${AUTHORITATIVE_TABLE}`);
   } catch (error: any) {
@@ -123,6 +146,38 @@ export async function updateGig(id: string, patch: Partial<Gig>) {
     throw error;
   }
 }
+
+export async function deleteGig(gigId: string, enrollmentCount: number) {
+  try {
+    if (enrollmentCount === 0) {
+      const res = await deleteRecord(AUTHORITATIVE_TABLE, gigId);
+      publishTableChange(AUTHORITATIVE_TABLE, "delete", { id: gigId });
+      return res;
+    } else {
+      // If enrolled, transition to CANCELLED instead of hard delete
+      const res = await patchRecord(AUTHORITATIVE_TABLE, gigId, { status: "CANCELLED" });
+      if (res) publishTableChange(AUTHORITATIVE_TABLE, "update", res as any);
+      return res;
+    }
+  } catch (error: any) {
+    console.error(`[GIGS_API] Delete/Cancel failed for ${AUTHORITATIVE_TABLE}:`, error.message);
+    throw error;
+  }
+}
+
+export async function bulkCancelGigs(gigIds: string[]) {
+  try {
+    const results = await Promise.all(
+      gigIds.map(id => patchRecord(AUTHORITATIVE_TABLE, id, { status: "CANCELLED" }))
+    );
+    publishTableChange(AUTHORITATIVE_TABLE, "update", { ids: gigIds, status: "CANCELLED" } as any);
+    return results;
+  } catch (error: any) {
+    console.error(`[GIGS_API] Bulk cancel failed:`, error.message);
+    throw error;
+  }
+}
+
 
 export async function fetchGigParticipants(gigId: string) {
   try {

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { insforge } from "@/lib/insforge";
 import { 
   Search, 
@@ -21,10 +21,13 @@ import {
   TrendingUp,
   Settings
 } from "lucide-react";
-import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, type Gig } from "@/lib/gigs-api";
-import { format, addDays, startOfToday, parseISO } from "date-fns";
+import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, type Gig } from "@/lib/gigs-api";
+import { format, addDays, startOfToday, parseISO, isAfter } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
+import { EditGigModal } from "@/components/admin/EditGigModal";
+import { ImportGigsModal } from "@/components/admin/ImportGigsModal";
+
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { performProductionGigTest } from "@/lib/logistics-ops.functions";
@@ -49,6 +52,11 @@ function LogisticsGigs() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>({ initial: true });
   const [isTesting, setIsTesting] = useState(false);
+  const [editingGig, setEditingGig] = useState<Gig | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedGigIds, setSelectedGigIds] = useState<string[]>([]);
+
 
   // Filters for Slots/Capacity
   const [city, setCity] = useState("all");
@@ -303,7 +311,81 @@ function LogisticsGigs() {
     g.title?.toLowerCase().includes(q.toLowerCase())
   );
 
+  const handleSelectGig = (id: string, selected: boolean) => {
+    setSelectedGigIds(prev => 
+      selected ? [...prev, id] : prev.filter(x => x !== id)
+    );
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedGigIds(filteredGigs.map(g => g.id));
+    } else {
+      setSelectedGigIds([]);
+    }
+  };
+
+  const handleBulkCancel = async () => {
+    if (selectedGigIds.length === 0) return;
+    
+    const selectedGigs = gigs.filter(g => selectedGigIds.includes(g.id));
+    const startedGigs = selectedGigs.filter(g => g.start_time && isAfter(new Date(), new Date(g.start_time)));
+    
+    if (startedGigs.length > 0) {
+      toast.warning(`${startedGigs.length} gigs have already started and cannot be cancelled.`);
+    }
+
+    const cancellableIds = selectedGigs
+      .filter(g => !g.start_time || !isAfter(new Date(), new Date(g.start_time)))
+      .map(g => g.id);
+
+    if (cancellableIds.length === 0) return;
+
+    const totalEnrollments = cancellableIds.reduce((acc, id) => acc + (enrollmentCounts[id] || 0), 0);
+    
+    if (!confirm(`Are you sure you want to cancel ${cancellableIds.length} gigs? ${totalEnrollments} riders will be notified.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await bulkCancelGigs(cancellableIds);
+      toast.success(`${cancellableIds.length} gigs cancelled successfully`);
+      setSelectedGigIds([]);
+      load();
+    } catch (err: any) {
+      toast.error("Bulk cancellation failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteGig = async (gig: Gig) => {
+    const count = enrollmentCounts[gig.id] || 0;
+    const isStarted = gig.start_time && isAfter(new Date(), new Date(gig.start_time));
+    
+    if (isStarted) {
+      toast.error("Cannot cancel a gig that has already started.");
+      return;
+    }
+
+    const action = count > 0 ? "cancel" : "permanently delete";
+    if (!confirm(`Are you sure you want to ${action} this gig?`)) return;
+
+    setLoading(true);
+    try {
+      await deleteGig(gig.id, count);
+      toast.success(`Gig ${count > 0 ? "cancelled" : "deleted"} successfully`);
+      load();
+    } catch (err: any) {
+      toast.error("Operation failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleExport = () => {
+
     if (filteredGigs.length === 0) {
       toast.info("No gigs to export for the selected filters.");
       return;
@@ -370,6 +452,13 @@ function LogisticsGigs() {
           
           <div className="flex items-center gap-2 border-l border-border/60 pl-3">
             <button 
+              onClick={() => setIsImportModalOpen(true)}
+              title="Import Gigs"
+              className="group flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 transition-all hover:bg-muted active:scale-95"
+            >
+              <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </button>
+            <button 
               onClick={() => handleExport()}
               disabled={loading || filteredGigs.length === 0}
               title="Export Excel"
@@ -377,6 +466,7 @@ function LogisticsGigs() {
             >
               <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </button>
+
             <button 
               onClick={() => load()}
               className="group flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 transition-all hover:bg-muted active:scale-95"
@@ -445,6 +535,29 @@ function LogisticsGigs() {
             </div>
 
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 pr-4 border-r border-border/40">
+                <input 
+                  type="checkbox" 
+                  checked={selectedGigIds.length === filteredGigs.length && filteredGigs.length > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  ref={(el) => {
+                    if (el) el.indeterminate = selectedGigIds.length > 0 && selectedGigIds.length < filteredGigs.length;
+                  }}
+                  className="h-4 w-4 rounded-md border-border/60 bg-muted/50 accent-primary"
+                />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Select All</span>
+              </div>
+
+              {selectedGigIds.length > 0 && (
+                <button 
+                  onClick={handleBulkCancel}
+                  className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-1.5 text-[10px] font-black text-rose-600 ring-1 ring-rose-200 transition-all hover:bg-rose-100 active:scale-95"
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  Cancel Selected ({selectedGigIds.length})
+                </button>
+              )}
+
               <div className="relative flex h-10 items-center rounded-xl bg-card px-3 ring-1 ring-border/60 focus-within:ring-primary/40">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input 
@@ -491,9 +604,17 @@ function LogisticsGigs() {
                     key={gig.id} 
                     gig={gig} 
                     enrollmentCount={(gig as any).enrolled_count || 0}
+                    selected={selectedGigIds.includes(gig.id)}
+                    onSelect={handleSelectGig}
+                    onEdit={(g) => {
+                      setEditingGig(g);
+                      setIsEditModalOpen(true);
+                    }}
+                    onDelete={handleDeleteGig}
                   />
                 ))}
               </div>
+
             )}
             {diagnostics && (
               <div className="mt-8 rounded-2xl bg-slate-900/5 p-6 text-[10px] font-mono text-slate-500 ring-1 ring-slate-200 dark:bg-white/5 dark:ring-white/10">
@@ -583,7 +704,24 @@ function LogisticsGigs() {
         onClose={() => setIsModalOpen(false)} 
         onSuccess={load}
       />
+
+      <EditGigModal 
+        gig={editingGig}
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingGig(null);
+        }}
+        onSuccess={load}
+      />
+
+      <ImportGigsModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={load}
+      />
     </div>
+
   );
 }
 
