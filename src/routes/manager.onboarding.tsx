@@ -865,6 +865,8 @@ function Field({
         className="h-11 rounded-2xl bg-secondary/50"
       />
       </div>
-    </PortalErrorBoundary>
+    </div>
+  );
+}
   );
 }

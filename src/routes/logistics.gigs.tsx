@@ -467,14 +467,14 @@ function LogisticsGigs() {
   return (
     <PortalErrorBoundary portal="Logistics Gigs">
       <div className="min-h-screen space-y-8 bg-slate-50/50 p-8 dark:bg-transparent">
-      <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">
-            {activeTab === "fleet" ? "Fleet Gig Management" : activeTab === "slots" ? "Slots Details" : "Capacity Change"}
-          </h1>
-          <p className="mt-1 text-sm font-bold text-muted-foreground/60">Manage delivery slots and rider incentives for the fleet</p>
-      </div>
-    </PortalErrorBoundary>
+        <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">
+              {activeTab === "fleet" ? "Fleet Gig Management" : activeTab === "slots" ? "Slots Details" : "Capacity Change"}
+            </h1>
+            <p className="mt-1 text-sm font-bold text-muted-foreground/60">Manage delivery slots and rider incentives for the fleet</p>
+          </div>
+        </header>
         
         <div className="flex flex-wrap items-center gap-3">
           <GigStats 
@@ -775,7 +775,7 @@ function LogisticsGigs() {
         onSuccess={load}
       />
     </div>
-
+  </PortalErrorBoundary>
   );
 }
 
