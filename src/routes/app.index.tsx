@@ -132,24 +132,55 @@ function Home() {
   };
 
   const allFiltered = useMemo(() => {
-    let list = filterVeg(restaurants, vegMode, pureVegOverrides).filter(r => 
-      ((r as any).status === 'active' || (r as any).status === 'approved' || (r as any).onboarding_status === 'live')
-    );
+    // 1. Initial filter for basic categories (Veg mode)
+    let list = filterVeg(restaurants, vegMode, pureVegOverrides);
+
+    // 2. Geographic Filtering (Requirement 3)
+    // We use the same center as LocationPicker / GoogleMap fallback if not available
+    // Note: In a real app we'd use the user's selected address from AuthStore/AddressApi
+    const guestLat = 22.3072;
+    const guestLng = 73.1812;
+
+    list = list.filter(r => {
+      const rLat = (r as any).latitude;
+      const rLng = (r as any).longitude;
+      const radius = (r as any).delivery_radius || 5;
+
+      // If restaurant has no coords, we can't do distance filtering, so we show it (Requirement 3)
+      if (!rLat || !rLng || isNaN(rLat) || isNaN(rLng)) return true;
+
+      // Simple Haversine approximation or direct distance for catalog visibility
+      // Requirement 3: If guest location is valid, compare to delivery radius
+      const R = 6371; // km
+      const dLat = (rLat - guestLat) * (Math.PI / 180);
+      const dLon = (rLng - guestLng) * (Math.PI / 180);
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(guestLat * (Math.PI/180)) * Math.cos(rLat * (Math.PI/180)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+
+      // Update distanceKm for UI display
+      (r as any).distanceKm = Number(distance.toFixed(1));
+
+      return distance <= radius;
+    });
+
+    // 3. User Chips (Requirement 4)
     if (activeChips.length) {
       const active = homeChips.filter((c) => activeChips.includes(c.id));
       list = list.filter((r, i) => active.every((opt) => chipMatches(r, opt, i)));
     }
+    
+    // 4. Advanced Filters
     return applyAdv(list);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vegMode, pureVegOverrides, activeChips, adv, homeChips]);
+  }, [vegMode, pureVegOverrides, activeChips, adv, homeChips, restaurants]);
 
   const recRestaurants = useMemo(() => {
-    // If we have backend recommendations, use them. Otherwise show first 2.
-    const ids = recommendedRestaurantIds;
-    const base = ids.length ? restaurants.filter((r) => ids.includes(r.id)) : restaurants.slice(0, 3);
-
-    return filterVeg(base, vegMode, pureVegOverrides);
-  }, [vegMode, pureVegOverrides]);
+    // Show top-rated or trending restaurants among the filtered list
+    return allFiltered.filter(r => r.rating >= 4.2).slice(0, 3);
+  }, [allFiltered]);
 
   const recDishes = filterVegDishes(recommended, vegMode);
   const trendingDishes = filterVegDishes(trending, vegMode);
