@@ -210,5 +210,6 @@ function OrdersPage() {
         </SheetContent>
       </Sheet>
     </div>
+    </RoleGuard>
   );
 }
