@@ -288,15 +288,20 @@ function OnboardingFlow() {
         });
       }
 
-      // Final identity verification
+      // Single, up-front identity guard: no canonical-UUID validation runs after KYC persistence.
       const activeId = saved?.id ?? canonicalId;
+      if (!activeId) {
+        console.error("[ONBOARDING_SUBMIT] No canonical restaurant identity available");
+        throw new Error("Restaurant identity is unavailable. Please try again.");
+      }
 
-      if (activeId) {
-        if (saved) setRecord(saved);
-        
-        if (id !== activeId) {
-          navigate({ to: "/manager/onboarding", search: { id: activeId }, replace: true });
-        }
+      if (saved) setRecord(saved);
+
+      if (id !== activeId) {
+        navigate({ to: "/manager/onboarding", search: { id: activeId }, replace: true });
+      }
+
+      {
         
         // 2. Authoritatively persist all compliance identifiers to restaurant_kyc
         try {
@@ -375,9 +380,6 @@ function OnboardingFlow() {
           console.warn("[ONBOARDING_SUBMIT] Non-critical audit log failed:", auditErr);
           // Don't throw - KYC and restaurant records are already saved
         }
-      } else {
-        console.error("[ONBOARDING_SUBMIT] Restaurant save failed to return a canonical ID");
-        throw new Error("Restaurant save failed to return a canonical identity. Please try again.");
       }
       return saved || record;
     } catch (err: any) {
@@ -401,7 +403,7 @@ function OnboardingFlow() {
       { onboarding_status: missingDocs ? "document_pending" : "draft", status: "pending" },
       missingDocs ? "Saved with documents pending" : "Draft saved",
     );
-    if (saved) toast.success(`Draft saved · ${saved.rst_code}`);
+    if (saved) toast.success(saved.rst_code ? `Draft saved · ${saved.rst_code}` : "Draft saved");
   };
 
   const candidate = useMemo(

@@ -334,7 +334,7 @@ export async function saveOnboardingDraft(
   id: string | null,
   values: Record<string, unknown>,
 ): Promise<ManagedRestaurant | null> {
-  const isUuid = (val: any) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  const isUuid = (val: any) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
   const safeId = id && isUuid(id) ? id : null;
 
   // Authoritative identity resolution
