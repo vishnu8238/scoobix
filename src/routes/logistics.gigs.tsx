@@ -466,6 +466,7 @@ function LogisticsGigs() {
 
   return (
     <PortalErrorBoundary portal="Logistics Gigs">
+
       <div className="min-h-screen space-y-8 bg-slate-50/50 p-8 dark:bg-transparent">
         <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -774,7 +775,8 @@ function LogisticsGigs() {
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={load}
       />
-        </div>
+      </PortalErrorBoundary>
+
       </PortalErrorBoundary>
     );
 }
