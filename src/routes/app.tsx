@@ -12,14 +12,14 @@ function AppLayout() {
   console.log("[AUTH_DEBUG] [CHECKPOINT: APP_ROUTE_MOUNTED] Mounting AppLayout");
   console.log("[AUTH_DEBUG] AppLayout Mounting");
   return (
-    <RoleGuard allow="customer">
-      <div className="flex min-h-svh flex-col">
-        <main className="flex-1 pb-2">
-          <Outlet />
-        </main>
-        <BottomNav />
-      </div>
-    </RoleGuard>
+  return (
+    <div className="flex min-h-svh flex-col">
+      <main className="flex-1 pb-2">
+        <Outlet />
+      </main>
+      <BottomNav />
+    </div>
+  );
   );
 }
 
