@@ -590,9 +590,9 @@ function LogisticsGigs() {
                   placeholder="Search gigs..."
                   className="ml-2 w-48 bg-transparent text-xs font-bold outline-none"
                 />
+              </div>
+            </div>
           </div>
-        </div>
-      </header>
 
           {selectedGigIds.length > 0 && (
             <div className="sticky top-4 z-20 mb-6 flex items-center justify-between rounded-[2rem] bg-slate-900 px-8 py-4 text-white shadow-2xl ring-1 ring-white/10 dark:bg-slate-900/90 dark:backdrop-blur-xl">
