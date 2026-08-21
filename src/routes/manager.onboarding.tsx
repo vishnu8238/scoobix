@@ -380,9 +380,6 @@ function OnboardingFlow() {
           console.warn("[ONBOARDING_SUBMIT] Non-critical audit log failed:", auditErr);
           // Don't throw - KYC and restaurant records are already saved
         }
-      } else {
-        console.error("[ONBOARDING_SUBMIT] Restaurant save failed to return a canonical ID");
-        throw new Error("Restaurant save failed to return a canonical identity. Please try again.");
       }
       return saved || record;
     } catch (err: any) {
