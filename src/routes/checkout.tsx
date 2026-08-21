@@ -15,9 +15,11 @@ function CheckoutRedirect() {
 
   useEffect(() => {
     if (items.length > 0) {
-      navigate({ to: "/app/checkout", replace: true });
+      const search = new URLSearchParams(window.location.search).toString();
+      const to = search ? `/app/checkout?${search}` : "/app/checkout";
+      window.location.replace(to);
     }
-  }, [items.length, navigate]);
+  }, [items.length]);
 
   if (items.length === 0) {
     return (

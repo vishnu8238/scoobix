@@ -10,8 +10,10 @@ function CartRedirect() {
   const navigate = useNavigate();
   
   useEffect(() => {
-    navigate({ to: "/app/cart", replace: true });
-  }, [navigate]);
+    const search = new URLSearchParams(window.location.search).toString();
+    const to = search ? `/app/cart?${search}` : "/app/cart";
+    window.location.replace(to);
+  }, []);
 
   return (
     <div className="min-h-svh flex items-center justify-center">
