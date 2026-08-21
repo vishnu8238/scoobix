@@ -71,12 +71,17 @@ function Home() {
   const { vegMode } = useAppUI();
   
   const [liveData, setLiveData] = useState<{ restaurants: Restaurant[], allDishes: any[] } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetchCustomerData().then(data => {
       if (data && data.restaurants.length > 0) {
         setLiveData(data as any);
       }
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
   }, []);
 
