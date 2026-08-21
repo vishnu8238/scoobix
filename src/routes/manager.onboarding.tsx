@@ -403,7 +403,7 @@ function OnboardingFlow() {
       { onboarding_status: missingDocs ? "document_pending" : "draft", status: "pending" },
       missingDocs ? "Saved with documents pending" : "Draft saved",
     );
-    if (saved) toast.success(`Draft saved · ${saved.rst_code}`);
+    if (saved) toast.success(saved.rst_code ? `Draft saved · ${saved.rst_code}` : "Draft saved");
   };
 
   const candidate = useMemo(
