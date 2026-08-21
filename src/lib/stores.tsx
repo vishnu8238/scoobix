@@ -315,12 +315,16 @@ export function useOrders() {
 }
 
 
+import { ScoobixExtrasProviders } from "./scoobix-extras";
+
 /* Providers */
 export function ScoobixProviders({ children }: { children: ReactNode }) {
   return (
     <CmsProvider>
       <CartProvider>
-        {children}
+        <ScoobixExtrasProviders>
+          {children}
+        </ScoobixExtrasProviders>
       </CartProvider>
     </CmsProvider>
   );
