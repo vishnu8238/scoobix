@@ -342,7 +342,13 @@ function Home() {
           action={{ label: "See all", to: "/app/search" }}
         />
         <div className="space-y-7 px-5">
-          {allFiltered.length === 0 ? (
+          {loading ? (
+            <div className="space-y-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 w-full animate-pulse rounded-3xl bg-surface" />
+              ))}
+            </div>
+          ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
                 No restaurants match those filters{vegMode ? " in veg mode" : ""}.
