@@ -359,10 +359,7 @@ function Home() {
           ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
-                '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            Correct the Customer checkout routing implementation without touching any other portal. The live preview route selector resolves the checkout screen only as `/app/checkout`; direct `/checkout` previously returned Not Found. Register actual TanStack React Start route files for BOTH root aliases `/checkout` and `/cart` (not merely a UI selector remap). Each root alias must use client-side replace navigation to the canonical `/app/checkout` or `/app/cart` respectively, preserving query parameters such as `returnTo` and never producing a Not Found page on a hard refresh. The canonical `/app/checkout` screen remains the checkout screen and must keep its guest logic: browsing and cart additions require no login; only checkout requires login; authenticated users must complete name, phone, and delivery address before order creation. Preserve the repaired customization-sheet Add handler and cart state. Remove any developer, diagnostic, or literal instruction text from all customer-facing empty states; only customer-oriented copy is allowed. Do not modify catalog filtering, logistics, rider, admin, manager, partner, auth/OAuth, or database/RLS. Build with 0 TypeScript errors.
+                No restaurants match those filters.
               </p>
             </div>
           ) : (
