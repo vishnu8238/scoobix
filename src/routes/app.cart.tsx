@@ -26,6 +26,15 @@ function CartPage() {
   const restaurantClosed = restaurant ? !!closedRestaurants[restaurant.id] : false;
   const unavailableItems = items.filter((it) => dishAvailability[it.dishId] === false);
   const [code, setCode] = useState("");
+  const [showGate, setShowGate] = useState(false);
+
+  const handleCheckout = () => {
+    if (!user) {
+      setShowGate(true);
+      return;
+    }
+    navigate({ to: "/app/checkout" });
+  };
 
   const startGroup = async () => {
     if (!restaurant) return;
@@ -166,12 +175,43 @@ function CartPage() {
 
       <div className="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-30 mx-auto max-w-[460px] px-4">
         <Button
-          onClick={() => navigate({ to: "/app/checkout" })}
+          onClick={handleCheckout}
           className="h-14 w-full rounded-full gradient-primary text-base font-bold text-primary-foreground shadow-glow"
         >
           Proceed to checkout · {currency(totals.total)}
         </Button>
       </div>
+
+      {showGate && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-[460px] rounded-t-3xl bg-card p-8 animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-between items-start mb-6">
+              <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-glow">
+                <ShoppingBag className="h-6 w-6 text-white" />
+              </div>
+              <button onClick={() => setShowGate(false)} className="p-2 rounded-full hover:bg-secondary"><X className="h-5 w-5" /></button>
+            </div>
+            <h3 className="font-display text-2xl font-extrabold italic uppercase tracking-tight mb-2">Almost there!</h3>
+            <p className="text-sm text-muted-foreground mb-8">Sign in to complete your order and track your delivery in real-time.</p>
+            <Button 
+              className="w-full h-14 rounded-2xl text-sm font-bold uppercase tracking-widest shadow-glow"
+              onClick={() => {
+                const returnTo = encodeURIComponent("/app/checkout");
+                window.location.href = `/login?portal=customer&returnTo=${returnTo}`;
+              }}
+            >
+              Continue to Sign In
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full mt-2 h-12 text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+              onClick={() => setShowGate(false)}
+            >
+              Maybe later
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

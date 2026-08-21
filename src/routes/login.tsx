@@ -49,15 +49,26 @@ function ConsolidatedLogin() {
 
   useEffect(() => {
     if (!loading && user && user.membershipsResolved) {
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get("returnTo");
+      
       // If logged in and admitted to the selected portal, go there
       if (user.roles.includes(selectedPortal)) {
+        // Special case: returnTo for Customer portal
+        if (selectedPortal === "customer" && returnTo && returnTo.startsWith("/app")) {
+          console.log(`[AUTH_DEBUG] Login: Returning to ${returnTo}`);
+          window.location.replace(new URL(returnTo, window.location.origin).href);
+          return;
+        }
+
         const dest = selectedPortal === "customer" ? "/app" : `/${selectedPortal}`;
         console.log(`[AUTH_DEBUG] Login: User authorized for ${selectedPortal}, navigating to ${dest}`);
         // Use window.location.replace to ensure a clean portal load and prevent back-button loops
         window.location.replace(new URL(dest, window.location.origin).href);
       } else if (selectedPortal === "customer") {
         // Normal customers go to /app
-        window.location.replace(new URL("/app", window.location.origin).href);
+        const dest = (returnTo && returnTo.startsWith("/app")) ? returnTo : "/app";
+        window.location.replace(new URL(dest, window.location.origin).href);
       } else {
         // If they chose a privileged portal but aren't authorized, 
         // they stay here and see the error message (already handled via URL params)

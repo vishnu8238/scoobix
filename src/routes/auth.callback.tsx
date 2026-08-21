@@ -20,6 +20,13 @@ function AuthCallback() {
       portalRef.current = intent;
       // Re-persist briefly to survive potential hydration reloads
       setPortalIntent(intent);
+      
+      // Also preserve returnTo in storage
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get("returnTo");
+      if (returnTo) {
+        localStorage.setItem("scoobix_return_to", returnTo);
+      }
     }
     
     const portal = portalRef.current;
@@ -162,13 +169,21 @@ function AuthCallback() {
           customer: "/app",
         };
 
-        const destPath = portalMap[portal || "customer"] || "/app";
+        const returnTo = localStorage.getItem("scoobix_return_to");
+        let destPath = portalMap[portal || "customer"] || "/app";
+        
+        // If we have a valid internal returnTo for customer, prioritize it
+        if ((!portal || portal === "customer") && returnTo && returnTo.startsWith("/app")) {
+          destPath = returnTo;
+        }
+
         const dest = new URL(destPath, window.location.origin).href;
         
-        console.log("[AUTH_TRACE] Authorization complete. Redirecting to canonical portal:", { portal, destPath, dest });
+        console.log("[AUTH_TRACE] Authorization complete. Redirecting to canonical portal:", { portal, destPath, dest, returnTo });
         
-        // Remove portal intent only AFTER we have the destination ready
+        // Remove portal intent and returnTo only AFTER we have the destination ready
         localStorage.removeItem("scoobix_oauth_portal_intent");
+        localStorage.removeItem("scoobix_return_to");
         try { sessionStorage.removeItem("scoobix_oauth_portal_intent"); } catch(e) {}
 
         // Use a slight delay to ensure the SDK session is fully flushed to storage
