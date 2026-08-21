@@ -45,7 +45,7 @@ export class PortalErrorBoundary extends Component<Props, State> {
             Our team has been notified.
           </p>
           <Button 
-            onClick={handleRetry}
+            onClick={this.handleRetry}
             className="rounded-2xl shadow-glow font-bold gap-2 px-8 h-12"
           >
             <RefreshCcw className="h-4 w-4" />

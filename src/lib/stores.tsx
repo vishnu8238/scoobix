@@ -13,6 +13,8 @@ import {
   type Coupon as CouponRow,
 } from "./coupons-api";
 import { listRedemptions } from "./campaigns-api";
+import { useGlobalRealtime } from "./realtime-hooks-sync";
+import { PortalErrorBoundary } from "@/components/cravio/PortalErrorBoundary";
 
 /* ============================================================
    CART
@@ -320,13 +322,18 @@ import { ScoobixLoyaltyProviders } from "./scoobix-loyalty";
 
 /* Providers */
 export function ScoobixProviders({ children }: { children: ReactNode }) {
+  // Mount global realtime refresh handlers
+  useGlobalRealtime();
+
   return (
-    <CmsProvider>
-      <CartProvider>
-        <ScoobixLoyaltyProviders>
-          <ScoobixExtrasProviders>{children}</ScoobixExtrasProviders>
-        </ScoobixLoyaltyProviders>
-      </CartProvider>
-    </CmsProvider>
+    <PortalErrorBoundary portal="Global">
+      <CmsProvider>
+        <CartProvider>
+          <ScoobixLoyaltyProviders>
+            <ScoobixExtrasProviders>{children}</ScoobixExtrasProviders>
+          </ScoobixLoyaltyProviders>
+        </CartProvider>
+      </CmsProvider>
+    </PortalErrorBoundary>
   );
 }
