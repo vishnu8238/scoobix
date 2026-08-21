@@ -4,9 +4,8 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Scripts,
-  useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import appCss from "../styles.css?url";
 import { ScoobixProviders } from "@/lib/stores";
@@ -18,6 +17,7 @@ import { NetworkBanner } from "@/components/cravio/NetworkBanner";
 import { InsForgeBootstrap } from "@/components/cravio/InsForgeBootstrap";
 import { subscribeCatalog, getCatalogVersion } from "@/lib/insforge";
 import { registerServiceWorker, prefetchResources } from "@/lib/sw-register";
+import { AuthProvider } from "@/lib/auth-store";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -37,82 +37,61 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "application-name", content: "Scoobix" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Scoobix" },
     ],
     links: [
-      { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png" },
-      
-      { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/__l5e/assets-v1/fa2216a6-185b-4e1b-9d98-05fadb8c4490/scoobix-logo.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
-      },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" },
     ],
   }),
-  shellComponent: RootShell,
   component: RootComponent,
 });
 
-function RootShell({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body className="antialiased">
-        <div id="root">
-          {children}
-        </div>
-        <Scripts />
-      </body>
-    </html>
-  );
-}
-
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
-  // Offline-capable static asset cache + warm the manifest/icon the shell needs.
+  
   useEffect(() => {
     registerServiceWorker();
-    prefetchResources(["/manifest.webmanifest", "/favicon.ico"]);
+    prefetchResources([]);
+    const unsub = (subscribeCatalog as any)();
+    return () => (unsub as any)?.();
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ScoobixProviders>
-        <AppShellContent />
-        <Toaster position="top-center" richColors closeButton={false} />
-        <CartConflictDialog />
-        <NetworkBanner />
-        <PWAInstallPrompt />
-        <InsForgeBootstrap />
-      </ScoobixProviders>
+      <AuthProvider>
+        <ScoobixProviders>
+          <AppShellContent />
+          <Toaster position="top-center" richColors closeButton={false} />
+          <CartConflictDialog />
+          <NetworkBanner />
+          <PWAInstallPrompt />
+          <InsForgeBootstrap />
+        </ScoobixProviders>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
 
-/**
- * AppShellContent separates the routing logic from the providers to ensure
- * providers remain stable even if the layout needs to adapt.
- */
 function AppShellContent() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isDesktop = pathname.startsWith("/admin") || pathname.startsWith("/logistics");
+  const catalogVersion = useSyncExternalStore(
+    (cb) => (subscribeCatalog as any)(cb), 
+    () => (getCatalogVersion as any)(),
+    () => (getCatalogVersion as any)()
+  );
   
-  // catalogVersion is used for reactive data updates, but we NO LONGER
-  // use it as a key for the Outlet. This prevents destructive remounts.
-  useSyncExternalStore(subscribeCatalog, getCatalogVersion, () => "1.0.0");
-
-  if (isDesktop) {
-    return <Outlet />;
-  }
-
   return (
-    <PhoneShell>
-      <Outlet />
-    </PhoneShell>
+    <div key={catalogVersion}>
+      <PhoneShell>
+        <Outlet />
+      </PhoneShell>
+      <HeadContent />
+      <Scripts />
+    </div>
   );
 }

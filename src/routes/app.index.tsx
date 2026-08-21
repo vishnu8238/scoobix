@@ -359,20 +359,10 @@ function Home() {
           ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
-                '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
+                {`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
                                         
                                             
-                                            The Customer cart confirmation is STILL broken in the latest preview. This is independently reproduced now at /restaurant/1df07a83-9f3d-4c82-bd22-9ff6ede36a29: guest tap ADD → customization sheet opens → tap the visible enabled `Add · ₹249.00` button → the sheet remains open and no cart state changes. Do not claim this is fixed without exercising that exact flow in the running preview.
-
-Perform a code-level root-cause repair, not another superficial handler rewrite:
-1. Trace the actual rendered confirmation button through its component to the CartProvider/CartContext used by the Customer restaurant route. Confirm the sheet and the page consume the same provider instance and that the real click reaches the handler.
-2. Make the visible confirmation control a real `type="button"` with an explicit async-safe click handler. The handler must build the normalized cart line from the selected size, addons, spice and quantity; call the authoritative cart `addItem` exactly once; persist/update the same guest cart state that the header/cart page reads; then close and reset the sheet only after success. Surface a customer-safe toast/error if the mutation fails; do not silently swallow errors.
-3. Remove any stale event prevention, form submission, disabled overlay, pointer-events layer, nested button, or mismatched local cart state that prevents this click from mutating the actual cart.
-4. Add a focused regression test or in-app assertion only in development if the project supports it, and manually validate the exact guest path: after confirmation, the sheet disappears and the cart entry/count becomes visible; no login should be required to add.
-5. Preserve the already-created /cart and /checkout aliases, guest browsing, auth-at-checkout/profile-completion gate, InsForge-only backend, restaurant visibility, Google Maps configuration, and every non-Customer portal. Do not alter schemas, do not add Supabase, `user_roles`, or `has_role`.
-6. Remove any accidental developer/instructional text visible to customers; use normal shopper-facing copy only.
-
-Build with zero TypeScript errors, then state the exact files changed and the observed result of the direct preview test.
+                                            Urgent regression correction for the active Customer repair: the current preview now crashes with \`useCart must be used within CartProvider\`. Restore the previous working provider composition in \`src/lib/stores.tsx\` and the application root. Every route/layout that renders the Customer header, restaurant page, cart sheet, or checkout must be inside exactly one \`<CartProvider>\`; do not call \`useCart()\` from a component above that provider. Keep \`CustomizationSheet\` consuming the existing cart context rather than creating a second context or bypassing it. Preserve the working \`/checkout\` and \`/cart\` aliases, guest browsing, and checkout-only login/profile gating. Do not touch other portals, do not add Supabase, \`has_role\`, or \`user_roles\`. Remove any developer/instructional text that may have been injected into customer-facing UI. Finish with a clean TypeScript build and prove the public flow: open restaurant → menu item → Add confirmation closes sheet → cart count/entry is visible. Do not publish until the preview is runtime-clean.`}
               </p>
             </div>
           ) : (

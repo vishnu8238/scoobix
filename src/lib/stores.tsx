@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { findRestaurant, type Dish, type Restaurant } from "./mock-data";
 import { useAuth } from "./auth-store";
-import { currentPlatformSettings } from "./cms-store";
+import { CmsProvider, currentPlatformSettings } from "./cms-store";
 import { listTable } from "./insforge-crud";
 import {
   listCampaigns, eligibleCampaigns, evaluateCampaign, bestAutoCampaign,
@@ -314,7 +314,6 @@ export function useOrders() {
   };
 }
 
-import { CmsProvider } from "./cms-store";
 
 /* Providers */
 export function ScoobixProviders({ children }: { children: ReactNode }) {
