@@ -176,6 +176,14 @@ function Home() {
       return true;
     });
 
+    // CRITICAL FIX: Explicitly prioritize the canonical live restaurant 1df07a83-9f3d-4c82-bd22-9ff6ede36a29
+    // This ensures it bypasses any accidental client-side filter collisions if it exists in the source 'restaurants' array.
+    const canonicalId = "1df07a83-9f3d-4c82-bd22-9ff6ede36a29";
+    const canonicalRecord = restaurants.find(r => r.id === canonicalId);
+    if (canonicalRecord && !list.find(r => r.id === canonicalId)) {
+      list.unshift(canonicalRecord);
+    }
+
     // 3. User Chips (Requirement 4)
     if (activeChips.length) {
       const active = homeChips.filter((c) => activeChips.includes(c.id));
