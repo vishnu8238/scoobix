@@ -47,7 +47,8 @@ function OrdersPage() {
   };
 
   return (
-    <div className="min-h-svh">
+    <RoleGuard allow="customer">
+      <div className="min-h-svh">
       <header className="sticky top-0 z-30 glass px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_40px] items-center gap-3">
           <button onClick={() => navigate({ to: "/app" })} className="grid h-10 w-10 place-items-center rounded-full bg-secondary"><ArrowLeft className="h-4 w-4" /></button>
