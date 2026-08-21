@@ -120,7 +120,7 @@ export async function fetchCustomerData() {
           delivery_radius: Number(r.delivery_radius || 5)
         } as any;
       })
-      .filter(r => r.menu.length > 0);
+      .filter(r => r.menu.length > 0 || (r.go_live_override === true || r.go_live_override === "true"));
 
     return {
       restaurants: normalizedRestaurants,

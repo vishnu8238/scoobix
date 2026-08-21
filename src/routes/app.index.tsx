@@ -131,42 +131,44 @@ function Home() {
     return sorted;
   };
 
+  const { userCoords } = useAppUI();
+
   const allFiltered = useMemo(() => {
     // 1. Initial filter for basic categories (Veg mode)
     let list = filterVeg(restaurants, vegMode, pureVegOverrides);
 
     // 2. Geographic Filtering
-    // Normalize guest coordinates with authoritative Vadodara fallback
-    const VADODARA = { lat: 22.3072, lng: 73.1812 };
-    
-    // Check stores/storage for current delivery location (TopBar uses useAppUI)
-    // For now, we normalize to ensure a finite pair exists
-    const guestLat = VADODARA.lat;
-    const guestLng = VADODARA.lng;
+    // A coordinate is finite and valid only if it's a number and not an arbitrary UI label
+    const guestLat = userCoords?.lat;
+    const guestLng = userCoords?.lng;
+    const hasValidGuestCoords = guestLat != null && guestLng != null && isFinite(guestLat) && isFinite(guestLng);
 
     list = list.filter(r => {
       const rLat = (r as any).latitude;
       const rLng = (r as any).longitude;
       const radius = (r as any).delivery_radius || 5;
 
-      // Requirement: If restaurant coordinates are missing or invalid, do NOT exclude (show it)
-      if (rLat === null || rLng === null || !isFinite(rLat) || !isFinite(rLng)) return true;
-
       // Distance calculation
-      const R = 6371; // km
-      const dLat = (rLat - guestLat) * (Math.PI / 180);
-      const dLon = (rLng - guestLng) * (Math.PI / 180);
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(guestLat * (Math.PI/180)) * Math.cos(rLat * (Math.PI/180)) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
+      if (hasValidGuestCoords && rLat != null && rLng != null && isFinite(rLat) && isFinite(rLng)) {
+        const R = 6371; // km
+        const dLat = (rLat - guestLat!) * (Math.PI / 180);
+        const dLon = (rLng - guestLng!) * (Math.PI / 180);
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(guestLat! * (Math.PI/180)) * Math.cos(rLat * (Math.PI/180)) * 
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
 
-      (r as any).distanceKm = Number(distance.toFixed(1));
+        (r as any).distanceKm = Number(distance.toFixed(1));
+        
+        // Apply delivery-radius rejection ONLY with a confirmed customer coordinate
+        return distance <= radius;
+      }
 
-      // Filter by radius only if distance is calculable
-      return distance <= radius;
+      // Requirement 1 & 2: Malformed coords or unknown customer position must not trigger exclusion
+      (r as any).distanceKm = 0;
+      return true;
     });
 
     // 3. User Chips (Requirement 4)
