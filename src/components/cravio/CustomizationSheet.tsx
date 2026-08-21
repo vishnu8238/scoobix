@@ -67,7 +67,10 @@ export function CustomizationSheet({
     }
     toast.success(`Added ${qty} × ${dish.name}`, { description: ref.restaurant.name });
     onOpenChange(false);
-    setQty(1); setExtras([]); setSize("regular"); setSpice("Medium");
+    // Reset local state after successful add
+    setTimeout(() => {
+      setQty(1); setExtras([]); setSize("regular"); setSpice("Medium");
+    }, 300);
   };
 
   return (

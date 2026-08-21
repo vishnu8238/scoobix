@@ -17,6 +17,8 @@ import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as LogisticsRouteImport } from './routes/logistics'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CustomerRouteImport } from './routes/customer'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as CartRouteImport } from './routes/cart'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -213,6 +215,16 @@ const LoginRoute = LoginRouteImport.update({
 const CustomerRoute = CustomerRouteImport.update({
   id: '/customer',
   path: '/customer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -1007,6 +1019,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/logistics': typeof LogisticsRouteWithChildren
@@ -1172,6 +1186,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -1336,6 +1352,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/customer': typeof CustomerRoute
   '/login': typeof LoginRoute
   '/logistics': typeof LogisticsRouteWithChildren
@@ -1505,6 +1523,8 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/cart'
+    | '/checkout'
     | '/customer'
     | '/login'
     | '/logistics'
@@ -1670,6 +1690,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cart'
+    | '/checkout'
     | '/customer'
     | '/login'
     | '/privacy'
@@ -1833,6 +1855,8 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/cart'
+    | '/checkout'
     | '/customer'
     | '/login'
     | '/logistics'
@@ -2001,6 +2025,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  CartRoute: typeof CartRoute
+  CheckoutRoute: typeof CheckoutRoute
   CustomerRoute: typeof CustomerRoute
   LoginRoute: typeof LoginRoute
   LogisticsRoute: typeof LogisticsRouteWithChildren
@@ -2070,6 +2096,20 @@ declare module '@tanstack/react-router' {
       path: '/customer'
       fullPath: '/customer'
       preLoaderRoute: typeof CustomerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -3581,6 +3621,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  CartRoute: CartRoute,
+  CheckoutRoute: CheckoutRoute,
   CustomerRoute: CustomerRoute,
   LoginRoute: LoginRoute,
   LogisticsRoute: LogisticsRouteWithChildren,
