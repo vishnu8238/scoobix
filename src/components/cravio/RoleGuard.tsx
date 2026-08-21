@@ -1,8 +1,9 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import { useAuth, Role, getRequestedPortal } from "@/lib/auth-store";
 import { useNavigate } from "@tanstack/react-router";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, AlertTriangle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PortalShellSkeleton, RiderSkeleton, DetailSkeleton, FormSkeleton, ListSkeleton } from "@/components/skeletons/PortalSkeletons";
 import { isAuthResolving } from "@/lib/auth-utils";
 
 /**
@@ -85,32 +86,35 @@ export function RoleGuard({ allow, children, fallback, bypass }: RoleGuardProps)
       return <>{children}</>;
     }
     
-    // Otherwise, show the loading spinner but keep the layout space occupied
+    // Choose appropriate skeleton based on portal path
+    let SkeletonView = <PortalShellSkeleton />;
+    if (pathname.startsWith("/rider")) SkeletonView = <RiderSkeleton />;
+    else if (pathname.includes("/checkout")) SkeletonView = <DetailSkeleton />;
+    else if (pathname.includes("/onboarding") || pathname.includes("/profile")) SkeletonView = <FormSkeleton />;
+    else if (pathname.endsWith("/orders") || pathname.includes("/list")) SkeletonView = <ListSkeleton />;
+    
     return (
-      <div className="flex min-h-svh items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          {timedOut ? (
-            <div className="text-center space-y-4 animate-fade-up">
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-xs text-destructive font-medium uppercase tracking-widest">Connection Timeout</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Verification is taking longer than expected.</p>
+      <div className="min-h-svh bg-background">
+        {timedOut ? (
+          <div className="flex min-h-svh items-center justify-center p-6 text-center">
+            <div className="space-y-4 animate-fade-up max-w-xs">
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-3xl shadow-soft">
+                <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-3" />
+                <p className="text-[10px] text-destructive font-black uppercase tracking-[0.2em]">Connection Timeout</p>
+                <p className="text-xs text-muted-foreground mt-2 font-medium">Verification is taking longer than expected. The server might be under heavy load.</p>
               </div>
-              <button 
+              <Button 
                 onClick={() => window.location.reload()}
-                className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline"
+                className="w-full h-12 rounded-2xl font-bold gap-2"
               >
+                <RefreshCcw className="h-4 w-4" />
                 Retry Connection
-              </button>
+              </Button>
             </div>
-          ) : (
-            <>
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground animate-pulse">
-                Authenticating...
-              </p>
-            </>
-          )}
-        </div>
+          </div>
+        ) : (
+          SkeletonView
+        )}
       </div>
     );
   }

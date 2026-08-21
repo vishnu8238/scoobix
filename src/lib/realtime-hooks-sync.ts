@@ -17,8 +17,10 @@ export function useRestaurantRealtime() {
     // Admin verification/restaurants, Customer discovery/menu, Partner dashboard
     const tables = ["restaurants", "restaurant_kyc", "menu_items", "menu_addons"];
     return onTablesChange(tables, (payload) => {
-      console.log(`[REALTIME_SYNC] Table change: ${payload.table}, invalidating...`);
-      invalidateTable(payload.table);
+      if (payload?.table) {
+        console.log(`[REALTIME_SYNC] Table change: ${payload.table}, invalidating...`);
+        invalidateTable(payload.table);
+      }
     });
   }, []);
 }
@@ -55,7 +57,9 @@ export function useGigRealtime() {
   useEffect(() => {
     const tables = ["delivery_gigs", "rider_gig_enrollments"];
     return onTablesChange(tables, (payload) => {
-      invalidateTable(payload.table);
+      if (payload?.table) {
+        invalidateTable(payload.table);
+      }
     });
   }, []);
 }
