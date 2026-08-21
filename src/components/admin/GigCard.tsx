@@ -125,12 +125,22 @@ export function GigCard({
           </p>
         </div>
         
-        <button 
-          onClick={() => onEdit?.(gig)}
-          className="w-full rounded-2xl border border-primary/20 bg-primary/5 py-3 text-xs font-black text-primary transition-all hover:bg-primary hover:text-white active:scale-[0.98]"
-        >
-          Edit Details
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => onEdit?.(gig)}
+            className="flex-1 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-xs font-black text-primary transition-all hover:bg-primary hover:text-white active:scale-[0.98]"
+          >
+            Edit Details
+          </button>
+          {onDelete && (
+            <button 
+              onClick={() => onDelete(gig)}
+              className="flex-1 rounded-2xl border border-rose-200 bg-rose-50 py-3 text-xs font-black text-rose-600 transition-all hover:bg-rose-600 hover:text-white active:scale-[0.98]"
+            >
+              {enrollmentCount > 0 ? "Cancel Gig" : "Delete Gig"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
