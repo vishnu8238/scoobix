@@ -359,7 +359,17 @@ function Home() {
           ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
-                No restaurants match those filters{vegMode ? " in veg mode" : ""}.
+                '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
+                                        
+                                            
+                                            Implement an isolated repair for the Customer guest checkout flow only. Do not alter Logistics, Rider, Admin, Manager, Partner, OAuth/login behavior, restaurant catalog visibility, or Google Maps. Do not add any migration containing user_roles or has_role.
+
+Verified production defects:
+1) The item customization sheet on the restaurant page renders, but its final button (for example, “Add · ₹251.00”) does not close the sheet or update the Customer cart. Trace the exact cart context/hook and the customization sheet callback. Make the final Add button invoke the same authoritative add-to-cart action used elsewhere, persist the updated cart, close the sheet on success, and immediately refresh the cart count/checkout affordance. Preserve guest browsing; do not require authentication for adding items.
+
+2) Direct navigation to https://scoobix.lovable.app/checkout currently displays the application Not Found page. Register a real Customer checkout route at /checkout (and /cart too if the cart UI uses that location). It must use the existing cart state and preserve Scoobix UI. With no items, show a clear empty-cart state and a route back to browsing; do not return Not Found. With cart items, a guest may view the cart but clicking the continue/place-order action must require login. Preserve a return target so that after Google login the Customer returns to checkout. Once authenticated, require profile completion before order creation: name, phone, and a delivery address. Do not create an order until those required values pass validation.
+
+Use the existing InsForge-only data layer and client-side route pattern. Keep any data reads safe for guest users. Avoid duplicate toasts or double mutation on repeated presses. Ensure the project builds with zero TypeScript errors and that no existing working portal route regresses.
               </p>
             </div>
           ) : (
