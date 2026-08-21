@@ -21,11 +21,18 @@ const DEFAULT_EXTRAS = [
 ];
 const SPICE = ["Mild", "Medium", "Hot", "Extra hot"];
 
+import type { Restaurant } from "@/lib/mock-data";
+
 export function CustomizationSheet({
-  open, onOpenChange, dish,
-}: { open: boolean; onOpenChange: (o: boolean) => void; dish: Dish }) {
-  const ref = findDish(dish.id);
-  const { addItem } = useCart();
+  open, onOpenChange, dish, restaurant,
+}: { open: boolean; onOpenChange: (o: boolean) => void; dish: Dish; restaurant?: Restaurant }) {
+  const activeRef = useMemo(() => {
+    const ref = findDish(dish.id);
+    if (ref) return ref;
+    if (restaurant) return { dish, restaurant };
+    return null;
+  }, [dish, restaurant]);
+  const cart = useCart();
   const [size, setSize] = useState("regular");
   const [extras, setExtras] = useState<string[]>([]);
   const [spice, setSpice] = useState("Medium");
@@ -45,32 +52,60 @@ export function CustomizationSheet({
   const extrasObj = EXTRAS.filter((e) => extras.includes(e.id));
   const unit = useMemo(() => dish.price + sizeObj.delta + extrasObj.reduce((s, e) => s + e.delta, 0), [dish.price, sizeObj, extrasObj]);
 
-  const handleAdd = () => {
-    if (!ref) return;
-    const customizations = [
-      sizeObj.label !== "Regular" ? `Size: ${sizeObj.label}` : null,
-      ...extrasObj.map((e) => `+ ${e.label}`),
-      `Spice: ${spice}`,
-    ].filter(Boolean) as string[];
-    const res = addItem({
-      dishId: dish.id,
-      name: dish.name,
-      image: dish.image,
-      price: unit,
-      restaurantId: ref.restaurant.id,
-      restaurantName: ref.restaurant.name,
-      customizations,
-    }, qty);
-    if (!res.ok && res.reason === "different-restaurant") {
-      toast.error("Cart belongs to another restaurant", { description: "Clear it first to add from a new one." });
+  const handleAdd = async () => {
+    if (!activeRef) {
+      toast.error("Could not add item: restaurant data is missing");
       return;
     }
-    toast.success(`Added ${qty} × ${dish.name}`, { description: ref.restaurant.name });
-    onOpenChange(false);
-    // Reset local state after successful add
-    setTimeout(() => {
-      setQty(1); setExtras([]); setSize("regular"); setSpice("Medium");
-    }, 300);
+
+    try {
+      const customizations = [
+        sizeObj.label !== "Regular" ? `Size: ${sizeObj.label}` : null,
+        ...extrasObj.map((e) => `+ ${e.label}`),
+        `Spice: ${spice}`,
+      ].filter(Boolean) as string[];
+
+
+      // Directly call addItem from context
+      const res = cart.addItem({
+        dishId: dish.id,
+        name: dish.name,
+        image: dish.image,
+        price: unit,
+        restaurantId: activeRef.restaurant.id,
+        restaurantName: activeRef.restaurant.name,
+        customizations,
+      }, qty);
+
+      
+
+      if (!res.ok) {
+        if (res.reason === "different-restaurant") {
+          toast.error("Cart belongs to another restaurant", { 
+            description: "Clear it first to add from a new one." 
+          });
+        } else {
+          toast.error("Failed to add item", { description: res.reason });
+        }
+        return;
+      }
+
+      toast.success(`Added ${qty} × ${dish.name}`);
+      
+      // Close the sheet
+      onOpenChange(false);
+      
+      // Reset local state after successful add
+      setTimeout(() => {
+        setQty(1); 
+        setExtras([]); 
+        setSize("regular"); 
+        setSpice("Medium");
+      }, 300);
+    } catch (err) {
+      
+      toast.error("An unexpected error occurred while adding to cart");
+    }
   };
 
   return (
@@ -91,7 +126,12 @@ export function CustomizationSheet({
               {SIZES.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => setSize(s.id)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log("[CART_DEBUG] Size selected:", s.label);
+                    setSize(s.id);
+                  }}
                   className={cn(
                     "rounded-2xl border-2 p-3 text-left transition",
                     size === s.id ? "border-primary bg-primary-soft" : "border-border bg-card",
@@ -111,7 +151,11 @@ export function CustomizationSheet({
                 return (
                   <button
                     key={e.id}
-                    onClick={() => setExtras((p) => checked ? p.filter((x) => x !== e.id) : [...p, e.id])}
+                    type="button"
+                    onClick={(e_evt) => {
+                      e_evt.preventDefault();
+                      setExtras((p) => checked ? p.filter((x) => x !== e.id) : [...p, e.id]);
+                    }}
                     className="flex w-full items-center justify-between rounded-2xl border border-border bg-card p-3 text-left"
                   >
                     <span className="text-sm font-semibold">{e.label}</span>
@@ -132,7 +176,11 @@ export function CustomizationSheet({
               {SPICE.map((s) => (
                 <button
                   key={s}
-                  onClick={() => setSpice(s)}
+                  type="button"
+                  onClick={(e_evt) => {
+                    e_evt.preventDefault();
+                    setSpice(s);
+                  }}
                   className={cn(
                     "rounded-full border-2 px-2 py-1.5 text-xs font-semibold transition",
                     spice === s ? "border-primary bg-primary-soft text-primary" : "border-border bg-card text-muted-foreground",
@@ -144,9 +192,27 @@ export function CustomizationSheet({
 
           <div className="mt-6 flex items-center gap-3">
             <div className="flex items-center gap-1 rounded-full bg-secondary p-1">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-8 w-8 place-items-center rounded-full bg-card shadow-soft"><Minus className="h-4 w-4" /></button>
+              <button
+                type="button"
+                onClick={(e_evt) => {
+                  e_evt.preventDefault();
+                  setQty((q) => Math.max(1, q - 1));
+                }}
+                className="grid h-8 w-8 place-items-center rounded-full bg-card shadow-soft"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
               <span className="w-6 text-center text-sm font-bold">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-card shadow-soft"><Plus className="h-4 w-4" /></button>
+              <button
+                type="button"
+                onClick={(e_evt) => {
+                  e_evt.preventDefault();
+                  setQty((q) => q + 1);
+                }}
+                className="grid h-8 w-8 place-items-center rounded-full bg-card shadow-soft"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
             <Button 
               type="button"
