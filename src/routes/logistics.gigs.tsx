@@ -538,19 +538,19 @@ function LogisticsGigs() {
               </button>
               
               <div className="flex items-center gap-2 rounded-2xl bg-emerald-50/50 p-1 ring-1 ring-emerald-100 dark:bg-emerald-950/20 dark:ring-emerald-900/30">
-                {dates.map((date) => (
+                {dates.map((d) => (
                   <button
-                    key={date.toISOString()}
-                    onClick={() => setSelectedDate(date)}
+                    key={d.key}
+                    onClick={() => setSelectedDateKey(d.key)}
                     className={cn(
                       "flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black transition-all",
-                      format(date, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
+                      d.key === selectedDateKey
                         ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
                         : "text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-400"
                     )}
                   >
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(date, "EEE, dd MMM, yyyy")}
+                    {format(d.date, "EEE, dd MMM, yyyy")}
                   </button>
                 ))}
               </div>
