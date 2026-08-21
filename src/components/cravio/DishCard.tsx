@@ -10,7 +10,7 @@ import { CustomizationSheet } from "./CustomizationSheet";
 import { OptimizedImage } from "@/components/cravio/OptimizedImage";
 
 export function DishCard({ dish, layout = "rail", restaurant }: { dish: Dish; layout?: "rail" | "row" | "grid"; restaurant?: Restaurant }) {
-  console.log("[DISH_CARD_DEBUG] dish:", dish.name, "restaurant:", restaurant?.name, "layout:", layout);
+  
   const ref = findDish(dish.id);
   const { isDishFav, toggleDish } = useFavorites();
   const { addItem } = useCart();
