@@ -103,7 +103,7 @@ export function CustomizationSheet({
         setSpice("Medium");
       }, 300);
     } catch (err) {
-      console.error("[CART_CRITICAL] Error in handleAdd:", err);
+      
       toast.error("An unexpected error occurred while adding to cart");
     }
   };
