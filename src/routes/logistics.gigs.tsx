@@ -535,6 +535,29 @@ function LogisticsGigs() {
             </div>
 
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 pr-4 border-r border-border/40">
+                <input 
+                  type="checkbox" 
+                  checked={selectedGigIds.length === filteredGigs.length && filteredGigs.length > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  ref={(el) => {
+                    if (el) el.indeterminate = selectedGigIds.length > 0 && selectedGigIds.length < filteredGigs.length;
+                  }}
+                  className="h-4 w-4 rounded-md border-border/60 bg-muted/50 accent-primary"
+                />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Select All</span>
+              </div>
+
+              {selectedGigIds.length > 0 && (
+                <button 
+                  onClick={handleBulkCancel}
+                  className="flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-1.5 text-[10px] font-black text-rose-600 ring-1 ring-rose-200 transition-all hover:bg-rose-100 active:scale-95"
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  Cancel Selected ({selectedGigIds.length})
+                </button>
+              )}
+
               <div className="relative flex h-10 items-center rounded-xl bg-card px-3 ring-1 ring-border/60 focus-within:ring-primary/40">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input 
