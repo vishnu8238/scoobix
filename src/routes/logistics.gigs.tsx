@@ -152,23 +152,30 @@ function LogisticsGigs() {
       const counts = await fetchGigEnrollmentCounts(gigIds);
       setEnrollmentCounts(counts);
       
-      // 3. Local date normalization
-      const localDateStr = format(selectedDate, "yyyy-MM-dd");
+      // 3. Date key normalization for Asia/Kolkata
+      const getKolkataDateKey = (dateInput: string | Date) => {
+        try {
+          const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+          if (isNaN(date.getTime())) return null;
+          return new Intl.DateTimeFormat('en-CA', { 
+            timeZone: 'Asia/Kolkata', 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          }).format(date);
+        } catch (e) {
+          return null;
+        }
+      };
       
       // 4. Normalized filtering & data enrichment
       const data = all.filter(g => {
         if (!g.start_time) return false;
-        // Handle only active/scheduled or uppercase variants
         const s = g.status?.toUpperCase();
         if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
 
-        try {
-          // Compare YYYY-MM-DD to handle ISO strings while respecting local day boundaries
-          const gigDateStr = g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time;
-          return gigDateStr === localDateStr;
-        } catch (e) {
-          return false;
-        }
+        const gigDateKey = getKolkataDateKey(g.start_time);
+        return gigDateKey === selectedDateKey;
       }).map(g => ({
         ...g,
         enrolled_count: counts[g.id] || 0
