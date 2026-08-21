@@ -211,7 +211,7 @@ function LogisticsGigs() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDateKey]);
 
 
 
