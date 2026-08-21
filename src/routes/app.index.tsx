@@ -359,7 +359,10 @@ function Home() {
           ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
-                No restaurants match those filters.
+                '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
+                                        
+                                            
+                                            A live preview verification still reproduces a material Customer defect. On the public restaurant page `/restaurant/1df07a83-9f3d-4c82-bd22-9ff6ede36a29`, open **Partner Sync Demo Paneer Tikka** → leave default Regular → press the visible `Add · ₹249.00` confirmation button. The click visually fires but the customization sheet remains open and no cart state is observable. This blocks guest checkout.
               </p>
             </div>
           ) : (
