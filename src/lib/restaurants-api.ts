@@ -55,22 +55,22 @@ export async function fetchCustomerData() {
     // 3. Normalize mapping & apply strict production eligibility filters
     const normalizedRestaurants: Restaurant[] = restaurants
       .filter(r => {
-        // Requirement 1: Normalize statuses case-insensitively (approved, active)
+        // Requirement: Normalize statuses case-insensitively (approved, active, live)
         const status = String(r.status || "").toLowerCase();
         const onboarding = String(r.onboarding_status || "").toLowerCase();
-        const isApproved = status === "approved" || status === "active" || onboarding === "live";
+        const isApproved = status === "approved" || status === "active" || status === "live" || onboarding === "live";
 
-        // Requirement 2: Canonical live/override flags (is_live OR go_live_override)
+        // Requirement: Canonical live/override flags (is_live OR go_live_override)
         // Also ensure not archived and explicitly open
         const isLive = Boolean(r.is_live === true || r.is_live === "true" || r.go_live_override === true || r.go_live_override === "true");
         const isNotArchived = !Boolean(r.archived === true || r.archived === "true");
-        const isOpen = Boolean(r.is_open ?? true);
+        const isOpen = r.is_open !== false && r.is_open !== "false";
 
         return isApproved && isLive && isNotArchived && isOpen;
       })
       .map(r => {
         const restaurantMenu = menuItems
-          .filter(m => m.restaurant_id === r.id && Boolean(m.available ?? true))
+          .filter(m => m.restaurant_id === r.id && (m.available === true || m.available === "true" || m.available === undefined))
           .map(m => ({
             id: m.id,
             name: m.name || "Unnamed Dish",
@@ -80,8 +80,8 @@ export async function fetchCustomerData() {
             rating: Number(m.rating || 4.5),
             category: m.category || "Main Course",
             cuisineTag: m.cuisine_tag || r.cuisine || "General",
-            veg: Boolean(m.is_veg ?? m.veg),
-            popular: Boolean(m.is_popular ?? m.popular),
+            veg: Boolean(m.is_veg === true || m.is_veg === "true" || m.veg === true || m.veg === "true"),
+            popular: Boolean(m.is_popular === true || m.is_popular === "true" || m.popular === true || m.popular === "true"),
             restaurant_id: r.id
           }));
 
@@ -92,6 +92,9 @@ export async function fetchCustomerData() {
         if (match) {
           deliveryMins = parseInt(match[0], 10);
         }
+
+        const lat = parseFloat(String(r.latitude));
+        const lng = parseFloat(String(r.longitude));
 
         return {
           id: r.id,
@@ -107,17 +110,16 @@ export async function fetchCustomerData() {
           offer: r.offer_text || r.offer || null,
           tags: Array.isArray(r.tags) ? r.tags : (r.tags ? String(r.tags).split(',') : []),
           menu: restaurantMenu,
-          is_live: true, // We already filtered for live
+          is_live: true,
           is_open: true,
           onboarding_status: r.onboarding_status,
           city: r.city,
           rst_code: r.rst_code,
-          latitude: Number(r.latitude),
-          longitude: Number(r.longitude),
+          latitude: isFinite(lat) ? lat : null,
+          longitude: isFinite(lng) ? lng : null,
           delivery_radius: Number(r.delivery_radius || 5)
         } as any;
       })
-      // Requirement: Drop restaurants with no available menu items
       .filter(r => r.menu.length > 0);
 
     return {
