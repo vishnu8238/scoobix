@@ -515,7 +515,7 @@ function LogisticsGigs() {
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-2xl bg-muted/30 p-1 w-fit ring-1 ring-border/40">
