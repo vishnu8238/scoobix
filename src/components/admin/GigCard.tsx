@@ -7,12 +7,21 @@ import { cn } from "@/lib/utils";
 interface GigCardProps {
   gig: Gig;
   onEdit?: (gig: Gig) => void;
-  // In a real app, these would come from joined data or counts
+  onDelete?: (gig: Gig) => void;
   enrollmentCount?: number;
-  maxEnrollment?: number;
+  selected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
-export function GigCard({ gig, onEdit, enrollmentCount = 0 }: GigCardProps) {
+export function GigCard({ 
+  gig, 
+  onEdit, 
+  onDelete,
+  enrollmentCount = 0, 
+  selected = false,
+  onSelect
+}: GigCardProps) {
+
   const startStr = gig.start_time || new Date().toISOString();
   const endStr = gig.end_time || new Date().toISOString();
   const start = parseISO(startStr);
