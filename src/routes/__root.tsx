@@ -57,7 +57,7 @@ function RootComponent() {
   
   useEffect(() => {
     registerServiceWorker();
-    prefetchResources();
+    prefetchResources([]);
     const unsub = (subscribeCatalog as any)();
     return () => (unsub as any)?.();
   }, []);
