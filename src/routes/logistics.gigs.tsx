@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { insforge } from "@/lib/insforge";
 import { 
   Search, 
@@ -21,10 +21,13 @@ import {
   TrendingUp,
   Settings
 } from "lucide-react";
-import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, type Gig } from "@/lib/gigs-api";
-import { format, addDays, startOfToday, parseISO } from "date-fns";
+import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, type Gig } from "@/lib/gigs-api";
+import { format, addDays, startOfToday, parseISO, isAfter } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
+import { EditGigModal } from "@/components/admin/EditGigModal";
+import { ImportGigsModal } from "@/components/admin/ImportGigsModal";
+
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { performProductionGigTest } from "@/lib/logistics-ops.functions";
@@ -49,6 +52,11 @@ function LogisticsGigs() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>({ initial: true });
   const [isTesting, setIsTesting] = useState(false);
+  const [editingGig, setEditingGig] = useState<Gig | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedGigIds, setSelectedGigIds] = useState<string[]>([]);
+
 
   // Filters for Slots/Capacity
   const [city, setCity] = useState("all");
