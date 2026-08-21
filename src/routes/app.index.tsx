@@ -362,7 +362,17 @@ function Home() {
                 '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
                                         
                                             
-                                            A live preview verification still reproduces a material Customer defect. On the public restaurant page `/restaurant/1df07a83-9f3d-4c82-bd22-9ff6ede36a29`, open **Partner Sync Demo Paneer Tikka** → leave default Regular → press the visible `Add · ₹249.00` confirmation button. The click visually fires but the customization sheet remains open and no cart state is observable. This blocks guest checkout.
+                                            The Customer cart confirmation is STILL broken in the latest preview. This is independently reproduced now at /restaurant/1df07a83-9f3d-4c82-bd22-9ff6ede36a29: guest tap ADD → customization sheet opens → tap the visible enabled `Add · ₹249.00` button → the sheet remains open and no cart state changes. Do not claim this is fixed without exercising that exact flow in the running preview.
+
+Perform a code-level root-cause repair, not another superficial handler rewrite:
+1. Trace the actual rendered confirmation button through its component to the CartProvider/CartContext used by the Customer restaurant route. Confirm the sheet and the page consume the same provider instance and that the real click reaches the handler.
+2. Make the visible confirmation control a real `type="button"` with an explicit async-safe click handler. The handler must build the normalized cart line from the selected size, addons, spice and quantity; call the authoritative cart `addItem` exactly once; persist/update the same guest cart state that the header/cart page reads; then close and reset the sheet only after success. Surface a customer-safe toast/error if the mutation fails; do not silently swallow errors.
+3. Remove any stale event prevention, form submission, disabled overlay, pointer-events layer, nested button, or mismatched local cart state that prevents this click from mutating the actual cart.
+4. Add a focused regression test or in-app assertion only in development if the project supports it, and manually validate the exact guest path: after confirmation, the sheet disappears and the cart entry/count becomes visible; no login should be required to add.
+5. Preserve the already-created /cart and /checkout aliases, guest browsing, auth-at-checkout/profile-completion gate, InsForge-only backend, restaurant visibility, Google Maps configuration, and every non-Customer portal. Do not alter schemas, do not add Supabase, `user_roles`, or `has_role`.
+6. Remove any accidental developer/instructional text visible to customers; use normal shopper-facing copy only.
+
+Build with zero TypeScript errors, then state the exact files changed and the observed result of the direct preview test.
               </p>
             </div>
           ) : (

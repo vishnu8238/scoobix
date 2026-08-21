@@ -55,7 +55,7 @@ function RestaurantPage() {
   const [query, setQuery] = useState("");
 
   const dishes = useMemo(() => {
-    return r.menu.filter((d) => d.category === cat && (!query || `${d.name} ${d.description}`.toLowerCase().includes(query.toLowerCase())));
+    return (r.menu || []).filter((d) => d.category === cat && (!query || `${d.name} ${d.description}`.toLowerCase().includes(query.toLowerCase())));
   }, [r.menu, cat, query]);
 
 
@@ -161,7 +161,9 @@ function RestaurantPage() {
             <p className="text-xs text-muted-foreground">Try a different category or clear your search.</p>
           </div>
         ) : (
-          dishes.map((d) => <DishCard key={d.id} dish={d} layout="row" />)
+          dishes.map((d) => (
+            <DishCard key={d.id} dish={d} layout="row" restaurant={r} />
+          ))
         )}
       </div>
 

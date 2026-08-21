@@ -1,6 +1,6 @@
 import { Heart, Plus, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import type { Dish } from "@/lib/mock-data";
+import type { Dish, Restaurant } from "@/lib/mock-data";
 import { findDish } from "@/lib/mock-data";
 import { useCart, useFavorites } from "@/lib/stores";
 import { currency, cn } from "@/lib/format";
@@ -9,7 +9,8 @@ import { useState } from "react";
 import { CustomizationSheet } from "./CustomizationSheet";
 import { OptimizedImage } from "@/components/cravio/OptimizedImage";
 
-export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail" | "row" | "grid" }) {
+export function DishCard({ dish, layout = "rail", restaurant }: { dish: Dish; layout?: "rail" | "row" | "grid"; restaurant?: Restaurant }) {
+  console.log("[DISH_CARD_DEBUG] dish:", dish.name, "restaurant:", restaurant?.name, "layout:", layout);
   const ref = findDish(dish.id);
   const { isDishFav, toggleDish } = useFavorites();
   const { addItem } = useCart();
@@ -19,14 +20,15 @@ export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail
   const fav = isDishFav(dish.id);
 
   const quickAdd = () => {
-    if (!ref) return;
+    const activeRestaurant = restaurant || ref?.restaurant;
+    if (!activeRestaurant) return;
     const res = addItem({
       dishId: dish.id,
       name: dish.name,
       image: dish.image,
       price: dish.price,
-      restaurantId: ref.restaurant.id,
-      restaurantName: ref.restaurant.name,
+      restaurantId: activeRestaurant.id,
+      restaurantName: activeRestaurant.name,
       customizations: [],
     });
     if (!res.ok && res.reason === "different-restaurant") {
@@ -34,7 +36,7 @@ export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail
       return;
     }
     setAddPop((p) => p + 1);
-    toast.success(`${dish.name} added`, { description: ref.restaurant.name });
+    toast.success(`${dish.name} added`, { description: activeRestaurant.name });
   };
 
   const onFav = () => { toggleDish(dish.id); setPop((p) => p + 1); };
@@ -69,7 +71,7 @@ export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail
             </button>
           </div>
         </div>
-        <CustomizationSheet open={sheetOpen} onOpenChange={setSheetOpen} dish={dish} />
+        <CustomizationSheet open={sheetOpen} onOpenChange={setSheetOpen} dish={dish} restaurant={restaurant || ref?.restaurant} />
       </>
     );
   }
@@ -79,7 +81,7 @@ export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail
     <>
       <div className={cn("group shrink-0", layout === "rail" ? "w-[180px]" : "w-full")}>
         <div className="relative aspect-square overflow-hidden rounded-[28px] shadow-card">
-          <Link to="/restaurant/$id" params={{ id: ref?.restaurant.id ?? "" }}>
+          <Link to="/restaurant/$id" params={{ id: restaurant?.id || ref?.restaurant.id || "" }}>
             <img src={dish.image} alt={dish.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" decoding="async" />
           </Link>
           <button
@@ -99,7 +101,7 @@ export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail
         </div>
         <div className="mt-3 px-1">
           <h4 className="truncate font-display text-[14px] font-bold leading-snug tracking-tight">{dish.name}</h4>
-          <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">{ref?.restaurant.name}</p>
+          <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">{restaurant?.name || ref?.restaurant.name}</p>
           <div className="mt-1.5 flex items-center justify-between">
             <span className="font-display text-[15px] font-extrabold text-primary-strong">{currency(dish.price)}</span>
             <span className="flex items-center gap-0.5 text-[11px] font-semibold text-muted-foreground">
@@ -108,7 +110,7 @@ export function DishCard({ dish, layout = "rail" }: { dish: Dish; layout?: "rail
           </div>
         </div>
       </div>
-      <CustomizationSheet open={sheetOpen} onOpenChange={setSheetOpen} dish={dish} />
+      <CustomizationSheet open={sheetOpen} onOpenChange={setSheetOpen} dish={dish} restaurant={restaurant || ref?.restaurant} />
     </>
   );
 }
