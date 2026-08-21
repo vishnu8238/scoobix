@@ -76,7 +76,7 @@ export function useIdentityRealtime(userId?: string) {
     });
 
     const unsubscribeKyc = onTableChange("rider_profiles", (payload) => {
-      if (!userId || payload.row?.user_id === userId) {
+      if (!userId || (payload.row && payload.row.user_id === userId)) {
         invalidateTable("rider_profiles");
       }
     });
@@ -95,7 +95,7 @@ export function useNotificationRealtime(userId?: string) {
   useEffect(() => {
     const tables = ["notifications", "notification_deliveries", "notification_campaigns"];
     return onTablesChange(tables, (payload) => {
-      if (payload?.table && (!userId || payload.row?.user_id === userId)) {
+      if (payload?.table && (!userId || (payload.row && payload.row.user_id === userId))) {
         invalidateTable(payload.table);
       }
     });
