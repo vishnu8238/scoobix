@@ -194,8 +194,14 @@ function GoogleMapInner({
     }
   };
 
+  // When polygons are editable, auto-fit runs only once (initial polygon load/completion),
+  // never on vertex drag / insert / remove.
+  const isEditing = !!onPolygonEdit;
+  const didFitRef = useRef(false);
+
   useEffect(() => {
     if (!map) return;
+    if (isEditing && didFitRef.current) return;
     const bounds = new (window as any).google.maps.LatLngBounds();
     let hasPoints = false;
 
