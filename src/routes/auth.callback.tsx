@@ -20,6 +20,13 @@ function AuthCallback() {
       portalRef.current = intent;
       // Re-persist briefly to survive potential hydration reloads
       setPortalIntent(intent);
+      
+      // Also preserve returnTo in storage
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get("returnTo");
+      if (returnTo) {
+        localStorage.setItem("scoobix_return_to", returnTo);
+      }
     }
     
     const portal = portalRef.current;
