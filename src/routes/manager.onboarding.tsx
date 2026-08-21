@@ -720,7 +720,7 @@ function OnboardingFlow() {
                 </div>
                 {form.has_cover && (
                   <ImageUploader
-                    type="cover"
+                    type="logo"
                     label="Cover image"
                     aspect="aspect-[16/9]"
                     value={form.cover_url ? ({ image_url: form.cover_url } as ImageRef) : null}
@@ -748,7 +748,7 @@ function OnboardingFlow() {
                 </div>
                 {form.has_gallery && (
                   <ImageUploader
-                    type="banner"
+                    type="logo"
                     label="Gallery / Guest Image"
                     aspect="aspect-[16/10]"
                     value={form.documents.find(d => d.label === "Gallery / Guest Image") ? ({ image_url: form.documents.find(d => d.label === "Gallery / Guest Image")?.url } as ImageRef) : null}
