@@ -233,8 +233,8 @@ function AdminRestaurants() {
         const owner = r.owner_id ? owners[r.owner_id] : undefined;
         return <RestaurantDetail key={r.id} restaurant={r} owner={owner} onClose={() => setOpenDetail(null)} onSaveManager={saveManager} />;
       })()}
+      </div>
     </PortalErrorBoundary>
-    </div>
   );
 }
 
