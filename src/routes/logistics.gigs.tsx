@@ -313,7 +313,13 @@ function LogisticsGigs() {
 
   useEffect(() => { void load(); }, [load, version]);
 
-  const dates = Array.from({ length: 7 }).map((_, i) => addDays(startOfToday(), i - 1));
+  const dates = Array.from({ length: 7 }).map((_, i) => {
+    const d = addDays(startOfToday(), i - 1);
+    return {
+      date: d,
+      key: format(d, "yyyy-MM-dd")
+    };
+  });
 
   const filteredGigs = gigs.filter(g => 
     g.title?.toLowerCase().includes(q.toLowerCase())
