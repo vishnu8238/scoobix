@@ -41,12 +41,9 @@ export type Dish = {
  */
 export async function fetchCustomerData() {
   try {
-    // 1. Fetch Approved/Live restaurants
-    // Filters: status=approved, onboarding_status=live, is_live=true
+    // 1. Fetch all restaurants that have potential to be live
+    // We fetch a broader set and filter in JS to handle case-insensitivity and complex flags
     const restaurants = await listTable<any>("restaurants", {
-      "onboarding_status.eq": "live",
-      "status.eq": "approved",
-      "is_live.eq": "true",
       limit: 100
     }, { ttl: 60 });
 
@@ -55,53 +52,73 @@ export async function fetchCustomerData() {
       limit: 1000
     }, { ttl: 120 });
 
-    // 3. Normalize mapping
-    const normalizedRestaurants: Restaurant[] = restaurants.map(r => {
-      const restaurantMenu = menuItems
-        .filter(m => m.restaurant_id === r.id)
-        .map(m => ({
-          id: m.id,
-          name: m.name || "Unnamed Dish",
-          description: m.description || "",
-          price: Number(m.price || 0),
-          image: m.image_url || m.image || "",
-          rating: Number(m.rating || 4.5),
-          category: m.category || "Main Course",
-          cuisineTag: m.cuisine_tag || r.cuisine || "General",
-          veg: Boolean(m.is_veg ?? m.veg),
-          popular: Boolean(m.is_popular ?? m.popular),
-          restaurant_id: r.id
-        }));
+    // 3. Normalize mapping & apply strict production eligibility filters
+    const normalizedRestaurants: Restaurant[] = restaurants
+      .filter(r => {
+        // Requirement 1: Normalize statuses case-insensitively (approved, active)
+        const status = String(r.status || "").toLowerCase();
+        const onboarding = String(r.onboarding_status || "").toLowerCase();
+        const isApproved = status === "approved" || status === "active" || onboarding === "live";
 
-      // Delivery time parsing: extract first positive numeric token or use fallback
-      let deliveryMins = 25;
-      const rawTime = String(r.delivery_time || r.deliveryMins || "");
-      const match = rawTime.match(/\d+/);
-      if (match) {
-        deliveryMins = parseInt(match[0], 10);
-      }
+        // Requirement 2: Canonical live/override flags (is_live OR go_live_override)
+        // Also ensure not archived and explicitly open
+        const isLive = Boolean(r.is_live === true || r.is_live === "true" || r.go_live_override === true || r.go_live_override === "true");
+        const isNotArchived = !Boolean(r.archived === true || r.archived === "true");
+        const isOpen = Boolean(r.is_open ?? true);
 
-      return {
-        id: r.id,
-        name: r.name || "Unnamed Restaurant",
-        cuisine: r.cuisine || "Multi-cuisine",
-        rating: Number(r.rating || 4.0),
-        reviews: Number(r.reviews_count || r.reviews || 0),
-        deliveryMins: deliveryMins,
-        distanceKm: Number(r.distance_km || r.distanceKm || 1.2),
-        priceLevel: (r.price_level || r.priceLevel || "₹₹") as any,
-        cover: r.cover_url || r.cover_image || r.cover || "",
-        logo: r.logo_url || r.logo || "",
-        offer: r.offer_text || r.offer || null,
-        tags: Array.isArray(r.tags) ? r.tags : (r.tags ? String(r.tags).split(',') : []),
-        menu: restaurantMenu,
-        is_live: Boolean(r.is_live),
-        is_open: Boolean(r.is_open ?? true),
-        onboarding_status: r.onboarding_status,
-        city: r.city,
-        rst_code: r.rst_code
-      };
-    });
+        return isApproved && isLive && isNotArchived && isOpen;
+      })
+      .map(r => {
+        const restaurantMenu = menuItems
+          .filter(m => m.restaurant_id === r.id && Boolean(m.available ?? true))
+          .map(m => ({
+            id: m.id,
+            name: m.name || "Unnamed Dish",
+            description: m.description || "",
+            price: Number(m.price || 0),
+            image: m.image_url || m.image || "",
+            rating: Number(m.rating || 4.5),
+            category: m.category || "Main Course",
+            cuisineTag: m.cuisine_tag || r.cuisine || "General",
+            veg: Boolean(m.is_veg ?? m.veg),
+            popular: Boolean(m.is_popular ?? m.popular),
+            restaurant_id: r.id
+          }));
+
+        // Delivery time parsing: extract first positive numeric token or use fallback
+        let deliveryMins = 25;
+        const rawTime = String(r.delivery_time || r.deliveryMins || "");
+        const match = rawTime.match(/\d+/);
+        if (match) {
+          deliveryMins = parseInt(match[0], 10);
+        }
+
+        return {
+          id: r.id,
+          name: r.name || "Unnamed Restaurant",
+          cuisine: r.cuisine || "Multi-cuisine",
+          rating: Number(r.rating || 4.0),
+          reviews: Number(r.reviews_count || r.reviews || 0),
+          deliveryMins: deliveryMins,
+          distanceKm: Number(r.distance_km || r.distanceKm || 1.2),
+          priceLevel: (r.price_level || r.priceLevel || "₹₹") as any,
+          cover: r.cover_url || r.cover_image || r.cover || "",
+          logo: r.logo_url || r.logo || "",
+          offer: r.offer_text || r.offer || null,
+          tags: Array.isArray(r.tags) ? r.tags : (r.tags ? String(r.tags).split(',') : []),
+          menu: restaurantMenu,
+          is_live: true, // We already filtered for live
+          is_open: true,
+          onboarding_status: r.onboarding_status,
+          city: r.city,
+          rst_code: r.rst_code,
+          latitude: Number(r.latitude),
+          longitude: Number(r.longitude),
+          delivery_radius: Number(r.delivery_radius || 5)
+        } as any;
+      })
+      // Requirement: Drop restaurants with no available menu items
+      .filter(r => r.menu.length > 0);
 
     return {
       restaurants: normalizedRestaurants,
