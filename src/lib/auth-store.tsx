@@ -8,7 +8,6 @@ import { setCacheAuthScope } from "./request-cache";
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
-
 export type User = {
   id: string;
   name: string;
@@ -54,7 +53,7 @@ const AuthContext = createContext<AuthCtx>({
   signOut: async () => {},
 });
 
-export const getRequestedPortal = () => {
+export const getRequestedPortal = (): Role => {
   if (typeof window === "undefined") return "customer";
   const params = new URLSearchParams(window.location.search);
   const portalParam = params.get("portal");
@@ -211,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user.roles.includes(currentPortal)) {
         setUser(prev => prev ? { ...prev, role: currentPortal } : null);
         setAuthState("authenticated");
-      } else if (currentPortal !== "customer") {
+      } else if ((currentPortal as string) !== "customer") {
         setAuthState("denied");
       }
     }
@@ -232,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setAuthState("unauthenticated");
       setCacheAuthScope(null);
-      const dest = portal === "customer" ? "/" : `/login?portal=${portal}`;
+      const dest = (portal as string) === "customer" ? "/" : `/login?portal=${portal}`;
       window.location.replace(new URL(dest, window.location.origin).href);
     }
   };
