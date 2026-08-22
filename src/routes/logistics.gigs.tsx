@@ -787,7 +787,6 @@ function LogisticsGigs() {
         <CapacityChangeView 
           gigs={gigs}
           city={city} setCity={setCity}
-          entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
           date={parseISO(selectedDateKey)}
         />
