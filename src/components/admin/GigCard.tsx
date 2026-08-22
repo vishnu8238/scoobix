@@ -93,9 +93,10 @@ export function GigCard({
           </div>
           <div>
             <h3 className="text-xl font-black tracking-tight">
-              {format(start, "HH:mm")} - {format(end, "HH:mm")}
+              {start && end ? `${format(start, "HH:mm")} - ${format(end, "HH:mm")}` : "Unavailable"}
             </h3>
-            <p className="text-[10px] font-semibold text-muted-foreground">Duration: {duration}h</p>
+            <p className="text-[10px] font-semibold text-muted-foreground">Duration: {duration !== null ? `${duration}h` : "Unavailable"}</p>
+
           </div>
         </div>
 
