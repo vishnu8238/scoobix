@@ -205,8 +205,9 @@ export async function handleResponse<T>(promise: Promise<any>, method: string, t
       (authErr as any).insforge_status = status;
       (authErr as any).details = error?.details;
 
-      // P0.1 Compliance: Allow GET users to fail through with isAuthError so AuthProvider can catch it
-      if (method === "GET" && !insforge.auth.session?.accessToken && typeof window !== "undefined" && table !== "users") {
+      // P0.1 Compliance: Allow GET users/app_settings/restaurants to fail through with isAuthError so providers can catch it
+      const isShopperTable = ["users", "app_settings", "restaurants", "menu_items"].includes(table);
+      if (method === "GET" && !insforge.auth.session?.accessToken && typeof window !== "undefined" && !isShopperTable) {
         console.warn(`[DB_AUTH_SILENT] Unauthorized GET ${table} (Client). Returning empty.`);
         return [] as unknown as T;
       }
