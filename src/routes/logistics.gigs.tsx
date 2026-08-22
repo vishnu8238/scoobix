@@ -45,6 +45,7 @@ export const Route = createFileRoute("/logistics/gigs")({
 
 function LogisticsGigs() {
   const [activeTab, setActiveTab] = useState<"fleet" | "slots" | "capacity">("fleet");
+  const [dateFilterMode, setDateFilterMode] = useState<"selected" | "all" | "last2months">("selected");
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [enrollmentCounts, setEnrollmentCounts] = useState<Record<string, number>>({});
   const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
