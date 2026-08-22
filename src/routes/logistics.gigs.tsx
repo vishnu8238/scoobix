@@ -433,10 +433,11 @@ function LogisticsGigs() {
         zone: g.zone_id || "",
         reward_amount: g.reward_amount || 0,
         enrolled: enrollmentCounts[g.id] || 0,
-        capacity: g.capacity || 0,
+        capacity: typeof g.capacity === "number" ? g.capacity : "",
         completion_percentage: completionPercentage,
         status: g.status || "",
       };
+
     });
 
     exportExcel([{
