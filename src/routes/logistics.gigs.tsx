@@ -177,6 +177,15 @@ function LogisticsGigs() {
         const s = g.status?.toUpperCase();
         if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
 
+        if (dateFilterMode === "all") return true;
+
+        if (dateFilterMode === "last2months") {
+          const startTime = new Date(g.start_time);
+          const twoMonthsAgo = subMonths(new Date(), 2);
+          const today = new Date();
+          return isWithinInterval(startTime, { start: twoMonthsAgo, end: today });
+        }
+
         const gigDateKey = getKolkataDateKey(g.start_time);
         return gigDateKey === selectedDateKey;
       }).map(g => ({
