@@ -780,7 +780,6 @@ function LogisticsGigs() {
           citiesMap={citiesMap}
           zonesMap={zonesMap}
           city={city} setCity={setCity}
-          entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
           date={parseISO(selectedDateKey)}
         />
