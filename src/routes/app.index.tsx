@@ -382,12 +382,6 @@ function Home() {
       <p className="px-6 pb-4 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
         Discover top restaurants and trending dishes near you
       </p>
-                                        
-                                            
-                                            Before publishing P0.1, run a strict compliance pass against the attached requirements and correct only proven auth/authorization violations. Direct inspection shows src/integrations/supabase/client.ts still exports the InsForge singleton under the legacy identifier supabase; remove this compatibility alias and update its imports/call-sites so no runtime/source authentication path uses Supabase names, packages, or URLs. Verify the repository has exactly ONE createClient() call, exactly ONE active onAuthStateChange() subscription, and exactly ONE canonical session owner. The real token must come only from the official InsForge SDK current-session API; delete any localStorage key scanning, guessed token fallback, empty refresh-token workaround, or synthetic session construction if present. Keep legacy business tables only for data resolution after a strict portal_access admission result; never admit a portal through legacy membership. Verify auth errors, query failures, denied, and disabled status stay in explicit portal error/unauthorized states rather than falling back to /app. Validate the OAuth callback uses exactly one SDK-supported exchange path. Do not touch unrelated product areas, UI, data schema, or Google Maps. Run the build and focused tests. Return an evidence table with exact changed files, createClient count, active listener count, token source, callback mechanism, remaining legacy role checks, and explicitly UNVERIFIED browser/device cases. Do not publish yet; wait for my review.`}
-
-      </p>
-
     </div>
   );
 }
