@@ -59,7 +59,7 @@ export async function fetchGigs(params?: Record<string, any>) {
     return rows.map(r => ({
       ...r,
       // Priority: Root column > Metadata > Fallback
-      title: r.title || r.metadata?.title || r.gig_type || `Gig ${r.id.substring(0,8)}`,
+      title: r.title || r.metadata?.title || r.gig_type || "Unavailable Gig",
       description: r.description || r.metadata?.description || "Delivery shift",
       reward_amount: r.payout || r.reward_amount || 0,
       payout: r.payout || r.reward_amount || 0,

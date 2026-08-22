@@ -11,6 +11,8 @@ interface GigCardProps {
   enrollmentCount?: number;
   selected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
+  citiesMap?: Record<string, string>;
+  zonesMap?: Record<string, string>;
 }
 
 export function GigCard({ 
@@ -19,7 +21,9 @@ export function GigCard({
   onDelete,
   enrollmentCount = 0, 
   selected = false,
-  onSelect
+  onSelect,
+  citiesMap = {},
+  zonesMap = {}
 }: GigCardProps) {
 
   const startStr = gig.start_time || new Date().toISOString();
@@ -88,11 +92,11 @@ export function GigCard({
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-600 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-900/50">
             <MapPin className="h-3 w-3" />
-            City: {gig.city_id || "1"}
+            City: {gig.city_id ? (citiesMap[gig.city_id] || "Unknown City") : "Unassigned"}
           </div>
           <div className="flex items-center gap-1.5 rounded-lg bg-purple-50 px-2 py-1 text-[10px] font-bold text-purple-600 ring-1 ring-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:ring-purple-900/50">
             <MapPin className="h-3 w-3" />
-            Zone: {gig.zone_id || "All"}
+            Zone: {gig.zone_id ? (zonesMap[gig.zone_id] || "Unknown Zone") : "Unassigned"}
           </div>
         </div>
       </div>
@@ -110,10 +114,10 @@ export function GigCard({
 
       <div className="mb-6 space-y-2">
         <div className="flex justify-between text-[10px] font-bold">
-          <span className="text-muted-foreground/80">Eligible % for completion</span>
-          <span className="text-primary">98%</span>
+          <span className="text-muted-foreground/80">Gig Completion Status</span>
+          <span className="text-primary">{gig.metadata?.completion_pct ? `${gig.metadata.completion_pct}%` : "Unavailable"}</span>
         </div>
-        <Progress value={98} className="h-1.5 bg-muted" />
+        <Progress value={gig.metadata?.completion_pct || 0} className="h-1.5 bg-muted" />
       </div>
 
 

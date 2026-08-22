@@ -23,7 +23,7 @@ import {
   History
 } from "lucide-react";
 import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, bulkDeleteGigs, type Gig } from "@/lib/gigs-api";
-import { format, addDays, startOfToday, parseISO, isAfter, subMonths, isWithinInterval } from "date-fns";
+import { format, addDays, startOfToday, parseISO, isAfter, subMonths, isWithinInterval, differenceInHours } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { EditGigModal } from "@/components/admin/EditGigModal";
@@ -65,86 +65,20 @@ function LogisticsGigs() {
   const [city, setCity] = useState("all");
   const [entityType, setEntityType] = useState("all");
   const [zone, setZone] = useState("all");
+  const [citiesMap, setCitiesMap] = useState<Record<string, string>>({});
+  const [zonesMap, setZonesMap] = useState<Record<string, string>>({});
 
   // Real-time sync
   const version = useTableVersion(["gigs", "rider_gig_enrollments"]);
 
-  const seedDemos = useCallback(async () => {
-    try {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const city1Id = "c1110000-0000-0000-0000-000000000001";
-      const zone1Id = "z1110000-0000-0000-0000-000000000001";
-
-      const demoGigs = [
-        {
-          id: "demo-gig-1",
-          title: "Morning Shift - Vadodara Central",
-          description: "Standard morning peak shift. Clearly marked DEMO DATA.",
-          payout: 500,
-          reward_amount: 500,
-          target_deliveries: 15,
-          start_time: `${todayStr}T08:00:00Z`,
-          end_time: `${todayStr}T12:00:00Z`,
-          status: "ACTIVE" as const,
-          city_id: city1Id,
-          zone_id: zone1Id,
-          capacity: 10,
-          metadata: { is_demo: true, demo_tag: "logistics_gig_demo_v1" },
-          created_at: new Date().toISOString()
-        },
-        {
-          id: "demo-gig-2",
-          title: "Lunch Peak Express",
-          description: "High volume lunch shift. Clearly marked DEMO DATA.",
-          payout: 350,
-          reward_amount: 350,
-          target_deliveries: 10,
-          start_time: `${todayStr}T12:00:00Z`,
-          end_time: `${todayStr}T15:00:00Z`,
-          status: "ACTIVE" as const,
-          city_id: city1Id,
-          zone_id: zone1Id,
-          capacity: 15,
-          metadata: { is_demo: true, demo_tag: "logistics_gig_demo_v1" },
-          created_at: new Date().toISOString()
-        },
-        {
-          id: "demo-gig-3",
-          title: "Evening Logistics Surge",
-          description: "Late night delivery surge incentive. Clearly marked DEMO DATA.",
-          payout: 600,
-          reward_amount: 600,
-          target_deliveries: 20,
-          start_time: `${todayStr}T18:00:00Z`,
-          end_time: `${todayStr}T22:00:00Z`,
-          status: "ACTIVE" as const,
-          city_id: city1Id,
-          zone_id: zone1Id,
-          capacity: 8,
-          metadata: { is_demo: true, demo_tag: "logistics_gig_demo_v1" },
-          created_at: new Date().toISOString()
-        }
-      ];
-
-      for (const demo of demoGigs) {
-        const existing = await fetchGigs({ id: demo.id });
-        if (!existing || existing.length === 0) {
-          await createGig(demo);
-        }
-      }
-
-    } catch (e) {
-      console.warn("[GIGS_PAGE] Demo seeding skipped/failed:", e);
-    }
-  }, []);
+  // NOTE: seedDemos removed; page is read-only for operational data.
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       console.log("[GIGS_PAGE] Loading authoritative canonical list...");
       
-      // Seed demos first to ensure they exist in the real table
-      await seedDemos();
+      // seedDemos removed; operational read-only only.
 
       // 1. Authoritative fetch
       let all = await fetchGigs({ limit: 1000 });
@@ -154,6 +88,18 @@ function LogisticsGigs() {
       const gigIds = all.map(g => g.id);
       const counts = await fetchGigEnrollmentCounts(gigIds);
       setEnrollmentCounts(counts);
+
+      // Fetch Cities & Zones for mapping
+      const { fetchCities, fetchZones } = await import("@/lib/zones-api");
+      const [cities, zones] = await Promise.all([fetchCities(), fetchZones()]);
+      
+      const cMap: Record<string, string> = {};
+      cities.forEach(c => cMap[c.id] = c.name);
+      setCitiesMap(cMap);
+
+      const zMap: Record<string, string> = {};
+      zones.forEach(z => zMap[z.id] = z.name);
+      setZonesMap(zMap);
       
       // 3. Date key normalization for Asia/Kolkata
       const getKolkataDateKey = (dateInput: string | Date) => {
@@ -171,8 +117,9 @@ function LogisticsGigs() {
         }
       };
       
-      // 4. Normalized filtering & data enrichment
+      // 4. Normalized filtering & data enrichment (Exclude demo/non-operational)
       const data = all.filter(g => {
+        if (g.metadata?.is_demo === true) return false;
         if (!g.start_time) return false;
         const s = g.status?.toUpperCase();
         if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
@@ -428,7 +375,6 @@ function LogisticsGigs() {
   };
 
   const handleExport = () => {
-
     if (filteredGigs.length === 0) {
       toast.info("No gigs to export for the selected filters.");
       return;
@@ -446,25 +392,46 @@ function LogisticsGigs() {
       { key: "enrolled", label: "Enrollment" },
       { key: "capacity", label: "Capacity" },
       { key: "completion_percentage", label: "Completion %" },
-      { key: "slot_id", label: "Slot ID" },
       { key: "status", label: "Status" },
     ];
 
-    const rows = filteredGigs.map(g => ({
-      id: g.id,
-      date: g.start_time ? (g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time) : "",
-      start_time: g.start_time || "",
-      end_time: g.end_time || "",
-      duration: "N/A", // Not in schema, keeping as placeholder
-      city: g.city_id || "",
-      zone: g.zone_id || "",
-      reward_amount: g.reward_amount || 0,
-      enrolled: enrollmentCounts[g.id] || 0,
-      capacity: g.capacity || 0,
-      completion_percentage: "0%", // Placeholder
-      slot_id: g.metadata?.slot_id || "",
-      status: g.status || "",
-    }));
+    const rows = filteredGigs.map(g => {
+      let duration = "";
+      if (g.start_time && g.end_time) {
+        const start = new Date(g.start_time);
+        const end = new Date(g.end_time);
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          const diffHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+          duration = `${diffHours.toFixed(1)}h`;
+        }
+      }
+
+      let completionPct = "";
+      if (g.metadata?.completion_pct !== undefined) {
+        completionPct = `${g.metadata.completion_pct}%`;
+      } else if (g.target_deliveries && g.target_deliveries > 0) {
+        // Fallback to calculation if target is present
+        const enrolled = enrollmentCounts[g.id] || 0;
+        // completion percentage is calculated from completed_deliveries vs target_deliveries
+        // Since we don't have total completed deliveries per gig in this view easily, 
+        // we use metadata.completion_pct as primary authoritative source.
+      }
+
+      return {
+        id: g.id,
+        date: g.start_time ? (g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time) : "",
+        start_time: g.start_time || "",
+        end_time: g.end_time || "",
+        duration,
+        city: g.city_id || "",
+        zone: g.zone_id || "",
+        reward_amount: g.reward_amount || 0,
+        enrolled: enrollmentCounts[g.id] || 0,
+        capacity: g.capacity || 0,
+        completion_percentage: completionPct,
+        status: g.status || "",
+      };
+    });
 
     exportExcel([{
       title: `Gigs - ${selectedDateKey}`,
@@ -721,6 +688,8 @@ function LogisticsGigs() {
                       setIsEditModalOpen(true);
                     }}
                     onDelete={handleDeleteGig}
+                    citiesMap={citiesMap}
+                    zonesMap={zonesMap}
                   />
                 ))}
               </div>
@@ -795,6 +764,9 @@ function LogisticsGigs() {
         </>
       ) : activeTab === "slots" ? (
         <SlotsDetailsView 
+          gigs={gigs}
+          citiesMap={citiesMap}
+          zonesMap={zonesMap}
           city={city} setCity={setCity}
           entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
@@ -802,6 +774,7 @@ function LogisticsGigs() {
         />
       ) : (
         <CapacityChangeView 
+          gigs={gigs}
           city={city} setCity={setCity}
           entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
@@ -835,13 +808,13 @@ function LogisticsGigs() {
   );
 }
 
-function SlotsDetailsView({ city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+function SlotsDetailsView({ gigs, citiesMap, zonesMap, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-wrap gap-4 items-center">
-        <FilterSelect label="City" value={city} onChange={setCity} options={["City 1", "City 2"]} />
+        <FilterSelect label="City" value={city} onChange={setCity} options={Object.values(citiesMap)} />
         <FilterSelect label="Entity Type" value={entityType} onChange={setEntityType} options={["Rider", "Truck"]} />
-        <FilterSelect label="Zone" value={zone} onChange={setZone} options={["Zone 1", "Zone 2", "Zone 3"]} />
+        <FilterSelect label="Zone" value={zone} onChange={setZone} options={Object.values(zonesMap)} />
         <FilterSelect label="Carrier" value="all" onChange={() => {}} options={["Main", "Third Party"]} />
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Date</label>
@@ -862,18 +835,22 @@ function SlotsDetailsView({ city, setCity, entityType, setEntityType, zone, setZ
               </tr>
             </thead>
             <tbody>
-              {[1, 2, 3].map(i => (
-                <tr key={i} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="px-6 py-4 font-mono text-[10px] font-black text-primary">#CAP-00{i}</td>
-                  <td className="px-6 py-4 text-xs font-bold">09:00</td>
-                  <td className="px-6 py-4 text-xs font-bold">18:00</td>
-                  <td className="px-6 py-4 text-xs font-bold">100</td>
-                  <td className="px-6 py-4 text-xs font-bold text-emerald-600">85</td>
-                  <td className="px-6 py-4 text-xs font-bold">15%</td>
-                  <td className="px-6 py-4 text-xs font-black">₹300</td>
-                  <td className="px-6 py-4 text-xs font-black">₹800</td>
-                </tr>
-              ))}
+                {gigs.length > 0 ? (
+                  gigs.map((g: Gig) => (
+                    <tr key={g.id} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4 font-mono text-[10px] font-black text-primary">{g.id.slice(0, 8)}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.start_time ? format(parseISO(g.start_time), "HH:mm") : "N/A"}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.end_time ? format(parseISO(g.end_time), "HH:mm") : "N/A"}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.capacity || 0}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-emerald-600">{Math.max(0, (g.capacity || 0) - ((g as any).enrolled_count || 0))}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.capacity ? Math.round(((g as any).enrolled_count || 0) / g.capacity * 100) : 0}%</td>
+                      <td className="px-6 py-4 text-xs font-black">₹{g.reward_amount || 0}</td>
+                      <td className="px-6 py-4 text-xs font-black text-slate-400">Fixed</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={8} className="px-6 py-12 text-center text-xs font-black text-muted-foreground">No active gig slots found.</td></tr>
+                )}
             </tbody>
           </table>
         </div>
@@ -882,7 +859,7 @@ function SlotsDetailsView({ city, setCity, entityType, setEntityType, zone, setZ
   );
 }
 
-function CapacityChangeView({ city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
   const [mode, setMode] = useState<"view" | "create">("view");
 
   return (
@@ -917,32 +894,40 @@ function CapacityChangeView({ city, setCity, entityType, setEntityType, zone, se
         </div>
 
         <div className="space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs">0{i}</div>
-                <div>
-                  <p className="text-xs font-black">Slot 0{i}:00 - 0{i+2}:00</p>
-                  <p className="text-[10px] font-medium text-muted-foreground">Base Capacity: 100</p>
+          {gigs.length > 0 ? (
+            gigs.map((g: Gig) => (
+              <div key={g.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs uppercase">{g.id.slice(0, 2)}</div>
+                  <div>
+                    <p className="text-xs font-black">{g.title}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground">Persisted Capacity: {g.capacity || 0}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">Update Capacity</span>
+                    <input 
+                      type="number" 
+                      min="1"
+                      defaultValue={g.capacity || 0}
+                      onChange={(e) => {
+                         // UI only update logic can go here if needed, but per request it only updates on submit
+                      }}
+                      className="w-20 h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 text-xs font-black text-center outline-none focus:ring-primary/40"
+                      disabled={mode === "view"}
+                    />
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Total</span>
+                    <span className="h-10 px-4 flex items-center font-black text-emerald-600">{g.capacity || 0}</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">Adjustment %</span>
-                  <input 
-                    type="number" 
-                    defaultValue="10" 
-                    className="w-20 h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 text-xs font-black text-center outline-none focus:ring-primary/40"
-                    disabled={mode === "view"}
-                  />
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Capacity</span>
-                  <span className="h-10 px-4 flex items-center font-black text-emerald-600">110</span>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <div className="py-12 text-center text-xs font-black text-muted-foreground">No eligible gigs found for capacity adjustment.</div>
+          )}
         </div>
 
         {mode === "create" && (
