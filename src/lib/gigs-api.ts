@@ -118,19 +118,12 @@ export async function createGig(gig: Partial<Gig>) {
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
   try {
+    // Canonical column updates only; no metadata mirroring of gig fields.
     const dbPatch: any = { ...patch };
-    
+
     if (patch.reward_amount !== undefined) dbPatch.payout = patch.reward_amount;
     if (patch.payout !== undefined) dbPatch.reward_amount = patch.payout;
-    
-    const metadataUpdate: any = {};
-    if (patch.title !== undefined) metadataUpdate.title = patch.title;
-    if (patch.description !== undefined) metadataUpdate.description = patch.description;
-    if (patch.target_deliveries !== undefined) metadataUpdate.target_deliveries = patch.target_deliveries;
-    if (patch.start_time !== undefined) metadataUpdate.start_time = patch.start_time;
-    if (patch.end_time !== undefined) metadataUpdate.end_time = patch.end_time;
-    if (patch.capacity !== undefined) metadataUpdate.capacity = patch.capacity;
-    if (patch.city_id !== undefined) metadataUpdate.city_id = patch.city_id;
+
     
     if (Object.keys(metadataUpdate).length > 0) {
       dbPatch.metadata = metadataUpdate;
