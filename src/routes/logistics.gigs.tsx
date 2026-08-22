@@ -554,8 +554,35 @@ function LogisticsGigs() {
       {activeTab === "fleet" ? (
         <>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-2">
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1 ring-1 ring-border/60 dark:bg-slate-800/50">
+                <button
+                  onClick={() => setDateFilterMode("all")}
+                  className={cn(
+                    "rounded-xl px-4 py-2 text-[10px] font-black transition-all",
+                    dateFilterMode === "all"
+                      ? "bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900"
+                      : "text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
+                  )}
+                >
+                  All Gigs
+                </button>
+                <button
+                  onClick={() => setDateFilterMode("last2months")}
+                  className={cn(
+                    "rounded-xl px-4 py-2 text-[10px] font-black transition-all",
+                    dateFilterMode === "last2months"
+                      ? "bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900"
+                      : "text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
+                  )}
+                >
+                  Last 2 Months
+                </button>
+              </div>
+
+              <div className="h-6 w-px bg-border/60 mx-1 hidden sm:block" />
+
+              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 hover:bg-muted transition-colors">
                 <ChevronLeft className="h-4 w-4" />
               </button>
               
@@ -563,23 +590,36 @@ function LogisticsGigs() {
                 {dates.map((d) => (
                   <button
                     key={d.key}
-                    onClick={() => setSelectedDateKey(d.key)}
+                    onClick={() => {
+                      setSelectedDateKey(d.key);
+                      setDateFilterMode("selected");
+                    }}
                     className={cn(
                       "flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black transition-all",
-                      d.key === selectedDateKey
+                      d.key === selectedDateKey && dateFilterMode === "selected"
                         ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
                         : "text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-400"
                     )}
                   >
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(d.date, "EEE, dd MMM, yyyy")}
+                    {format(d.date, "EEE, dd MMM")}
                   </button>
                 ))}
               </div>
               
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
+              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 hover:bg-muted transition-colors">
                 <ChevronRight className="h-4 w-4" />
               </button>
+
+              {dateFilterMode !== "all" && (
+                <button
+                  onClick={() => setDateFilterMode("all")}
+                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black text-slate-500 hover:text-rose-600 transition-colors"
+                >
+                  <History className="h-3.5 w-3.5" />
+                  Clear date / Show all
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
