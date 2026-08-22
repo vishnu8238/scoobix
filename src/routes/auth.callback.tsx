@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { insforge } from "@/lib/insforge";
 import { popPortalIntent, setPortalIntent } from "@/lib/insforge-auth";
