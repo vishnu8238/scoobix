@@ -199,9 +199,18 @@ function GoogleMapInner({
   const isEditing = !!onPolygonEdit;
   const didFitRef = useRef(false);
 
+  // Manual centering should skip auto-fit if center prop is provided explicitly
+  useEffect(() => {
+    if (center) {
+      didFitRef.current = true;
+    }
+  }, [center]);
+
   useEffect(() => {
     if (!map) return;
     if (isEditing && didFitRef.current) return;
+    
+    // Explicitly check for boundary editing state: skip fitBounds if user is actively interacting
     const bounds = new (window as any).google.maps.LatLngBounds();
     let hasPoints = false;
 
@@ -223,12 +232,14 @@ function GoogleMapInner({
       });
     });
 
-    polylines.forEach(p => {
-      p.points.forEach(pt => {
-        bounds.extend(pt);
-        hasPoints = true;
+    if (polylines) {
+      polylines.forEach(p => {
+        p.points.forEach(pt => {
+          bounds.extend(pt);
+          hasPoints = true;
+        });
       });
-    });
+    }
 
     if (pickedAt) {
       bounds.extend(pickedAt);
@@ -242,7 +253,7 @@ function GoogleMapInner({
         if (map.getZoom()! > 15) map.setZoom(15);
       });
     }
-  }, [map, markers, route, polygons, pickedAt, isEditing]);
+  }, [map, markers, route, polygons, pickedAt, isEditing, polylines]);
 
   const defaultCenter = useMemo(() => {
     if (center) return center;
