@@ -19,10 +19,11 @@ import {
   Clock,
   MapPin,
   TrendingUp,
-  Settings
+  Settings,
+  History
 } from "lucide-react";
 import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, bulkDeleteGigs, type Gig } from "@/lib/gigs-api";
-import { format, addDays, startOfToday, parseISO, isAfter } from "date-fns";
+import { format, addDays, startOfToday, parseISO, isAfter, subMonths, isWithinInterval } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { EditGigModal } from "@/components/admin/EditGigModal";
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/logistics/gigs")({
 
 function LogisticsGigs() {
   const [activeTab, setActiveTab] = useState<"fleet" | "slots" | "capacity">("fleet");
+  const [dateFilterMode, setDateFilterMode] = useState<"selected" | "all" | "last2months">("selected");
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [enrollmentCounts, setEnrollmentCounts] = useState<Record<string, number>>({});
   const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
@@ -175,6 +177,15 @@ function LogisticsGigs() {
         const s = g.status?.toUpperCase();
         if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
 
+        if (dateFilterMode === "all") return true;
+
+        if (dateFilterMode === "last2months") {
+          const startTime = new Date(g.start_time);
+          const twoMonthsAgo = subMonths(new Date(), 2);
+          const today = new Date();
+          return isWithinInterval(startTime, { start: twoMonthsAgo, end: today });
+        }
+
         const gigDateKey = getKolkataDateKey(g.start_time);
         return gigDateKey === selectedDateKey;
       }).map(g => ({
@@ -212,7 +223,7 @@ function LogisticsGigs() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDateKey]);
+  }, [selectedDateKey, dateFilterMode]);
 
 
 
@@ -543,8 +554,35 @@ function LogisticsGigs() {
       {activeTab === "fleet" ? (
         <>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-2">
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1 ring-1 ring-border/60 dark:bg-slate-800/50">
+                <button
+                  onClick={() => setDateFilterMode("all")}
+                  className={cn(
+                    "rounded-xl px-4 py-2 text-[10px] font-black transition-all",
+                    dateFilterMode === "all"
+                      ? "bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900"
+                      : "text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
+                  )}
+                >
+                  All Gigs
+                </button>
+                <button
+                  onClick={() => setDateFilterMode("last2months")}
+                  className={cn(
+                    "rounded-xl px-4 py-2 text-[10px] font-black transition-all",
+                    dateFilterMode === "last2months"
+                      ? "bg-slate-900 text-white shadow-md dark:bg-white dark:text-slate-900"
+                      : "text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
+                  )}
+                >
+                  Last 2 Months
+                </button>
+              </div>
+
+              <div className="h-6 w-px bg-border/60 mx-1 hidden sm:block" />
+
+              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 hover:bg-muted transition-colors">
                 <ChevronLeft className="h-4 w-4" />
               </button>
               
@@ -552,23 +590,36 @@ function LogisticsGigs() {
                 {dates.map((d) => (
                   <button
                     key={d.key}
-                    onClick={() => setSelectedDateKey(d.key)}
+                    onClick={() => {
+                      setSelectedDateKey(d.key);
+                      setDateFilterMode("selected");
+                    }}
                     className={cn(
                       "flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black transition-all",
-                      d.key === selectedDateKey
+                      d.key === selectedDateKey && dateFilterMode === "selected"
                         ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
                         : "text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-400"
                     )}
                   >
                     <Calendar className="h-3.5 w-3.5" />
-                    {format(d.date, "EEE, dd MMM, yyyy")}
+                    {format(d.date, "EEE, dd MMM")}
                   </button>
                 ))}
               </div>
               
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60">
+              <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-card ring-1 ring-border/60 hover:bg-muted transition-colors">
                 <ChevronRight className="h-4 w-4" />
               </button>
+
+              {dateFilterMode !== "all" && (
+                <button
+                  onClick={() => setDateFilterMode("all")}
+                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black text-slate-500 hover:text-rose-600 transition-colors"
+                >
+                  <History className="h-3.5 w-3.5" />
+                  Clear date / Show all
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -634,7 +685,9 @@ function LogisticsGigs() {
                   <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Gigs for {format(parseISO(selectedDateKey), "EEE dd MMM").toUpperCase()}
+                  {dateFilterMode === "all" ? "All Persistent Gigs" : 
+                   dateFilterMode === "last2months" ? "Gigs from Last 2 Months" :
+                   `Gigs for ${format(parseISO(selectedDateKey), "EEE dd MMM").toUpperCase()}`}
                 </h2>
               </div>
               <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
