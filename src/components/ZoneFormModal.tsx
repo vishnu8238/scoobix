@@ -62,7 +62,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
   };
 
   const removePoint = (index: number) => {
-    const newPoints = points.filter((_, i) => i !== index);
+    const newPoints = points.filter((_: any, i: number) => i !== index);
     setFormData(prev => ({
       ...prev,
       boundary: {
