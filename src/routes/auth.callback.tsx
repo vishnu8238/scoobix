@@ -50,7 +50,8 @@ function AuthCallback() {
           cleanUrl.searchParams.delete("code");
           window.history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search);
 
-          const { error: exchangeError } = await insforge.auth.exchangeCodeForSession(code);
+          // P0.1 Correction: Official InsForge SDK method is exchangeOAuthCode
+          const { error: exchangeError } = await insforge.auth.exchangeOAuthCode(code);
           if (exchangeError) {
             // Check if SDK already resolved it in background (race condition with singleton)
             if (!insforge.auth.session?.user) {
