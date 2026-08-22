@@ -6,6 +6,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, useSyncExternalStore } from "react";
+import { useLocation } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { ScoobixProviders } from "@/lib/stores";
