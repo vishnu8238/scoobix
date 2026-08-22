@@ -362,16 +362,11 @@ function Home() {
                 {`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
                                         
                                             
-                                            Production validation shows the published Create Zone dialog still fails the demo requirement: although the Manual Boundary labels render, the Latitude/Longitude/Add Point controls remain visually below a large Google Maps failure overlay and cannot be used in the dialog viewport. Fix this now in the existing Scoobix code only, without changing any unrelated portal, auth, checkout, data, or maps credentials.
+                                            Perform ONLY STEP 1 of the attached P0.1 authentication specification: a READ-ONLY forensic inspection. Do not edit code, do not run migrations, do not change UI, and do not publish.
 
-Required runtime outcome on /logistics/zones Create dialog:
-1. The Manual Boundary panel (Latitude input default 22.3072, Longitude default 73.1812, Add Point, numbered removable point list/reset, and 0/3 validation) must be in the INITIAL visible dialog viewport above the footer at desktop widths, not after/below any map canvas. Use an explicit non-scrolling side column or a persistent upper/lower panel; do not rely on vertical dialog scrolling.
-2. When Maps fails or shows its provider configuration overlay, do not render a large map canvas. Detect the unavailable state and replace it with a compact <=96px notice. The Manual Boundary panel must remain immediately visible and usable regardless.
-3. Retain create disabled until 3 distinct coordinates. Persist exactly a closed GeoJSON Polygon in logistics_zones.boundary using [lng,lat] and no polygon_coords reference. Keep center coordinates mapping.
-4. Preserve the existing stable map/polygon refs and prohibit fitBounds/recenter/zoom changes during polygon vertex set_at, insert_at, remove_at, or drag.
-5. Build cleanly, then publish the correction automatically. Do not add Supabase, migrations, polling, or any backend schema changes.
+Audit the entire repository (not just named files) for every authentication, session restoration, portal authorization, redirect, and cache path. Inspect at minimum InsForge client factories and all createClient() calls; auth store/provider; InsForge auth and CRUD; portal authorization; Role/Admin and all portal guards; OAuth callback; every login route; request-cache; all getSession/getCurrentUser/onAuthStateChange/signInWithOAuth calls; manual Authorization headers; token/localStorage handling; and every redirect/navigate/window.location path that can reach /app or a portal login.
 
-This is a focused production demo repair. Confirm the exact component(s) adjusted and evidence that the manual controls are visible in the initial dialog viewport.`}
+Return an evidence-based report with exact files, key functions, before counts of InsForge clients and auth listeners, actual session/token source, portal_access query and schema usage, all customer fallbacks, OAuth callback behavior, cache identity isolation, legacy role-table checks, and a ranked list of proven risks. Do NOT claim a defect unless shown by repository evidence. Wait for my next instruction after the report.`}
               </p>
             </div>
           ) : (
