@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       if (isInitial) {
-        setAuthState("session_resolving");
+        setAuthState("initializing");
         setLoading(true);
       }
       
