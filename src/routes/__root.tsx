@@ -80,17 +80,28 @@ function RootComponent() {
 }
 
 function AppShellContent() {
+  const location = useLocation();
+  const isLogistics = location.pathname === '/logistics' || location.pathname.startsWith('/logistics/');
+
   const catalogVersion = useSyncExternalStore(
     (cb) => (subscribeCatalog as any)(cb), 
     () => (getCatalogVersion as any)(),
     () => (getCatalogVersion as any)()
   );
   
+  const content = <Outlet />;
+
   return (
     <div key={catalogVersion}>
-      <PhoneShell>
-        <Outlet />
-      </PhoneShell>
+      {isLogistics ? (
+        <div className="min-h-svh w-full bg-background">
+          {content}
+        </div>
+      ) : (
+        <PhoneShell>
+          {content}
+        </PhoneShell>
+      )}
       <HeadContent />
       <Scripts />
     </div>
