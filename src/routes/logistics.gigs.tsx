@@ -144,7 +144,7 @@ function LogisticsGigs() {
         return gigDateKey === selectedDateKey;
       }).map(g => ({
         ...g,
-        enrolled_count: counts[g.id] || 0
+        enrolled_count: enrollmentCounts[g.id] || 0
       }));
       
       setGigs(data);
