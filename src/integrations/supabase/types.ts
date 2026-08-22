@@ -119,6 +119,165 @@ export type Database = {
           },
         ]
       }
+      driver_payout_line_items: {
+        Row: {
+          amount: number
+          business_date: string
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string
+          direction: string
+          id: string
+          payout_period_id: string
+          source_id: string | null
+          source_table: string | null
+        }
+        Insert: {
+          amount: number
+          business_date: string
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          direction: string
+          id?: string
+          payout_period_id: string
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Update: {
+          amount?: number
+          business_date?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          direction?: string
+          id?: string
+          payout_period_id?: string
+          source_id?: string | null
+          source_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payout_line_items_payout_period_id_fkey"
+            columns: ["payout_period_id"]
+            isOneToOne: false
+            referencedRelation: "driver_payout_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_payout_periods: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          driver_id: string
+          gross_earnings: number
+          id: string
+          net_payable: number
+          notes: string | null
+          period_end: string
+          period_start: string
+          settled_at: string | null
+          settled_by: string | null
+          status: string
+          total_deductions: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          driver_id: string
+          gross_earnings?: number
+          id?: string
+          net_payable?: number
+          notes?: string | null
+          period_end: string
+          period_start: string
+          settled_at?: string | null
+          settled_by?: string | null
+          status?: string
+          total_deductions?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          driver_id?: string
+          gross_earnings?: number
+          id?: string
+          net_payable?: number
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          settled_at?: string | null
+          settled_by?: string | null
+          status?: string
+          total_deductions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payout_periods_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_payout_settlements: {
+        Row: {
+          amount: number
+          id: string
+          method: string
+          notes: string | null
+          payout_period_id: string
+          recorded_by: string | null
+          reference: string
+          settled_at: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          method: string
+          notes?: string | null
+          payout_period_id: string
+          recorded_by?: string | null
+          reference: string
+          settled_at?: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          method?: string
+          notes?: string | null
+          payout_period_id?: string
+          recorded_by?: string | null
+          reference?: string
+          settled_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payout_settlements_payout_period_id_fkey"
+            columns: ["payout_period_id"]
+            isOneToOne: true
+            referencedRelation: "driver_payout_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           assigned_zone_id: string | null
