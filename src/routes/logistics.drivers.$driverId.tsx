@@ -132,11 +132,33 @@ function LogisticsDriverProfilePage() {
           {activeTab === "orders" && <OrdersTab driverId={driverId} />}
           {activeTab === "payouts" && <PayoutsTab driverId={driverId} />}
           {activeTab === "payouts_ledger" && <PayoutLedgerTab driverId={driverId} />}
-          {activeTab === "assets" && <EmptyState label="No assets assigned (Bags, T-Shirts, etc.)" icon={Package} />}
-          {activeTab === "services" && <EmptyState label="No active service subscriptions" icon={Zap} />}
-          {activeTab === "localities" && <EmptyState label="No specific localities assigned" icon={MapPin} />}
-          {activeTab === "logs" && <EmptyState label="No recent activity logs" icon={Activity} />}
-          {activeTab === "migration" && <EmptyState label="No migration metadata found" icon={Briefcase} />}
+          {activeTab === "gigs" && <GigsTab userId={driver.user_id} />}
+          {activeTab === "karma" && <KarmaTab userId={driver.user_id} />}
+          {activeTab === "localities" && (
+            driver.zone_name ? (
+              <DetailGrid items={[
+                { label: "Assigned Zone", value: driver.zone_name },
+                { label: "City", value: driver.city || "Unassigned" },
+                { label: "Status", value: driver.account_status || "ACTIVE" }
+              ]} />
+            ) : (
+              <EmptyState label="No logistics zone assigned" icon={MapPin} />
+            )
+          )}
+          {activeTab === "attendance" && (
+            <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+              <Calendar className="h-12 w-12 mb-4 text-muted-foreground" />
+              <p className="font-display font-bold text-lg text-rose-500">Attendance tracking is not configured</p>
+              <p className="text-sm mt-1 text-muted-foreground">No shift or clock-in schema is available for this partner.</p>
+            </div>
+          )}
+          {activeTab === "cod" && (
+            <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+              <IndianRupee className="h-12 w-12 mb-4 text-muted-foreground" />
+              <p className="font-display font-bold text-lg text-rose-500">COD ledger is not configured</p>
+              <p className="text-sm mt-1 text-muted-foreground">No authoritative COD ledger exists for this partner.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
