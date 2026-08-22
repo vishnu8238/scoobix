@@ -223,7 +223,7 @@ function LogisticsGigs() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDateKey]);
+  }, [selectedDateKey, dateFilterMode]);
 
 
 
