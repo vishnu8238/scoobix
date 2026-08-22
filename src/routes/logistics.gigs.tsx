@@ -728,6 +728,7 @@ function LogisticsGigs() {
         </>
       ) : activeTab === "slots" ? (
         <SlotsDetailsView 
+          gigs={gigs}
           city={city} setCity={setCity}
           entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
@@ -735,6 +736,7 @@ function LogisticsGigs() {
         />
       ) : (
         <CapacityChangeView 
+          gigs={gigs}
           city={city} setCity={setCity}
           entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
@@ -768,7 +770,7 @@ function LogisticsGigs() {
   );
 }
 
-function SlotsDetailsView({ city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+function SlotsDetailsView({ gigs, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-wrap gap-4 items-center">
@@ -819,7 +821,7 @@ function SlotsDetailsView({ city, setCity, entityType, setEntityType, zone, setZ
   );
 }
 
-function CapacityChangeView({ city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
   const [mode, setMode] = useState<"view" | "create">("view");
 
   return (
@@ -854,32 +856,40 @@ function CapacityChangeView({ city, setCity, entityType, setEntityType, zone, se
         </div>
 
         <div className="space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs">0{i}</div>
-                <div>
-                  <p className="text-xs font-black">Slot 0{i}:00 - 0{i+2}:00</p>
-                  <p className="text-[10px] font-medium text-muted-foreground">Base Capacity: 100</p>
+          {gigs.length > 0 ? (
+            gigs.map(g => (
+              <div key={g.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs uppercase">{g.id.slice(0, 2)}</div>
+                  <div>
+                    <p className="text-xs font-black">{g.title}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground">Persisted Capacity: {g.capacity || 0}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">Update Capacity</span>
+                    <input 
+                      type="number" 
+                      min="1"
+                      defaultValue={g.capacity || 0}
+                      onChange={(e) => {
+                         // UI only update logic can go here if needed, but per request it only updates on submit
+                      }}
+                      className="w-20 h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 text-xs font-black text-center outline-none focus:ring-primary/40"
+                      disabled={mode === "view"}
+                    />
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Total</span>
+                    <span className="h-10 px-4 flex items-center font-black text-emerald-600">{g.capacity || 0}</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">Adjustment %</span>
-                  <input 
-                    type="number" 
-                    defaultValue="10" 
-                    className="w-20 h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 text-xs font-black text-center outline-none focus:ring-primary/40"
-                    disabled={mode === "view"}
-                  />
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Capacity</span>
-                  <span className="h-10 px-4 flex items-center font-black text-emerald-600">110</span>
-                </div>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <div className="py-12 text-center text-xs font-black text-muted-foreground">No eligible gigs found for capacity adjustment.</div>
+          )}
         </div>
 
         {mode === "create" && (
