@@ -28,7 +28,7 @@ function normalize(email: string | null | undefined): string {
 /** 
  * Authoritative check for portal access. 
  * P0.1: Exclusive mechanism for Admin, Logistics, Partner, Rider, and Manager.
- * Remove all hardcoded super-admin bypasses.
+ * NO fallback to legacy business tables or hardcoded bypasses allowed.
  */
 export async function checkPortalAccess(
   email: string | null | undefined,
