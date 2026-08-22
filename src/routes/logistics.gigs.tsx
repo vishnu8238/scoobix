@@ -361,7 +361,6 @@ function LogisticsGigs() {
   };
 
   const handleExport = () => {
-
     if (filteredGigs.length === 0) {
       toast.info("No gigs to export for the selected filters.");
       return;
@@ -379,25 +378,46 @@ function LogisticsGigs() {
       { key: "enrolled", label: "Enrollment" },
       { key: "capacity", label: "Capacity" },
       { key: "completion_percentage", label: "Completion %" },
-      { key: "slot_id", label: "Slot ID" },
       { key: "status", label: "Status" },
     ];
 
-    const rows = filteredGigs.map(g => ({
-      id: g.id,
-      date: g.start_time ? (g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time) : "",
-      start_time: g.start_time || "",
-      end_time: g.end_time || "",
-      duration: "N/A", // Not in schema, keeping as placeholder
-      city: g.city_id || "",
-      zone: g.zone_id || "",
-      reward_amount: g.reward_amount || 0,
-      enrolled: enrollmentCounts[g.id] || 0,
-      capacity: g.capacity || 0,
-      completion_percentage: "0%", // Placeholder
-      slot_id: g.metadata?.slot_id || "",
-      status: g.status || "",
-    }));
+    const rows = filteredGigs.map(g => {
+      let duration = "";
+      if (g.start_time && g.end_time) {
+        const start = new Date(g.start_time);
+        const end = new Date(g.end_time);
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          const diffHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+          duration = `${diffHours.toFixed(1)}h`;
+        }
+      }
+
+      let completionPct = "";
+      if (g.metadata?.completion_pct !== undefined) {
+        completionPct = `${g.metadata.completion_pct}%`;
+      } else if (g.target_deliveries && g.target_deliveries > 0) {
+        // Fallback to calculation if target is present
+        const enrolled = enrollmentCounts[g.id] || 0;
+        // completion percentage is calculated from completed_deliveries vs target_deliveries
+        // Since we don't have total completed deliveries per gig in this view easily, 
+        // we use metadata.completion_pct as primary authoritative source.
+      }
+
+      return {
+        id: g.id,
+        date: g.start_time ? (g.start_time.includes('T') ? g.start_time.split('T')[0] : g.start_time) : "",
+        start_time: g.start_time || "",
+        end_time: g.end_time || "",
+        duration,
+        city: g.city_id || "",
+        zone: g.zone_id || "",
+        reward_amount: g.reward_amount || 0,
+        enrolled: enrollmentCounts[g.id] || 0,
+        capacity: g.capacity || 0,
+        completion_percentage: completionPct,
+        status: g.status || "",
+      };
+    });
 
     exportExcel([{
       title: `Gigs - ${selectedDateKey}`,
@@ -798,7 +818,7 @@ function SlotsDetailsView({ gigs, city, setCity, entityType, setEntityType, zone
             </thead>
             <tbody>
                 {gigs.length > 0 ? (
-                  gigs.map(g => (
+                  gigs.map((g: Gig) => (
                     <tr key={g.id} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-4 font-mono text-[10px] font-black text-primary">{g.id.slice(0, 8)}</td>
                       <td className="px-6 py-4 text-xs font-bold">{g.start_time ? format(parseISO(g.start_time), "HH:mm") : "N/A"}</td>
@@ -857,7 +877,7 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
 
         <div className="space-y-4">
           {gigs.length > 0 ? (
-            gigs.map(g => (
+            gigs.map((g: Gig) => (
               <div key={g.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs uppercase">{g.id.slice(0, 2)}</div>
