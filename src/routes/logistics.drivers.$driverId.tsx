@@ -111,18 +111,18 @@ function LogisticsDriverProfilePage() {
               
               <div className="animate-in fade-in slide-in-from-left-2 duration-300">
                 {activeSubTab === "personal" && <PersonalInfoSection driver={driver} />}
-                {activeSubTab === "documents" && <DocumentsTab driverId={driverId} />}
+                {activeSubTab === "documents" && <DocumentsTab driverId={driverId} user_id={driver.user_id} />}
                 {activeSubTab === "vehicle" && <DetailGrid items={[
-                  { label: "Vehicle Type", value: driver.vehicle_type || "—" },
-                  { label: "Vehicle Model", value: driver.vehicle_model || "—" },
-                  { label: "Vehicle Number", value: driver.vehicle_number || "—" },
-                  { label: "RC Status", value: "Verified", tone: "success" }
+                  { label: "Vehicle Type", value: driver.vehicle_type || "Unassigned" },
+                  { label: "Vehicle Number", value: driver.vehicle_number || "Unassigned" },
+                  { label: "License Number", value: driver.license_number || "Unassigned" },
+                  { label: "Verification", value: driver.verification_status || "Unavailable" }
                 ]} />}
                 {activeSubTab === "bank" && <DetailGrid items={[
-                  { label: "Account Holder", value: driver.bank_holder || driver.name || "—" },
-                  { label: "Bank Name", value: driver.bank_name || "—" },
-                  { label: "Account Number", value: driver.bank_account || "—" },
-                  { label: "IFSC Code", value: driver.bank_ifsc || "—" }
+                  { label: "Account Holder", value: driver.bank_holder || driver.name || "Unassigned" },
+                  { label: "Bank Name", value: driver.bank_name || "Unassigned" },
+                  { label: "Account Number", value: driver.bank_account || "Unassigned" },
+                  { label: "IFSC Code", value: driver.bank_ifsc || "Unassigned" }
                 ]} />}
 
               </div>
