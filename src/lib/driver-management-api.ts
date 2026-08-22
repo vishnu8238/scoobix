@@ -31,7 +31,6 @@ export interface ExtendedDriver extends DriverRow {
   last_gps_update?: string;
   zone_name?: string;
   subzone_name?: string;
-  zone_id?: string;
 }
 
 export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriver | null> {
