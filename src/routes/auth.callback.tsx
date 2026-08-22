@@ -60,28 +60,16 @@ function AuthCallback() {
           }
         }
 
-        // 2. Deterministic, event-driven session resolution
-        const user = await new Promise<any>((resolve, reject) => {
-          // Check if already resolved
-          if (insforge.auth.session?.user) {
-            return resolve(insforge.auth.session.user);
-          }
+        // 2. Deterministic session resolution via SDK identity check
+        // After exchange, we resolve the principal immediately from the SDK
+        console.log("[AUTH_CALLBACK] Resolving identity from SDK...");
+        const { data: authData, error: authError } = await insforge.auth.getCurrentUser();
+        
+        if (authError || !authData?.user) {
+          throw new Error(authError?.message || "Failed to resolve identity after authorization.");
+        }
 
-          const timeout = setTimeout(() => {
-            unsub();
-            reject(new Error("Session resolution timed out."));
-          }, 8000); // 8s bounded timeout
-
-          const unsub = insforge.auth.onAuthStateChange((event: string, session: any) => {
-            if (event === 'signedIn' || event === 'INITIAL_SESSION') {
-              if (session?.user) {
-                clearTimeout(timeout);
-                unsub();
-                resolve(session.user);
-              }
-            }
-          });
-        });
+        const user = authData.user;
 
         // 3. Deterministic portal mapping
         const portalMap: Record<string, string> = {
@@ -100,10 +88,7 @@ function AuthCallback() {
         localStorage.removeItem("scoobix_oauth_portal_intent");
         localStorage.removeItem("scoobix_return_to");
 
-        console.log(`[AUTH_CALLBACK] Authorized. Redirecting to ${destPath}`);
-        
-        // Final flush delay for SDK session persistence
-        await new Promise(r => setTimeout(r, 1200));
+        console.log(`[AUTH_CALLBACK] Authorized user ${user.id}. Redirecting to ${destPath}`);
         window.location.replace(dest);
 
       } catch (err: any) {
