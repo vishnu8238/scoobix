@@ -115,7 +115,6 @@ export async function createPayoutPeriod(data: Partial<PayoutPeriod>, lineItems:
 
   if (!period) throw new Error("Failed to create payout period.");
 
-  // Create line items sequentially to ensure atomicity in logic if not in DB
   for (const item of lineItems) {
     await createRecord("driver_payout_line_items", {
       ...item,
@@ -159,36 +158,48 @@ export async function recordSettlement(data: Partial<PayoutSettlement>, userId?:
   return settlement;
 }
 
-export async function addAdjustment(periodId: string, item: Partial<PayoutLineItem>, userId?: string) {
-  return createRecord("driver_payout_line_items", {
-    ...item,
-    id: newUuid(),
-    payout_period_id: periodId,
-    created_by: userId,
-    created_at: new Date().toISOString()
-  });
-}
-
-export async function fetchPayouts(params: Record<string, any> = {}) {
+export async function getPayoutPeriods(params: Record<string, string> = {}) {
   return listTable<PayoutPeriod>("driver_payout_periods", {
-    order: "created_at.desc",
+    order: "-created_at",
     ...params
   });
 }
 
-export async function fetchPayoutDetails(periodId: string) {
+export async function getPayoutDetails(periodId: string) {
   const [period] = await listTable<PayoutPeriod>("driver_payout_periods", { id: `eq.${periodId}`, limit: 1 });
-  if (!period) return null;
+  const lineItems = await listTable<PayoutLineItem>("driver_payout_line_items", { payout_period_id: `eq.${periodId}`, order: "business_date.asc" });
+  const [settlement] = await listTable<PayoutSettlement>("driver_payout_settlements", { payout_period_id: `eq.${periodId}`, limit: 1 });
+  
+  return { period, lineItems, settlement };
+}
 
-  const lineItems = await listTable<PayoutLineItem>("driver_payout_line_items", { 
-    payout_period_id: `eq.${periodId}`,
-    order: "business_date.asc"
+export async function addAdjustment(periodId: string, data: { direction: Direction, category: string, description: string, amount: number, userId?: string }) {
+  const item = await createRecord<PayoutLineItem>("driver_payout_line_items", {
+    id: newUuid(),
+    payout_period_id: periodId,
+    business_date: new Date().toISOString().split('T')[0],
+    ...data,
+    created_at: new Date().toISOString(),
+    created_by: data.userId
   });
 
-  const [settlement] = await listTable<PayoutSettlement>("driver_payout_settlements", {
-    payout_period_id: `eq.${periodId}`,
-    limit: 1
-  }).catch(() => []);
+  if (item) {
+    const [period] = await listTable<PayoutPeriod>("driver_payout_periods", { id: `eq.${periodId}`, limit: 1 });
+    if (period) {
+      const isCredit = data.direction === 'CREDIT';
+      const amount = Number(data.amount);
+      const patch: any = {};
+      
+      if (isCredit) {
+        patch.gross_earnings = Number(period.gross_earnings) + amount;
+      } else {
+        patch.total_deductions = Number(period.total_deductions) + amount;
+      }
+      patch.net_payable = Number(patch.gross_earnings ?? period.gross_earnings) - Number(patch.total_deductions ?? period.total_deductions);
+      
+      await patchRecord("driver_payout_periods", periodId, patch);
+    }
+  }
 
-  return { period, lineItems, settlement };
+  return item;
 }

@@ -6,6 +6,7 @@ import {
   fetchDriverOrders, 
   fetchDriverPayouts 
 } from "@/lib/driver-management-api";
+import { getPayoutPeriods } from "@/lib/payouts-api";
 import { 
   fetchDocs, 
   RIDER_DOCS, 
@@ -48,6 +49,7 @@ const PRIMARY_TABS = [
   { id: "services", label: "Services", icon: Zap },
   { id: "localities", label: "Localities", icon: MapPin },
   { id: "payouts", label: "Payout History", icon: IndianRupee },
+  { id: "payouts_ledger", label: "Payout Ledger", icon: FileText },
   { id: "orders", label: "Order History", icon: Truck },
   { id: "logs", label: "Activity Logs", icon: Activity },
   { id: "migration", label: "Migration Details", icon: Briefcase },
@@ -128,6 +130,7 @@ function LogisticsDriverProfilePage() {
           
           {activeTab === "orders" && <OrdersTab driverId={driverId} />}
           {activeTab === "payouts" && <PayoutsTab driverId={driverId} />}
+          {activeTab === "payouts_ledger" && <PayoutLedgerTab driverId={driverId} />}
           {activeTab === "assets" && <EmptyState label="No assets assigned (Bags, T-Shirts, etc.)" icon={Package} />}
           {activeTab === "services" && <EmptyState label="No active service subscriptions" icon={Zap} />}
           {activeTab === "localities" && <EmptyState label="No specific localities assigned" icon={MapPin} />}
@@ -241,6 +244,28 @@ function PayoutsTab({ driverId }: { driverId: string }) {
         <span key={p.id+"a"} className="font-black">₹{p.amount || 0}</span>,
         <StatusBadge key={p.id+"s"} label={p.status || "Paid"} />,
         <span key={p.id+"m"} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{p.method || "Bank Transfer"}</span>
+      ])}
+    />
+  );
+}
+
+function PayoutLedgerTab({ driverId }: { driverId: string }) {
+  const { data: payouts } = useSuspenseQuery({
+    queryKey: ["logistics", "driver-payout-ledger", driverId],
+    queryFn: () => getPayoutPeriods({ driver_id: `eq.${driverId}` }),
+  });
+
+  if (!payouts?.length) return <EmptyState label="No payout ledger records found." icon={FileText} />;
+
+  return (
+    <DataTable
+      columns={["Period", "Gross", "Deductions", "Net", "Status"]}
+      rows={payouts.map((p: any) => [
+        <span key={p.id+"pd"} className="font-bold">{format(new Date(p.period_start), "MMM d")} - {format(new Date(p.period_end), "MMM d, yyyy")}</span>,
+        <span key={p.id+"g"} className="font-medium">₹{Number(p.gross_earnings).toFixed(2)}</span>,
+        <span key={p.id+"td"} className="font-medium text-rose-600">-₹{Number(p.total_deductions).toFixed(2)}</span>,
+        <span key={p.id+"n"} className="font-black">₹{Number(p.net_payable).toFixed(2)}</span>,
+        <StatusBadge key={p.id+"s"} label={p.status} />
       ])}
     />
   );
