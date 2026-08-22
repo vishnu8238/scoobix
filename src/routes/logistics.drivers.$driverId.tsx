@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { 
   fetchDriverDetails, 
@@ -38,10 +38,13 @@ import { DriverProfileHeader, DriverTabs, PersonalInfoSection } from "@/componen
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-store";
+import { PortalSkeleton } from "@/components/skeletons/PortalSkeletons";
 
 export const Route = createFileRoute("/logistics/drivers/$driverId")({
   component: LogisticsDriverProfilePage,
-  loader: ({ params }) => fetchDriverDetails(params.driverId),
+  // SSR SAFETY: Loader removed to prevent protected table reads (users, drivers) during server rendering.
+  // Data is fetched exclusively on the client after AuthProvider hydration.
 });
 
 const PRIMARY_TABS = [
@@ -65,13 +68,21 @@ const SECONDARY_TABS = [
 
 function LogisticsDriverProfilePage() {
   const { driverId } = Route.useParams();
-  const { data: driver } = useSuspenseQuery({
+  const { user, hydrationComplete } = useAuth();
+  
+  // SSR SAFETY: Query is enabled only on the client after auth hydration.
+  const { data: driver, isLoading } = useQuery({
     queryKey: ["logistics", "driver-profile", driverId],
     queryFn: () => fetchDriverDetails(driverId),
+    enabled: typeof window !== "undefined" && hydrationComplete && !!user,
   });
 
   const [activeTab, setActiveTab] = useState("profile");
   const [activeSubTab, setActiveSubTab] = useState("personal");
+
+  if (!hydrationComplete || isLoading) {
+    return <div className="p-8 max-w-[1600px] mx-auto"><PortalSkeleton /></div>;
+  }
 
   if (!driver) return <div className="p-8 text-center font-display font-bold">Driver not found</div>;
 
@@ -162,9 +173,11 @@ function LogisticsDriverProfilePage() {
 }
 
 function DocumentsTab({ driverId, user_id }: { driverId: string, user_id?: string }) {
-  const { data: docs, isLoading } = useSuspenseQuery({
+  const { user, hydrationComplete } = useAuth();
+  const { data: docs, isLoading } = useQuery({
     queryKey: ["logistics", "driver-docs", user_id || driverId],
     queryFn: () => fetchDocs("rider", user_id || driverId),
+    enabled: typeof window !== "undefined" && hydrationComplete && !!user,
   });
 
   if (isLoading) return <Loader2 className="animate-spin h-6 w-6 mx-auto" />;
@@ -224,9 +237,11 @@ function DetailGrid({ items }: { items: any[] }) {
 }
 
 function OrdersTab({ driverId }: { driverId: string }) {
-  const { data: orders, isLoading } = useSuspenseQuery({
+  const { user, hydrationComplete } = useAuth();
+  const { data: orders, isLoading } = useQuery({
     queryKey: ["logistics", "driver-orders", driverId],
     queryFn: () => fetchDriverOrders(driverId),
+    enabled: typeof window !== "undefined" && hydrationComplete && !!user,
   });
 
   if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -247,10 +262,14 @@ function OrdersTab({ driverId }: { driverId: string }) {
 }
 
 function PayoutsTab({ driverId }: { driverId: string }) {
-  const { data: payouts } = useSuspenseQuery({
+  const { user, hydrationComplete } = useAuth();
+  const { data: payouts, isLoading } = useQuery({
     queryKey: ["logistics", "driver-payouts", driverId],
     queryFn: () => fetchDriverPayouts(driverId),
+    enabled: typeof window !== "undefined" && hydrationComplete && !!user,
   });
+
+  if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   if (!payouts?.length) return <EmptyState label="No payout records available." />;
 
@@ -269,10 +288,14 @@ function PayoutsTab({ driverId }: { driverId: string }) {
 }
 
 function PayoutLedgerTab({ driverId }: { driverId: string }) {
-  const { data: payouts } = useSuspenseQuery({
+  const { user, hydrationComplete } = useAuth();
+  const { data: payouts, isLoading } = useQuery({
     queryKey: ["logistics", "driver-payout-ledger", driverId],
     queryFn: () => getPayoutPeriods({ driver_id: `eq.${driverId}` }),
+    enabled: typeof window !== "undefined" && hydrationComplete && !!user,
   });
+
+  if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   if (!payouts?.length) return <EmptyState label="No payout ledger records found." icon={FileText} />;
 
@@ -291,9 +314,11 @@ function PayoutLedgerTab({ driverId }: { driverId: string }) {
 }
 
 function GigsTab({ userId }: { userId?: string }) {
-  const { data: gigs, isLoading } = useSuspenseQuery({
+  const { user, hydrationComplete } = useAuth();
+  const { data: gigs, isLoading } = useQuery({
     queryKey: ["logistics", "driver-gigs", userId],
     queryFn: () => userId ? fetchRiderGigs(userId) : Promise.resolve([]),
+    enabled: typeof window !== "undefined" && hydrationComplete && !!user,
   });
 
   if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -317,9 +342,11 @@ function GigsTab({ userId }: { userId?: string }) {
 }
 
 function KarmaTab({ userId }: { userId?: string }) {
-  const { data: wallet, isLoading } = useSuspenseQuery({
+  const { user, hydrationComplete } = useAuth();
+  const { data: wallet, isLoading } = useQuery({
     queryKey: ["logistics", "driver-karma", userId],
     queryFn: () => userId ? getWalletSummary(userId) : Promise.resolve(null),
+    enabled: typeof window !== "undefined" && hydrationComplete && !!user,
   });
 
   if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
