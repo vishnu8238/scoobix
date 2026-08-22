@@ -137,8 +137,9 @@ export function GigCard({
         <div className="rounded-xl bg-muted/50 p-3 ring-1 ring-border/50">
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">Slot ID</p>
           <p className="font-mono text-[10px] font-bold tracking-tighter">
-            {format(start, "HH_mm")}_{format(end, "HH_mm")}
+            {start && end ? `${format(start, "HH_mm")}_${format(end, "HH_mm")}` : "Unavailable"}
           </p>
+
         </div>
         
         <div className="flex gap-2">
