@@ -7,16 +7,18 @@ import { getGoogleMapsApiKey } from "@/lib/maps-config.functions";
  * Fetches the API key from the server to bypass VITE_ prefix restrictions
  * and ensure the key is always available from the environment.
  */
-export function GoogleMapsProvider({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
+export function GoogleMapsProvider({ children, fallback, onStatusChange }: { children: ReactNode; fallback?: ReactNode; onStatusChange?: (status: "loading" | "ready" | "error") => void }) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    onStatusChange?.("loading");
     // Check if it's already in the env (e.g. if configured via build settings)
     const envKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     if (envKey && envKey !== "YOUR_GOOGLE_MAPS_API_KEY") {
       setApiKey(envKey);
       setLoading(false);
+      onStatusChange?.("ready");
       return;
     }
 
@@ -25,10 +27,13 @@ export function GoogleMapsProvider({ children, fallback }: { children: ReactNode
       .then((key) => {
         if (key) {
           setApiKey(key);
+          onStatusChange?.("ready");
+        } else {
+          onStatusChange?.("error");
         }
       })
       .catch(() => {
-        // Silently fail, the UI will handle the missing apiKey
+        onStatusChange?.("error");
       })
       .finally(() => {
         setLoading(false);
