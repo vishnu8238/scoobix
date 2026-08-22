@@ -286,7 +286,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
 
                 {points.length > 0 && (
                   <div className="max-h-[120px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                    {points.map((p, i) => (
+                    {points.map((p: any, i: number) => (
                       <div key={`${p[0]}-${p[1]}-${i}`} className="flex items-center justify-between bg-background/40 p-2 rounded-xl border border-border/40 group">
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-black text-muted-foreground/50 w-4">{i + 1}</span>
