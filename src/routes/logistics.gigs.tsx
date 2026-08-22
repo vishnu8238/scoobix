@@ -920,7 +920,7 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
                     <input 
                       type="number" 
                       min="1"
-                      defaultValue={g.capacity || 0}
+                      defaultValue={typeof g.capacity === "number" ? g.capacity : ""}
                       onChange={(e) => {
                          // UI only update logic can go here if needed, but per request it only updates on submit
                       }}
