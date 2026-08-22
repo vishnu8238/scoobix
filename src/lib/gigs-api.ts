@@ -29,6 +29,7 @@ export type Gig = {
   end_time?: string;
   capacity?: number;
   city_id?: string;
+  completion_pct?: number;
 };
 
 export type GigParticipant = {
@@ -208,22 +209,35 @@ export async function fetchGigParticipants(gigId: string) {
   }
 }
 
-export async function fetchGigEnrollmentCounts(gigIds: string[]): Promise<Record<string, number>> {
+export async function fetchGigEnrollmentData(gigIds: string[]): Promise<Record<string, { count: number; completed_deliveries: number }>> {
   if (!gigIds.length) return {};
   try {
     const enrollments = await listTable<GigParticipant>("rider_gig_enrollments", {
       gig_id: `in.(${gigIds.join(",")})`
     }, { fresh: true, ttl: 0 });
     
-    const counts: Record<string, number> = {};
+    const data: Record<string, { count: number; completed_deliveries: number }> = {};
     enrollments.forEach(e => {
-      counts[e.gig_id] = (counts[e.gig_id] || 0) + 1;
+      if (!data[e.gig_id]) {
+        data[e.gig_id] = { count: 0, completed_deliveries: 0 };
+      }
+      data[e.gig_id].count += 1;
+      data[e.gig_id].completed_deliveries += (e.completed_deliveries || 0);
     });
-    return counts;
+    return data;
   } catch (e) {
-    console.error("[GIGS_API] Failed to fetch enrollment counts:", e);
+    console.error("[GIGS_API] Failed to fetch enrollment data:", e);
     return {};
   }
+}
+
+export async function fetchGigEnrollmentCounts(gigIds: string[]): Promise<Record<string, number>> {
+  const data = await fetchGigEnrollmentData(gigIds);
+  const counts: Record<string, number> = {};
+  Object.keys(data).forEach(id => {
+    counts[id] = data[id].count;
+  });
+  return counts;
 }
 
 export async function enrollInGig(gigId: string, riderId: string) {
