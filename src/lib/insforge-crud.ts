@@ -200,13 +200,13 @@ export async function handleResponse<T>(promise: Promise<any>, method: string, t
 
       console.error(`[DB_AUTH_ERROR] ${method} ${table} failed. Status: ${status}. SDK Session: ${!!insforge.auth.session?.accessToken}. Diagnostic Token: ${!!diagnosticToken}. Error:`, error?.message);
 
-      if (method === "GET" && !insforge.auth.session?.accessToken && typeof window !== "undefined") {
-        // Log to diagnostics but return empty for smooth UI lists
+      // P0.1 Compliance: Never return empty for 'users' profile resolution as it causes 500 state
+      // in AuthProvider when it expects a row or a clear unauthenticated signal.
+      if (method === "GET" && !insforge.auth.session?.accessToken && typeof window !== "undefined" && table !== "users") {
         console.warn(`[DB_AUTH_SILENT] Unauthorized GET ${table} (Client). Returning empty.`);
         return [] as unknown as T;
       }
 
-      // Authoritative failure for writes or when explicit seeding/ops are intended
       const authErr = new HttpError(status || 401, error?.message || "Unauthorized: Invalid or missing token");
       (authErr as any).isAuthError = true;
       (authErr as any).insforge_status = status;
