@@ -65,23 +65,6 @@ const DEFAULT_ADV: AdvState = {
 };
 
 function Home() {
-  console.log("[AUTH_DEBUG] [CHECKPOINT: CUSTOMER_HOME_RENDERED] Mounting Home Component");
-  /**
-   * '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-   *
-   * Production reproduction after Google sign-in is blocked at `/auth/callback` with the exact runtime error: `r.auth.exchangeCodeForSession is not a function`.
-   *
-   * Implement ONE isolated corrective pass now. Inspect the installed `@insforge/sdk` type definitions and the actual `src/routes/auth.callback.tsx` code; replace the nonexistent `exchangeCodeForSession` call with the official InsForge SDK OAuth callback/session completion mechanism supported by the installed version. Preserve `detectOAuthCallback: true` behavior where appropriate and avoid a manual or Supabase-style exchange if the SDK auto-consumes the callback. Do not invent APIs.
-   *
-   * Required behavior:
-   * 1. OAuth callback handles the real InsForge callback parameters safely, gets the authenticated session/user via the official SDK, and does not show the method error.
-   * 2. It keeps a validated portal intent (`customer|partner|rider|logistics|manager|admin`) through login/callback, clears the one-time intent only after a successful portal decision, and replaces into the authorized portal—never silently falls back to `/app` for a requested privileged portal.
-   * 3. If the code is absent/invalid or no authenticated user results, show a clear recoverable error with Back to Login; no loop or blank screen.
-   * 4. Keep InsForge only. Do not add Supabase dependencies, aliases, schema changes, polling, broad refactors, or changes to Gig/Zones/customer flows.
-   * 5. Keep the single browser auth subscription and the hardened `portal_access` authorization behavior from P0.1 intact.
-   *
-   * First inspect the SDK method surface, then make the minimal source edits, run a zero-TypeScript-error build, and report the exact file(s), the exact SDK method/pattern selected, and callback-path test evidence.
-   */
   const navigate = useNavigate();
   const { filters, sections, closedRestaurants, pureVegOverrides } = useCms();
   const { vegMode } = useAppUI();
@@ -397,7 +380,8 @@ function Home() {
       )}
 
       <p className="px-6 pb-4 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        {`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
+        Discover top restaurants and trending dishes near you
+      </p>
                                         
                                             
                                             Before publishing P0.1, run a strict compliance pass against the attached requirements and correct only proven auth/authorization violations. Direct inspection shows src/integrations/supabase/client.ts still exports the InsForge singleton under the legacy identifier supabase; remove this compatibility alias and update its imports/call-sites so no runtime/source authentication path uses Supabase names, packages, or URLs. Verify the repository has exactly ONE createClient() call, exactly ONE active onAuthStateChange() subscription, and exactly ONE canonical session owner. The real token must come only from the official InsForge SDK current-session API; delete any localStorage key scanning, guessed token fallback, empty refresh-token workaround, or synthetic session construction if present. Keep legacy business tables only for data resolution after a strict portal_access admission result; never admit a portal through legacy membership. Verify auth errors, query failures, denied, and disabled status stay in explicit portal error/unauthorized states rather than falling back to /app. Validate the OAuth callback uses exactly one SDK-supported exchange path. Do not touch unrelated product areas, UI, data schema, or Google Maps. Run the build and focused tests. Return an evidence table with exact changed files, createClient count, active listener count, token source, callback mechanism, remaining legacy role checks, and explicitly UNVERIFIED browser/device cases. Do not publish yet; wait for my review.`}
