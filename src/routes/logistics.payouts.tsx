@@ -37,10 +37,10 @@ function LogisticsPayouts() {
   const stats = useMemo(() => {
     const active = payouts.filter(p => p.status !== 'VOID');
     return {
-      gross: active.reduce((s, p) => s + Number(p.gross_earnings), 0),
-      deductions: active.reduce((s, p) => s + Number(p.total_deductions), 0),
-      net: active.reduce((s, p) => s + Number(p.net_payable), 0),
-      settled: active.filter(p => p.status === 'SETTLED').reduce((s, p) => s + Number(p.net_payable), 0),
+      gross: active.reduce((s, p) => s + Number(p.gross_earnings || 0), 0),
+      deductions: active.reduce((s, p) => s + Number(p.total_deductions || 0), 0),
+      net: active.reduce((s, p) => s + Number(p.net_payable || 0), 0),
+      settled: active.filter(p => p.status === 'SETTLED').reduce((s, p) => s + Number(p.net_payable || 0), 0),
     };
   }, [payouts]);
 

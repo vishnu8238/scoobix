@@ -33,7 +33,7 @@ function RiderEarnings() {
   const filtered = earnings.filter(e => new Date(e.created_at).getTime() >= since);
   
   const dataStats = {
-    total: filtered.reduce((s, e) => s + e.amount + e.tip, 0),
+    total: filtered.reduce((s, e) => s + Number(e.amount || 0) + Number(e.tip || 0), 0),
     tips: filtered.reduce((s, e) => s + e.tip, 0),
     deliveries: filtered.length,
   };

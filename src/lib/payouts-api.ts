@@ -6,34 +6,30 @@ export type Direction = 'CREDIT' | 'DEBIT';
 
 export interface PayoutPeriod {
   id: string;
-  driver_id: string;
+  driver_id: string; // References drivers.id
   period_start: string;
   period_end: string;
-  currency: string;
   gross_earnings: number;
+  total_credits: number;
   total_deductions: number;
   net_payable: number;
   status: PayoutStatus;
-  created_by?: string;
-  approved_by?: string;
-  settled_by?: string;
   created_at: string;
-  approved_at?: string;
-  settled_at?: string;
-  notes?: string;
+  updated_at?: string;
 }
 
 export interface PayoutLineItem {
   id: string;
   payout_period_id: string;
-  business_date: string;
   direction: Direction;
+  amount: number;
+  business_date: string;
   category: string;
   description: string;
-  amount: number;
   source_table?: string;
   source_id?: string;
-  created_by?: string;
+  is_manual?: boolean;
+  reason?: string;
   created_at: string;
 }
 
@@ -43,17 +39,18 @@ export interface PayoutSettlement {
   amount: number;
   method: string;
   reference: string;
-  status: 'RECORDED' | 'VOID';
-  settled_at: string;
-  recorded_by?: string;
-  notes?: string;
+  status: string;
+  created_at: string;
 }
 
 /**
  * Calculates a draft payout for a driver in a specific date range.
  * Only 'DELIVERED' orders are considered.
+ * driver_id MUST be the UUID from the 'drivers' table.
  */
 export async function calculateDraftPayout(driverId: string, start: string, end: string) {
+  if (!driverId) throw new Error("driverId is required for payout calculation");
+
   const orders = await listTable<any>("orders", {
     driver_id: `eq.${driverId}`,
     status: "eq.DELIVERED",
@@ -65,39 +62,28 @@ export async function calculateDraftPayout(driverId: string, start: string, end:
   let gross = 0;
 
   orders.forEach(o => {
+    // Canonical earnings source: orders.driver_earnings
     const earnings = Number(o.driver_earnings || 0);
-    const tip = Number(o.tip || 0);
     const date = o.created_at.split('T')[0];
 
     if (earnings > 0) {
       lineItems.push({
         business_date: date,
         direction: 'CREDIT',
-        category: 'DELIVERY_PAYOUT',
+        category: 'DELIVERY_EARNINGS',
         description: `Order #${o.id.slice(0, 8)}`,
         amount: earnings,
         source_table: 'orders',
-        source_id: o.id
+        source_id: o.id,
+        is_manual: false
       });
       gross += earnings;
-    }
-
-    if (tip > 0) {
-      lineItems.push({
-        business_date: date,
-        direction: 'CREDIT',
-        category: 'TIP',
-        description: `Tip for Order #${o.id.slice(0, 8)}`,
-        amount: tip,
-        source_table: 'orders',
-        source_id: o.id
-      });
-      gross += tip;
     }
   });
 
   return {
     gross_earnings: gross,
+    total_credits: gross,
     total_deductions: 0,
     net_payable: gross,
     line_items: lineItems
@@ -106,11 +92,13 @@ export async function calculateDraftPayout(driverId: string, start: string, end:
 
 export async function createPayoutPeriod(data: Partial<PayoutPeriod>, lineItems: Partial<PayoutLineItem>[]) {
   const periodId = newUuid();
+  const now = new Date().toISOString();
+  
   const period = await createRecord<PayoutPeriod>("driver_payout_periods", {
     ...data,
     id: periodId,
     status: 'DRAFT',
-    created_at: new Date().toISOString()
+    created_at: now
   });
 
   if (!period) throw new Error("Failed to create payout period.");
@@ -120,39 +108,29 @@ export async function createPayoutPeriod(data: Partial<PayoutPeriod>, lineItems:
       ...item,
       id: newUuid(),
       payout_period_id: periodId,
-      created_at: new Date().toISOString()
+      created_at: now
     });
   }
 
   return period;
 }
 
-export async function updatePayoutStatus(id: string, status: PayoutStatus, userId?: string) {
-  const patch: any = { status };
-  const now = new Date().toISOString();
-  
-  if (status === 'APPROVED') {
-    patch.approved_by = userId;
-    patch.approved_at = now;
-  } else if (status === 'SETTLED') {
-    patch.settled_by = userId;
-    patch.settled_at = now;
-  }
-  
-  return patchRecord("driver_payout_periods", id, patch);
+export async function updatePayoutStatus(id: string, status: PayoutStatus) {
+  return patchRecord("driver_payout_periods", id, { 
+    status,
+    updated_at: new Date().toISOString()
+  });
 }
 
-export async function recordSettlement(data: Partial<PayoutSettlement>, userId?: string) {
+export async function recordSettlement(data: { payout_period_id: string, amount: number, method: string, reference: string, status: string }) {
   const settlement = await createRecord<PayoutSettlement>("driver_payout_settlements", {
     ...data,
     id: newUuid(),
-    status: 'RECORDED',
-    settled_at: new Date().toISOString(),
-    recorded_by: userId
+    created_at: new Date().toISOString()
   });
 
   if (settlement) {
-    await updatePayoutStatus(data.payout_period_id!, 'SETTLED', userId);
+    await updatePayoutStatus(data.payout_period_id, 'SETTLED');
   }
 
   return settlement;
@@ -173,14 +151,18 @@ export async function getPayoutDetails(periodId: string) {
   return { period, lineItems, settlement };
 }
 
-export async function addAdjustment(periodId: string, data: { direction: Direction, category: string, description: string, amount: number, userId?: string }) {
+export async function addAdjustment(periodId: string, data: { direction: Direction, category: string, description: string, amount: number, reason: string }) {
+  if (data.direction === 'DEBIT' && !data.reason) {
+    throw new Error("A reason is required for manual debit adjustments.");
+  }
+
   const item = await createRecord<PayoutLineItem>("driver_payout_line_items", {
     id: newUuid(),
     payout_period_id: periodId,
     business_date: new Date().toISOString().split('T')[0],
     ...data,
-    created_at: new Date().toISOString(),
-    created_by: data.userId
+    is_manual: true,
+    created_at: new Date().toISOString()
   });
 
   if (item) {
@@ -191,11 +173,14 @@ export async function addAdjustment(periodId: string, data: { direction: Directi
       const patch: any = {};
       
       if (isCredit) {
-        patch.gross_earnings = Number(period.gross_earnings) + amount;
+        patch.total_credits = Number(period.total_credits || period.gross_earnings) + amount;
       } else {
         patch.total_deductions = Number(period.total_deductions) + amount;
       }
-      patch.net_payable = Number(patch.gross_earnings ?? period.gross_earnings) - Number(patch.total_deductions ?? period.total_deductions);
+      
+      const credits = patch.total_credits ?? period.total_credits ?? period.gross_earnings;
+      const deductions = patch.total_deductions ?? period.total_deductions;
+      patch.net_payable = Number(credits) - Number(deductions);
       
       await patchRecord("driver_payout_periods", periodId, patch);
     }

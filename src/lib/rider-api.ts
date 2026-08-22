@@ -68,6 +68,7 @@ export async function updateOrderState(orderId: string, riderId: string, status:
 }
 
 export async function fetchRiderEarnings(riderId: string) {
+  // Authoritative earnings derived ONLY from delivered orders
   const orders = await listTable<any>("orders", {
     driver_id: `eq.${riderId}`,
     status: "eq.DELIVERED"
@@ -75,8 +76,8 @@ export async function fetchRiderEarnings(riderId: string) {
   
   return orders.map(o => ({
     id: o.id,
-    amount: o.driver_earnings || o.delivery_fee || 0,
-    tip: o.tip || 0,
+    amount: Number(o.driver_earnings || 0),
+    tip: Number(o.tip || 0),
     created_at: o.created_at,
     type: 'DELIVERY'
   }));

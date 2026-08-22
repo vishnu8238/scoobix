@@ -94,5 +94,9 @@ export async function fetchDriverOrders(driverId: string, params: Record<string,
 }
 
 export async function fetchDriverPayouts(driverId: string) {
-  return listTable<any>("transfers", { recipient_id: `eq.${driverId}`, recipient_type: "eq.rider", order: "created_at.desc" }).catch(() => []);
+  // Authoritative payout ledger instead of 'transfers'
+  return listTable<any>("driver_payout_periods", { 
+    driver_id: `eq.${driverId}`, 
+    order: "created_at.desc" 
+  }).catch(() => []);
 }
