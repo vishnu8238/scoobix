@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pendingPortal: currentPortal,
       });
 
-      if (!hasAccess && currentPortal !== "customer") {
+      if (!hasAccess && (currentPortal as string) !== "customer") {
         setAuthState("denied");
       } else {
         setAuthState("authenticated");
