@@ -38,7 +38,7 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
   const [driver] = await listTable<ExtendedDriver>("drivers", { 
     id: `eq.${driverId}`, 
     limit: 1,
-    select: "id,user_id,vehicle_type,vehicle_number,license_number,verification_status,zone_id"
+    select: "id,user_id,vehicle_type,vehicle_number,license_number,verification_status"
   }, { fresh: true });
   
   if (!driver) return null;
