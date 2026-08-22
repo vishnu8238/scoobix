@@ -987,7 +987,7 @@ function FilterSelect({ label, value, onChange, options }: any) {
         onChange={(e) => onChange(e.target.value)}
         className="h-10 pl-3 pr-8 bg-card rounded-xl ring-1 ring-border/60 text-xs font-bold outline-none focus:ring-primary/40"
       >
-        <option value="all">All {label}s</option>
+        <option value="all">All cities</option>
         {options.map((o: any) => <option key={o} value={o.toLowerCase()}>{o}</option>)}
       </select>
     </div>
