@@ -119,7 +119,8 @@ export function GigCard({
         </div>
         <div className="text-right">
           <p className="text-[10px] font-bold text-muted-foreground/80 text-right">Enrollment</p>
-          <p className="text-sm font-black">{enrollmentCount} / {maxEnrollment}</p>
+          <p className="text-sm font-black">{maxEnrollment !== null ? `${enrollmentCount} / ${maxEnrollment}` : "Unavailable"}</p>
+
         </div>
       </div>
 
