@@ -336,23 +336,29 @@ function GoogleMapInner({
 }
 
 export function GoogleMap(props: Props) {
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
+
   return (
-    <GoogleMapsProvider fallback={
-      <div className={`flex flex-col items-center justify-center bg-muted/20 text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[96px] p-4 ${props.className}`} style={{ height: 96 }}>
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/20 text-primary">
-            <MapPin className="h-4 w-4" />
-          </div>
-          <div className="text-left">
-            <p className="font-display text-xs font-extrabold text-foreground leading-none">Map Unavailable</p>
-            <p className="text-[9px] mt-1 leading-tight opacity-70">
-              Please use the manual boundary editor to add coordinates.
-            </p>
+    <GoogleMapsProvider 
+      onStatusChange={(status) => setHasKey(status === "ready")}
+      fallback={
+        <div className={`flex flex-col items-center justify-center bg-muted/20 text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[72px] p-2 ${props.className}`} style={{ height: 72 }}>
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/20 text-primary">
+              <MapPin className="h-3 w-3" />
+            </div>
+            <div className="text-left">
+              <p className="font-display text-[10px] font-extrabold text-foreground leading-none">Map Unavailable</p>
+              <p className="text-[8px] mt-0.5 leading-tight opacity-70">
+                Use Manual Boundary coordinates.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    }>
-      <GoogleMapInner {...props} />
+      }
+    >
+      {/* Explicit guard: If GoogleMapsProvider has no key, do not mount GoogleMapInner at all */}
+      {hasKey === false ? null : <GoogleMapInner {...props} />}
     </GoogleMapsProvider>
   );
 }

@@ -157,10 +157,86 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
         </header>
 
         <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] h-full items-stretch">
-              {/* Left Column: Form Fields and Map */}
-              <div className="p-6 space-y-6 lg:border-r border-border/60">
+          <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
+            <div className="flex flex-col h-full items-stretch">
+              {/* Manual Boundary Section (ALWAYS FIRST in visual flow on mobile/small-width) */}
+              <div className="bg-muted/10 border-b border-border/60">
+                <div className="p-6 bg-muted/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Manual Boundary
+                    </h3>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${hasMinPoints ? 'bg-emerald-500/10 text-emerald-500' : 'bg-orange-500/10 text-orange-500'}`}>
+                      {points.length} / 3 points
+                    </span>
+                  </div>
+
+                  <div className="bg-zinc-950/50 rounded-2xl p-4 border border-border/40 space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground block mb-1">Latitude</label>
+                        <input 
+                          type="number" step="any"
+                          value={manualInput.lat}
+                          onChange={e => setManualInput(prev => ({ ...prev, lat: e.target.value }))}
+                          className="w-full rounded-xl bg-background/50 px-3 py-2 text-xs outline-none ring-1 ring-border/60 focus:ring-primary/40 transition"
+                          placeholder="22.3072"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground block mb-1">Longitude</label>
+                        <input 
+                          type="number" step="any"
+                          value={manualInput.lng}
+                          onChange={e => setManualInput(prev => ({ ...prev, lng: e.target.value }))}
+                          className="w-full rounded-xl bg-background/50 px-3 py-2 text-xs outline-none ring-1 ring-border/60 focus:ring-primary/40 transition"
+                          placeholder="73.1812"
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={addPoint}
+                      className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 active:scale-95 transition"
+                    >
+                      Add Point
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar border-t border-border/40">
+                  {points.length > 0 ? (
+                    points.map((p: any, i: number) => (
+                      <div key={`${p[0]}-${p[1]}-${i}`} className="flex items-center justify-between bg-zinc-950/30 p-2 rounded-xl border border-border/30 group">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-black text-muted-foreground/50 w-4">{i + 1}</span>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-mono font-medium leading-none">
+                              {p[1].toFixed(6)}, {p[0].toFixed(6)}
+                            </span>
+                            <span className="text-[8px] text-muted-foreground mt-0.5">LAT, LNG</span>
+                          </div>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => removePoint(i)}
+                          className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-4 text-center text-muted-foreground">
+                      <p className="text-[10px] font-medium">No points added yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Form Fields and Map (AFTER Manual Boundary in DOM order) */}
+              <div className="p-6 space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-4">
                     <div>
@@ -232,7 +308,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                   </div>
                 </div>
 
-                <div className="relative min-h-[260px] flex-1 rounded-3xl overflow-hidden ring-1 ring-border/60">
+                <div className="relative min-h-[200px] lg:min-h-[300px] rounded-3xl overflow-hidden ring-1 ring-border/60">
                   <GoogleMap 
                     className="h-full w-full absolute inset-0"
                     interactive={true}
@@ -265,83 +341,6 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                       color: "rgba(16, 185, 129, 0.5)"
                     }] : []}
                   />
-                </div>
-              </div>
-
-              {/* Right Column: Manual Boundary Editor (Permanent Sidebar) */}
-              <div className="bg-muted/10 flex flex-col h-full border-t lg:border-t-0 lg:border-l border-border/60">
-                <div className="p-6 border-b border-border/60 bg-muted/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                      <MapPin className="h-3.5 w-3.5" />
-                      Manual Boundary
-                    </h3>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${hasMinPoints ? 'bg-emerald-500/10 text-emerald-500' : 'bg-orange-500/10 text-orange-500'}`}>
-                      {points.length} / 3 points
-                    </span>
-                  </div>
-
-                  <div className="bg-zinc-950/50 rounded-2xl p-4 border border-border/40 space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-muted-foreground block mb-1">Latitude</label>
-                        <input 
-                          type="number" step="any"
-                          value={manualInput.lat}
-                          onChange={e => setManualInput(prev => ({ ...prev, lat: e.target.value }))}
-                          className="w-full rounded-xl bg-background/50 px-3 py-2 text-xs outline-none ring-1 ring-border/60 focus:ring-primary/40 transition"
-                          placeholder="22.3072"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-muted-foreground block mb-1">Longitude</label>
-                        <input 
-                          type="number" step="any"
-                          value={manualInput.lng}
-                          onChange={e => setManualInput(prev => ({ ...prev, lng: e.target.value }))}
-                          className="w-full rounded-xl bg-background/50 px-3 py-2 text-xs outline-none ring-1 ring-border/60 focus:ring-primary/40 transition"
-                          placeholder="73.1812"
-                        />
-                      </div>
-                    </div>
-                    <button 
-                      type="button"
-                      onClick={addPoint}
-                      className="w-full h-10 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 active:scale-95 transition"
-                    >
-                      Add Point
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar min-h-0">
-                  {points.length > 0 ? (
-                    points.map((p: any, i: number) => (
-                      <div key={`${p[0]}-${p[1]}-${i}`} className="flex items-center justify-between bg-zinc-950/30 p-2.5 rounded-xl border border-border/30 group">
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-black text-muted-foreground/50 w-4">{i + 1}</span>
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-mono font-medium leading-none">
-                              {p[1].toFixed(6)}, {p[0].toFixed(6)}
-                            </span>
-                            <span className="text-[8px] text-muted-foreground mt-0.5">LAT, LNG</span>
-                          </div>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => removePoint(i)}
-                          className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full py-12 text-center text-muted-foreground">
-                      <MapPin className="h-8 w-8 mb-2 opacity-20" />
-                      <p className="text-[10px] font-medium max-w-[140px]">No points added yet. Use the map or add coordinates manually.</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
