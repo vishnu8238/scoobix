@@ -60,18 +60,28 @@ function AuthCallback() {
           }
         }
 
-        // 2. Poll briefly for SDK user resolution
-        let user = insforge.auth.session?.user;
-        let retries = 0;
-        while (!user && retries < 15) {
-          await new Promise(r => setTimeout(r, 500));
-          user = insforge.auth.session?.user;
-          retries++;
-        }
+        // 2. Deterministic, event-driven session resolution
+        const user = await new Promise<any>((resolve, reject) => {
+          // Check if already resolved
+          if (insforge.auth.session?.user) {
+            return resolve(insforge.auth.session.user);
+          }
 
-        if (!user) {
-          throw new Error("Session resolution timed out.");
-        }
+          const timeout = setTimeout(() => {
+            unsub();
+            reject(new Error("Session resolution timed out."));
+          }, 8000); // 8s bounded timeout
+
+          const unsub = insforge.auth.onAuthStateChange((event: string, session: any) => {
+            if (event === 'signedIn' || event === 'INITIAL_SESSION') {
+              if (session?.user) {
+                clearTimeout(timeout);
+                unsub();
+                resolve(session.user);
+              }
+            }
+          });
+        });
 
         // 3. Deterministic portal mapping
         const portalMap: Record<string, string> = {
@@ -93,7 +103,7 @@ function AuthCallback() {
         console.log(`[AUTH_CALLBACK] Authorized. Redirecting to ${destPath}`);
         
         // Final flush delay for SDK session persistence
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 1200));
         window.location.replace(dest);
 
       } catch (err: any) {
