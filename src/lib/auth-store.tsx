@@ -131,11 +131,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (e: any) {
         // P0.1: If unauthenticated, let resolveUser exit gracefully
-        if (e?.isAuthError) {
+        if (e?.isAuthError || e?.insforge_status === 401) {
           console.warn("[AUTH_TRACE] User unauthenticated during profile resolution.");
           setUser(null);
           setAuthState("unauthenticated");
           setCacheAuthScope(null);
+          resolutionActiveRef.current = false;
+          if (isInitial) {
+            setLoading(false);
+            setHydrationComplete(true);
+          }
           return;
         }
         console.warn("[AUTH_TRACE] Profile resolution failed:", e);
