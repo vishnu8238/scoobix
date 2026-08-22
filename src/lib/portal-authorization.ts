@@ -1,4 +1,4 @@
-import { listTable, patchRecord, createRecord } from "./insforge-crud";
+import { listTable, patchRecord } from "./insforge-crud";
 
 export type PortalType = "partner" | "rider" | "manager" | "logistics" | "admin" | "customer";
 export type PortalStatus = "active" | "disabled";
@@ -25,7 +25,11 @@ function normalize(email: string | null | undefined): string {
   return String(email ?? "").trim().toLowerCase();
 }
 
-/** Authoritative check for portal access. */
+/** 
+ * Authoritative check for portal access. 
+ * P0.1: Exclusive mechanism for Admin, Logistics, Partner, Rider, and Manager.
+ * Remove all hardcoded super-admin bypasses.
+ */
 export async function checkPortalAccess(
   email: string | null | undefined,
   portal: PortalType
@@ -33,13 +37,8 @@ export async function checkPortalAccess(
   const normalizedEmail = normalize(email);
   if (!normalizedEmail) return { ok: false, reason: "not_found" };
 
-  // Super Admin Bypass - Permanent access to all portals
-  const SUPER_ADMIN = "scoobix.info@gmail.com";
-  if (normalizedEmail === SUPER_ADMIN) {
-    return { ok: true, status: "active" };
-  }
-
   try {
+    // FRESH lookup from portal_access table.
     const rows = await listTable<PortalAccessRow>(
       "portal_access",
       { 
@@ -51,16 +50,7 @@ export async function checkPortalAccess(
     );
 
     if (rows.length === 0) {
-      // Diagnostic check: list all entries for this email to see what portals/formats exist
-      const allUserAccess = await listTable<PortalAccessRow>(
-        "portal_access",
-        { email_normalized: `eq.${normalizedEmail}` },
-        { ttl: 0, fresh: true, select: "portal" }
-      ).catch(() => []);
-      
-      console.log(`[AUTH_DEBUG] No match for ${normalizedEmail} on portal ${portal}. Portals found for user:`, allUserAccess.map(r => r.portal));
-
-      // Fallback for legacy rows that might only have 'email' and not 'email_normalized'
+      // Fallback for legacy rows without normalized email column populated.
       const legacyRows = await listTable<PortalAccessRow>(
         "portal_access",
         { 
@@ -72,12 +62,12 @@ export async function checkPortalAccess(
       );
       
       if (legacyRows.length > 0) {
-        console.log(`[AUTH_DEBUG] Legacy row found for ${normalizedEmail} on ${portal}. Repairing...`);
         const legacy = legacyRows[0];
+        // Repair normalization for next time.
         void patchRecord("portal_access", legacy.id, { 
           email_normalized: normalizedEmail,
           email: normalizedEmail
-        }).catch(err => console.error("[AUTH_DEBUG] Failed to repair legacy row:", err));
+        }).catch(err => console.error("[PORTAL_AUTH] Legacy repair failed:", err));
         
         if (legacy.status === "disabled") return { ok: false, reason: "disabled" };
         return { ok: true, status: "active" };
@@ -87,13 +77,12 @@ export async function checkPortalAccess(
     }
     
     const record = rows[0];
-    console.log(`[AUTH_DEBUG] Found access record for ${normalizedEmail} on ${portal}. Status: ${record.status}`);
     if (record.status === "disabled") return { ok: false, reason: "disabled" };
     
     return { ok: true, status: "active" };
   } catch (err: any) {
-    console.error(`[AUTH_DEBUG] Portal access lookup failed for ${portal}:`, err);
-    return { ok: false, reason: "lookup_failed", message: `Authorization lookup failed: ${err.message || 'Database error'}` };
+    console.error(`[PORTAL_AUTH] Lookup failed for ${portal}:`, err);
+    return { ok: false, reason: "lookup_failed", message: "Authorization service error." };
   }
 }
 
@@ -116,6 +105,6 @@ export async function recordPortalLogin(email: string, portal: PortalType) {
       });
     }
   } catch (err) {
-    console.error("[AUTH_DEBUG] Failed to update last_login_at:", err);
+    console.warn("[PORTAL_AUTH] Login timestamp update skipped:", err);
   }
 }

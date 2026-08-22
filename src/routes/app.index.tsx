@@ -359,23 +359,9 @@ function Home() {
           ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
-                {`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            Continue P0.1 with STEP 2 only: another READ-ONLY source-level audit. Do not edit code, do not run migrations, and do not publish.
-
-Resolve these exact questions with file names, functions, and concise code-path evidence:
-1) Is there any client construction besides the singleton and the legacy re-export? List all createClient imports/calls exactly.
-2) For both onAuthStateChange listeners, state event coverage, cleanup/unsubscribe behavior, and why each writes state. Identify the one that must remain as the canonical lifecycle owner.
-3) List every getSession/getCurrentUser call, every manual Authorization header, every token cache/read/write, and every localStorage/sessionStorage auth-related key. Flag anything that reconstructs a session or scans guessed token keys.
-4) Determine whether \`detectOAuthCallback: true\` already performs the OAuth code exchange, whether auth.callback also exchanges \`insforge_code\`, and whether double exchange is possible. State the installed SDK mechanism actually used.
-5) List every auth-related redirect, including exact conditions that lead to \`/app\`, portal login, denied, or error routes. Identify customer-role fallbacks.
-6) Trace \`portal_access\` result handling for missing, disabled, and query-error cases in each protected portal. State whether any branch grants Customer or uses a legacy membership bypass.
-7) Trace setCacheAuthScope and cache clearing across sign-in, auth event, logout, error, and user-switch paths.
-8) Inventory all legacy membership checks that remain after admission.
-
-Give a ranked, evidence-only correction plan. Wait for approval; no implementation now.`}
+                No restaurants found matching your criteria.
               </p>
+
             </div>
           ) : (
             allFiltered.map((r) => (
@@ -395,9 +381,36 @@ Give a ranked, evidence-only correction plan. Wait for approval; no implementati
       )}
 
       <p className="px-6 pb-4 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        Scoobix · Crave it. Get it.{" "}
-        <Link to="/" className="font-bold text-primary">Splash</Link>
+        {`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
+                                        
+                                            
+                                            Implement P0.1 now, using the completed forensic evidence. This is an isolated InsForge-only authentication/session/portal-access stabilization release. Do not change unrelated UI, checkout, orders, gigs, riders, zones, data schema, or business features. Do not add Supabase, migrations, tables, roles, background polling, or a global customer redirect. Build and run the TypeScript checks before reporting.
+
+A. Single authoritative client and session owner
+1. Keep exactly one browser InsForge singleton. Remove any hidden extra client creation. The legacy compatibility re-export must never construct another client; retain only if imports require it, otherwise safely remove it.
+2. Make ONE application-level lifecycle owner for session state (the AuthStore/AuthProvider). Remove the independent module-level onAuthStateChange listener and its cachedAccessToken/initializationPromise coupling. The remaining listener must be subscribed once, unsubscribed correctly, and serialize/coalesce refresh handling so overlapping TOKEN_REFRESHED events cannot race a user/portal resolution.
+3. All session/user restoration must use the official InsForge SDK session/current-user mechanism. Eliminate getAccessToken localStorage scanning, guessed key matching, stale-token fallbacks, and manual session reconstruction. Any API/RPC Authorization header still required by existing endpoints must obtain a fresh verified SDK token through one small official-SDK helper and fail closed if unavailable; never scan browser storage.
+
+B. OAuth and redirects
+4. Use exactly one OAuth code-exchange owner. Because src/routes/auth.callback.tsx explicitly calls exchangeCodeForSession(insforgeCode), set the browser singleton's detectOAuthCallback to false and keep the callback as the authoritative path. Make the callback idempotent against re-render/refresh (per-code in-memory or URL-cleanup guard), clear its query parameters only after a successful/handled exchange, and surface a recoverable login error rather than redirecting to Customer on exchange failure.
+5. Preserve the requested portal intent only as a sanitized portal string. It must guide the post-auth redirect but never grant access. Remove the intent after completion or failure. All unknown/missing/unauthorized portal intent must go to a clear portal login/denied state, never generic /app for a protected route.
+6. Replace the 10-second unauthenticated watchdog behaviour with explicit, cancellable state transitions. A slow session or portal_access check remains session_resolving/authorization_resolving; it must not flash denied or write a logged-out state before resolution. Surface actual errors in an error state with Retry.
+
+C. Exclusive portal authorization
+7. Make public.portal_access the exclusive admission mechanism for Admin, Logistics, Partner, Rider, and Manager. Normalize the signed-in identity email (trim/lowercase); query portal_access fresh, require portal match and active status; use no browser cache and do not expose email details in errors.
+8. Remove the hard-coded scoobix.info@gmail.com privileged bypass completely. Remove every role/admission fallback using restaurants, drivers, or merchant_managers. Those tables may only be queried AFTER successful portal_access admission to hydrate the admitted user's business/profile relationships; they can never grant a portal role.
+9. Centralize protected-route decisions through one deterministic resolver/guard. A missing or disabled record must deny the requested portal and send the user to its matching login/denied experience; a query error must show a retryable error state, not Customer. Customer access must be explicit/public only, never inferred because privileged authorization is missing. Preserve genuine portal root destinations (/admin, /logistics, /partner, /rider, /manager) and use replace only after a resolved decision.
+
+D. Cache and logout isolation
+10. Update request-cache persistent keys so every sx:cache entry includes authenticated userId (and portal/scope where relevant). Delete old unscoped sx:cache entries on startup safely, and clear both memory and all current-user persistent cache entries immediately on signed-out, session switch, signOut completion, and auth error. Do not persist portal_access authorization decisions.
+11. Ensure login, token refresh, user switch, logout, and errors cannot briefly show cached prior-user dashboard data. Do not change public customer catalog cache behavior except to avoid leaking a prior authenticated identity.
+12. Make logout robust: always initiate InsForge signOut; in a finally-style cleanup clear auth and identity cache and replace to the correct login destination. If remote signOut fails, still clear local authorized UI state and display an error safely; no uncaught exception/blank screen.
+
+E. Required regression coverage and deliverable
+13. Add focused tests or testable pure helpers for: email normalization; active/missing/disabled/query-error portal admission; no privileged-to-customer fallback; requested portal preservation; OAuth single exchange; cache key user isolation and clearing; listener cleanup/coalescing where feasible.
+14. Verify clean TypeScript build. Provide a precise change list, each source file changed, and actual test/build output. Then report readiness for publication; do not publish from this response because I will review the result first.`}
       </p>
+
     </div>
   );
 }

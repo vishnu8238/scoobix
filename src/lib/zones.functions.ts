@@ -1,113 +1,35 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
-import { createClient } from "@insforge/sdk";
-import { publishTableChange } from "./realtime-bus";
 import { TABLE_ZONES, TABLE_SUBZONES } from "./zones-api";
 import { requireInsForgeAuth } from "@/integrations/insforge/auth-middleware";
 
-const HEADERS = {
-  apikey: INSFORGE_ANON_KEY,
-  Authorization: `Bearer ${INSFORGE_ANON_KEY}`,
-  "Content-Type": "application/json",
-};
+/**
+ * P0.1: Authoritative Server Functions for Zones
+ * Uses centralized auth middleware and context-injected SDK clients.
+ */
 
 export const getZonesWithSubzones = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .middleware([requireInsForgeAuth])
+  .handler(async ({ context }) => {
+    const { insforge } = context;
     try {
       const [zonesRes, subzonesRes] = await Promise.all([
-        fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}?select=id,name,city,status,created_at,updated_at&order=name.asc`, { headers: HEADERS }),
-        fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}?select=id,zone_id,name,status,created_at,updated_at&order=name.asc`, { headers: HEADERS })
+        insforge.database.from(TABLE_ZONES).select("*").order("name"),
+        insforge.database.from(TABLE_SUBZONES).select("*").order("name")
       ]);
       
-      if (!zonesRes.ok && zonesRes.status !== 404) {
-        const txt = await zonesRes.text();
-        console.warn(`[ZONES_FETCH_WARN] ${TABLE_ZONES} status ${zonesRes.status}:`, txt);
-      }
-      if (!subzonesRes.ok && subzonesRes.status !== 404) {
-        const txt = await subzonesRes.text();
-        console.warn(`[ZONES_FETCH_WARN] ${TABLE_SUBZONES} status ${subzonesRes.status}:`, txt);
-      }
-
-      const zones = zonesRes.ok ? await zonesRes.json() : [];
-      const subzones = subzonesRes.ok ? await subzonesRes.json() : [];
-      
       return { 
-        zones: Array.isArray(zones) ? zones : [], 
-        subzones: Array.isArray(subzones) ? subzones : [] 
+        zones: (Array.isArray(zonesRes.data) ? zonesRes.data : []) as any[], 
+        subzones: (Array.isArray(subzonesRes.data) ? subzonesRes.data : []) as any[] 
       };
     } catch (err) {
-      console.error("Failed to fetch zones server-side:", err);
+      console.error("[ZONES_SERVER] Fetch failed:", err);
       return { zones: [], subzones: [] };
     }
   });
 
-export const seedVadodaraStructure = createServerFn({ method: "POST" })
-  .handler(async () => {
-    const zones = [
-      { name: "West Zone", subzones: ["Akota", "Alkapuri", "Bhayli", "Atladara", "Diwalipura", "Gorwa", "Gotri", "Subhanpura", "Panchvati", "Sayajigunj", "Vadiwadi", "Vasna Road", "Sunpharma Road", "Bill", "Mujmahuda", "OP Road"] },
-      { name: "East Zone", subzones: ["Fatehgunj", "Mandvi", "Karelibaug", "Waghodia Road", "Ajwa Road", "Nizampura", "Navapura", "L&T Knowledge City", "Sama", "Sayajipura", "Suryanagar", "Yakutpura", "Warasiya"] },
-      { name: "South Zone", subzones: ["Manjalpur", "Tarsali", "Makarpura", "GIDC", "Manjeja", "Jambuva", "Danteshwar"] }
-    ];
-
-    let createdZones = 0;
-    let createdSubzones = 0;
-    let skipped = 0;
-
-    for (const zDef of zones) {
-      // Check if zone exists
-      const zCheck = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}?name=ilike.${encodeURIComponent(zDef.name)}&city=eq.Vadodara`, { headers: HEADERS });
-      let zoneData = zCheck.ok ? await zCheck.json() : [];
-      let zoneId;
-
-      if (zoneData && zoneData.length > 0) {
-        zoneId = zoneData[0].id;
-        skipped++;
-      } else {
-        const createZ = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_ZONES}`, {
-          method: "POST",
-          headers: {
-            ...HEADERS,
-            "Prefer": "return=representation"
-          },
-          body: JSON.stringify({
-            name: zDef.name,
-            city: "Vadodara",
-            status: "ACTIVE"
-          })
-        });
-        const newZone = createZ.ok ? await createZ.json() : null;
-        zoneId = newZone ? (newZone.id || (Array.isArray(newZone) ? newZone[0].id : null)) : null;
-        createdZones++;
-      }
-
-      if (!zoneId) continue;
-
-      for (const szName of zDef.subzones) {
-        const szCheck = await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}?name=ilike.${encodeURIComponent(szName)}&zone_id=eq.${zoneId}`, { headers: HEADERS });
-        const szData = szCheck.ok ? await szCheck.json() : [];
-
-        if (szData && szData.length > 0) {
-          skipped++;
-        } else {
-          await fetch(`${INSFORGE_URL}/api/database/records/${TABLE_SUBZONES}`, {
-            method: "POST",
-            headers: HEADERS,
-            body: JSON.stringify({
-              zone_id: zoneId,
-              name: szName,
-              status: "ACTIVE"
-            })
-          });
-          createdSubzones++;
-        }
-      }
-    }
-
-    return { createdZones, createdSubzones, skipped };
-  });
-
 export const createNewZone = createServerFn({ method: "POST" })
+  .middleware([requireInsForgeAuth])
   .inputValidator(z.object({
     name: z.string(),
     city: z.string().default("Vadodara"),
@@ -115,41 +37,17 @@ export const createNewZone = createServerFn({ method: "POST" })
     status: z.enum(["ACTIVE", "DISABLED", "ARCHIVED"]).default("ACTIVE"),
     pickup_radius_km: z.number().nullable().optional().default(1),
     max_delivery_distance_km: z.number().nullable().optional().default(4),
-    boundary: z.any().optional(),
-    accessToken: z.string()
+    boundary: z.any().optional()
   }))
-  .handler(async ({ data }) => {
-    const { accessToken } = data;
+  .handler(async ({ data, context }) => {
+    const { insforge } = context;
     
-    console.log("[ZONES_SERVER] Constructing authenticated server client from explicit token...");
-    const insforge = createClient({
-      baseUrl: INSFORGE_URL,
-      anonKey: INSFORGE_ANON_KEY,
-    });
-    
-    // Authoritative Token Injection
-    (insforge.auth as any).tokenManager.setAccessToken(accessToken);
-    (insforge.auth as any).session = { accessToken };
-
-    // Verification probe
-    const { data: user, error: authErr } = await insforge.auth.getCurrentUser();
-    if (authErr || !user?.user) {
-      console.error("[ZONES_AUTH_ERROR] Token verification failed on server:", authErr?.message);
-      throw new Error(`Unauthorized: Invalid or expired token (${authErr?.message || 'Verification failed'})`);
-    }
-    // InsForge / PostgREST compatibility: check if table is accessible
+    // Geometry validation
     const boundary = (data.boundary?.type === "Polygon" && Array.isArray(data.boundary.coordinates?.[0]) && data.boundary.coordinates[0].length >= 3) 
       ? data.boundary 
-      : { 
-          type: "Polygon", 
-          coordinates: [[
-            [73.1812, 22.3072], 
-            [73.1912, 22.3072], 
-            [73.1912, 22.3172], 
-            [73.1812, 22.3172],
-            [73.1812, 22.3072]
-          ]] 
-        };
+      : null;
+
+    if (!boundary) throw new Error("Invalid zone boundary.");
 
     const ring: Array<[number, number]> = boundary.coordinates[0];
     const openRing = ring.length > 1 &&
@@ -157,6 +55,7 @@ export const createNewZone = createServerFn({ method: "POST" })
       ring[0][1] === ring[ring.length - 1][1]
         ? ring.slice(0, -1)
         : ring;
+        
     const centerLng = openRing.reduce((s, c) => s + Number(c[0]), 0) / openRing.length;
     const centerLat = openRing.reduce((s, c) => s + Number(c[1]), 0) / openRing.length;
 
@@ -174,20 +73,17 @@ export const createNewZone = createServerFn({ method: "POST" })
       max_delivery_distance_km: data.max_delivery_distance_km ?? 4
     };
 
-    console.log("[ZONES_SERVER] Creating zone with payload:", JSON.stringify(payload));
-
     const { data: created, error } = await insforge.database
       .from(TABLE_ZONES)
       .insert([payload])
       .select()
       .single();
     
-    if (error) {
-      console.error("[ZONES_SERVER] InsForge Database Error:", error.message, error.details);
-      throw new Error(error.message || "Failed to create zone (Unauthorized or RLS)");
-    }
+    if (error) throw new Error(error.message || "Failed to create zone.");
+    
     const row = Array.isArray(created) ? created[0] : created;
     if (row) {
+      const { publishTableChange } = await import("./realtime-bus");
       publishTableChange(TABLE_ZONES, "insert", row);
     }
     return row;
@@ -210,21 +106,70 @@ export const createNewSubzone = createServerFn({ method: "POST" })
       boundary: data.boundary || { type: "Polygon", coordinates: [] }
     };
     
-    console.log("[ZONES_SERVER] Creating subzone with payload:", JSON.stringify(payload));
-
     const { data: created, error } = await insforge.database
       .from(TABLE_SUBZONES)
       .insert([payload])
       .select()
       .single();
     
-    if (error) {
-      console.error("[ZONES_SERVER] InsForge Subzone Error:", error.message, error.details);
-      throw new Error(error.message || "Failed to create subzone (Unauthorized or RLS)");
-    }
+    if (error) throw new Error(error.message || "Failed to create subzone.");
+    
     const row = Array.isArray(created) ? created[0] : created;
     if (row) {
+      const { publishTableChange } = await import("./realtime-bus");
       publishTableChange(TABLE_SUBZONES, "insert", row);
     }
     return row;
+  });
+
+export const seedVadodaraStructure = createServerFn({ method: "POST" })
+  .middleware([requireInsForgeAuth])
+  .handler(async ({ context }) => {
+    const { insforge } = context;
+    const zones = [
+      { name: "West Zone", subzones: ["Akota", "Alkapuri", "Bhayli", "Atladara", "Diwalipura", "Gorwa", "Gotri", "Subhanpura", "Panchvati", "Sayajigunj", "Vadiwadi", "Vasna Road", "Sunpharma Road", "Bill", "Mujmahuda", "OP Road"] },
+      { name: "East Zone", subzones: ["Fatehgunj", "Mandvi", "Karelibaug", "Waghodia Road", "Ajwa Road", "Nizampura", "Navapura", "L&T Knowledge City", "Sama", "Sayajipura", "Suryanagar", "Yakutpura", "Warasiya"] },
+      { name: "South Zone", subzones: ["Manjalpur", "Tarsali", "Makarpura", "GIDC", "Manjeja", "Jambuva", "Danteshwar"] }
+    ];
+
+    let createdZones = 0;
+    let createdSubzones = 0;
+    let skipped = 0;
+
+    for (const zDef of zones) {
+      const { data: zCheck } = await insforge.database.from(TABLE_ZONES).select("id").eq("name", zDef.name).eq("city", "Vadodara");
+      let zoneId;
+
+      if (zCheck && zCheck.length > 0) {
+        zoneId = zCheck[0].id;
+        skipped++;
+      } else {
+        const { data: newZone } = await insforge.database.from(TABLE_ZONES).insert({
+          name: zDef.name,
+          city: "Vadodara",
+          status: "ACTIVE"
+        }).select().single();
+        zoneId = newZone?.id;
+        createdZones++;
+      }
+
+      if (!zoneId) continue;
+
+      for (const szName of zDef.subzones) {
+        const { data: szCheck } = await insforge.database.from(TABLE_SUBZONES).select("id").eq("name", szName).eq("zone_id", zoneId);
+
+        if (szCheck && szCheck.length > 0) {
+          skipped++;
+        } else {
+          await insforge.database.from(TABLE_SUBZONES).insert({
+            zone_id: zoneId,
+            name: szName,
+            status: "ACTIVE"
+          });
+          createdSubzones++;
+        }
+      }
+    }
+
+    return { createdZones, createdSubzones, skipped };
   });

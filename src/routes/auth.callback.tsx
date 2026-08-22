@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { insforge } from "@/lib/insforge";
 import { popPortalIntent, setPortalIntent } from "@/lib/insforge-auth";
@@ -7,159 +7,72 @@ export const Route = createFileRoute("/auth/callback")({
   component: AuthCallback,
 });
 
+/**
+ * P0.1: Authoritative OAuth Callback Handler
+ * Handles single code exchange and deterministic portal redirection.
+ */
 function AuthCallback() {
-  const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const exchangeAttemptedRef = useRef<boolean>(false);
   const portalRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // 1. Immediately extract and preserve the portal intent before any potential re-renders or navigation
-    // We try to grab it from URL or storage immediately
+    // 1. Preserve portal intent in closure for this mount
     if (!portalRef.current) {
-      const intent = popPortalIntent();
-      portalRef.current = intent;
-      // Re-persist briefly to survive potential hydration reloads
-      setPortalIntent(intent);
-      
-      // Also preserve returnTo in storage
-      const params = new URLSearchParams(window.location.search);
-      const returnTo = params.get("returnTo");
-      if (returnTo) {
-        localStorage.setItem("scoobix_return_to", returnTo);
-      }
+      portalRef.current = popPortalIntent();
+      // Re-persist briefly for hydration stability
+      if (portalRef.current) setPortalIntent(portalRef.current);
     }
     
-    const portal = portalRef.current;
-    console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: CALLBACK_MOUNTED] Portal Intent Resolved:", portal);
-    
-    const checkAuth = async () => {
+    const portal = portalRef.current || "customer";
+
+    const handleCallback = async () => {
+      // P0.1: Idempotency guard for code exchange
+      if (exchangeAttemptedRef.current) return;
+      exchangeAttemptedRef.current = true;
+
       try {
-        console.log("[AUTH_DEBUG] auth.callback.tsx [CHECKPOINT: AUTH_CALLBACK_REACHED] Portal Intent:", portal);
-        
-        // 1. Diagnostics only: check for insforge_code
         const params = new URLSearchParams(window.location.search);
-        const insforgeCode = params.get("insforge_code") || params.get("code");
+        const code = params.get("insforge_code") || params.get("code");
         const error = params.get("error");
         const errorDescription = params.get("error_description");
 
-        console.log("[AUTH_TRACE] Callback params detected:", { 
-          hasCode: !!insforgeCode, 
-          error: error || "none" 
-        });
-
         if (error || errorDescription) {
-          console.error("[AUTH_DEBUG] OAuth Error:", error, errorDescription);
-          setErrorMsg(errorDescription || `Authentication error: ${error}`);
-          return;
+          throw new Error(errorDescription || `Authentication error: ${error}`);
         }
 
-        // 2. Explicitly exchange the code for a session if present
-        if (insforgeCode) {
-          console.log("[AUTH_TRACE] Exchanging authorization code for session...");
+        if (code) {
+          console.log("[AUTH_CALLBACK] Exchanging code for session...");
           
-          // Immediate URL cleanup to prevent duplicate exchange on reload (iOS Safari fix)
+          // Cleanup URL immediately to prevent multi-exchange if user refreshes
           const cleanUrl = new URL(window.location.href);
           cleanUrl.searchParams.delete("insforge_code");
           cleanUrl.searchParams.delete("code");
           window.history.replaceState({}, document.title, cleanUrl.pathname + cleanUrl.search);
 
-          const { data, error: exchangeError } = await insforge.auth.exchangeCodeForSession(insforgeCode);
+          const { error: exchangeError } = await insforge.auth.exchangeCodeForSession(code);
           if (exchangeError) {
-             console.error("[AUTH_TRACE] Code exchange failed:", exchangeError);
-             // Safety check: if exchange fails, see if the SDK background listener already established a session
-             const session = insforge.auth.session;
-             if (!session?.user) {
-               throw new Error(exchangeError.message || "Failed to exchange authorization code.");
-             }
-             console.log("[AUTH_TRACE] Session already present despite exchange error (likely background resolution).");
-          } else if (data?.session) {
-            console.log("[AUTH_TRACE] Code exchange successful. Session detected.");
-          }
-        }
-
-        // 3. Wait for the SDK to process the callback and emit a user
-        let retryCount = 0;
-        const maxRetries = 20; // ~10 seconds total
-        
-        const waitForUser = async (): Promise<any> => {
-          // Check session directly first as it's most reliable for hydration
-          const session = insforge.auth.session;
-          if (session?.user?.id) {
-            console.log("[AUTH_TRACE] Session found in SDK memory.");
-            return session.user;
-          }
-
-          // Fallback to getCurrentUser which might trigger a background refresh
-          const { data: userData, error: userError } = await insforge.auth.getCurrentUser().catch((e: any) => {
-            if (e?.message?.includes("fetch") || e?.status === 0) return { data: null, error: e };
-            throw e;
-          });
-          
-          if (userData?.user?.id) {
-            return userData.user;
-          }
-          
-          if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`[AUTH_TRACE] Waiting for session... attempt ${retryCount}/${maxRetries}`);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return waitForUser();
-          }
-          
-          throw new Error(userError?.message || "Authentication timed out. No session established.");
-        };
-
-        console.log("[AUTH_TRACE] Resolving user session...");
-        const authUser = await waitForUser();
-
-        console.log("[AUTH_TRACE] [SESSION_VERIFIED] ID:", authUser.id, "Email:", authUser.email);
-        
-        // 3. Authorization Check
-        // We ALWAYS verify access against the portal_access table for privileged portals
-        const privilegedPortals = ["logistics", "partner", "rider", "manager", "admin"];
-        if (privilegedPortals.includes(portal || "")) {
-          const { checkPortalAccess } = await import("@/lib/portal-authorization");
-          
-          let access;
-          const userEmail = authUser.email?.toLowerCase().trim();
-          const isSuperAdmin = userEmail === "scoobix.info@gmail.com";
-
-          if (isSuperAdmin) {
-            access = { ok: true, status: "active" };
-          } else {
-            access = await checkPortalAccess(userEmail, portal as any);
-          }
-
-          if (!access.ok) {
-            const reason = access.reason;
-            console.warn(`[AUTH_TRACE] ${portal} access denied:`, reason);
-            
-            if (reason === "lookup_failed") {
-              setErrorMsg(`Unable to verify ${portal} access due to a database error. Please try again.`);
-              return;
+            // Check if SDK already resolved it in background (race condition with singleton)
+            if (!insforge.auth.session?.user) {
+              throw new Error(exchangeError.message || "Code exchange failed.");
             }
-
-            const errorParam = reason === "disabled" ? "disabled" : "denied";
-            // Clean redirect to login with the error flag
-            window.location.replace(`${window.location.origin}/login?portal=${portal}&${errorParam}=${portal}`);
-            return;
           }
-          
-          console.log(`[AUTH_TRACE] ${portal} authorized`);
-          const { recordPortalLogin } = await import("@/lib/portal-authorization");
-          void recordPortalLogin(userEmail, portal as any);
         }
 
+        // 2. Poll briefly for SDK user resolution
+        let user = insforge.auth.session?.user;
+        let retries = 0;
+        while (!user && retries < 15) {
+          await new Promise(r => setTimeout(r, 500));
+          user = insforge.auth.session?.user;
+          retries++;
+        }
 
+        if (!user) {
+          throw new Error("Session resolution timed out.");
+        }
 
-        // 4. Force a Store Hydration Check
-        // Before redirecting, we must ensure the global AuthProvider has 
-        // resolved the user and roles. We don't have direct access to the context here,
-        // so we trust the destination portal's RoleGuard will pick up the session.
-        // We use window.location.replace to ensure the callback page is removed from history.
-
-        // 4. Deterministic Portal Mapping
-        // Map portal keywords to their canonical routes
+        // 3. Deterministic portal mapping
         const portalMap: Record<string, string> = {
           admin: "/admin",
           logistics: "/logistics",
@@ -169,48 +82,42 @@ function AuthCallback() {
           customer: "/app",
         };
 
-        const returnTo = localStorage.getItem("scoobix_return_to");
-        let destPath = portalMap[portal || "customer"] || "/app";
-        
-        // If we have a valid internal returnTo for customer, prioritize it
-        if ((!portal || portal === "customer") && returnTo && returnTo.startsWith("/app")) {
-          destPath = returnTo;
-        }
-
+        const destPath = portalMap[portal] || "/app";
         const dest = new URL(destPath, window.location.origin).href;
-        
-        console.log("[AUTH_TRACE] Authorization complete. Redirecting to canonical portal:", { portal, destPath, dest, returnTo });
-        
-        // Remove portal intent and returnTo only AFTER we have the destination ready
+
+        // Cleanup storage
         localStorage.removeItem("scoobix_oauth_portal_intent");
         localStorage.removeItem("scoobix_return_to");
-        try { sessionStorage.removeItem("scoobix_oauth_portal_intent"); } catch(e) {}
 
-        // Use a slight delay to ensure the SDK session is fully flushed to storage
-        // and picked up by the background state listener in the AuthProvider.
-        await new Promise(resolve => setTimeout(resolve, 800));
+        console.log(`[AUTH_CALLBACK] Authorized. Redirecting to ${destPath}`);
         
-        // Use window.location.replace to ensure a clean portal load and skip the history entry.
-        // replace() is critical to avoid back-button loops into the callback.
+        // Final flush delay for SDK session persistence
+        await new Promise(r => setTimeout(r, 800));
         window.location.replace(dest);
 
       } catch (err: any) {
-        console.error("[AUTH_DEBUG] auth.callback.tsx Unexpected Error:", err);
-        setErrorMsg(err.message || "An unexpected error occurred during the login callback.");
+        console.error("[AUTH_CALLBACK] Critical Error:", err);
+        setErrorMsg(err.message || "Authentication failed.");
       }
     };
 
-    checkAuth();
+    handleCallback();
   }, []);
 
   return (
     <div className="flex min-h-svh flex-col items-center bg-background p-4">
       <div className="w-full max-w-md space-y-4 pt-20 text-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
-        <h2 className="font-display text-lg font-bold">Finishing login...</h2>
+        <h2 className="font-display text-lg font-bold">Verifying identity...</h2>
         {errorMsg && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
             <p className="text-xs text-destructive font-medium">{errorMsg}</p>
+            <button 
+              onClick={() => window.location.replace('/login')}
+              className="mt-2 text-[10px] underline uppercase tracking-widest opacity-70"
+            >
+              Back to Login
+            </button>
           </div>
         )}
       </div>
