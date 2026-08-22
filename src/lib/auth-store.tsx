@@ -1,9 +1,10 @@
 import { createContext, useContext, ReactNode, useState, useEffect, useCallback, useRef } from "react";
 import { loginWithGoogle, logout as ifLogout } from "./insforge-auth";
-import { insforge, getAccessToken } from "./insforge";
+import { insforge, ensureAuthHydrated } from "./insforge";
 import { listTable } from "./insforge-crud";
 import { getDisplayName } from "./identity-utils";
 import { isAuthResolving } from "./auth-utils";
+import { setCacheAuthScope } from "./request-cache";
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
@@ -67,239 +68,104 @@ export const getRequestedPortal = () => {
   return "customer";
 };
 
+/**
+ * P0.1: Authoritative Identity Resolution
+ */
+function normalizeEmail(email: string | null | undefined): string {
+  return (email || "").trim().toLowerCase();
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [authState, setAuthState] = useState<AuthState>("initializing");
   const [authError, setAuthError] = useState<string | null>(null);
   const [hydrationComplete, setHydrationComplete] = useState(false);
-  const loadingStartTime = useRef<number>(Date.now());
-  const lastRequestedPortal = useRef<Role | null>(null);
+  
+  const lastPortalRef = useRef<Role | null>(null);
+  const resolutionActiveRef = useRef<boolean>(false);
 
-  const resolveUser = useCallback(async (isInitialMountOrSignIn: boolean = false) => {
-    // 10s watchdog for authorization resolution ONLY
-    const timeoutId = setTimeout(() => {
-      if (authState === "authorization_resolving" || authState === "session_resolving") {
-        console.error("[AUTH_WATCHDOG] Auth resolution timed out after 10s");
-        setAuthState("unauthenticated");
-        setLoading(false);
-      }
-    }, 10000);
+  const resolveUser = useCallback(async (isInitial: boolean = false) => {
+    if (resolutionActiveRef.current) return;
+    resolutionActiveRef.current = true;
 
     try {
-      if (isInitialMountOrSignIn) {
-        // Only set loading/session_resolving if we don't already have a valid session in memory
-        // and we aren't already resolving.
-        setAuthState(prev => (prev === "authenticated" || isAuthResolving(prev)) ? prev : "session_resolving");
+      if (isInitial) {
+        setAuthState("session_resolving");
         setLoading(true);
-        setAuthError(null);
       }
       
-      console.log("[AUTH_TRACE] Resolving user session...");
-      
-      // Ensure the SDK has had a moment to hydrate from storage
-      if (typeof window !== "undefined") {
-        const { ensureAuthHydrated } = await import("./insforge");
-        await ensureAuthHydrated();
+      await ensureAuthHydrated();
+      const sdkSession = insforge.auth.session;
+      const sessionUser = sdkSession?.user;
+
+      if (!sessionUser) {
+        setUser(null);
+        setAuthState("unauthenticated");
+        setCacheAuthScope(null);
+        return;
       }
 
-      const { data: userData, error: currentUserError } = await insforge.auth.getCurrentUser().catch((e: any) => {
-        // Handle transient fetch failures
-        if (e?.message?.includes("Failed to fetch") || e?.message?.includes("Network request failed")) {
-          console.error("[AUTH_CRITICAL] Network request failed during getCurrentUser. Retrying in 1s...");
-          return new Promise(resolve => setTimeout(resolve, 1000)).then(() => 
-            insforge.auth.getCurrentUser().catch((err: any) => ({ data: null, error: err }))
-          );
-        }
-        return { data: null, error: e };
-      });
-      
-      let sessionUser = userData?.user;
-
-      if (currentUserError || !sessionUser) {
-        // Attempt one last deep check of SDK memory/storage before giving up
-        const sdkSession = insforge.auth.session;
-        if (sdkSession?.user?.id) {
-          console.log("[AUTH_TRACE] Session found in SDK memory fallback.");
-          sessionUser = sdkSession.user;
-        } else {
-          const errorMsg = currentUserError?.message || "";
-          console.log("[AUTH_TRACE] No active session found.", errorMsg);
-          
-          // iOS Safeguard: Clear storage on definitive refresh/session failures
-          const isRefreshError = errorMsg.includes("refresh token") || 
-                                errorMsg.includes("session_not_found") ||
-                                errorMsg.includes("invalid_grant");
-
-          if (isRefreshError) {
-            console.warn("[AUTH_TRACE] Refresh token invalid/missing. Clearing session.");
-            if (typeof window !== "undefined") {
-              localStorage.removeItem('scoobix_auth_token');
-              for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && (key.includes('insforge') || (key.startsWith('sb-') && key.endsWith('-code-verifier')))) {
-                  localStorage.removeItem(key);
-                }
-              }
-            }
-          }
-          
-          setUser(null);
-          setAuthState("unauthenticated");
-          return;
-        }
-      }
-      
       const authId = sessionUser.id;
-      const userEmail = sessionUser.email?.toLowerCase().trim();
-      
-      console.log("[AUTH_TRACE] Session found for:", userEmail);
-      
-      const { setCacheAuthScope } = await import("./request-cache");
+      const userEmail = normalizeEmail(sessionUser.email);
       setCacheAuthScope(authId);
-
+      
       setAuthState("authorization_resolving");
-      const currentPortal = getRequestedPortal() as Role;
-      lastRequestedPortal.current = currentPortal;
+      const currentPortal = getRequestedPortal();
+      lastPortalRef.current = currentPortal;
 
-      // Ensure we have an active token for authorization reads
-      const token = await getAccessToken();
-      if (!token) {
-        console.warn("[AUTH_TRACE] No access token available for authorization check.");
-        // If we are on the public login page, we can settle to unauthenticated early
-        if (typeof window !== "undefined" && window.location.pathname === "/login") {
-           setUser(null);
-           setAuthState("unauthenticated");
-           setLoading(false);
-           setHydrationComplete(true);
-           clearTimeout(timeoutId);
-           return;
-        }
-      }
-
-      // 1. User Profile Lookup/Creation
+      // 1. Profile Sync
       let profile = null;
       try {
-        const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0, select: "id,name,role,email,phone,avatar_url,full_name,display_name" }).catch(() => []);
+        const profiles = await listTable<any>("users", { id: `eq.${authId}`, limit: 1 }, { fresh: true, ttl: 0 });
         profile = profiles[0];
-
-        // Authoritative Merged Object for Identity Resolution
-        const combinedUserData = { 
-          ...sessionUser, 
-          profile: profile, // Database profile
-          user_metadata: sessionUser.user_metadata,
-          identities: sessionUser.identities,
-        };
-        const sessionNameCandidate = getDisplayName(combinedUserData);
-        console.log(`[AUTH_TRACE] Identity Source Probe: ID=${authId} Email=${userEmail} ResolvedName="${sessionNameCandidate}" MetadataExists=${!!sessionUser.user_metadata} IdentitiesCount=${sessionUser.identities?.length || 0}`);
         
-        if (typeof window !== "undefined") {
-          (window as any).__LAST_RESOLVED_NAME = sessionNameCandidate;
-          (window as any).__AUTH_USER_DATA = JSON.parse(JSON.stringify(combinedUserData));
-        }
-
         if (!profile && userEmail) {
-          console.log("[AUTH_TRACE] Creating new profile for:", userEmail);
           const { createRecord } = await import("./insforge-crud");
           profile = await createRecord("users", {
             id: authId,
             email: userEmail,
-            email_normalized: userEmail,
-            name: (sessionNameCandidate && sessionNameCandidate !== "User") ? sessionNameCandidate : null,
             role: "customer",
             is_active: true,
           });
-        } else if (profile && sessionNameCandidate !== "User" && profile.name !== sessionNameCandidate) {
-          // Sync DB name if OAuth/Metadata is higher quality than stale DB name
-          console.log("[AUTH_TRACE] Syncing profile name from", profile.name, "to", sessionNameCandidate);
-          const { patchRecord } = await import("./insforge-crud");
-          await patchRecord("users", authId, { name: sessionNameCandidate }).catch(e => 
-            console.warn("[AUTH_TRACE] Profile sync skipped:", e.message)
-          );
         }
-      } catch (err) {
-        console.error("[AUTH_TRACE] Profile resolution failed:", err);
+      } catch (e) {
+        console.warn("[AUTH_TRACE] Profile resolution failed:", e);
       }
 
-      // 2. Roles Resolution
+      // 2. Authoritative Portal Access (P0.1: Exclusive mechanism)
       const roles: Role[] = ["customer"];
       const { checkPortalAccess } = await import("./portal-authorization");
-      
-      const SUPER_ADMINS = ["scoobix.info@gmail.com"];
-      const isSuperAdmin = SUPER_ADMINS.includes(userEmail) || profile?.role === "admin";
 
-      if (isSuperAdmin) {
-        console.log("[AUTH_TRACE] Super Admin access granted.");
-        roles.push("admin", "logistics", "partner", "rider", "manager");
-      } else if (userEmail) {
-        console.log("[AUTH_TRACE] Checking portal access for:", userEmail);
+      if (userEmail) {
         const otherPortals: Role[] = ["partner", "rider", "manager", "logistics", "admin"];
         const results = await Promise.all(
-          otherPortals.map(async (p) => {
-            try {
-              const access = await checkPortalAccess(userEmail, p as any);
-              if (access.ok) console.log(`[AUTH_TRACE] Access GRANTED for ${p}`);
-              return access.ok ? p : null;
-            } catch (e) {
-              console.warn(`[AUTH_TRACE] Access check failed for ${p}:`, e);
-              return null;
-            }
-          })
+          otherPortals.map(p => checkPortalAccess(userEmail, p as any).catch(() => ({ ok: false })))
         );
-        results.forEach(r => { if (r) roles.push(r); });
-      }
-
-      // 3. Legacy Table Checks (Backwards compatibility)
-      if (profile?.id) {
-        try {
-          const [partner, rider, manager] = await Promise.all([
-            listTable("restaurants", { owner_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
-            listTable("drivers", { user_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
-            listTable("merchant_managers", { user_id: `eq.${profile.id}`, limit: 1 }).catch(() => []),
-          ]);
-          if (partner.length > 0 && !roles.includes("partner")) roles.push("partner");
-          if (rider.length > 0 && !roles.includes("rider")) roles.push("rider");
-          if (manager.length > 0 && !roles.includes("manager")) roles.push("manager");
-        } catch (err) {
-          console.warn("[AUTH_TRACE] Legacy role check failed:", err);
-        }
+        results.forEach((res, i) => {
+          if (res.ok) roles.push(otherPortals[i]);
+        });
       }
 
       const uniqueRoles = Array.from(new Set(roles));
       const hasAccess = currentPortal === "customer" || uniqueRoles.includes(currentPortal);
       
-      console.log("[AUTH_TRACE] Final Roles:", uniqueRoles, "Current Portal:", currentPortal, "Has Access:", hasAccess);
+      const displayName = getDisplayName({ ...sessionUser, profile });
 
-      const displayName = getDisplayName({ 
-        ...sessionUser, 
-        profile: profile,
-        user_metadata: sessionUser.user_metadata, 
-        identities: sessionUser.identities,
-      });
-
-      console.log("[AUTH_TRACE] Final Resolved Name:", displayName);
-
-      setUser(prev => ({
+      setUser({
         id: authId,
         name: displayName,
-        email: userEmail || "",
+        email: userEmail,
         phone: profile?.phone || "",
         avatar: profile?.avatar_url || sessionUser.avatar_url || "",
         role: hasAccess ? currentPortal : "customer",
         roles: uniqueRoles,
         membershipsResolved: true,
-        pendingPortal: currentPortal || prev?.pendingPortal,
-      }));
+        pendingPortal: currentPortal,
+      });
 
-      if (!hasAccess && (currentPortal as string) !== "customer") {
-        console.warn("[AUTH_TRACE] Access denied to portal:", currentPortal);
-        const access = await checkPortalAccess(userEmail, currentPortal as any).catch((e) => ({ ok: false, reason: "lookup_failed", message: e.message }));
-        if ((access as any).reason === "lookup_failed") {
-          setAuthState("auth_error");
-          setAuthError((access as any).message || "Database lookup failed during authorization.");
-        } else {
-          setAuthState((access as any).reason === "disabled" ? "disabled" : "denied");
-        }
+      if (!hasAccess && currentPortal !== "customer") {
+        setAuthState("denied");
       } else {
         setAuthState("authenticated");
       }
@@ -308,8 +174,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(err.message || "Failed to resolve permissions.");
       setAuthState("auth_error");
     } finally {
-      clearTimeout(timeoutId);
-      if (isInitialMountOrSignIn) {
+      resolutionActiveRef.current = false;
+      if (isInitial) {
         setLoading(false);
         setHydrationComplete(true);
       }
@@ -317,39 +183,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!user || !user.membershipsResolved) return;
-    const currentPortal = getRequestedPortal() as Role;
-    if (currentPortal !== lastRequestedPortal.current) {
-      lastRequestedPortal.current = currentPortal;
-      if (user.roles.includes(currentPortal)) {
-        setUser(prev => prev ? { ...prev, role: currentPortal } : null);
-      } else if (currentPortal !== "customer") {
-        resolveUser(false);
-      }
-    }
-  }, [user, resolveUser]);
-
-  useEffect(() => {
     resolveUser(true);
-    
-    // Explicitly check for insforge_code in the URL to detect if we're in a callback loop
-    const params = new URLSearchParams(window.location.search);
-    const hasCode = params.has("insforge_code") || params.has("code");
-    
+
     const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
       console.log(`[AUTH_TRACE] SDK State Change: ${event}`);
       if (event === 'signedIn' || event === 'TOKEN_REFRESHED') {
-        resolveUser(false); // don't reset state to session_resolving during active use
+        resolveUser(false);
       } else if (event === 'signedOut') {
         setUser(null);
         setAuthState("unauthenticated");
         setLoading(false);
         setHydrationComplete(true);
+        setCacheAuthScope(null);
       }
     });
     
     return () => unsubscribe();
   }, [resolveUser]);
+
+  // Handle portal changes within a session
+  useEffect(() => {
+    if (!user?.membershipsResolved) return;
+    const currentPortal = getRequestedPortal();
+    if (currentPortal !== lastPortalRef.current) {
+      lastPortalRef.current = currentPortal;
+      if (user.roles.includes(currentPortal)) {
+        setUser(prev => prev ? { ...prev, role: currentPortal } : null);
+        setAuthState("authenticated");
+      } else if (currentPortal !== "customer") {
+        setAuthState("denied");
+      }
+    }
+  }, [user]);
 
   const login = async (provider: 'google', portal: string = "customer", options: { prompt?: 'select_account' | 'consent' | 'none' } = {}) => {
     if (provider === 'google') {
@@ -360,10 +225,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     const portal = getRequestedPortal();
-    await ifLogout();
-    setUser(null);
-    setAuthState("unauthenticated");
-    window.location.replace(new URL(portal === "customer" ? "/" : `/login?portal=${portal}`, window.location.origin).href);
+    try {
+      await ifLogout();
+    } finally {
+      setUser(null);
+      setAuthState("unauthenticated");
+      setCacheAuthScope(null);
+      const dest = portal === "customer" ? "/" : `/login?portal=${portal}`;
+      window.location.replace(new URL(dest, window.location.origin).href);
+    }
   };
 
   return (
