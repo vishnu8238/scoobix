@@ -780,7 +780,6 @@ function LogisticsGigs() {
           citiesMap={citiesMap}
           zonesMap={zonesMap}
           city={city} setCity={setCity}
-          entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
           date={parseISO(selectedDateKey)}
         />
@@ -788,7 +787,6 @@ function LogisticsGigs() {
         <CapacityChangeView 
           gigs={gigs}
           city={city} setCity={setCity}
-          entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
           date={parseISO(selectedDateKey)}
         />
@@ -820,14 +818,24 @@ function LogisticsGigs() {
   );
 }
 
-function SlotsDetailsView({ gigs, citiesMap, zonesMap, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+function SlotsDetailsView({ gigs, citiesMap, zonesMap, city, setCity, zone, setZone, date }: any) {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-wrap gap-4 items-center">
         <FilterSelect label="City" value={city} onChange={setCity} options={Object.values(citiesMap)} />
-        <FilterSelect label="Entity Type" value={entityType} onChange={setEntityType} options={["Rider", "Truck"]} />
+        <div className="flex flex-col gap-1.5 opacity-50">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Entity Type</label>
+          <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs text-muted-foreground">
+            Unavailable
+          </div>
+        </div>
         <FilterSelect label="Zone" value={zone} onChange={setZone} options={Object.values(zonesMap)} />
-        <FilterSelect label="Carrier" value="all" onChange={() => {}} options={["Main", "Third Party"]} />
+        <div className="flex flex-col gap-1.5 opacity-50">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Carrier</label>
+          <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs text-muted-foreground">
+            Unavailable
+          </div>
+        </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Date</label>
           <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs">
@@ -872,7 +880,7 @@ function SlotsDetailsView({ gigs, citiesMap, zonesMap, city, setCity, entityType
   );
 }
 
-function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+function CapacityChangeView({ gigs, city, setCity, zone, setZone, date }: any) {
   const [mode, setMode] = useState<"view" | "create">("view");
 
   return (
@@ -880,9 +888,24 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
       <div className="flex items-center justify-between">
         <div className="flex flex-wrap gap-4 items-center">
           <FilterSelect label="City" value={city} onChange={setCity} options={["City 1", "City 2"]} />
-          <FilterSelect label="Entity Type" value={entityType} onChange={setEntityType} options={["Rider", "Truck"]} />
-          <FilterSelect label="Entity Name" value="all" onChange={() => {}} options={["Full Fleet"]} />
-          <FilterSelect label="Carrier" value="all" onChange={() => {}} options={["Main"]} />
+          <div className="flex flex-col gap-1.5 opacity-50">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Entity Type</label>
+            <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs text-muted-foreground">
+              Unavailable
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5 opacity-50">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Entity Name</label>
+            <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs text-muted-foreground">
+              Unavailable
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5 opacity-50">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Carrier</label>
+            <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs text-muted-foreground">
+              Unavailable
+            </div>
+          </div>
         </div>
         <div className="flex gap-2">
           <button 
@@ -964,7 +987,7 @@ function FilterSelect({ label, value, onChange, options }: any) {
         onChange={(e) => onChange(e.target.value)}
         className="h-10 pl-3 pr-8 bg-card rounded-xl ring-1 ring-border/60 text-xs font-bold outline-none focus:ring-primary/40"
       >
-        <option value="all">All {label}s</option>
+        <option value="all">All cities</option>
         {options.map((o: any) => <option key={o} value={o.toLowerCase()}>{o}</option>)}
       </select>
     </div>
