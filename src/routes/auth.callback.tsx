@@ -15,6 +15,7 @@ function AuthCallback() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const exchangeAttemptedRef = useRef<boolean>(false);
   const portalRef = useRef<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // 1. Preserve portal intent in closure for this mount
