@@ -56,21 +56,24 @@ export async function fetchGigs(params?: Record<string, any>) {
       rows = Array.isArray(data) ? data : [];
     }
     
-    // Normalize mapping for UI
+    // CANONICAL-ONLY normalization: never read `metadata` as a fallback for
+    // title/description/schedule/capacity/target/city. Null stays null so the
+    // UI can honestly render "Unavailable"/"Unassigned" and exports stay blank.
     return rows.map(r => ({
       ...r,
-      // Priority: Root column > Metadata > Fallback
-      title: r.title || r.metadata?.title || r.gig_type || "Unavailable Gig",
-      description: r.description || r.metadata?.description || "Delivery shift",
-      reward_amount: r.payout || r.reward_amount || 0,
-      payout: r.payout || r.reward_amount || 0,
-      target_deliveries: r.target_deliveries || r.metadata?.target_deliveries || 1,
-      start_time: r.start_time || r.metadata?.start_time || r.created_at,
-      end_time: r.end_time || r.metadata?.end_time || r.created_at,
-      capacity: r.capacity || r.metadata?.capacity || 50,
-      city_id: r.city_id || r.metadata?.city_id || "unknown",
+      title: r.title ?? null,
+      description: r.description ?? null,
+      reward_amount: typeof r.payout === "number" ? r.payout : (typeof r.reward_amount === "number" ? r.reward_amount : 0),
+      payout: typeof r.payout === "number" ? r.payout : (typeof r.reward_amount === "number" ? r.reward_amount : 0),
+      target_deliveries: typeof r.target_deliveries === "number" ? r.target_deliveries : null,
+      start_time: r.start_time ?? null,
+      end_time: r.end_time ?? null,
+      capacity: typeof r.capacity === "number" ? r.capacity : null,
+      city_id: r.city_id ?? null,
+      completion_pct: typeof r.completion_pct === "number" ? r.completion_pct : null,
       status: r.status
     }));
+
   } catch (err: any) {
     console.error(`[GIGS_API] Fetch failed for ${AUTHORITATIVE_TABLE}:`, err.message);
     throw err;
