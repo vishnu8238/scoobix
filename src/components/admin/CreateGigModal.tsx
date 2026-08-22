@@ -7,13 +7,14 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Database, Info, AlertTriangle, Search } from "lucide-react";
+import { Loader2, Plus, Database, Info, AlertTriangle, Search, Clock, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { fetchZones, fetchCities, type DeliveryZone } from "@/lib/zones-api";
 import { createGig } from "@/lib/gigs-api";
 import { insforge } from "@/lib/insforge";
 import { createRecord, handleResponse } from "@/lib/insforge-crud";
 import { cn } from "@/lib/utils";
+import { v4 as uuidv4 } from 'uuid';
 
 interface CreateGigModalProps {
   isOpen: boolean;
