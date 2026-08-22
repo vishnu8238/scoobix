@@ -57,8 +57,8 @@ export async function calculateDraftPayout(driverId: string, start: string, end:
   const orders = await listTable<any>("orders", {
     driver_id: `eq.${driverId}`,
     status: "eq.DELIVERED",
-    created_at: `gte.${start}`,
-    created_at: `lte.${end}`
+    "created_at.gte": start,
+    "created_at.lte": end
   });
 
   const lineItems: Partial<PayoutLineItem>[] = [];
