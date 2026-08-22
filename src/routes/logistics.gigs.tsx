@@ -881,7 +881,7 @@ function SlotsDetailsView({ gigs, citiesMap, zonesMap, city, setCity, zone, setZ
   );
 }
 
-function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+function CapacityChangeView({ gigs, city, setCity, zone, setZone, date }: any) {
   const [mode, setMode] = useState<"view" | "create">("view");
 
   return (
@@ -889,9 +889,24 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
       <div className="flex items-center justify-between">
         <div className="flex flex-wrap gap-4 items-center">
           <FilterSelect label="City" value={city} onChange={setCity} options={["City 1", "City 2"]} />
-          <FilterSelect label="Entity Type" value={entityType} onChange={setEntityType} options={["Rider", "Truck"]} />
-          <FilterSelect label="Entity Name" value="all" onChange={() => {}} options={["Full Fleet"]} />
-          <FilterSelect label="Carrier" value="all" onChange={() => {}} options={["Main"]} />
+          <div className="flex flex-col gap-1.5 opacity-50">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Entity Type</label>
+            <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs text-muted-foreground">
+              Unavailable
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5 opacity-50">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Entity Name</label>
+            <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs text-muted-foreground">
+              Unavailable
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5 opacity-50">
+            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Carrier</label>
+            <div className="h-10 px-4 flex items-center bg-card rounded-xl ring-1 ring-border/60 font-bold text-xs text-muted-foreground">
+              Unavailable
+            </div>
+          </div>
         </div>
         <div className="flex gap-2">
           <button 
