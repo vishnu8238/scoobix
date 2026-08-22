@@ -165,10 +165,10 @@ function LogisticsDriverProfilePage() {
   );
 }
 
-function DocumentsTab({ driverId }: { driverId: string }) {
+function DocumentsTab({ driverId, user_id }: { driverId: string, user_id?: string }) {
   const { data: docs, isLoading } = useSuspenseQuery({
-    queryKey: ["logistics", "driver-docs", driverId],
-    queryFn: () => fetchDocs("rider", driverId),
+    queryKey: ["logistics", "driver-docs", user_id || driverId],
+    queryFn: () => fetchDocs("rider", user_id || driverId),
   });
 
   if (isLoading) return <Loader2 className="animate-spin h-6 w-6 mx-auto" />;
