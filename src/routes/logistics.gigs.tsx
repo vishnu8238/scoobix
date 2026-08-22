@@ -909,8 +909,9 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs uppercase">{g.id.slice(0, 2)}</div>
                   <div>
-                    <p className="text-xs font-black">{g.title}</p>
-                    <p className="text-[10px] font-medium text-muted-foreground">Persisted Capacity: {g.capacity || 0}</p>
+                    <p className="text-xs font-black">{g.title || "Unavailable"}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground">Persisted Capacity: {typeof g.capacity === "number" ? g.capacity : "Unavailable"}</p>
+
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
