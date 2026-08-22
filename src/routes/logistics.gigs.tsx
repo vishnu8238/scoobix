@@ -22,7 +22,7 @@ import {
   Settings,
   History
 } from "lucide-react";
-import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, bulkDeleteGigs, type Gig } from "@/lib/gigs-api";
+import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, fetchGigEnrollmentData, deleteGig, bulkCancelGigs, bulkDeleteGigs, type Gig } from "@/lib/gigs-api";
 import { format, addDays, startOfToday, parseISO, isAfter, subMonths, isWithinInterval, differenceInHours } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
@@ -47,7 +47,14 @@ function LogisticsGigs() {
   const [activeTab, setActiveTab] = useState<"fleet" | "slots" | "capacity">("fleet");
   const [dateFilterMode, setDateFilterMode] = useState<"selected" | "all" | "last2months">("selected");
   const [gigs, setGigs] = useState<Gig[]>([]);
-  const [enrollmentCounts, setEnrollmentCounts] = useState<Record<string, number>>({});
+  const [enrollmentData, setEnrollmentData] = useState<Record<string, { count: number; completed_deliveries: number }>>({});
+  const enrollmentCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    Object.keys(enrollmentData).forEach(id => {
+      counts[id] = enrollmentData[id].count;
+    });
+    return counts;
+  }, [enrollmentData]);
   const [allGigsCount, setAllGigsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -84,10 +91,10 @@ function LogisticsGigs() {
       let all = await fetchGigs({ limit: 1000 });
       console.log(`[GIGS_PAGE] Loaded ${all.length} normalized rows.`);
 
-      // 2. Fetch authoritative enrollment counts
+      // 2. Fetch authoritative enrollment data
       const gigIds = all.map(g => g.id);
-      const counts = await fetchGigEnrollmentCounts(gigIds);
-      setEnrollmentCounts(counts);
+      const dataMap = await fetchGigEnrollmentData(gigIds);
+      setEnrollmentData(dataMap);
 
       // Fetch Cities & Zones for mapping
       const { fetchCities, fetchZones } = await import("@/lib/zones-api");
@@ -406,16 +413,15 @@ function LogisticsGigs() {
         }
       }
 
-      let completionPct = "";
-      if (g.metadata?.completion_pct !== undefined) {
-        completionPct = `${g.metadata.completion_pct}%`;
+      let resolvedCompletion: string | number = "";
+      if (typeof g.completion_pct === 'number' && g.completion_pct >= 0 && g.completion_pct <= 100) {
+        resolvedCompletion = g.completion_pct;
       } else if (g.target_deliveries && g.target_deliveries > 0) {
-        // Fallback to calculation if target is present
-        const enrolled = enrollmentCounts[g.id] || 0;
-        // completion percentage is calculated from completed_deliveries vs target_deliveries
-        // Since we don't have total completed deliveries per gig in this view easily, 
-        // we use metadata.completion_pct as primary authoritative source.
+        const completed = enrollmentData[g.id]?.completed_deliveries || 0;
+        resolvedCompletion = Math.min(100, Math.max(0, (completed / g.target_deliveries) * 100));
       }
+
+      const completionPercentage = resolvedCompletion !== "" ? `${Math.round(Number(resolvedCompletion))}%` : "";
 
       return {
         id: g.id,
@@ -428,7 +434,7 @@ function LogisticsGigs() {
         reward_amount: g.reward_amount || 0,
         enrolled: enrollmentCounts[g.id] || 0,
         capacity: g.capacity || 0,
-        completion_percentage: completionPct,
+        completion_percentage: completionPercentage,
         status: g.status || "",
       };
     });
@@ -680,7 +686,8 @@ function LogisticsGigs() {
                   <GigCard 
                     key={gig.id} 
                     gig={gig} 
-                    enrollmentCount={(gig as any).enrolled_count || 0}
+                    enrollmentCount={enrollmentData[gig.id]?.count || 0}
+                    completedDeliveries={enrollmentData[gig.id]?.completed_deliveries || 0}
                     selected={selectedGigIds.includes(gig.id)}
                     onSelect={handleSelectGig}
                     onEdit={(g) => {

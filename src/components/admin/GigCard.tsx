@@ -9,6 +9,7 @@ interface GigCardProps {
   onEdit?: (gig: Gig) => void;
   onDelete?: (gig: Gig) => void;
   enrollmentCount?: number;
+  completedDeliveries?: number;
   selected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
   citiesMap?: Record<string, string>;
@@ -20,6 +21,7 @@ export function GigCard({
   onEdit, 
   onDelete,
   enrollmentCount = 0, 
+  completedDeliveries = 0,
   selected = false,
   onSelect,
   citiesMap = {},
@@ -33,6 +35,14 @@ export function GigCard({
   const duration = differenceInHours(end, start);
   const maxEnrollment = gig.capacity || 50;
   const progress = (enrollmentCount / maxEnrollment) * 100;
+
+  // Authoritative Completion Resolution
+  let resolvedCompletion: number | null = null;
+  if (typeof gig.completion_pct === 'number' && gig.completion_pct >= 0 && gig.completion_pct <= 100) {
+    resolvedCompletion = Math.round(gig.completion_pct);
+  } else if (gig.target_deliveries && gig.target_deliveries > 0) {
+    resolvedCompletion = Math.round(Math.min(100, Math.max(0, (completedDeliveries / gig.target_deliveries) * 100)));
+  }
 
   return (
     <div className="group relative flex flex-col rounded-[2rem] bg-card p-6 shadow-sm ring-1 ring-border/50 transition-all hover:shadow-md hover:ring-primary/20">
@@ -115,9 +125,9 @@ export function GigCard({
       <div className="mb-6 space-y-2">
         <div className="flex justify-between text-[10px] font-bold">
           <span className="text-muted-foreground/80">Gig Completion Status</span>
-          <span className="text-primary">{gig.metadata?.completion_pct ? `${gig.metadata.completion_pct}%` : "Unavailable"}</span>
+          <span className="text-primary">{resolvedCompletion !== null ? `${resolvedCompletion}%` : "Unavailable"}</span>
         </div>
-        <Progress value={gig.metadata?.completion_pct || 0} className="h-1.5 bg-muted" />
+        <Progress value={resolvedCompletion || 0} className="h-1.5 bg-muted" />
       </div>
 
 
