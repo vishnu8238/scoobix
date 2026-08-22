@@ -1,18 +1,9 @@
 /**
  * Shared request cache, de-duplicator and background refresher.
- *
- * Three cost levers in one place:
- *  1. **De-duplication** — identical in-flight requests share one promise, so
- *     ten components mounting at once make one network call.
- *  2. **TTL caching** — repeated reads inside the TTL never touch the network.
- *  3. **Persistence** — optionally mirrored to localStorage so a reload (or a
- *     second app session) reuses yesterday's answer instead of re-fetching.
- *
- * Used by the InsForge CRUD layer, geocoding, search suggestions and the AI
- * client. Never throws.
+ * P0.1: User-scoped persistence to prevent cross-account identity leakage.
  */
 
-type Entry = { at: number; ttl: number; value: unknown };
+type Entry = { at: number; ttl: number; value: unknown; userId?: string | null };
 
 const memory = new Map<string, Entry>();
 const inflight = new Map<string, Promise<unknown>>();
@@ -25,12 +16,28 @@ function now() {
   return Date.now();
 }
 
+/**
+ * P0.1: Scopes keys by userId to ensure isolation.
+ */
+function getScopedKey(key: string): string {
+  if (!currentAuthUserId) return key;
+  return `${currentAuthUserId}:${key}`;
+}
+
 function readPersisted(key: string): Entry | null {
   if (typeof localStorage === "undefined") return null;
   try {
-    const raw = localStorage.getItem(PREFIX + key);
+    const scopedKey = getScopedKey(key);
+    const raw = localStorage.getItem(PREFIX + scopedKey);
     if (!raw) return null;
     const entry = JSON.parse(raw) as Entry;
+    
+    // P0.1: Validation - ensure this entry belongs to the current user (or no user)
+    if (entry.userId !== currentAuthUserId) {
+      localStorage.removeItem(PREFIX + scopedKey);
+      return null;
+    }
+    
     if (!entry || typeof entry.at !== "number") return null;
     return entry;
   } catch {
@@ -41,16 +48,15 @@ function readPersisted(key: string): Entry | null {
 function writePersisted(key: string, entry: Entry) {
   if (typeof localStorage === "undefined") return;
   try {
-    localStorage.setItem(PREFIX + key, JSON.stringify(entry));
+    const scopedKey = getScopedKey(key);
+    const scopedEntry = { ...entry, userId: currentAuthUserId };
+    localStorage.setItem(PREFIX + scopedKey, JSON.stringify(scopedEntry));
   } catch {
-    // Quota exceeded — drop the oldest Scoobix cache entries and move on.
+    // Quota exceeded cleanup
     try {
       const keys = Object.keys(localStorage).filter((k) => k.startsWith(PREFIX));
       keys.slice(0, Math.ceil(keys.length / 2)).forEach((k) => localStorage.removeItem(k));
-      localStorage.setItem(PREFIX + key, JSON.stringify(entry));
-    } catch {
-      /* give up silently */
-    }
+    } catch {}
   }
 }
 
@@ -59,11 +65,13 @@ function fresh(entry: Entry | null | undefined): boolean {
 }
 
 export function cacheGet<T>(key: string, opts?: { persist?: boolean }): T | undefined {
-  let entry = memory.get(key);
+  const scopedKey = getScopedKey(key);
+  let entry = memory.get(scopedKey);
+  
   if (!entry && opts?.persist) {
     const persisted = readPersisted(key);
     if (persisted) {
-      memory.set(key, persisted);
+      memory.set(scopedKey, persisted);
       entry = persisted;
     }
   }
@@ -71,32 +79,27 @@ export function cacheGet<T>(key: string, opts?: { persist?: boolean }): T | unde
 }
 
 export function cacheSet(key: string, value: unknown, ttl: number, opts?: { persist?: boolean }) {
-  const entry: Entry = { at: now(), ttl, value };
+  const entry: Entry = { at: now(), ttl, value, userId: currentAuthUserId };
+  const scopedKey = getScopedKey(key);
+  
   if (memory.size > MAX_MEMORY_ENTRIES) memory.clear();
-  memory.set(key, entry);
+  memory.set(scopedKey, entry);
+  
   if (opts?.persist) writePersisted(key, entry);
 }
 
 export function cacheDrop(prefix: string) {
-  for (const k of Array.from(memory.keys())) if (k.startsWith(prefix)) memory.delete(k);
+  const scopedPrefix = getScopedKey(prefix);
+  for (const k of Array.from(memory.keys())) if (k.startsWith(scopedPrefix)) memory.delete(k);
+  
   if (typeof localStorage === "undefined") return;
   try {
     Object.keys(localStorage)
-      .filter((k) => k.startsWith(PREFIX + prefix))
+      .filter((k) => k.startsWith(PREFIX + scopedPrefix))
       .forEach((k) => localStorage.removeItem(k));
-  } catch {
-    /* ignore */
-  }
+  } catch {}
 }
 
-/**
- * Cached + de-duplicated fetch.
- *
- * @param ttl        seconds the value stays fresh (0 = dedupe only)
- * @param persist    mirror to localStorage so reloads reuse it
- * @param staleWhileRevalidate return the stale value immediately and refresh
- *                   in the background (no spinner, no extra perceived latency)
- */
 export async function cached<T>(
   key: string,
   ttl: number,
@@ -106,26 +109,27 @@ export async function cached<T>(
   const hit = cacheGet<T>(key, opts);
   if (hit !== undefined) return hit;
 
+  const scopedKey = getScopedKey(key);
+
   if (opts?.staleWhileRevalidate) {
-    const stale = (memory.get(key) ?? (opts.persist ? readPersisted(key) : null))?.value as T | undefined;
-    if (stale !== undefined && !inflight.has(key)) {
-      void dedupe(key, loader).then((v) => cacheSet(key, v, ttl, opts)).catch(() => {});
+    const stale = (memory.get(scopedKey) ?? (opts.persist ? readPersisted(key) : null))?.value as T | undefined;
+    if (stale !== undefined && !inflight.has(scopedKey)) {
+      void dedupe(scopedKey, loader).then((v) => cacheSet(key, v, ttl, opts)).catch(() => {});
       return stale;
     }
   }
 
-  const value = await dedupe(key, loader);
+  const value = await dedupe(scopedKey, loader);
   cacheSet(key, value, ttl, opts);
   return value;
 }
 
 /** 
- * Scopes the cache to the current user to prevent cross-account data leakage.
- * Call this when auth state changes.
+ * P0.1: Scopes the cache to the current user and clears memory on switch.
  */
 export function setCacheAuthScope(userId: string | null) {
   if (currentAuthUserId !== userId) {
-    console.log("[CACHE] Auth scope changed, clearing memory cache");
+    console.log(`[CACHE] Auth scope changed to ${userId}, clearing memory cache`);
     memory.clear();
     currentAuthUserId = userId;
   }
@@ -140,7 +144,6 @@ export function dedupe<T>(key: string, loader: () => Promise<T>): Promise<T> {
   return p;
 }
 
-/** Simple debounce for search inputs and map drags. */
 export function debounce<A extends unknown[]>(fn: (...args: A) => void, ms: number) {
   let t: ReturnType<typeof setTimeout> | undefined;
   const wrapped = (...args: A) => {
