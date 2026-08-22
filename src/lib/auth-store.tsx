@@ -95,14 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(true);
       }
       
-      // P0.1 Hardening: robust hydration with retry logic
-      let sdkSession = insforge.auth.session;
-      if (!sdkSession) {
-        await ensureAuthHydrated();
-        sdkSession = insforge.auth.session;
-      }
-      
-      let sessionUser = sdkSession?.user;
+      // Authoritative Auth Hydration (P0.1)
+      const hydratedUser = await ensureAuthHydrated();
+      const sdkUser = insforge.auth.session?.user;
+      const sessionUser = sdkUser || hydratedUser;
 
       if (!sessionUser) {
         setUser(null);
