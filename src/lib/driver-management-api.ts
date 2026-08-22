@@ -70,16 +70,6 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
     }
   }
 
-  // Resolve zone details if zone_id exists
-  if (driver.zone_id) {
-    const [zone] = await listTable<any>("logistics_zones", { id: `eq.${driver.zone_id}`, limit: 1 }).catch(() => []);
-    if (zone) {
-      driver.zone_name = zone.name;
-      driver.city = zone.city || driver.city;
-      driver.account_status = zone.status === "ACTIVE" ? "ACTIVE" : "INACTIVE";
-    }
-  }
-
   const kycDocs = await fetchDocs("rider", driver.user_id || driverId);
   const summary = summarize("rider", kycDocs);
   driver.kyc_status = summary.complete ? "verified" : summary.blocked ? "rejected" : summary.underReview ? "under_review" : "pending";
