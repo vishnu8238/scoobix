@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AddPartnerModal } from "@/components/admin/AddPartnerModal";
 
-export const Route = createFileRoute("/logistics/drivers")({
+export const Route = createFileRoute("/logistics/drivers/")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Delivery Partners" }] }),
   component: LogisticsDrivers,
 });
