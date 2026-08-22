@@ -127,19 +127,22 @@ function LogisticsGigs() {
       // 4. Normalized filtering & data enrichment (Exclude demo/non-operational)
       const data = all.filter(g => {
         if (g.metadata?.is_demo === true) return false;
-        if (!g.start_time) return false;
-        const s = g.status?.toUpperCase();
-        if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
 
+        // Requirement: show all non-demo persisted rows with honest unavailable states.
+        // Remove filters that exclude rows with null canonical fields or specific statuses.
+        
         if (dateFilterMode === "all") return true;
 
         if (dateFilterMode === "last2months") {
+          if (!g.start_time) return false; // Incomplete rows stay hidden in temporal views
           const startTime = new Date(g.start_time);
           const twoMonthsAgo = subMonths(new Date(), 2);
           const today = new Date();
           return isWithinInterval(startTime, { start: twoMonthsAgo, end: today });
         }
 
+        // Selected Date filter: only show if start_time exists and matches
+        if (!g.start_time) return false;
         const gigDateKey = getKolkataDateKey(g.start_time);
         return gigDateKey === selectedDateKey;
       }).map(g => ({
