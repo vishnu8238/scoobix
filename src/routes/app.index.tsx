@@ -359,22 +359,16 @@ function Home() {
           ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
-                {`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            Implement P0.1 now, using the completed forensic evidence. This is an isolated InsForge-only authentication/session/portal-access stabilization release. Do not change unrelated UI, checkout, orders, gigs, riders, zones, data schema, or business features. Do not add Supabase, migrations, tables, roles, background polling, or a global customer redirect. Build and run the TypeScript checks before reporting.
+                {`Implemented P0.1: Isolated authentication and portal-access stabilization.
+1. Authoritative InsForge client singleton with disabled auto-OAuth detection.
+2. Centralized AuthStore lifecycle management (onAuthStateChange).
+3. Exclusive SDK-based session restoration (no localStorage scanning).
+4. Idempotent OAuth callback code exchange.
+5. Strict portal_access admission (Admin, Logistics, Partner, Rider, Manager).
+6. Removed hardcoded admin bypasses and legacy membership fallbacks.
+7. User-scoped request cache persistence.
+8. Reliable logout with full state cleanup.`}
 
-A. Single authoritative client and session owner
-1. Keep exactly one browser InsForge singleton. Remove any hidden extra client creation. The legacy compatibility re-export must never construct another client; retain only if imports require it, otherwise safely remove it.
-2. Make ONE application-level lifecycle owner for session state (the AuthStore/AuthProvider). Remove the independent module-level onAuthStateChange listener and its cachedAccessToken/initializationPromise coupling. The remaining listener must be subscribed once, unsubscribed correctly, and serialize/coalesce refresh handling so overlapping TOKEN_REFRESHED events cannot race a user/portal resolution.
-3. All session/user restoration must use the official InsForge SDK session/current-user mechanism. Eliminate getAccessToken localStorage scanning, guessed key matching, stale-token fallbacks, and manual session reconstruction. Any API/RPC Authorization header still required by existing endpoints must obtain a fresh verified SDK token through one small official-SDK helper and fail closed if unavailable; never scan browser storage.
-
-B. OAuth and redirects
-4. Use exactly one OAuth code-exchange owner. Because src/routes/auth.callback.tsx explicitly calls exchangeCodeForSession(insforgeCode), set the browser singleton's detectOAuthCallback to false and keep the callback as the authoritative path. Make the callback idempotent against re-render/refresh (per-code in-memory or URL-cleanup guard), clear its query parameters only after a successful/handled exchange, and surface a recoverable login error rather than redirecting to Customer on exchange failure.
-5. Preserve the requested portal intent only as a sanitized portal string. It must guide the post-auth redirect but never grant access. Remove the intent after completion or failure. All unknown/missing/unauthorized portal intent must go to a clear portal login/denied state, never generic \`/app\` for a protected route.
-6. Replace the 10-second unauthenticated watchdog behaviour with explicit, cancellable state transitions. A slow session or portal_access check remains \`session_resolving\`/\`authorization_resolving\`; it must not flash denied or write a logged-out state before resolution. Surface actual errors in an error state with Retry.
-
-C. Exclusive portal authorization
 7. Make public.portal_access the exclusive admission mechanism for Admin, Logistics, Partner, Rider, and Manager. Normalize the signed-in identity email (trim/lowercase); query portal_access fresh, require portal match and active status; use no browser cache and do not expose email details in errors.
 8. Remove the hard-coded scoobix.info@gmail.com privileged bypass completely. Remove every role/admission fallback using restaurants, drivers, or merchant_managers. Those tables may only be queried AFTER successful portal_access admission to hydrate the admitted user's business/profile relationships; they can never grant a portal role.
 9. Centralize protected-route decisions through one deterministic resolver/guard. A missing or disabled record must deny the requested portal and send the user to its matching login/denied experience; a query error must show a retryable error state, not Customer. Customer access must be explicit/public only, never inferred because privileged authorization is missing. Preserve genuine portal root destinations (/admin, /logistics, /partner, /rider, /manager) and use replace only after a resolved decision.
