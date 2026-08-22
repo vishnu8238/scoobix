@@ -338,34 +338,14 @@ function GoogleMapInner({
 export function GoogleMap(props: Props) {
   return (
     <GoogleMapsProvider fallback={
-      <div className={`flex flex-col items-center justify-center bg-muted/20 text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[200px] ${props.className}`} style={{ height: props.height }}>
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">
-          <MapPin className="h-6 w-6" />
+      <div className={`flex flex-col items-center justify-center bg-muted/20 text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[140px] p-4 ${props.className}`} style={{ height: props.height }}>
+        <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-primary/20 text-primary">
+          <MapPin className="h-4 w-4" />
         </div>
-        <p className="font-display text-lg font-extrabold text-foreground">Interactive map restricted</p>
-        <p className="max-w-[280px] text-xs mt-2 leading-relaxed px-4 text-center">
-          Google Maps is currently unavailable. You can still define zones by searching for addresses or entering coordinates.
+        <p className="font-display text-sm font-extrabold text-foreground">Interactive map restricted</p>
+        <p className="max-w-[280px] text-[10px] mt-1 leading-relaxed text-center opacity-70">
+          Google Maps is currently unavailable. Please use the manual boundary editor below to define your zone coordinates.
         </p>
-        {props.onPick && (
-          <div className="mt-4 grid grid-cols-2 gap-2 px-4 w-full max-w-sm">
-             <input 
-               type="number" step="any" placeholder="Latitude" 
-               className="rounded-xl bg-background p-2 text-xs border border-border outline-none focus:ring-1 focus:ring-primary"
-               onChange={(e) => {
-                 const lat = parseFloat(e.target.value);
-                 if (!isNaN(lat) && props.center?.lng) props.onPick?.({ lat, lng: props.center.lng });
-               }}
-             />
-             <input 
-               type="number" step="any" placeholder="Longitude" 
-               className="rounded-xl bg-background p-2 text-xs border border-border outline-none focus:ring-1 focus:ring-primary"
-               onChange={(e) => {
-                 const lng = parseFloat(e.target.value);
-                 if (!isNaN(lng) && props.center?.lat) props.onPick?.({ lat: props.center.lat, lng });
-               }}
-             />
-          </div>
-        )}
       </div>
     }>
       <GoogleMapInner {...props} />
