@@ -83,14 +83,13 @@ function AuthCallback() {
         };
 
         const destPath = portalMap[portal] || "/app";
-        const dest = new URL(destPath, window.location.origin).href;
-
+        
         // Cleanup storage
         localStorage.removeItem("scoobix_oauth_portal_intent");
         localStorage.removeItem("scoobix_return_to");
 
         console.log(`[AUTH_CALLBACK] Authorized user ${user.id}. Redirecting to ${destPath}`);
-        window.location.replace(dest);
+        await navigate({ to: destPath as any, replace: true });
 
       } catch (err: any) {
         console.error("[AUTH_CALLBACK] Critical Error:", err);
