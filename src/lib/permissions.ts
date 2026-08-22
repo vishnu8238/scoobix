@@ -151,15 +151,16 @@ const elevationCache = new Map<string, { at: number; value: Elevation }>();
 const ELEVATION_TTL = 5 * 60 * 1000;
 
 /**
- * Resolve the effective security role. `admin` UI accounts are refined into
- * support / admin / super_admin from the server-side allowlist; other roles map
- * 1:1. Never trust a client-provided level.
+ * Resolve the effective security role for capabilities.
+ * P0.1: This is a post-admission refinement only.
+ * It NEVER appends a portal role or grants access if portal_access is missing.
  */
 export async function resolveSecurityRole(
   userId: string | null | undefined,
   uiRole: Role | null | undefined,
 ): Promise<Elevation> {
   if (!uiRole) return { role: "customer", level: null };
+  // Identity Resolution: Map to capability role without appending to portal roles.
   if (uiRole !== "admin" && uiRole !== "logistics") return { role: uiRole as SecurityRole, level: null };
   if (!userId) {
     if (uiRole === "logistics") return { role: "dispatcher", level: "dispatcher" };

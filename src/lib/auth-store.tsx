@@ -148,6 +148,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // 2. Authoritative Portal Access (P0.1: Exclusive mechanism)
+      // Admissions are strictly managed via portal_access table.
+      // NO roles are derived from drivers, merchant_managers, or restaurants.
       const roles: Role[] = ["customer"];
       const { checkPortalAccess } = await import("./portal-authorization");
 
