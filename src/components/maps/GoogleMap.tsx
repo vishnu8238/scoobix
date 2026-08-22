@@ -338,14 +338,18 @@ function GoogleMapInner({
 export function GoogleMap(props: Props) {
   return (
     <GoogleMapsProvider fallback={
-      <div className={`flex flex-col items-center justify-center bg-muted/20 text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[140px] p-4 ${props.className}`} style={{ height: props.height }}>
-        <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-primary/20 text-primary">
-          <MapPin className="h-4 w-4" />
+      <div className={`flex flex-col items-center justify-center bg-muted/20 text-muted-foreground border-2 border-dashed border-border rounded-3xl min-h-[96px] p-4 ${props.className}`} style={{ height: 96 }}>
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/20 text-primary">
+            <MapPin className="h-4 w-4" />
+          </div>
+          <div className="text-left">
+            <p className="font-display text-xs font-extrabold text-foreground leading-none">Map Unavailable</p>
+            <p className="text-[9px] mt-1 leading-tight opacity-70">
+              Please use the manual boundary editor to add coordinates.
+            </p>
+          </div>
         </div>
-        <p className="font-display text-sm font-extrabold text-foreground">Interactive map restricted</p>
-        <p className="max-w-[280px] text-[10px] mt-1 leading-relaxed text-center opacity-70">
-          Google Maps is currently unavailable. Please use the manual boundary editor below to define your zone coordinates.
-        </p>
       </div>
     }>
       <GoogleMapInner {...props} />
