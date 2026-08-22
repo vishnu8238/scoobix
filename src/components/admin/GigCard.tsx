@@ -28,13 +28,13 @@ export function GigCard({
   zonesMap = {}
 }: GigCardProps) {
 
-  const startStr = gig.start_time || new Date().toISOString();
-  const endStr = gig.end_time || new Date().toISOString();
-  const start = parseISO(startStr);
-  const end = parseISO(endStr);
-  const duration = differenceInHours(end, start);
-  const maxEnrollment = gig.capacity || 50;
-  const progress = (enrollmentCount / maxEnrollment) * 100;
+  // Canonical-only rendering: no metadata or invented fallbacks.
+  const start = gig.start_time ? parseISO(gig.start_time) : null;
+  const end = gig.end_time ? parseISO(gig.end_time) : null;
+  const duration = start && end ? differenceInHours(end, start) : null;
+  const maxEnrollment = typeof gig.capacity === "number" ? gig.capacity : null;
+  const progress = maxEnrollment && maxEnrollment > 0 ? (enrollmentCount / maxEnrollment) * 100 : 0;
+
 
   // Authoritative Completion Resolution
   let resolvedCompletion: number | null = null;
