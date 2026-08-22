@@ -294,6 +294,68 @@ function PayoutLedgerTab({ driverId }: { driverId: string }) {
   );
 }
 
+function GigsTab({ userId }: { userId?: string }) {
+  const { data: gigs, isLoading } = useSuspenseQuery({
+    queryKey: ["logistics", "driver-gigs", userId],
+    queryFn: () => userId ? fetchRiderGigs(userId) : Promise.resolve([]),
+  });
+
+  if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!gigs?.length) return <EmptyState label="No Gig enrollment history" icon={Briefcase} />;
+
+  return (
+    <DataTable
+      columns={["Gig Title", "Date", "Time", "Status", "Completion", "Reward"]}
+      rows={gigs.map((g: any) => [
+        <span key={g.id+"t"} className="font-bold">{g.title || "Unavailable"}</span>,
+        <span key={g.id+"d"} className="text-muted-foreground">{g.start_time ? format(new Date(g.start_time), "d MMM yyyy") : "Unavailable"}</span>,
+        <span key={g.id+"tm"} className="text-[10px] font-bold">
+          {g.start_time ? format(new Date(g.start_time), "h:mm a") : ""} - {g.end_time ? format(new Date(g.end_time), "h:mm a") : ""}
+        </span>,
+        <StatusBadge key={g.id+"s"} label={g.enrollment?.status || "Unavailable"} />,
+        <span key={g.id+"c"} className="font-medium">{g.enrollment?.completed_deliveries ?? 0} / {g.target_deliveries || "—"}</span>,
+        <span key={g.id+"r"} className="font-black text-emerald-600">₹{g.reward_amount || 0}</span>
+      ])}
+    />
+  );
+}
+
+function KarmaTab({ userId }: { userId?: string }) {
+  const { data: wallet, isLoading } = useSuspenseQuery({
+    queryKey: ["logistics", "driver-karma", userId],
+    queryFn: () => userId ? getWalletSummary(userId) : Promise.resolve(null),
+  });
+
+  if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!wallet) return <EmptyState label="Unavailable" icon={Star} />;
+
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-6 rounded-3xl bg-muted/20 ring-1 ring-border/40">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Current Points</p>
+          <p className="text-3xl font-black">{wallet.balance || 0}</p>
+        </div>
+        <div className="p-6 rounded-3xl bg-muted/20 ring-1 ring-border/40">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Lifetime Earned</p>
+          <p className="text-3xl font-black">{wallet.lifetimeCredited || 0}</p>
+        </div>
+        <div className="p-6 rounded-3xl bg-muted/20 ring-1 ring-border/40">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Account Status</p>
+          <div className="mt-2">
+            <StatusBadge label={wallet.blocked ? "Blocked" : "Active"} />
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-col items-center justify-center py-10 text-center opacity-40">
+        <History className="h-8 w-8 mb-4 text-muted-foreground" />
+        <p className="font-display font-bold text-lg">No karma events recorded</p>
+      </div>
+    </div>
+  );
+}
+
 function EmptyState({ label, icon: Icon = History }: { label: string, icon?: any }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
