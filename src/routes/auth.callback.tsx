@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { insforge } from "@/lib/insforge";
 import { popPortalIntent, setPortalIntent } from "@/lib/insforge-auth";
@@ -15,6 +15,7 @@ function AuthCallback() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const exchangeAttemptedRef = useRef<boolean>(false);
   const portalRef = useRef<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // 1. Preserve portal intent in closure for this mount
@@ -82,14 +83,13 @@ function AuthCallback() {
         };
 
         const destPath = portalMap[portal] || "/app";
-        const dest = new URL(destPath, window.location.origin).href;
-
+        
         // Cleanup storage
         localStorage.removeItem("scoobix_oauth_portal_intent");
         localStorage.removeItem("scoobix_return_to");
 
         console.log(`[AUTH_CALLBACK] Authorized user ${user.id}. Redirecting to ${destPath}`);
-        window.location.replace(dest);
+        await navigate({ to: destPath as any, replace: true });
 
       } catch (err: any) {
         console.error("[AUTH_CALLBACK] Critical Error:", err);
