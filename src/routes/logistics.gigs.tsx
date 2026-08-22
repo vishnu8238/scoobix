@@ -930,7 +930,7 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Total</span>
-                    <span className="h-10 px-4 flex items-center font-black text-emerald-600">{g.capacity || 0}</span>
+                    <span className="h-10 px-4 flex items-center font-black text-emerald-600">{typeof g.capacity === "number" ? g.capacity : "Unavailable"}</span>
                   </div>
                 </div>
               </div>
