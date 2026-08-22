@@ -124,10 +124,7 @@ export async function updateGig(id: string, patch: Partial<Gig>) {
     if (patch.reward_amount !== undefined) dbPatch.payout = patch.reward_amount;
     if (patch.payout !== undefined) dbPatch.reward_amount = patch.payout;
 
-    
-    if (Object.keys(metadataUpdate).length > 0) {
-      dbPatch.metadata = metadataUpdate;
-    }
+
 
     const res = await patchRecord<Gig>(AUTHORITATIVE_TABLE, id, dbPatch);
     if (res) {
