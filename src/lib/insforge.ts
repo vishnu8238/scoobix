@@ -27,24 +27,24 @@ if (typeof window !== "undefined") {
  */
 let initializationPromise: Promise<void> | null = null;
 
-export const ensureAuthHydrated = async () => {
+export const ensureAuthHydrated = async (): Promise<any | null> => {
   if (initializationPromise) return initializationPromise;
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return null;
 
   initializationPromise = (async () => {
     try {
-      // P0.1 Hardening: force identity check to trigger storage hydration
       const { data, error } = await insforge.auth.getCurrentUser();
       if (error) throw error;
       
-      // Verification: ensure session is synced
       if (data?.user && !insforge.auth.session) {
         console.warn("[INSFORGE_AUTH] User detected but session missing; refreshing...");
         await insforge.auth.refreshSession();
       }
+      return data?.user || null;
     } catch (err) {
       console.warn("[INSFORGE_AUTH] Hydration failed:", err);
-      initializationPromise = null; // Allow retry on failure
+      initializationPromise = null;
+      return null;
     }
   })();
 
