@@ -80,7 +80,7 @@ export function RoleGuard({ allow, children, fallback, bypass }: RoleGuardProps)
     }
   }, [user, loading, portal, allow, navigate, pathname]);
 
-  if (!bypass && (loading || isAuthResolving(authState))) {
+  if (!bypass && (loading || isAuthResolving(authState) || (user && !user.membershipsResolved))) {
     // If we are already on a login page, just show it.
     if (pathname.includes("/login")) {
       return <>{children}</>;
