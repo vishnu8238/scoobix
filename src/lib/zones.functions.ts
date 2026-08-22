@@ -14,13 +14,13 @@ export const getZonesWithSubzones = createServerFn({ method: "GET" })
     const { insforge } = context;
     try {
       const [zonesRes, subzonesRes] = await Promise.all([
-        insforge.database.from(TABLE_ZONES).select("id,name,city,status,created_at,updated_at").order("name"),
-        insforge.database.from(TABLE_SUBZONES).select("id,zone_id,name,status,created_at,updated_at").order("name")
+        insforge.database.from(TABLE_ZONES).select("*").order("name"),
+        insforge.database.from(TABLE_SUBZONES).select("*").order("name")
       ]);
       
       return { 
-        zones: Array.isArray(zonesRes.data) ? zonesRes.data : [], 
-        subzones: Array.isArray(subzonesRes.data) ? subzonesRes.data : [] 
+        zones: (Array.isArray(zonesRes.data) ? zonesRes.data : []) as any[], 
+        subzones: (Array.isArray(subzonesRes.data) ? subzonesRes.data : []) as any[] 
       };
     } catch (err) {
       console.error("[ZONES_SERVER] Fetch failed:", err);
