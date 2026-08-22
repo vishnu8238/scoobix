@@ -42,6 +42,12 @@ export const ensureAuthHydrated = async () => {
   return initializationPromise;
 };
 
+/**
+ * AUTHORITATIVE AUTH BOUNDARY
+ * Resolves the current user UUID by synchronizing AuthStore state with 
+ * the InsForge SDK session.
+ */
+export const requireAuthenticatedInsforgeUser = async (): Promise<string> => {
   const session = insforge.auth.session;
   if (session?.user?.id) return session.user.id;
 
