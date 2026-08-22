@@ -46,14 +46,14 @@ export const Route = createFileRoute("/logistics/drivers/$driverId")({
 
 const PRIMARY_TABS = [
   { id: "profile", label: "Partner Profile", icon: User },
-  { id: "assets", label: "Assets", icon: Package },
-  { id: "services", label: "Services", icon: Zap },
+  { id: "gigs", label: "Gigs History", icon: Briefcase },
+  { id: "karma", label: "Karma Details", icon: Star },
   { id: "localities", label: "Localities", icon: MapPin },
   { id: "payouts", label: "Payout History", icon: IndianRupee },
   { id: "payouts_ledger", label: "Payout Ledger", icon: FileText },
   { id: "orders", label: "Order History", icon: Truck },
-  { id: "logs", label: "Activity Logs", icon: Activity },
-  { id: "migration", label: "Migration Details", icon: Briefcase },
+  { id: "attendance", label: "Attendance", icon: Calendar },
+  { id: "cod", label: "COD Transactions", icon: IndianRupee },
 ];
 
 const SECONDARY_TABS = [
