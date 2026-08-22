@@ -31,7 +31,6 @@ export interface ExtendedDriver extends DriverRow {
   last_gps_update?: string;
   zone_name?: string;
   subzone_name?: string;
-  zone_id?: string;
 }
 
 export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriver | null> {
@@ -39,7 +38,7 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
   const [driver] = await listTable<ExtendedDriver>("drivers", { 
     id: `eq.${driverId}`, 
     limit: 1,
-    select: "id,user_id,vehicle_type,vehicle_number,license_number,verification_status,zone_id"
+    select: "id,user_id,vehicle_type,vehicle_number,license_number,verification_status"
   }, { fresh: true });
   
   if (!driver) return null;
@@ -68,16 +67,6 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
       driver.bank_account = profile.bank_account;
       driver.bank_ifsc = profile.bank_ifsc;
       driver.bank_holder = profile.bank_holder;
-    }
-  }
-
-  // Resolve zone details if zone_id exists
-  if (driver.zone_id) {
-    const [zone] = await listTable<any>("logistics_zones", { id: `eq.${driver.zone_id}`, limit: 1 }).catch(() => []);
-    if (zone) {
-      driver.zone_name = zone.name;
-      driver.city = zone.city || driver.city;
-      driver.account_status = zone.status === "ACTIVE" ? "ACTIVE" : "INACTIVE";
     }
   }
 

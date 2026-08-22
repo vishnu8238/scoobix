@@ -48,7 +48,7 @@ const PRIMARY_TABS = [
   { id: "profile", label: "Partner Profile", icon: User },
   { id: "gigs", label: "Gigs History", icon: Briefcase },
   { id: "karma", label: "Karma Details", icon: Star },
-  { id: "localities", label: "Localities", icon: MapPin },
+  { id: "zone", label: "Zone", icon: MapPin },
   { id: "payouts", label: "Payout History", icon: IndianRupee },
   { id: "payouts_ledger", label: "Payout Ledger", icon: FileText },
   { id: "orders", label: "Order History", icon: Truck },
@@ -134,16 +134,12 @@ function LogisticsDriverProfilePage() {
           {activeTab === "payouts_ledger" && <PayoutLedgerTab driverId={driverId} />}
           {activeTab === "gigs" && <GigsTab userId={driver.user_id} />}
           {activeTab === "karma" && <KarmaTab userId={driver.user_id} />}
-          {activeTab === "localities" && (
-            driver.zone_name ? (
-              <DetailGrid items={[
-                { label: "Assigned Zone", value: driver.zone_name },
-                { label: "City", value: driver.city || "Unassigned" },
-                { label: "Status", value: driver.account_status || "ACTIVE" }
-              ]} />
-            ) : (
-              <EmptyState label="No logistics zone assigned" icon={MapPin} />
-            )
+          {activeTab === "zone" && (
+            <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+              <MapPin className="h-12 w-12 mb-4 text-muted-foreground" />
+              <p className="font-display font-bold text-lg text-rose-500">No logistics zone assignment is recorded</p>
+              <p className="text-sm mt-1 text-muted-foreground">This partner is not currently mapped to an authoritative delivery zone.</p>
+            </div>
           )}
           {activeTab === "attendance" && (
             <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
