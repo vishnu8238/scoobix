@@ -291,7 +291,7 @@ function LogisticsGigs() {
   });
 
   const filteredGigs = gigs.filter(g => 
-    g.title?.toLowerCase().includes(q.toLowerCase())
+    !q || (g.title || "").toLowerCase().includes(q.toLowerCase())
   );
 
   const handleSelectGig = (id: string, selected: boolean) => {
@@ -663,9 +663,9 @@ function LogisticsGigs() {
                   <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  {dateFilterMode === "all" ? "All Persistent Gigs" : 
-                   dateFilterMode === "last2months" ? "Gigs from Last 2 Months" :
-                   `Gigs for ${format(parseISO(selectedDateKey), "EEE dd MMM").toUpperCase()}`}
+                  {dateFilterMode === "all" ? `All Persistent Gigs (${filteredGigs.length})` : 
+                   dateFilterMode === "last2months" ? `Gigs from Last 2 Months (${filteredGigs.length})` :
+                   `Gigs for ${format(parseISO(selectedDateKey), "EEE dd MMM").toUpperCase()} (${filteredGigs.length})`}
                 </h2>
               </div>
               <div className="rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
