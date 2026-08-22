@@ -72,7 +72,7 @@ function AuthCallback() {
             reject(new Error("Session resolution timed out."));
           }, 8000); // 8s bounded timeout
 
-          const unsub = insforge.auth.onAuthStateChange((event, session) => {
+          const unsub = insforge.auth.onAuthStateChange((event: string, session: any) => {
             if (event === 'signedIn' || event === 'INITIAL_SESSION') {
               if (session?.user) {
                 clearTimeout(timeout);
