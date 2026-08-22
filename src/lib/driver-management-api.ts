@@ -31,6 +31,7 @@ export interface ExtendedDriver extends DriverRow {
   last_gps_update?: string;
   zone_name?: string;
   subzone_name?: string;
+  zone_id?: string;
 }
 
 export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriver | null> {
@@ -38,7 +39,7 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
   const [driver] = await listTable<ExtendedDriver>("drivers", { 
     id: `eq.${driverId}`, 
     limit: 1,
-    select: "id,user_id"
+    select: "id,user_id,vehicle_type,vehicle_number,license_number,verification_status,zone_id"
   }, { fresh: true });
   
   if (!driver) return null;
@@ -57,18 +58,33 @@ export async function fetchDriverDetails(driverId: string): Promise<ExtendedDriv
     if (profile) {
       driver.name = profile.name || driver.name;
       driver.phone = profile.phone || driver.phone;
-      driver.vehicle_type = profile.vehicle_type;
-      driver.vehicle_number = profile.vehicle_number;
-      driver.license_number = profile.license_number;
+      driver.vehicle_type = profile.vehicle_type || driver.vehicle_type;
+      driver.vehicle_number = profile.vehicle_number || driver.vehicle_number;
+      driver.license_number = profile.license_number || driver.license_number;
       driver.docs_verified = profile.docs_verified;
-      driver.verification_status = profile.verification_status;
+      driver.verification_status = profile.verification_status || driver.verification_status;
+      // Additional rider_profiles fields
+      driver.bank_name = profile.bank_name;
+      driver.bank_account = profile.bank_account;
+      driver.bank_ifsc = profile.bank_ifsc;
+      driver.bank_holder = profile.bank_holder;
     }
   }
 
-  const kycDocs = await fetchDocs("rider", driverId);
+  // Resolve zone details if zone_id exists
+  if (driver.zone_id) {
+    const [zone] = await listTable<any>("logistics_zones", { id: `eq.${driver.zone_id}`, limit: 1 }).catch(() => []);
+    if (zone) {
+      driver.zone_name = zone.name;
+      driver.city = zone.city || driver.city;
+      driver.account_status = zone.status === "ACTIVE" ? "ACTIVE" : "INACTIVE";
+    }
+  }
+
+  const kycDocs = await fetchDocs("rider", driver.user_id || driverId);
   const summary = summarize("rider", kycDocs);
   driver.kyc_status = summary.complete ? "verified" : summary.blocked ? "rejected" : summary.underReview ? "under_review" : "pending";
-  driver.docs_verified = summary.complete || driver.docs_verified;
+  driver.docs_verified = summary.complete;
 
   return driver;
 }

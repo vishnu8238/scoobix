@@ -7,12 +7,13 @@ import {
   fetchDriverPayouts 
 } from "@/lib/driver-management-api";
 import { getPayoutPeriods } from "@/lib/payouts-api";
+import { fetchRiderGigs } from "@/lib/gigs-api";
+import { getWalletSummary } from "@/lib/loyalty-engine";
 import { 
   fetchDocs, 
   RIDER_DOCS, 
   normalizeStatus, 
   KYC_STATUS_LABEL, 
-  KYC_STATUS_TONE 
 } from "@/lib/verification-api";
 import { 
   User, 
@@ -45,14 +46,14 @@ export const Route = createFileRoute("/logistics/drivers/$driverId")({
 
 const PRIMARY_TABS = [
   { id: "profile", label: "Partner Profile", icon: User },
-  { id: "assets", label: "Assets", icon: Package },
-  { id: "services", label: "Services", icon: Zap },
+  { id: "gigs", label: "Gigs History", icon: Briefcase },
+  { id: "karma", label: "Karma Details", icon: Star },
   { id: "localities", label: "Localities", icon: MapPin },
   { id: "payouts", label: "Payout History", icon: IndianRupee },
   { id: "payouts_ledger", label: "Payout Ledger", icon: FileText },
   { id: "orders", label: "Order History", icon: Truck },
-  { id: "logs", label: "Activity Logs", icon: Activity },
-  { id: "migration", label: "Migration Details", icon: Briefcase },
+  { id: "attendance", label: "Attendance", icon: Calendar },
+  { id: "cod", label: "COD Transactions", icon: IndianRupee },
 ];
 
 const SECONDARY_TABS = [
@@ -110,18 +111,18 @@ function LogisticsDriverProfilePage() {
               
               <div className="animate-in fade-in slide-in-from-left-2 duration-300">
                 {activeSubTab === "personal" && <PersonalInfoSection driver={driver} />}
-                {activeSubTab === "documents" && <DocumentsTab driverId={driverId} />}
+                {activeSubTab === "documents" && <DocumentsTab driverId={driverId} user_id={driver.user_id} />}
                 {activeSubTab === "vehicle" && <DetailGrid items={[
-                  { label: "Vehicle Type", value: driver.vehicle_type || "—" },
-                  { label: "Vehicle Model", value: driver.vehicle_model || "—" },
-                  { label: "Vehicle Number", value: driver.vehicle_number || "—" },
-                  { label: "RC Status", value: "Verified", tone: "success" }
+                  { label: "Vehicle Type", value: driver.vehicle_type || "Unassigned" },
+                  { label: "Vehicle Number", value: driver.vehicle_number || "Unassigned" },
+                  { label: "License Number", value: driver.license_number || "Unassigned" },
+                  { label: "Verification", value: driver.verification_status || "Unavailable" }
                 ]} />}
                 {activeSubTab === "bank" && <DetailGrid items={[
-                  { label: "Account Holder", value: driver.bank_holder || driver.name || "—" },
-                  { label: "Bank Name", value: driver.bank_name || "—" },
-                  { label: "Account Number", value: driver.bank_account || "—" },
-                  { label: "IFSC Code", value: driver.bank_ifsc || "—" }
+                  { label: "Account Holder", value: driver.bank_holder || driver.name || "Unassigned" },
+                  { label: "Bank Name", value: driver.bank_name || "Unassigned" },
+                  { label: "Account Number", value: driver.bank_account || "Unassigned" },
+                  { label: "IFSC Code", value: driver.bank_ifsc || "Unassigned" }
                 ]} />}
 
               </div>
@@ -131,21 +132,43 @@ function LogisticsDriverProfilePage() {
           {activeTab === "orders" && <OrdersTab driverId={driverId} />}
           {activeTab === "payouts" && <PayoutsTab driverId={driverId} />}
           {activeTab === "payouts_ledger" && <PayoutLedgerTab driverId={driverId} />}
-          {activeTab === "assets" && <EmptyState label="No assets assigned (Bags, T-Shirts, etc.)" icon={Package} />}
-          {activeTab === "services" && <EmptyState label="No active service subscriptions" icon={Zap} />}
-          {activeTab === "localities" && <EmptyState label="No specific localities assigned" icon={MapPin} />}
-          {activeTab === "logs" && <EmptyState label="No recent activity logs" icon={Activity} />}
-          {activeTab === "migration" && <EmptyState label="No migration metadata found" icon={Briefcase} />}
+          {activeTab === "gigs" && <GigsTab userId={driver.user_id} />}
+          {activeTab === "karma" && <KarmaTab userId={driver.user_id} />}
+          {activeTab === "localities" && (
+            driver.zone_name ? (
+              <DetailGrid items={[
+                { label: "Assigned Zone", value: driver.zone_name },
+                { label: "City", value: driver.city || "Unassigned" },
+                { label: "Status", value: driver.account_status || "ACTIVE" }
+              ]} />
+            ) : (
+              <EmptyState label="No logistics zone assigned" icon={MapPin} />
+            )
+          )}
+          {activeTab === "attendance" && (
+            <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+              <Calendar className="h-12 w-12 mb-4 text-muted-foreground" />
+              <p className="font-display font-bold text-lg text-rose-500">Attendance tracking is not configured</p>
+              <p className="text-sm mt-1 text-muted-foreground">No shift or clock-in schema is available for this partner.</p>
+            </div>
+          )}
+          {activeTab === "cod" && (
+            <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+              <IndianRupee className="h-12 w-12 mb-4 text-muted-foreground" />
+              <p className="font-display font-bold text-lg text-rose-500">COD ledger is not configured</p>
+              <p className="text-sm mt-1 text-muted-foreground">No authoritative COD ledger exists for this partner.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function DocumentsTab({ driverId }: { driverId: string }) {
+function DocumentsTab({ driverId, user_id }: { driverId: string, user_id?: string }) {
   const { data: docs, isLoading } = useSuspenseQuery({
-    queryKey: ["logistics", "driver-docs", driverId],
-    queryFn: () => fetchDocs("rider", driverId),
+    queryKey: ["logistics", "driver-docs", user_id || driverId],
+    queryFn: () => fetchDocs("rider", user_id || driverId),
   });
 
   if (isLoading) return <Loader2 className="animate-spin h-6 w-6 mx-auto" />;
@@ -268,6 +291,68 @@ function PayoutLedgerTab({ driverId }: { driverId: string }) {
         <StatusBadge key={p.id+"s"} label={p.status} />
       ])}
     />
+  );
+}
+
+function GigsTab({ userId }: { userId?: string }) {
+  const { data: gigs, isLoading } = useSuspenseQuery({
+    queryKey: ["logistics", "driver-gigs", userId],
+    queryFn: () => userId ? fetchRiderGigs(userId) : Promise.resolve([]),
+  });
+
+  if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!gigs?.length) return <EmptyState label="No Gig enrollment history" icon={Briefcase} />;
+
+  return (
+    <DataTable
+      columns={["Gig Title", "Date", "Time", "Status", "Completion", "Reward"]}
+      rows={gigs.map((g: any) => [
+        <span key={g.id+"t"} className="font-bold">{g.title || "Unavailable"}</span>,
+        <span key={g.id+"d"} className="text-muted-foreground">{g.start_time ? format(new Date(g.start_time), "d MMM yyyy") : "Unavailable"}</span>,
+        <span key={g.id+"tm"} className="text-[10px] font-bold">
+          {g.start_time ? format(new Date(g.start_time), "h:mm a") : ""} - {g.end_time ? format(new Date(g.end_time), "h:mm a") : ""}
+        </span>,
+        <StatusBadge key={g.id+"s"} label={g.enrollment?.status || "Unavailable"} />,
+        <span key={g.id+"c"} className="font-medium">{g.enrollment?.completed_deliveries ?? 0} / {g.target_deliveries || "—"}</span>,
+        <span key={g.id+"r"} className="font-black text-emerald-600">₹{g.reward_amount || 0}</span>
+      ])}
+    />
+  );
+}
+
+function KarmaTab({ userId }: { userId?: string }) {
+  const { data: wallet, isLoading } = useSuspenseQuery({
+    queryKey: ["logistics", "driver-karma", userId],
+    queryFn: () => userId ? getWalletSummary(userId) : Promise.resolve(null),
+  });
+
+  if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!wallet) return <EmptyState label="Unavailable" icon={Star} />;
+
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-6 rounded-3xl bg-muted/20 ring-1 ring-border/40">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Current Points</p>
+          <p className="text-3xl font-black">{wallet.balance || 0}</p>
+        </div>
+        <div className="p-6 rounded-3xl bg-muted/20 ring-1 ring-border/40">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Lifetime Earned</p>
+          <p className="text-3xl font-black">{wallet.lifetimeCredited || 0}</p>
+        </div>
+        <div className="p-6 rounded-3xl bg-muted/20 ring-1 ring-border/40">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Account Status</p>
+          <div className="mt-2">
+            <StatusBadge label={wallet.blocked ? "Blocked" : "Active"} />
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-col items-center justify-center py-10 text-center opacity-40">
+        <History className="h-8 w-8 mb-4 text-muted-foreground" />
+        <p className="font-display font-bold text-lg">No karma events recorded</p>
+      </div>
+    </div>
   );
 }
 
