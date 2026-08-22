@@ -23,7 +23,7 @@ import {
   History
 } from "lucide-react";
 import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, bulkDeleteGigs, type Gig } from "@/lib/gigs-api";
-import { format, addDays, startOfToday, parseISO, isAfter, subMonths, isWithinInterval } from "date-fns";
+import { format, addDays, startOfToday, parseISO, isAfter, subMonths, isWithinInterval, differenceInHours } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { EditGigModal } from "@/components/admin/EditGigModal";
@@ -65,6 +65,8 @@ function LogisticsGigs() {
   const [city, setCity] = useState("all");
   const [entityType, setEntityType] = useState("all");
   const [zone, setZone] = useState("all");
+  const [citiesMap, setCitiesMap] = useState<Record<string, string>>({});
+  const [zonesMap, setZonesMap] = useState<Record<string, string>>({});
 
   // Real-time sync
   const version = useTableVersion(["gigs", "rider_gig_enrollments"]);
@@ -674,6 +676,8 @@ function LogisticsGigs() {
                       setIsEditModalOpen(true);
                     }}
                     onDelete={handleDeleteGig}
+                    citiesMap={citiesMap}
+                    zonesMap={zonesMap}
                   />
                 ))}
               </div>
