@@ -291,7 +291,7 @@ function LogisticsGigs() {
   });
 
   const filteredGigs = gigs.filter(g => 
-    g.title?.toLowerCase().includes(q.toLowerCase())
+    !q || (g.title || "").toLowerCase().includes(q.toLowerCase())
   );
 
   const handleSelectGig = (id: string, selected: boolean) => {
