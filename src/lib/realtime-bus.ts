@@ -18,7 +18,7 @@
  * `realtime.ts` keeps its fast intervals and the UI behaves exactly as before.
  */
 import type { Socket } from "socket.io-client";
-import { INSFORGE_URL, INSFORGE_ANON_KEY } from "./insforge";
+import { INSFORGE_URL, INSFORGE_ANON_KEY, insforge } from "./insforge";
 
 export type ChangePayload = {
   table?: string;
@@ -47,10 +47,10 @@ const anyListeners = new Set<Handler>();
 const isBrowser = typeof window !== "undefined";
 
 /** Session token, read straight from storage to avoid an import cycle. */
-const ACCESS_KEY = "scoobix_if_access_v1";
 function sessionToken(): string | null {
-  try { return localStorage.getItem(ACCESS_KEY); } catch { return null; }
+  return insforge.auth.session?.accessToken || null;
 }
+
 
 /**
  * Handshake token: the signed-in user's JWT when present, otherwise the
