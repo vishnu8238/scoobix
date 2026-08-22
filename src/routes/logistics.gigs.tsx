@@ -103,8 +103,9 @@ function LogisticsGigs() {
         }
       };
       
-      // 4. Normalized filtering & data enrichment
+      // 4. Normalized filtering & data enrichment (Exclude demo/non-operational)
       const data = all.filter(g => {
+        if (g.metadata?.is_demo === true) return false;
         if (!g.start_time) return false;
         const s = g.status?.toUpperCase();
         if (s !== "ACTIVE" && s !== "SCHEDULED") return false;
