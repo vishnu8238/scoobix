@@ -808,13 +808,13 @@ function LogisticsGigs() {
   );
 }
 
-function SlotsDetailsView({ gigs, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
+function SlotsDetailsView({ gigs, citiesMap, zonesMap, city, setCity, entityType, setEntityType, zone, setZone, date }: any) {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-wrap gap-4 items-center">
-        <FilterSelect label="City" value={city} onChange={setCity} options={["City 1", "City 2"]} />
+        <FilterSelect label="City" value={city} onChange={setCity} options={Object.values(citiesMap)} />
         <FilterSelect label="Entity Type" value={entityType} onChange={setEntityType} options={["Rider", "Truck"]} />
-        <FilterSelect label="Zone" value={zone} onChange={setZone} options={["Zone 1", "Zone 2", "Zone 3"]} />
+        <FilterSelect label="Zone" value={zone} onChange={setZone} options={Object.values(zonesMap)} />
         <FilterSelect label="Carrier" value="all" onChange={() => {}} options={["Main", "Third Party"]} />
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Date</label>
