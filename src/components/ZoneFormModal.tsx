@@ -206,90 +206,106 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
               </div>
             </div>
 
-            <div className="relative h-[400px] rounded-3xl overflow-hidden ring-1 ring-border/60">
-              <GoogleMap 
-                className="h-full w-full"
-                interactive={true}
-                center={formData.boundary?.coordinates?.[0]?.[0] ? { lat: formData.boundary.coordinates[0][0][1], lng: formData.boundary.coordinates[0][0][0] } : { lat: parseFloat(manualCoords.lat), lng: parseFloat(manualCoords.lng) }}
-                onPick={(c) => {
-                  // Update manual coords on pick too
-                  setManualCoords({ lat: c.lat.toString(), lng: c.lng.toString() });
-                  
-                  if (!formData.boundary?.coordinates?.[0]?.length) {
+            <div className="space-y-6">
+              <div className="relative h-[300px] rounded-3xl overflow-hidden ring-1 ring-border/60">
+                <GoogleMap 
+                  className="h-full w-full"
+                  interactive={true}
+                  center={points[0] ? { lat: points[0][1], lng: points[0][0] } : { lat: 22.3072, lng: 73.1812 }}
+                  onPick={(c) => {
+                    setFormData(prev => {
+                      const currentPoints = getRingPoints();
+                      const newPoints = [...currentPoints, [c.lng, c.lat]];
+                      return {
+                        ...prev,
+                        boundary: {
+                          type: "Polygon",
+                          coordinates: [newPoints]
+                        }
+                      };
+                    });
+                  }}
+                  onPolygonEdit={(id, newLatLngs) => {
                     setFormData(prev => ({
                       ...prev,
                       boundary: {
                         type: "Polygon",
-                        coordinates: [[
-                          [c.lng - 0.005, c.lat - 0.005],
-                          [c.lng + 0.005, c.lat - 0.005],
-                          [c.lng + 0.005, c.lat + 0.005],
-                          [c.lng - 0.005, c.lat + 0.005],
-                          [c.lng - 0.005, c.lat - 0.005]
-                        ]]
+                        coordinates: [newLatLngs.map(p => [p.lng, p.lat])]
                       }
                     }));
-                  }
-                }}
-                onPolygonEdit={(id, points) => {
-                  if (points.length > 0) {
-                    setManualCoords({ lat: points[0].lat.toString(), lng: points[0].lng.toString() });
-                  }
-                  setFormData(prev => ({
-                    ...prev,
-                    boundary: {
-                      type: "Polygon",
-                      coordinates: [points.map(p => [p.lng, p.lat])]
-                    }
-                  }));
-                }}
-                polygons={formData.boundary?.coordinates?.[0]?.length >= 3 ? [{
-                  id: "new-zone",
-                  points: formData.boundary.coordinates[0].map((c: any) => ({ lat: c[1], lng: c[0] })),
-                  color: "rgba(16, 185, 129, 0.5)"
-                }] : []}
-              />
-              {!hasMapPoints && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/40 backdrop-blur-[2px] pointer-events-none">
-                  <div className="bg-zinc-950/90 border border-white/10 p-6 rounded-[2rem] shadow-2xl text-center max-w-[280px] pointer-events-auto">
-                    <MapPin className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <p className="text-sm font-black mb-2">No boundary defined</p>
-                    <p className="text-[10px] text-muted-foreground font-bold mb-4">
-                      Enter coordinates below to define the zone area if drawing is unavailable.
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input 
-                        type="number" step="any" placeholder="Lat" 
-                        value={manualCoords.lat}
-                        className="bg-muted px-3 py-2 rounded-xl text-[10px] outline-none ring-1 ring-border/60"
-                        onChange={e => {
-                          const latVal = e.target.value;
-                          setManualCoords(prev => ({ ...prev, lat: latVal }));
-                          const lat = parseFloat(latVal);
-                          const lng = parseFloat(manualCoords.lng);
-                          if (!isNaN(lat) && !isNaN(lng)) {
-                            setFormData(prev => ({ ...prev, boundary: { type: "Polygon", coordinates: [[[lng, lat], [lng+0.01, lat], [lng+0.01, lat+0.01], [lng, lat+0.01], [lng, lat]]] } }));
-                          }
-                        }}
-                      />
-                      <input 
-                        type="number" step="any" placeholder="Lng" 
-                        value={manualCoords.lng}
-                        className="bg-muted px-3 py-2 rounded-xl text-[10px] outline-none ring-1 ring-border/60"
-                        onChange={e => {
-                          const lngVal = e.target.value;
-                          setManualCoords(prev => ({ ...prev, lng: lngVal }));
-                          const lng = parseFloat(lngVal);
-                          const lat = parseFloat(manualCoords.lat);
-                          if (!isNaN(lat) && !isNaN(lng)) {
-                            setFormData(prev => ({ ...prev, boundary: { type: "Polygon", coordinates: [[[lng, lat], [lng+0.01, lat], [lng+0.01, lat+0.01], [lng, lat+0.01], [lng, lat]]] } }));
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
+                  }}
+                  polygons={points.length >= 3 ? [{
+                    id: "new-zone",
+                    points: points.map((c: any) => ({ lat: c[1], lng: c[0] })),
+                    color: "rgba(16, 185, 129, 0.5)"
+                  }] : []}
+                />
+              </div>
+
+              {/* Manual Boundary Block */}
+              <div className="bg-muted/30 rounded-3xl p-6 border border-border/60 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Manual Boundary
+                  </h3>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${hasMinPoints ? 'bg-emerald-500/10 text-emerald-500' : 'bg-orange-500/10 text-orange-500'}`}>
+                    {points.length} / 3 points minimum
+                  </span>
                 </div>
-              )}
+
+                <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
+                  <div>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-1">Latitude</label>
+                    <input 
+                      type="number" step="any"
+                      value={manualInput.lat}
+                      onChange={e => setManualInput(prev => ({ ...prev, lat: e.target.value }))}
+                      className="w-full rounded-xl bg-background/50 px-3 py-2 text-xs outline-none ring-1 ring-border/60 focus:ring-primary/40 transition"
+                      placeholder="22.3072"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-muted-foreground block mb-1">Longitude</label>
+                    <input 
+                      type="number" step="any"
+                      value={manualInput.lng}
+                      onChange={e => setManualInput(prev => ({ ...prev, lng: e.target.value }))}
+                      className="w-full rounded-xl bg-background/50 px-3 py-2 text-xs outline-none ring-1 ring-border/60 focus:ring-primary/40 transition"
+                      placeholder="73.1812"
+                    />
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={addPoint}
+                    className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 active:scale-95 transition"
+                  >
+                    Add Point
+                  </button>
+                </div>
+
+                {points.length > 0 && (
+                  <div className="max-h-[120px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    {points.map((p, i) => (
+                      <div key={`${p[0]}-${p[1]}-${i}`} className="flex items-center justify-between bg-background/40 p-2 rounded-xl border border-border/40 group">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-black text-muted-foreground/50 w-4">{i + 1}</span>
+                          <span className="text-[10px] font-mono font-medium">
+                            {p[1].toFixed(6)}, {p[0].toFixed(6)}
+                          </span>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => removePoint(i)}
+                          className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </form>
