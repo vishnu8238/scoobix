@@ -356,11 +356,16 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
           <button 
             type="submit"
             onClick={handleSubmit}
-            disabled={loading}
-            className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-50"
+            disabled={loading || !hasMinPoints}
+            className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed group relative"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {initialData ? "Save Changes" : "Create Zone"}
+            {!hasMinPoints && (
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] px-2 py-1 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10">
+                Minimum 3 points required
+              </div>
+            )}
           </button>
         </footer>
       </div>
