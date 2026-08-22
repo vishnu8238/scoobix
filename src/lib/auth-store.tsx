@@ -8,6 +8,7 @@ import { setCacheAuthScope } from "./request-cache";
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
+
 export type User = {
   id: string;
   name: string;
