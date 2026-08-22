@@ -795,18 +795,22 @@ function SlotsDetailsView({ city, setCity, entityType, setEntityType, zone, setZ
               </tr>
             </thead>
             <tbody>
-              {[1, 2, 3].map(i => (
-                <tr key={i} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="px-6 py-4 font-mono text-[10px] font-black text-primary">#CAP-00{i}</td>
-                  <td className="px-6 py-4 text-xs font-bold">09:00</td>
-                  <td className="px-6 py-4 text-xs font-bold">18:00</td>
-                  <td className="px-6 py-4 text-xs font-bold">100</td>
-                  <td className="px-6 py-4 text-xs font-bold text-emerald-600">85</td>
-                  <td className="px-6 py-4 text-xs font-bold">15%</td>
-                  <td className="px-6 py-4 text-xs font-black">₹300</td>
-                  <td className="px-6 py-4 text-xs font-black">₹800</td>
-                </tr>
-              ))}
+                {gigs.length > 0 ? (
+                  gigs.map(g => (
+                    <tr key={g.id} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4 font-mono text-[10px] font-black text-primary">{g.id.slice(0, 8)}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.start_time ? format(parseISO(g.start_time), "HH:mm") : "N/A"}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.end_time ? format(parseISO(g.end_time), "HH:mm") : "N/A"}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.capacity || 0}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-emerald-600">{Math.max(0, (g.capacity || 0) - ((g as any).enrolled_count || 0))}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.capacity ? Math.round(((g as any).enrolled_count || 0) / g.capacity * 100) : 0}%</td>
+                      <td className="px-6 py-4 text-xs font-black">₹{g.reward_amount || 0}</td>
+                      <td className="px-6 py-4 text-xs font-black text-slate-400">Fixed</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={8} className="px-6 py-12 text-center text-xs font-black text-muted-foreground">No active gig slots found.</td></tr>
+                )}
             </tbody>
           </table>
         </div>
