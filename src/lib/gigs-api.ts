@@ -20,16 +20,16 @@ export type Gig = {
   metadata?: Record<string, any>;
   created_at: string;
   updated_at: string;
-  // UI Aliases & Legacy Props (Handled via normalization)
-  title?: string;
-  description?: string;
+  // UI Aliases (canonical columns only; null when not persisted)
+  title?: string | null;
+  description?: string | null;
   reward_amount?: number;
-  target_deliveries?: number;
-  start_time?: string;
-  end_time?: string;
-  capacity?: number;
-  city_id?: string;
-  completion_pct?: number;
+  target_deliveries?: number | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  capacity?: number | null;
+  city_id?: string | null;
+  completion_pct?: number | null;
 };
 
 export type GigParticipant = {
