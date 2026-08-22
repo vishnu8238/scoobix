@@ -311,7 +311,7 @@ function RiderHomeContent() {
           desc="Schedule your weekend shifts." 
           icon={Calendar} 
           color="bg-primary" 
-          to="/rider/requests"
+          to="/rider/gigs"
         />
         <PromoCard 
           title="Health Plan" 
@@ -345,7 +345,7 @@ function RiderHomeContent() {
             {offers.map((o) => (
               <Link 
                 key={o.id} 
-                to="/rider/requests" 
+                to="/rider/gigs" 
                 className="flex items-center gap-4 rounded-[1.5rem] bg-muted/30 p-4 transition active:scale-[0.98] hover:bg-muted/50"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">

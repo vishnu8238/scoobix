@@ -20,7 +20,7 @@ const NAV = [
   { to: "/rider", label: "Home", icon: Home, exact: true },
   { to: "/rider/history", label: "History", icon: History },
   { to: "/rider/earnings", label: "Pocket", icon: Wallet },
-  { to: "/rider/requests", label: "Gigs", icon: Calendar },
+  { to: "/rider/gigs", label: "Gigs", icon: Calendar },
   { to: "/rider/bazaar", label: "Bazaar", icon: ShoppingBag },
 ];
 
