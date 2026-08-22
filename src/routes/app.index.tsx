@@ -359,29 +359,9 @@ function Home() {
           ) : allFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <p className="text-sm font-medium text-muted-foreground">
-                {`Implemented P0.1: Isolated authentication and portal-access stabilization.
-1. Authoritative InsForge client singleton with disabled auto-OAuth detection.
-2. Centralized AuthStore lifecycle management (onAuthStateChange).
-3. Exclusive SDK-based session restoration (no localStorage scanning).
-4. Idempotent OAuth callback code exchange.
-5. Strict portal_access admission (Admin, Logistics, Partner, Rider, Manager).
-6. Removed hardcoded admin bypasses and legacy membership fallbacks.
-7. User-scoped request cache persistence.
-8. Reliable logout with full state cleanup.`}
-
-7. Make public.portal_access the exclusive admission mechanism for Admin, Logistics, Partner, Rider, and Manager. Normalize the signed-in identity email (trim/lowercase); query portal_access fresh, require portal match and active status; use no browser cache and do not expose email details in errors.
-8. Remove the hard-coded scoobix.info@gmail.com privileged bypass completely. Remove every role/admission fallback using restaurants, drivers, or merchant_managers. Those tables may only be queried AFTER successful portal_access admission to hydrate the admitted user's business/profile relationships; they can never grant a portal role.
-9. Centralize protected-route decisions through one deterministic resolver/guard. A missing or disabled record must deny the requested portal and send the user to its matching login/denied experience; a query error must show a retryable error state, not Customer. Customer access must be explicit/public only, never inferred because privileged authorization is missing. Preserve genuine portal root destinations (/admin, /logistics, /partner, /rider, /manager) and use replace only after a resolved decision.
-
-D. Cache and logout isolation
-10. Update request-cache persistent keys so every sx:cache entry includes authenticated userId (and portal/scope where relevant). Delete old unscoped sx:cache entries on startup safely, and clear both memory and all current-user persistent cache entries immediately on signed-out, session switch, signOut completion, and auth error. Do not persist portal_access authorization decisions.
-11. Ensure login, token refresh, user switch, logout, and errors cannot briefly show cached prior-user dashboard data. Do not change public customer catalog cache behavior except to avoid leaking a prior authenticated identity.
-12. Make logout robust: always initiate InsForge signOut; in a finally-style cleanup clear auth and identity cache and replace to the correct login destination. If remote signOut fails, still clear local authorized UI state and display an error safely; no uncaught exception/blank screen.
-
-E. Required regression coverage and deliverable
-13. Add focused tests or testable pure helpers for: email normalization; active/missing/disabled/query-error portal admission; no privileged-to-customer fallback; requested portal preservation; OAuth single exchange; cache key user isolation and clearing; listener cleanup/coalescing where feasible.
-14. Verify clean TypeScript build. Provide a precise change list, each source file changed, and actual test/build output. Then report readiness for publication; do not publish from this response because I will review the result first.`}
+                No restaurants found matching your criteria.
               </p>
+
             </div>
           ) : (
             allFiltered.map((r) => (
