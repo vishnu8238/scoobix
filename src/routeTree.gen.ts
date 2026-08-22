@@ -94,6 +94,7 @@ import { Route as LogisticsReportsRouteImport } from './routes/logistics.reports
 import { Route as LogisticsReferralsRouteImport } from './routes/logistics.referrals'
 import { Route as LogisticsPushNotificationsRouteImport } from './routes/logistics.push-notifications'
 import { Route as LogisticsPerformanceRouteImport } from './routes/logistics.performance'
+import { Route as LogisticsPayoutsRouteImport } from './routes/logistics.payouts'
 import { Route as LogisticsPaymentsRouteImport } from './routes/logistics.payments'
 import { Route as LogisticsOrdersRouteImport } from './routes/logistics.orders'
 import { Route as LogisticsOperationsRouteImport } from './routes/logistics.operations'
@@ -603,6 +604,11 @@ const LogisticsPerformanceRoute = LogisticsPerformanceRouteImport.update({
   path: '/performance',
   getParentRoute: () => LogisticsRoute,
 } as any)
+const LogisticsPayoutsRoute = LogisticsPayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => LogisticsRoute,
+} as any)
 const LogisticsPaymentsRoute = LogisticsPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -1104,6 +1110,7 @@ export interface FileRoutesByFullPath {
   '/logistics/operations': typeof LogisticsOperationsRoute
   '/logistics/orders': typeof LogisticsOrdersRouteWithChildren
   '/logistics/payments': typeof LogisticsPaymentsRoute
+  '/logistics/payouts': typeof LogisticsPayoutsRoute
   '/logistics/performance': typeof LogisticsPerformanceRoute
   '/logistics/push-notifications': typeof LogisticsPushNotificationsRoute
   '/logistics/referrals': typeof LogisticsReferralsRoute
@@ -1267,6 +1274,7 @@ export interface FileRoutesByTo {
   '/logistics/operations': typeof LogisticsOperationsRoute
   '/logistics/orders': typeof LogisticsOrdersRouteWithChildren
   '/logistics/payments': typeof LogisticsPaymentsRoute
+  '/logistics/payouts': typeof LogisticsPayoutsRoute
   '/logistics/performance': typeof LogisticsPerformanceRoute
   '/logistics/push-notifications': typeof LogisticsPushNotificationsRoute
   '/logistics/referrals': typeof LogisticsReferralsRoute
@@ -1437,6 +1445,7 @@ export interface FileRoutesById {
   '/logistics/operations': typeof LogisticsOperationsRoute
   '/logistics/orders': typeof LogisticsOrdersRouteWithChildren
   '/logistics/payments': typeof LogisticsPaymentsRoute
+  '/logistics/payouts': typeof LogisticsPayoutsRoute
   '/logistics/performance': typeof LogisticsPerformanceRoute
   '/logistics/push-notifications': typeof LogisticsPushNotificationsRoute
   '/logistics/referrals': typeof LogisticsReferralsRoute
@@ -1608,6 +1617,7 @@ export interface FileRouteTypes {
     | '/logistics/operations'
     | '/logistics/orders'
     | '/logistics/payments'
+    | '/logistics/payouts'
     | '/logistics/performance'
     | '/logistics/push-notifications'
     | '/logistics/referrals'
@@ -1771,6 +1781,7 @@ export interface FileRouteTypes {
     | '/logistics/operations'
     | '/logistics/orders'
     | '/logistics/payments'
+    | '/logistics/payouts'
     | '/logistics/performance'
     | '/logistics/push-notifications'
     | '/logistics/referrals'
@@ -1940,6 +1951,7 @@ export interface FileRouteTypes {
     | '/logistics/operations'
     | '/logistics/orders'
     | '/logistics/payments'
+    | '/logistics/payouts'
     | '/logistics/performance'
     | '/logistics/push-notifications'
     | '/logistics/referrals'
@@ -2635,6 +2647,13 @@ declare module '@tanstack/react-router' {
       path: '/performance'
       fullPath: '/logistics/performance'
       preLoaderRoute: typeof LogisticsPerformanceRouteImport
+      parentRoute: typeof LogisticsRoute
+    }
+    '/logistics/payouts': {
+      id: '/logistics/payouts'
+      path: '/payouts'
+      fullPath: '/logistics/payouts'
+      preLoaderRoute: typeof LogisticsPayoutsRouteImport
       parentRoute: typeof LogisticsRoute
     }
     '/logistics/payments': {
@@ -3426,6 +3445,7 @@ interface LogisticsRouteChildren {
   LogisticsOperationsRoute: typeof LogisticsOperationsRoute
   LogisticsOrdersRoute: typeof LogisticsOrdersRouteWithChildren
   LogisticsPaymentsRoute: typeof LogisticsPaymentsRoute
+  LogisticsPayoutsRoute: typeof LogisticsPayoutsRoute
   LogisticsPerformanceRoute: typeof LogisticsPerformanceRoute
   LogisticsPushNotificationsRoute: typeof LogisticsPushNotificationsRoute
   LogisticsReferralsRoute: typeof LogisticsReferralsRoute
@@ -3465,6 +3485,7 @@ const LogisticsRouteChildren: LogisticsRouteChildren = {
   LogisticsOperationsRoute: LogisticsOperationsRoute,
   LogisticsOrdersRoute: LogisticsOrdersRouteWithChildren,
   LogisticsPaymentsRoute: LogisticsPaymentsRoute,
+  LogisticsPayoutsRoute: LogisticsPayoutsRoute,
   LogisticsPerformanceRoute: LogisticsPerformanceRoute,
   LogisticsPushNotificationsRoute: LogisticsPushNotificationsRoute,
   LogisticsReferralsRoute: LogisticsReferralsRoute,
