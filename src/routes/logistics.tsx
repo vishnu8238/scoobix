@@ -5,7 +5,7 @@ import {
   Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, 
   LifeBuoy, Copy, Gauge, ShieldCheck, Crown, Map as MapIcon, 
   Navigation, History, LogOut, ChevronLeft, ChevronRight,
-  MessageSquare, ShieldAlert, AlertTriangle
+  MessageSquare, ShieldAlert, AlertTriangle, IndianRupee
 } from "lucide-react";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { useAuth } from "@/lib/auth-store";
