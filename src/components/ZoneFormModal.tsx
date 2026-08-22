@@ -27,12 +27,50 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
   });
 
   // Keep lat/lng separate for manual entry stability
-  const [manualCoords, setManualCoords] = useState({
-    lat: initialData?.center_lat?.toString() || (initialData?.boundary?.coordinates?.[0]?.[0]?.[1]?.toString()) || "22.3072",
-    lng: initialData?.center_lng?.toString() || (initialData?.boundary?.coordinates?.[0]?.[0]?.[0]?.toString()) || "73.1812"
+  const [manualInput, setManualInput] = useState({
+    lat: "22.3072",
+    lng: "73.1812"
   });
 
-  const hasMapPoints = formData.boundary?.coordinates?.[0]?.length >= 3;
+  const getRingPoints = () => {
+    const raw = formData.boundary?.coordinates?.[0] || [];
+    // If it's a closed GeoJSON ring, we show the open points in the UI for editing
+    if (raw.length > 1 && raw[0][0] === raw[raw.length - 1][0] && raw[0][1] === raw[raw.length - 1][1]) {
+      return raw.slice(0, -1);
+    }
+    return raw;
+  };
+
+  const points = getRingPoints();
+  const hasMinPoints = points.length >= 3;
+
+  const addPoint = () => {
+    const lat = parseFloat(manualInput.lat);
+    const lng = parseFloat(manualInput.lng);
+    if (isNaN(lat) || isNaN(lng)) {
+      toast.error("Enter valid latitude and longitude");
+      return;
+    }
+    const newPoints = [...points, [lng, lat]];
+    setFormData(prev => ({
+      ...prev,
+      boundary: {
+        type: "Polygon",
+        coordinates: [newPoints]
+      }
+    }));
+  };
+
+  const removePoint = (index: number) => {
+    const newPoints = points.filter((_, i) => i !== index);
+    setFormData(prev => ({
+      ...prev,
+      boundary: {
+        type: "Polygon",
+        coordinates: [newPoints]
+      }
+    }));
+  };
 
   if (!isOpen) return null;
 
