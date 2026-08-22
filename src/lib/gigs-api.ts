@@ -83,8 +83,8 @@ export async function fetchGigs(params?: Record<string, any>) {
 export async function createGig(gig: Partial<Gig>) {
   const id = gig.id || newUuid();
   
-  // Map UI fields to database columns based on 'gigs' table schema
-  const record = {
+  // Persist to CANONICAL `gigs` columns (reads never fall back to metadata).
+  const record: Record<string, any> = {
     id,
     payout: gig.payout || gig.reward_amount || 0,
     status: gig.status?.toLowerCase() || "pending",
@@ -92,18 +92,15 @@ export async function createGig(gig: Partial<Gig>) {
     gig_type: gig.gig_type || "delivery",
     pickup_location: gig.pickup_location || "",
     dropoff_location: gig.dropoff_location || "",
-    // Extra fields stored in metadata for schema compatibility
-    metadata: {
-      ...gig.metadata,
-      title: gig.title,
-      description: gig.description,
-      target_deliveries: gig.target_deliveries,
-      start_time: gig.start_time,
-      end_time: gig.end_time,
-      capacity: gig.capacity,
-      city_id: gig.city_id
-    }
+    title: gig.title ?? null,
+    description: gig.description ?? null,
+    target_deliveries: gig.target_deliveries ?? null,
+    start_time: gig.start_time ?? null,
+    end_time: gig.end_time ?? null,
+    capacity: gig.capacity ?? null,
+    city_id: gig.city_id ?? null,
   };
+
 
   try {
     const res = await createRecord<Gig>(AUTHORITATIVE_TABLE, record);
