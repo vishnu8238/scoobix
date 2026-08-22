@@ -66,7 +66,7 @@ export function DriverProfileHeader({ driver }: DriverProfileHeaderProps) {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-display text-2xl font-black tracking-tight">{driver.name}</h1>
             <StatusBadge label={driver.account_status || "Active"} />
-            {driver.docs_verified && <ShieldCheck className="h-5 w-5 text-primary" />}
+            {driver.docs_verified && <ShieldCheck className="h-5 w-5 text-emerald-500" />}
           </div>
           <p className="mt-1 text-sm font-medium text-muted-foreground">
             #{driver.id.slice(0, 6)} · {driver.gender || "—"}, {driver.age || "—"}y · Joined {joiningDate}
