@@ -19,10 +19,11 @@ import {
   Clock,
   MapPin,
   TrendingUp,
-  Settings
+  Settings,
+  History
 } from "lucide-react";
 import { fetchGigs, createGig, enrollInGig, fetchGigEnrollmentCounts, deleteGig, bulkCancelGigs, bulkDeleteGigs, type Gig } from "@/lib/gigs-api";
-import { format, addDays, startOfToday, parseISO, isAfter } from "date-fns";
+import { format, addDays, startOfToday, parseISO, isAfter, subMonths, isWithinInterval } from "date-fns";
 import { GigCard, GigStats } from "@/components/admin/GigCard";
 import { CreateGigModal } from "@/components/admin/CreateGigModal";
 import { EditGigModal } from "@/components/admin/EditGigModal";
