@@ -7,12 +7,13 @@ import {
   fetchDriverPayouts 
 } from "@/lib/driver-management-api";
 import { getPayoutPeriods } from "@/lib/payouts-api";
+import { fetchRiderGigs } from "@/lib/gigs-api";
+import { getWalletSummary } from "@/lib/loyalty-engine";
 import { 
   fetchDocs, 
   RIDER_DOCS, 
   normalizeStatus, 
   KYC_STATUS_LABEL, 
-  KYC_STATUS_TONE 
 } from "@/lib/verification-api";
 import { 
   User, 
