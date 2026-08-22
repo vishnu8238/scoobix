@@ -48,7 +48,7 @@ const PRIMARY_TABS = [
   { id: "profile", label: "Partner Profile", icon: User },
   { id: "gigs", label: "Gigs History", icon: Briefcase },
   { id: "karma", label: "Karma Details", icon: Star },
-  { id: "localities", label: "Localities", icon: MapPin },
+  { id: "zone", label: "Zone", icon: MapPin },
   { id: "payouts", label: "Payout History", icon: IndianRupee },
   { id: "payouts_ledger", label: "Payout Ledger", icon: FileText },
   { id: "orders", label: "Order History", icon: Truck },
