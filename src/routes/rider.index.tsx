@@ -311,7 +311,7 @@ function RiderHomeContent() {
           desc="Schedule your weekend shifts." 
           icon={Calendar} 
           color="bg-primary" 
-          to="/rider/requests"
+          to="/rider/gigs"
         />
         <PromoCard 
           title="Health Plan" 
