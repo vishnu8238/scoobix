@@ -126,8 +126,12 @@ export async function fetchCustomerData() {
       restaurants: normalizedRestaurants,
       allDishes: normalizedRestaurants.flatMap(r => r.menu)
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("[RESTAURANTS_API] Failed to fetch customer data:", error);
+    // P0.1 Compliance: If it's a 401/403, we return empty instead of crashing the UI
+    if (error?.isAuthError || error?.insforge_status === 401 || error?.insforge_status === 403) {
+      return { restaurants: [], allDishes: [] };
+    }
     return null;
   }
 }

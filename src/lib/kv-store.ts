@@ -13,14 +13,20 @@ type KVRow = { id?: string; key?: string; value?: string };
 const idCache = new Map<string, string>();
 
 export async function kvGet<T>(key: string): Promise<T | null> {
-  const rows = await listTable<KVRow>("app_settings", { key: `eq.${key}`, limit: 1 });
-  const row = rows[0];
-  if (!row) return null;
-  if (row.id) idCache.set(key, row.id);
-  if (!row.value) return null;
   try {
+    const rows = await listTable<KVRow>("app_settings", { key: `eq.${key}`, limit: 1 });
+    const row = rows[0];
+    if (!row) return null;
+    if (row.id) idCache.set(key, row.id);
+    if (!row.value) return null;
     return JSON.parse(row.value) as T;
-  } catch {
+  } catch (err: any) {
+    // P0.1 Compliance: Don't crash on unauthenticated hydration
+    if (err?.isAuthError || err?.insforge_status === 401 || err?.insforge_status === 403) {
+      console.warn(`[KV_STORE] Unauthorized read for "${key}". Using defaults.`);
+      return null;
+    }
+    console.error(`[KV_STORE] Parse error for "${key}":`, err);
     return null;
   }
 }

@@ -73,15 +73,22 @@ function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
     setLoading(true);
+    
     fetchCustomerData().then(data => {
-      if (data && data.restaurants.length > 0) {
+      if (!mounted) return;
+      if (data) {
         setLiveData(data as any);
       }
       setLoading(false);
-    }).catch(() => {
+    }).catch(err => {
+      if (!mounted) return;
+      console.error("[APP_HOME] Fetch error:", err);
       setLoading(false);
     });
+
+    return () => { mounted = false; };
   }, []);
 
 

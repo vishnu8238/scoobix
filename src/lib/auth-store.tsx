@@ -129,7 +129,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             is_active: true,
           });
         }
-      } catch (e) {
+      } catch (e: any) {
+        // P0.1: If unauthenticated or permission denied during profile sync, exit gracefully
+        if (e?.isAuthError || e?.insforge_status === 401 || e?.insforge_status === 403) {
+          console.warn("[AUTH_TRACE] Profile resolution stopped (Unauthenticated).");
+          setUser(null);
+          setAuthState("unauthenticated");
+          setCacheAuthScope(null);
+          resolutionActiveRef.current = false;
+          if (isInitial) {
+            setLoading(false);
+            setHydrationComplete(true);
+          }
+          return;
+        }
         console.warn("[AUTH_TRACE] Profile resolution failed:", e);
       }
 
