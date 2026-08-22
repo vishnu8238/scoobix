@@ -9,7 +9,7 @@ export const Route = createFileRoute("/auth/callback")({
 
 function AuthCallback() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [diagnostic, setDiagnostic] = useState<DiagnosticData | null>(null);
+  
   const exchangeAttemptedRef = useRef<boolean>(false);
   const portalRef = useRef<string | null>(null);
   const navigate = useNavigate();
