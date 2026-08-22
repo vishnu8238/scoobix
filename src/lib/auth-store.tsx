@@ -95,9 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(true);
       }
       
-      await ensureAuthHydrated();
-      const sdkSession = insforge.auth.session;
-      const sessionUser = sdkSession?.user;
+      // P0.1 Hardening: robust hydration with retry logic
+      let sdkSession = insforge.auth.session;
+      if (!sdkSession) {
+        await ensureAuthHydrated();
+        sdkSession = insforge.auth.session;
+      }
+      
+      let sessionUser = sdkSession?.user;
 
       if (!sessionUser) {
         setUser(null);
@@ -198,9 +203,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     resolveUser(true);
 
-    const unsubscribe = insforge.auth.onAuthStateChange((event: string) => {
+    const unsubscribe = insforge.auth.onAuthStateChange((event: string, session?: any) => {
       console.log(`[AUTH_TRACE] SDK State Change: ${event}`);
-      if (event === 'signedIn' || event === 'TOKEN_REFRESHED') {
+      if (event === 'signedIn' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         resolveUser(false);
       } else if (event === 'signedOut') {
         setUser(null);
