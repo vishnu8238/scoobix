@@ -23,11 +23,25 @@ if (typeof window !== "undefined") {
 }
 
 /**
- * AUTHORITATIVE AUTH BOUNDARY
- * Resolves the current user UUID by synchronizing AuthStore state with 
- * the InsForge SDK session.
+ * CACHED INITIALIZATION - Ensures hydration happens once.
  */
-export const requireAuthenticatedInsforgeUser = async (): Promise<string> => {
+let initializationPromise: Promise<void> | null = null;
+
+export const ensureAuthHydrated = async () => {
+  if (initializationPromise) return initializationPromise;
+  if (typeof window === "undefined") return;
+
+  initializationPromise = (async () => {
+    try {
+      await insforge.auth.getCurrentUser().catch(() => ({ data: null }));
+    } catch (err) {
+      console.warn("[INSFORGE_AUTH] Hydration failed:", err);
+    }
+  })();
+
+  return initializationPromise;
+};
+
   const session = insforge.auth.session;
   if (session?.user?.id) return session.user.id;
 
