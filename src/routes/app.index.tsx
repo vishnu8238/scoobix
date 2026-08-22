@@ -362,15 +362,16 @@ function Home() {
                 {`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
                                         
                                             
-                                            Implement the next Scoobix release as a focused cross-portal reliability hardening pass. Preserve the now-verified Customer guest browsing/cart/checkout gate, all authentication and portal redirects, current Logistics Orders/Gigs, Rider navigation, Partner synchronization, Manager onboarding, and InsForge-only backend. Do NOT introduce Supabase, setInterval polling, \`has_role\`, \`user_roles\`, broad RLS migrations, or unrelated UI rewrites.
+                                            Production validation shows the published Create Zone dialog still fails the demo requirement: although the Manual Boundary labels render, the Latitude/Longitude/Add Point controls remain visually below a large Google Maps failure overlay and cannot be used in the dialog viewport. Fix this now in the existing Scoobix code only, without changing any unrelated portal, auth, checkout, data, or maps credentials.
 
-1) Real-time refresh: reuse the existing authenticated InsForge Socket.IO realtime bus in shared mutable-data hooks/pages. Subscribe only while mounted, clean up correctly, dedupe events, and refetch/invalidate only affected entity/table data. Cover: restaurant and KYC updates -> Admin verification/restaurants, Customer discovery/menu, Partner dashboard; menu updates -> Customer restaurant detail; customer order -> Logistics Orders/Rider/Customer Orders; logistics assignment/status -> Customer tracking/Rider active delivery/Logistics; gig create-edit-cancel-enrollment -> Logistics Gigs and Rider feed; rider KYC -> Admin verification/Rider profile; notification campaign -> Rider notifications where available. Keep cached data usable; show a subtle non-blocking “Reconnecting live updates” state only after genuine socket loss.
+Required runtime outcome on /logistics/zones Create dialog:
+1. The Manual Boundary panel (Latitude input default 22.3072, Longitude default 73.1812, Add Point, numbered removable point list/reset, and 0/3 validation) must be in the INITIAL visible dialog viewport above the footer at desktop widths, not after/below any map canvas. Use an explicit non-scrolling side column or a persistent upper/lower panel; do not rely on vertical dialog scrolling.
+2. When Maps fails or shows its provider configuration overlay, do not render a large map canvas. Detect the unavailable state and replace it with a compact <=96px notice. The Manual Boundary panel must remain immediately visible and usable regardless.
+3. Retain create disabled until 3 distinct coordinates. Persist exactly a closed GeoJSON Polygon in logistics_zones.boundary using [lng,lat] and no polygon_coords reference. Keep center coordinates mapping.
+4. Preserve the existing stable map/polygon refs and prohibit fitBounds/recenter/zoom changes during polygon vertex set_at, insert_at, remove_at, or drag.
+5. Build cleanly, then publish the correction automatically. Do not add Supabase, migrations, polling, or any backend schema changes.
 
-2) Replace generic full-screen AUTHENTICATING loading with reusable accessible skeleton primitives: PortalShellSkeleton, DashboardSkeleton, ListSkeleton, DetailSkeleton, FormSkeleton, RiderSkeleton. Each must preserve its portal’s visible layout shape (admin/logistics/manager/partner navigation, rider mobile bottom navigation, customer header/cards), use a concise screen-reader loading announcement and aria-hidden decorative blocks, respect prefers-reduced-motion, retain the existing 10-second auth watchdog and meaningful retry/timeout state, and keep stale data during background refresh.
-
-3) Add route-level error boundaries for all six portals with a recovery/retry action and safe console diagnostics; never expose backend details to end users. Avoid changing current CartProvider/CmsProvider/SpotlightProvider/WalletProvider composition except when strictly needed to preserve it.
-
-Use the existing realtime bus, do not replace it. Emit mutations only after successful persistence. Build with 0 TypeScript errors and run safe non-submitting regression checks for each portal entry route and key reader/list route. Do not publish until the implementation and tests are clean; then publish this focused release automatically.`}
+This is a focused production demo repair. Confirm the exact component(s) adjusted and evidence that the manual controls are visible in the initial dialog viewport.`}
               </p>
             </div>
           ) : (
