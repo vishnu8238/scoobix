@@ -362,11 +362,19 @@ function Home() {
                 {`'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
                                         
                                             
-                                            Perform ONLY STEP 1 of the attached P0.1 authentication specification: a READ-ONLY forensic inspection. Do not edit code, do not run migrations, do not change UI, and do not publish.
+                                            Continue P0.1 with STEP 2 only: another READ-ONLY source-level audit. Do not edit code, do not run migrations, and do not publish.
 
-Audit the entire repository (not just named files) for every authentication, session restoration, portal authorization, redirect, and cache path. Inspect at minimum InsForge client factories and all createClient() calls; auth store/provider; InsForge auth and CRUD; portal authorization; Role/Admin and all portal guards; OAuth callback; every login route; request-cache; all getSession/getCurrentUser/onAuthStateChange/signInWithOAuth calls; manual Authorization headers; token/localStorage handling; and every redirect/navigate/window.location path that can reach /app or a portal login.
+Resolve these exact questions with file names, functions, and concise code-path evidence:
+1) Is there any client construction besides the singleton and the legacy re-export? List all createClient imports/calls exactly.
+2) For both onAuthStateChange listeners, state event coverage, cleanup/unsubscribe behavior, and why each writes state. Identify the one that must remain as the canonical lifecycle owner.
+3) List every getSession/getCurrentUser call, every manual Authorization header, every token cache/read/write, and every localStorage/sessionStorage auth-related key. Flag anything that reconstructs a session or scans guessed token keys.
+4) Determine whether \`detectOAuthCallback: true\` already performs the OAuth code exchange, whether auth.callback also exchanges \`insforge_code\`, and whether double exchange is possible. State the installed SDK mechanism actually used.
+5) List every auth-related redirect, including exact conditions that lead to \`/app\`, portal login, denied, or error routes. Identify customer-role fallbacks.
+6) Trace \`portal_access\` result handling for missing, disabled, and query-error cases in each protected portal. State whether any branch grants Customer or uses a legacy membership bypass.
+7) Trace setCacheAuthScope and cache clearing across sign-in, auth event, logout, error, and user-switch paths.
+8) Inventory all legacy membership checks that remain after admission.
 
-Return an evidence-based report with exact files, key functions, before counts of InsForge clients and auth listeners, actual session/token source, portal_access query and schema usage, all customer fallbacks, OAuth callback behavior, cache identity isolation, legacy role-table checks, and a ranked list of proven risks. Do NOT claim a defect unless shown by repository evidence. Wait for my next instruction after the report.`}
+Give a ranked, evidence-only correction plan. Wait for approval; no implementation now.`}
               </p>
             </div>
           ) : (
