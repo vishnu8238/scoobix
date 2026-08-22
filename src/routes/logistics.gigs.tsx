@@ -88,6 +88,18 @@ function LogisticsGigs() {
       const gigIds = all.map(g => g.id);
       const counts = await fetchGigEnrollmentCounts(gigIds);
       setEnrollmentCounts(counts);
+
+      // Fetch Cities & Zones for mapping
+      const { fetchCities, fetchZones } = await import("@/lib/zones-api");
+      const [cities, zones] = await Promise.all([fetchCities(), fetchZones()]);
+      
+      const cMap: Record<string, string> = {};
+      cities.forEach(c => cMap[c.id] = c.name);
+      setCitiesMap(cMap);
+
+      const zMap: Record<string, string> = {};
+      zones.forEach(z => zMap[z.id] = z.name);
+      setZonesMap(zMap);
       
       // 3. Date key normalization for Asia/Kolkata
       const getKolkataDateKey = (dateInput: string | Date) => {
@@ -753,6 +765,8 @@ function LogisticsGigs() {
       ) : activeTab === "slots" ? (
         <SlotsDetailsView 
           gigs={gigs}
+          citiesMap={citiesMap}
+          zonesMap={zonesMap}
           city={city} setCity={setCity}
           entityType={entityType} setEntityType={setEntityType}
           zone={zone} setZone={setZone}
