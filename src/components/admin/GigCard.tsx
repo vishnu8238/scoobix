@@ -28,13 +28,13 @@ export function GigCard({
   zonesMap = {}
 }: GigCardProps) {
 
-  const startStr = gig.start_time || new Date().toISOString();
-  const endStr = gig.end_time || new Date().toISOString();
-  const start = parseISO(startStr);
-  const end = parseISO(endStr);
-  const duration = differenceInHours(end, start);
-  const maxEnrollment = gig.capacity || 50;
-  const progress = (enrollmentCount / maxEnrollment) * 100;
+  // Canonical-only rendering: no metadata or invented fallbacks.
+  const start = gig.start_time ? parseISO(gig.start_time) : null;
+  const end = gig.end_time ? parseISO(gig.end_time) : null;
+  const duration = start && end ? differenceInHours(end, start) : null;
+  const maxEnrollment = typeof gig.capacity === "number" ? gig.capacity : null;
+  const progress = maxEnrollment && maxEnrollment > 0 ? (enrollmentCount / maxEnrollment) * 100 : 0;
+
 
   // Authoritative Completion Resolution
   let resolvedCompletion: number | null = null;
@@ -93,9 +93,10 @@ export function GigCard({
           </div>
           <div>
             <h3 className="text-xl font-black tracking-tight">
-              {format(start, "HH:mm")} - {format(end, "HH:mm")}
+              {start && end ? `${format(start, "HH:mm")} - ${format(end, "HH:mm")}` : "Unavailable"}
             </h3>
-            <p className="text-[10px] font-semibold text-muted-foreground">Duration: {duration}h</p>
+            <p className="text-[10px] font-semibold text-muted-foreground">Duration: {duration !== null ? `${duration}h` : "Unavailable"}</p>
+
           </div>
         </div>
 
@@ -118,7 +119,8 @@ export function GigCard({
         </div>
         <div className="text-right">
           <p className="text-[10px] font-bold text-muted-foreground/80 text-right">Enrollment</p>
-          <p className="text-sm font-black">{enrollmentCount} / {maxEnrollment}</p>
+          <p className="text-sm font-black">{maxEnrollment !== null ? `${enrollmentCount} / ${maxEnrollment}` : "Unavailable"}</p>
+
         </div>
       </div>
 
@@ -135,8 +137,9 @@ export function GigCard({
         <div className="rounded-xl bg-muted/50 p-3 ring-1 ring-border/50">
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">Slot ID</p>
           <p className="font-mono text-[10px] font-bold tracking-tighter">
-            {format(start, "HH_mm")}_{format(end, "HH_mm")}
+            {start && end ? `${format(start, "HH_mm")}_${format(end, "HH_mm")}` : "Unavailable"}
           </p>
+
         </div>
         
         <div className="flex gap-2">

@@ -433,10 +433,11 @@ function LogisticsGigs() {
         zone: g.zone_id || "",
         reward_amount: g.reward_amount || 0,
         enrolled: enrollmentCounts[g.id] || 0,
-        capacity: g.capacity || 0,
+        capacity: typeof g.capacity === "number" ? g.capacity : "",
         completion_percentage: completionPercentage,
         status: g.status || "",
       };
+
     });
 
     exportExcel([{
@@ -466,10 +467,11 @@ function LogisticsGigs() {
         <div className="flex flex-wrap items-center gap-3">
           <GigStats 
             totalGigs={allGigsCount ?? gigs.length} 
-            needed={gigs.reduce((acc, g) => acc + (g.capacity || 50), 0)} 
+            needed={gigs.reduce((acc, g) => acc + (typeof g.capacity === "number" ? g.capacity : 0), 0)} 
             enrolled={gigs.reduce((acc, g) => acc + (g as any).enrolled_count || 0, 0)} 
-            fullyBooked={gigs.filter(g => (g as any).enrolled_count >= (g.capacity || 50)).length} 
+            fullyBooked={gigs.filter(g => typeof g.capacity === "number" && (g as any).enrolled_count >= g.capacity).length} 
           />
+
           
           <div className="flex items-center gap-2 border-l border-border/60 pl-3">
             <button 
@@ -846,11 +848,12 @@ function SlotsDetailsView({ gigs, citiesMap, zonesMap, city, setCity, entityType
                   gigs.map((g: Gig) => (
                     <tr key={g.id} className="border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-4 font-mono text-[10px] font-black text-primary">{g.id.slice(0, 8)}</td>
-                      <td className="px-6 py-4 text-xs font-bold">{g.start_time ? format(parseISO(g.start_time), "HH:mm") : "N/A"}</td>
-                      <td className="px-6 py-4 text-xs font-bold">{g.end_time ? format(parseISO(g.end_time), "HH:mm") : "N/A"}</td>
-                      <td className="px-6 py-4 text-xs font-bold">{g.capacity || 0}</td>
-                      <td className="px-6 py-4 text-xs font-bold text-emerald-600">{Math.max(0, (g.capacity || 0) - ((g as any).enrolled_count || 0))}</td>
-                      <td className="px-6 py-4 text-xs font-bold">{g.capacity ? Math.round(((g as any).enrolled_count || 0) / g.capacity * 100) : 0}%</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.start_time ? format(parseISO(g.start_time), "HH:mm") : "Unavailable"}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{g.end_time ? format(parseISO(g.end_time), "HH:mm") : "Unavailable"}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{typeof g.capacity === "number" ? g.capacity : "Unavailable"}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-emerald-600">{typeof g.capacity === "number" ? Math.max(0, g.capacity - ((g as any).enrolled_count || 0)) : "Unavailable"}</td>
+                      <td className="px-6 py-4 text-xs font-bold">{typeof g.capacity === "number" && g.capacity > 0 ? `${Math.round(((g as any).enrolled_count || 0) / g.capacity * 100)}%` : "Unavailable"}</td>
+
                       <td className="px-6 py-4 text-xs font-black">₹{g.reward_amount || 0}</td>
                       <td className="px-6 py-4 text-xs font-black text-slate-400">Fixed</td>
                     </tr>
@@ -907,8 +910,9 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs uppercase">{g.id.slice(0, 2)}</div>
                   <div>
-                    <p className="text-xs font-black">{g.title}</p>
-                    <p className="text-[10px] font-medium text-muted-foreground">Persisted Capacity: {g.capacity || 0}</p>
+                    <p className="text-xs font-black">{g.title || "Unavailable"}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground">Persisted Capacity: {typeof g.capacity === "number" ? g.capacity : "Unavailable"}</p>
+
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
@@ -917,7 +921,7 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
                     <input 
                       type="number" 
                       min="1"
-                      defaultValue={g.capacity || 0}
+                      defaultValue={typeof g.capacity === "number" ? g.capacity : ""}
                       onChange={(e) => {
                          // UI only update logic can go here if needed, but per request it only updates on submit
                       }}
@@ -927,7 +931,7 @@ function CapacityChangeView({ gigs, city, setCity, entityType, setEntityType, zo
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Total</span>
-                    <span className="h-10 px-4 flex items-center font-black text-emerald-600">{g.capacity || 0}</span>
+                    <span className="h-10 px-4 flex items-center font-black text-emerald-600">{typeof g.capacity === "number" ? g.capacity : "Unavailable"}</span>
                   </div>
                 </div>
               </div>

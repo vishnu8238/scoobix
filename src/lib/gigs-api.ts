@@ -20,16 +20,16 @@ export type Gig = {
   metadata?: Record<string, any>;
   created_at: string;
   updated_at: string;
-  // UI Aliases & Legacy Props (Handled via normalization)
-  title?: string;
-  description?: string;
+  // UI Aliases (canonical columns only; null when not persisted)
+  title?: string | null;
+  description?: string | null;
   reward_amount?: number;
-  target_deliveries?: number;
-  start_time?: string;
-  end_time?: string;
-  capacity?: number;
-  city_id?: string;
-  completion_pct?: number;
+  target_deliveries?: number | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  capacity?: number | null;
+  city_id?: string | null;
+  completion_pct?: number | null;
 };
 
 export type GigParticipant = {
@@ -56,21 +56,24 @@ export async function fetchGigs(params?: Record<string, any>) {
       rows = Array.isArray(data) ? data : [];
     }
     
-    // Normalize mapping for UI
+    // CANONICAL-ONLY normalization: never read `metadata` as a fallback for
+    // title/description/schedule/capacity/target/city. Null stays null so the
+    // UI can honestly render "Unavailable"/"Unassigned" and exports stay blank.
     return rows.map(r => ({
       ...r,
-      // Priority: Root column > Metadata > Fallback
-      title: r.title || r.metadata?.title || r.gig_type || "Unavailable Gig",
-      description: r.description || r.metadata?.description || "Delivery shift",
-      reward_amount: r.payout || r.reward_amount || 0,
-      payout: r.payout || r.reward_amount || 0,
-      target_deliveries: r.target_deliveries || r.metadata?.target_deliveries || 1,
-      start_time: r.start_time || r.metadata?.start_time || r.created_at,
-      end_time: r.end_time || r.metadata?.end_time || r.created_at,
-      capacity: r.capacity || r.metadata?.capacity || 50,
-      city_id: r.city_id || r.metadata?.city_id || "unknown",
+      title: r.title ?? null,
+      description: r.description ?? null,
+      reward_amount: typeof r.payout === "number" ? r.payout : (typeof r.reward_amount === "number" ? r.reward_amount : 0),
+      payout: typeof r.payout === "number" ? r.payout : (typeof r.reward_amount === "number" ? r.reward_amount : 0),
+      target_deliveries: typeof r.target_deliveries === "number" ? r.target_deliveries : null,
+      start_time: r.start_time ?? null,
+      end_time: r.end_time ?? null,
+      capacity: typeof r.capacity === "number" ? r.capacity : null,
+      city_id: r.city_id ?? null,
+      completion_pct: typeof r.completion_pct === "number" ? r.completion_pct : null,
       status: r.status
     }));
+
   } catch (err: any) {
     console.error(`[GIGS_API] Fetch failed for ${AUTHORITATIVE_TABLE}:`, err.message);
     throw err;
@@ -80,8 +83,8 @@ export async function fetchGigs(params?: Record<string, any>) {
 export async function createGig(gig: Partial<Gig>) {
   const id = gig.id || newUuid();
   
-  // Map UI fields to database columns based on 'gigs' table schema
-  const record = {
+  // Persist to CANONICAL `gigs` columns (reads never fall back to metadata).
+  const record: Record<string, any> = {
     id,
     payout: gig.payout || gig.reward_amount || 0,
     status: gig.status?.toLowerCase() || "pending",
@@ -89,18 +92,15 @@ export async function createGig(gig: Partial<Gig>) {
     gig_type: gig.gig_type || "delivery",
     pickup_location: gig.pickup_location || "",
     dropoff_location: gig.dropoff_location || "",
-    // Extra fields stored in metadata for schema compatibility
-    metadata: {
-      ...gig.metadata,
-      title: gig.title,
-      description: gig.description,
-      target_deliveries: gig.target_deliveries,
-      start_time: gig.start_time,
-      end_time: gig.end_time,
-      capacity: gig.capacity,
-      city_id: gig.city_id
-    }
+    title: gig.title ?? null,
+    description: gig.description ?? null,
+    target_deliveries: gig.target_deliveries ?? null,
+    start_time: gig.start_time ?? null,
+    end_time: gig.end_time ?? null,
+    capacity: gig.capacity ?? null,
+    city_id: gig.city_id ?? null,
   };
+
 
   try {
     const res = await createRecord<Gig>(AUTHORITATIVE_TABLE, record);
@@ -118,23 +118,13 @@ export async function createGig(gig: Partial<Gig>) {
 
 export async function updateGig(id: string, patch: Partial<Gig>) {
   try {
+    // Canonical column updates only; no metadata mirroring of gig fields.
     const dbPatch: any = { ...patch };
-    
+
     if (patch.reward_amount !== undefined) dbPatch.payout = patch.reward_amount;
     if (patch.payout !== undefined) dbPatch.reward_amount = patch.payout;
-    
-    const metadataUpdate: any = {};
-    if (patch.title !== undefined) metadataUpdate.title = patch.title;
-    if (patch.description !== undefined) metadataUpdate.description = patch.description;
-    if (patch.target_deliveries !== undefined) metadataUpdate.target_deliveries = patch.target_deliveries;
-    if (patch.start_time !== undefined) metadataUpdate.start_time = patch.start_time;
-    if (patch.end_time !== undefined) metadataUpdate.end_time = patch.end_time;
-    if (patch.capacity !== undefined) metadataUpdate.capacity = patch.capacity;
-    if (patch.city_id !== undefined) metadataUpdate.city_id = patch.city_id;
-    
-    if (Object.keys(metadataUpdate).length > 0) {
-      dbPatch.metadata = metadataUpdate;
-    }
+
+
 
     const res = await patchRecord<Gig>(AUTHORITATIVE_TABLE, id, dbPatch);
     if (res) {
