@@ -466,10 +466,11 @@ function LogisticsGigs() {
         <div className="flex flex-wrap items-center gap-3">
           <GigStats 
             totalGigs={allGigsCount ?? gigs.length} 
-            needed={gigs.reduce((acc, g) => acc + (g.capacity || 50), 0)} 
+            needed={gigs.reduce((acc, g) => acc + (typeof g.capacity === "number" ? g.capacity : 0), 0)} 
             enrolled={gigs.reduce((acc, g) => acc + (g as any).enrolled_count || 0, 0)} 
-            fullyBooked={gigs.filter(g => (g as any).enrolled_count >= (g.capacity || 50)).length} 
+            fullyBooked={gigs.filter(g => typeof g.capacity === "number" && (g as any).enrolled_count >= g.capacity).length} 
           />
+
           
           <div className="flex items-center gap-2 border-l border-border/60 pl-3">
             <button 
