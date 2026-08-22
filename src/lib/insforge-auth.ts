@@ -9,11 +9,7 @@ import { insforge } from "./insforge";
  */
 export function getOAuthCallbackUrl(): string {
   if (typeof window === "undefined") return "http://localhost:8080/auth/callback";
-  const origin = window.location.origin;
-  const params = new URLSearchParams(window.location.search);
-  const debug = params.get("auth_debug");
-  const base = `${origin}/auth/callback`;
-  return debug === "1" ? `${base}?auth_debug=1` : base;
+  return `${window.location.origin}/auth/callback`;
 }
 
 const PORTAL_INTENT_KEY = "scoobix_oauth_portal_intent";

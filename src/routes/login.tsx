@@ -80,6 +80,15 @@ function ConsolidatedLogin() {
   const handleLogin = async () => {
     try {
       setLocalError(null);
+      
+      // DIAGNOSTIC TEST MODE: Set flag in sessionStorage if auth_debug=1 is in URL
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("auth_debug") === "1") {
+          sessionStorage.setItem('scoobix.oauth.debug', '1');
+        }
+      }
+
       await login('google', selectedPortal);
     } catch (err: any) {
       console.error("[AUTH_DEBUG] Login failure:", err);

@@ -8,18 +8,16 @@ export const Route = createFileRoute("/auth/callback")({
 });
 
 type FinalBranch = "would_navigate" | "no_current_user" | "access_denied" | "exchange_error";
-type ErrorCategory = "NETWORK_ERROR" | "AUTH_FAILED" | "CONFIG_ERROR" | "UNKNOWN";
 
 interface DiagnosticData {
-  codePresent: boolean;
+  hasCode: boolean;
   exchangeSucceeded: boolean;
+  exchangeErrorPresent: boolean;
   currentUserPresent: boolean;
+  currentUserErrorPresent: boolean;
   sdkSessionPresent: boolean;
   portalIntent: string;
-  portalAccessResolved: boolean;
-  requestedPortalAllowed: boolean;
-  finalBranch: FinalBranch;
-  errorCategory?: ErrorCategory;
+  selectedRedirect: string;
 }
 
 function AuthCallback() {
@@ -37,20 +35,22 @@ function AuthCallback() {
     
     const portal = portalRef.current || "customer";
     const params = new URLSearchParams(window.location.search);
-    const isDebug = params.get("auth_debug") === "1";
+    const isDebug = sessionStorage.getItem('scoobix.oauth.debug') === '1';
+    if (isDebug) sessionStorage.removeItem('scoobix.oauth.debug');
 
     const handleCallback = async () => {
       if (exchangeAttemptedRef.current) return;
       exchangeAttemptedRef.current = true;
 
-      const diag: Partial<DiagnosticData> = {
-        portalIntent: portal,
-        codePresent: false,
+      const diag: DiagnosticData = {
+        hasCode: false,
         exchangeSucceeded: false,
+        exchangeErrorPresent: false,
         currentUserPresent: false,
+        currentUserErrorPresent: false,
         sdkSessionPresent: false,
-        portalAccessResolved: false,
-        requestedPortalAllowed: false,
+        portalIntent: portal,
+        selectedRedirect: "",
       };
 
       try {
@@ -58,17 +58,16 @@ function AuthCallback() {
         const error = params.get("error");
         const errorDescription = params.get("error_description");
 
-        if (code) diag.codePresent = true;
+        if (code) diag.hasCode = true;
 
         if (error || errorDescription) {
-          diag.finalBranch = "exchange_error";
-          diag.errorCategory = "AUTH_FAILED";
-          if (isDebug) setDiagnostic(diag as DiagnosticData);
+          diag.exchangeErrorPresent = true;
+          if (isDebug) setDiagnostic(diag);
           throw new Error(errorDescription || `Authentication error: ${error}`);
         }
 
         if (code) {
-          // Cleanup URL for visual cleanliness even in debug
+          // Cleanup URL for visual cleanliness
           const cleanUrl = new URL(window.location.href);
           cleanUrl.searchParams.delete("insforge_code");
           cleanUrl.searchParams.delete("code");
@@ -76,9 +75,8 @@ function AuthCallback() {
 
           const { error: exchangeError } = await insforge.auth.exchangeOAuthCode(code);
           if (exchangeError && !insforge.auth.session?.user) {
-            diag.finalBranch = "exchange_error";
-            diag.errorCategory = "NETWORK_ERROR";
-            if (isDebug) setDiagnostic(diag as DiagnosticData);
+            diag.exchangeErrorPresent = true;
+            if (isDebug) setDiagnostic(diag);
             throw new Error(exchangeError.message || "Code exchange failed.");
           }
           diag.exchangeSucceeded = true;
@@ -88,11 +86,10 @@ function AuthCallback() {
         
         diag.sdkSessionPresent = !!insforge.auth.session;
         diag.currentUserPresent = !!authData?.user;
+        diag.currentUserErrorPresent = !!authError;
 
         if (authError || !authData?.user) {
-          diag.finalBranch = "no_current_user";
-          diag.errorCategory = "AUTH_FAILED";
-          if (isDebug) setDiagnostic(diag as DiagnosticData);
+          if (isDebug) setDiagnostic(diag);
           throw new Error(authError?.message || "Failed to resolve identity after authorization.");
         }
 
@@ -109,22 +106,13 @@ function AuthCallback() {
         };
 
         const destPath = portalMap[portal] || "/app";
-        
-        // Membership resolution check (simulated from user metadata/roles which is where portalAccessResolved logic lives)
-        diag.portalAccessResolved = !!(user as any).membershipsResolved;
-        diag.requestedPortalAllowed = (user as any).roles?.includes(portal) || portal === "customer";
-        
-        if (!diag.requestedPortalAllowed && portal !== "customer") {
-            diag.finalBranch = "access_denied";
-        } else {
-            diag.finalBranch = "would_navigate";
-        }
+        diag.selectedRedirect = destPath;
 
         localStorage.removeItem("scoobix_oauth_portal_intent");
         localStorage.removeItem("scoobix_return_to");
 
         if (isDebug) {
-          setDiagnostic(diag as DiagnosticData);
+          setDiagnostic(diag);
         } else {
           await navigate({ to: destPath as any, replace: true });
         }
@@ -147,7 +135,7 @@ function AuthCallback() {
             {Object.entries(diagnostic).map(([key, value]) => (
               <div key={key} className="flex justify-between items-center py-1 border-b border-border/20 last:border-0">
                 <span className="text-muted-foreground">{key}</span>
-                <span className={value === true || value === 'would_navigate' ? 'text-emerald-500 font-bold' : (value === false || ['access_denied', 'exchange_error', 'no_current_user'].includes(String(value)) ? 'text-destructive font-bold' : 'text-foreground font-bold')}>
+                <span className={value === true ? 'text-emerald-500 font-bold' : (value === false ? 'text-destructive font-bold' : 'text-foreground font-bold')}>
                   {String(value)}
                 </span>
               </div>
