@@ -33,8 +33,9 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     description: "",
     reward_amount: 500,
     target_deliveries: 10,
-    start_time: "09:00",
-    end_time: "18:00",
+    slots: [
+      { id: uuidv4(), start_time: "09:00", end_time: "18:00" }
+    ],
     city_id: "",
     zone_id: "",
     capacity: 50,
@@ -146,44 +147,89 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
     }
   };
 
+  const addSlot = () => {
+    setFormData(prev => ({
+      ...prev,
+      slots: [...prev.slots, { id: uuidv4(), start_time: "09:00", end_time: "18:00" }]
+    }));
+  };
+
+  const removeSlot = (id: string) => {
+    if (formData.slots.length <= 1) return;
+    setFormData(prev => ({
+      ...prev,
+      slots: prev.slots.filter(s => s.id !== id)
+    }));
+  };
+
+  const updateSlot = (id: string, field: 'start_time' | 'end_time', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      slots: prev.slots.map(s => s.id === id ? { ...s, [field]: value } : s)
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const payload = {
-        ...formData,
-        status: "ACTIVE" as const,
-        start_time: `${todayStr}T${formData.start_time}:00Z`,
-        end_time: `${todayStr}T${formData.end_time}:00Z`
-      };
-      
-      console.log("[CREATE_GIG_MODAL] Submitting payload via authoritative 'gigs' table:", payload);
-      
-      const TABLE = "gigs";
-      const res = await createRecord<any>(TABLE, payload);
-      
-      if (!res) {
-        throw new Error(`Persistence failed: '${TABLE}' rejected the record`);
-      }
-      
-      // Authoritative read-back verification after write
-      await new Promise(r => setTimeout(r, 800));
-      const verifyQuery = insforge.database.from(TABLE).select("*").eq("id", res.id || payload.title);
-      const verifyRows = await handleResponse<any[]>(verifyQuery, "GET", TABLE);
-      
-      if (!verifyRows || verifyRows.length === 0) {
-        throw new Error(`Gig persisted to "${TABLE}" but not found by canonical list query. Check RLS.`);
+      // Validate slots
+      for (const slot of formData.slots) {
+        if (!slot.start_time || !slot.end_time) {
+          throw new Error("All time slots must have a start and end time.");
+        }
+        if (slot.start_time >= slot.end_time) {
+          throw new Error(`Invalid time range: ${slot.start_time} to ${slot.end_time}. End time must be later than start time.`);
+        }
       }
 
-      console.log("[CREATE_GIG_MODAL] Verified result:", verifyRows[0]);
-      toast.success("Gig created and verified in database");
-      onSuccess();
-      onClose();
+      // Check for overlapping/duplicate slots
+      const ranges = formData.slots.map(s => `${s.start_time}-${s.end_time}`);
+      if (new Set(ranges).size !== ranges.length) {
+        throw new Error("Duplicate time slots detected.");
+      }
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const TABLE = "gigs";
+      const results: any[] = [];
+      const errors: string[] = [];
+
+      for (const slot of formData.slots) {
+        const payload = {
+          title: formData.slots.length > 1 ? `${formData.title} (${slot.start_time}-${slot.end_time})` : formData.title,
+          description: formData.description,
+          reward_amount: formData.reward_amount,
+          target_deliveries: formData.target_deliveries,
+          city_id: formData.city_id,
+          zone_id: formData.zone_id,
+          capacity: formData.capacity,
+          completion_pct: formData.completion_pct,
+          status: "ACTIVE" as const,
+          start_time: `${todayStr}T${slot.start_time}:00Z`,
+          end_time: `${todayStr}T${slot.end_time}:00Z`
+        };
+
+        try {
+          const res = await createRecord<any>(TABLE, payload);
+          if (res) results.push(res);
+        } catch (err: any) {
+          errors.push(`${slot.start_time}-${slot.end_time}: ${err.message}`);
+        }
+      }
+      
+      if (errors.length > 0) {
+        toast.error(`Failed to create ${errors.length} slots:\n${errors.join('\n')}`);
+      }
+
+      if (results.length > 0) {
+        toast.success(`Successfully created ${results.length} gig(s)`);
+        onSuccess();
+        onClose();
+      }
     } catch (err: any) {
       console.error("[CREATE_GIG_MODAL] Error:", err.message);
-      toast.error(err.message || "Failed to create gig");
+      toast.error(err.message || "Failed to create gigs");
     } finally {
       setLoading(false);
     }
@@ -220,26 +266,56 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Start Time</label>
-                  <input 
-                    type="time"
-                    required
-                    value={formData.start_time}
-                    onChange={e => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-                    className="w-full h-12 px-4 bg-muted/30 rounded-2xl ring-1 ring-border/60 outline-none focus:ring-primary/40 font-bold text-sm"
-                  />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2">
+                    <Clock className="h-3 w-3" /> Time Slots
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addSlot}
+                    className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 transition flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" /> Add Slot
+                  </button>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">End Time</label>
-                  <input 
-                    type="time"
-                    required
-                    value={formData.end_time}
-                    onChange={e => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-                    className="w-full h-12 px-4 bg-muted/30 rounded-2xl ring-1 ring-border/60 outline-none focus:ring-primary/40 font-bold text-sm"
-                  />
+                
+                <div className="space-y-3 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                  {formData.slots.map((slot, index) => (
+                    <div key={slot.id} className="flex items-end gap-3 p-3 rounded-2xl bg-muted/20 ring-1 ring-border/40 group relative">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold text-muted-foreground/60">Start</label>
+                          <input 
+                            type="time"
+                            required
+                            value={slot.start_time}
+                            onChange={e => updateSlot(slot.id, 'start_time', e.target.value)}
+                            className="w-full h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 outline-none focus:ring-primary/40 font-bold text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold text-muted-foreground/60">End</label>
+                          <input 
+                            type="time"
+                            required
+                            value={slot.end_time}
+                            onChange={e => updateSlot(slot.id, 'end_time', e.target.value)}
+                            className="w-full h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 outline-none focus:ring-primary/40 font-bold text-xs"
+                          />
+                        </div>
+                      </div>
+                      {formData.slots.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeSlot(slot.id)}
+                          className="h-10 w-10 flex items-center justify-center rounded-xl text-muted-foreground/40 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -348,7 +424,8 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
               disabled={loading || cities.length === 0}
               className="px-8 py-3 rounded-2xl text-xs font-black bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition disabled:opacity-50 active:scale-95"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Gig"}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 
+               formData.slots.length > 1 ? `Create ${formData.slots.length} Gigs` : "Create Gig"}
             </button>
           </DialogFooter>
         </form>
