@@ -39,7 +39,7 @@ import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-store";
-import { PortalSkeleton } from "@/components/skeletons/PortalSkeletons";
+import { PortalShellSkeleton } from "@/components/skeletons/PortalSkeletons";
 
 export const Route = createFileRoute("/logistics/drivers/$driverId")({
   component: LogisticsDriverProfilePage,
@@ -81,7 +81,7 @@ function LogisticsDriverProfilePage() {
   const [activeSubTab, setActiveSubTab] = useState("personal");
 
   if (!hydrationComplete || isLoading) {
-    return <div className="p-8 max-w-[1600px] mx-auto"><PortalSkeleton /></div>;
+    return <div className="p-8 max-w-[1600px] mx-auto"><PortalShellSkeleton /></div>;
   }
 
   if (!driver) return <div className="p-8 text-center font-display font-bold">Driver not found</div>;
