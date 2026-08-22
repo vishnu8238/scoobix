@@ -180,7 +180,7 @@ function DocumentsTab({ driverId, user_id }: { driverId: string, user_id?: strin
     enabled: typeof window !== "undefined" && hydrationComplete && !!user,
   });
 
-  if (isLoading) return <Loader2 className="animate-spin h-6 w-6 mx-auto" />;
+  if (isLoading || !docs) return <Loader2 className="animate-spin h-6 w-6 mx-auto" />;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
