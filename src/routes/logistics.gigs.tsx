@@ -979,6 +979,7 @@ function CapacityChangeView({ gigs, city, setCity, zone, setZone, date }: any) {
 }
 
 function FilterSelect({ label, value, onChange, options }: any) {
+  const allLabel = label === "Zone" ? "All zones" : "All cities";
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{label}</label>
@@ -987,7 +988,7 @@ function FilterSelect({ label, value, onChange, options }: any) {
         onChange={(e) => onChange(e.target.value)}
         className="h-10 pl-3 pr-8 bg-card rounded-xl ring-1 ring-border/60 text-xs font-bold outline-none focus:ring-primary/40"
       >
-        <option value="all">All cities</option>
+        <option value="all">{allLabel}</option>
         {options.map((o: any) => <option key={o} value={o.toLowerCase()}>{o}</option>)}
       </select>
     </div>
