@@ -39,22 +39,33 @@ export interface PublicRestaurant {
 
 /**
  * Fetches the public restaurant catalog using a safe typed projection.
- * Targets the future 'public_restaurant_catalog' view or the base table with strict selection.
+ * Targets the 'public_restaurant_catalog' view ONLY.
+ * Returns an empty array if the view is unavailable.
  */
 export async function getPublicRestaurantCatalog(params?: Record<string, string | number | undefined>): Promise<PublicRestaurant[]> {
-  return listTable<PublicRestaurant>("restaurants", params, {
-    select: PUBLIC_CATALOG_FIELDS,
-    public: true
-  });
+  try {
+    return await listTable<PublicRestaurant>("public_restaurant_catalog", params, {
+      select: PUBLIC_CATALOG_FIELDS,
+      public: true
+    });
+  } catch (err) {
+    console.error("[CATALOG_ERROR] public_restaurant_catalog view unreachable:", err);
+    return [];
+  }
 }
 
 /**
- * Fetches a single restaurant by ID using the safe public projection.
+ * Fetches a single restaurant by ID using the safe public projection from the view.
  */
 export async function getPublicRestaurantDetail(id: string): Promise<PublicRestaurant | null> {
-  const results = await listTable<PublicRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 }, {
-    select: PUBLIC_CATALOG_FIELDS,
-    public: true
-  });
-  return results[0] || null;
+  try {
+    const results = await listTable<PublicRestaurant>("public_restaurant_catalog", { id: `eq.${id}`, limit: 1 }, {
+      select: PUBLIC_CATALOG_FIELDS,
+      public: true
+    });
+    return results[0] || null;
+  } catch (err) {
+    console.error(`[CATALOG_ERROR] Detail lookup failed for ${id} via public view:`, err);
+    return null;
+  }
 }

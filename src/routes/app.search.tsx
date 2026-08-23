@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { allDishes, popularSearches, restaurants } from "@/lib/mock-data";
+import { allDishes, popularSearches } from "@/lib/mock-data";
 import { RestaurantCard } from "@/components/cravio/RestaurantCard";
 import { DishCard } from "@/components/cravio/DishCard";
 import { useAppUI } from "@/lib/stores";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/format";
 import { getPopularSearches } from "@/lib/search-suggestions";
 import { useAuth } from "@/lib/auth-store";
 import { z } from "zod";
+import { getPublicRestaurantCatalog } from "@/lib/public-restaurant-catalog";
 
 const searchSchema = z.object({ q: z.string().optional() });
 
@@ -96,27 +97,36 @@ function SearchPage() {
 
   const dishes = useMemo(() => allDishes(), []);
 
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+
+  useEffect(() => {
+    getPublicRestaurantCatalog({
+      archived: "eq.false",
+      is_open: "eq.true"
+    }).then(setRestaurants);
+  }, []);
+
   const filteredRestaurants = useMemo(() => {
     let list = filterVeg(restaurants, vegMode, pureVegOverrides).filter(r => 
       ((r as any).status === 'active' || (r as any).status === 'approved' || (r as any).onboarding_status === 'live')
     ).filter((r) => {
-      if (cuisine !== "All" && !r.cuisine.toLowerCase().includes(cuisine.toLowerCase()) && !r.tags.some((t) => t.toLowerCase() === cuisine.toLowerCase())) return false;
+      if (cuisine !== "All" && !r.cuisine.toLowerCase().includes(cuisine.toLowerCase()) && !r.tags.some((t: string) => t.toLowerCase() === cuisine.toLowerCase())) return false;
       if (r.rating < minRating) return false;
-      if (r.deliveryMins > maxMins) return false;
-      if (r.priceLevel.length > maxPrice.length) return false;
-      const hay = `${r.name} ${r.cuisine} ${r.tags.join(" ")}`.toLowerCase();
+      if ((r as any).delivery_time && parseInt(String((r as any).delivery_time)) > maxMins) return false;
+      if ((r as any).price_level && String((r as any).price_level).length > maxPrice.length) return false;
+      const hay = `${r.name} ${r.cuisine} ${Array.isArray(r.tags) ? r.tags.join(" ") : ""}`.toLowerCase();
       if (q && !hay.includes(q.toLowerCase())) return false;
       return true;
     });
     list = [...list].sort((a, b) => {
       if (sort === "rating") return b.rating - a.rating;
-      if (sort === "fast") return a.deliveryMins - b.deliveryMins;
-      if (sort === "near") return a.distanceKm - b.distanceKm;
-      if (sort === "cheap") return a.priceLevel.length - b.priceLevel.length;
+      if (sort === "fast") return parseInt(String((a as any).delivery_time || 99)) - parseInt(String((b as any).delivery_time || 99));
+      if (sort === "near") return 0; // View doesn't compute client-side distance
+      if (sort === "cheap") return String((a as any).price_level || "").length - String((b as any).price_level || "").length;
       return 0;
     });
     return list;
-  }, [q, cuisine, minRating, maxMins, maxPrice, sort, vegMode, pureVegOverrides]);
+  }, [q, cuisine, minRating, maxMins, maxPrice, sort, vegMode, pureVegOverrides, restaurants]);
 
   const filteredDishes = useMemo(() => {
     if (!q) return [];
