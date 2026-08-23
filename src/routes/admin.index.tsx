@@ -176,11 +176,14 @@ function AdminDashboard() {
                        <p className="text-2xl font-black">{zoneStats?.offlineRiders ?? 0}</p>
                     </div>
                  </div>
-                 <div className="rounded-2xl border border-dashed border-border p-6 flex flex-col items-center justify-center text-center">
-                    <MapIcon className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                    <p className="text-sm font-bold">Logistics Map Insight</p>
-                    <p className="text-xs text-muted-foreground max-w-xs">High demand detected in central zones. Unassigned orders increasing.</p>
-                 </div>
+                 <Link
+                   to="/admin/logistics"
+                   className="rounded-2xl border border-dashed border-border p-6 flex flex-col items-center justify-center text-center transition hover:bg-muted/40"
+                 >
+                    <MapIcon className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                    <p className="text-sm font-bold">Open Logistics Control</p>
+                    <p className="text-xs text-muted-foreground max-w-xs">Delivery partners, dispatch, live tracking, gigs, zones, payouts, KYC and rider support in one workspace.</p>
+                 </Link>
               </div>
             </section>
 
