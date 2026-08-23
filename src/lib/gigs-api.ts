@@ -251,41 +251,28 @@ export async function fetchGigEnrollmentCounts(gigIds: string[]): Promise<Record
   return counts;
 }
 
-export async function enrollInGig(gigId: string, riderId: string) {
+export async function enrollInGig(gigId: string, _riderId: string) {
   const TABLE = "rider_gig_enrollments";
   
-  const [gigRows] = await Promise.all([
-    fetchGigs({ id: gigId })
-  ]);
-
-  const gig = gigRows[0];
-  if (!gig) throw new Error("Gig not found");
-  if (gig.status.toUpperCase() !== "ACTIVE" && gig.status.toUpperCase() !== "SCHEDULED") throw new Error("Gig is not active for booking");
-  
   try {
-    const existing = await listTable<GigParticipant>(TABLE, { gig_id: `eq.${gigId}`, rider_id: `eq.${riderId}` });
-    if (existing && existing.length > 0) return existing[0];
-    
-    const participants = await listTable<GigParticipant>(TABLE, { gig_id: `eq.${gigId}` });
-    const currentCount = participants?.length || 0;
-    if (gig.capacity && currentCount >= gig.capacity) {
-      throw new Error("Gig is at full capacity");
+    const { data, error } = await insforge.database.rpc('accept_gig_for_current_rider', {
+      p_gig_id: gigId
+    });
+
+    if (error) {
+      console.error("[GIGS_API] RPC Error:", error);
+      throw new Error(error.message || "Enrollment failed");
     }
 
-    const id = newUuid();
-    const participant: Omit<GigParticipant, "id" | "created_at"> = {
-      gig_id: gigId,
-      rider_id: riderId,
-      completed_deliveries: 0,
-      status: "ENROLLED"
-    };
+    if (data) {
+      publishTableChange(TABLE, "insert", data as any);
+      return data;
+    }
     
-    const res = await createRecord<GigParticipant>(TABLE, { ...participant, id });
-    if (res) publishTableChange(TABLE, "insert", res as any);
-    return res;
-  } catch (e) {
-    console.warn("[GIGS_API] Enrollment failed (likely missing table):", e);
-    throw new Error("Enrollment system is currently unavailable.");
+    throw new Error("Enrollment system returned no data.");
+  } catch (e: any) {
+    console.warn("[GIGS_API] Enrollment failed:", e.message);
+    throw new Error(e.message || "Enrollment system is currently unavailable.");
   }
 }
 
