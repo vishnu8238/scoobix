@@ -141,14 +141,13 @@ export async function updateGigCapacity(gigId: string, capacity: number) {
   }
 }
 
+export async function updateGig(id: string, patch: Partial<Gig>) {
   try {
     // Canonical column updates only; no metadata mirroring of gig fields.
     const dbPatch: any = { ...patch };
 
     if (patch.reward_amount !== undefined) dbPatch.payout = patch.reward_amount;
     if (patch.payout !== undefined) dbPatch.reward_amount = patch.payout;
-
-
 
     const res = await patchRecord<Gig>(AUTHORITATIVE_TABLE, id, dbPatch);
     if (res) {
