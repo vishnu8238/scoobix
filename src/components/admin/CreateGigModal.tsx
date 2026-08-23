@@ -134,7 +134,7 @@ export function CreateGigModal({ isOpen, onClose, onSuccess }: CreateGigModalPro
           zone_id: formData.zone_id,
           capacity: formData.capacity,
           completion_pct: formData.completion_pct,
-          status: "ACTIVE" as const,
+          status: "active" as const,
           start_time: `${todayStr}T${slot.start_time}:00Z`,
           end_time: `${todayStr}T${slot.end_time}:00Z`
         };

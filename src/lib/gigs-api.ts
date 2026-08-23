@@ -116,7 +116,31 @@ export async function createGig(gig: Partial<Gig>) {
   }
 }
 
-export async function updateGig(id: string, patch: Partial<Gig>) {
+export async function updateGigCapacity(gigId: string, capacity: number) {
+  try {
+    const { data, error } = await insforge.database.rpc('update_gig_capacity', {
+      p_gig_id: gigId,
+      p_capacity: capacity
+    });
+
+    if (error) {
+      console.error("[GIGS_API] update_gig_capacity RPC Error:", error);
+      throw new Error(error.message || "Failed to update capacity");
+    }
+
+    if (data) {
+      publishTableChange(AUTHORITATIVE_TABLE, "update", data as any);
+      publishRiderRefresh();
+      return data as Gig;
+    }
+    
+    throw new Error("Capacity update system returned no data.");
+  } catch (e: any) {
+    console.warn("[GIGS_API] updateGigCapacity failed:", e.message);
+    throw new Error(e.message || "Capacity update system is currently unavailable.");
+  }
+}
+
   try {
     // Canonical column updates only; no metadata mirroring of gig fields.
     const dbPatch: any = { ...patch };
@@ -146,7 +170,7 @@ export async function deleteGig(gigId: string, enrollmentCount: number) {
       publishRiderRefresh();
       return res;
     } else {
-      const res = await patchRecord(AUTHORITATIVE_TABLE, gigId, { status: "CANCELLED" });
+      const res = await patchRecord(AUTHORITATIVE_TABLE, gigId, { status: "cancelled" });
       if (res) {
         publishTableChange(AUTHORITATIVE_TABLE, "update", res as any);
         publishRiderRefresh();
@@ -176,9 +200,9 @@ export async function bulkDeleteGigs(gigIds: string[]) {
 export async function bulkCancelGigs(gigIds: string[]) {
   try {
     const results = await Promise.all(
-      gigIds.map(id => patchRecord(AUTHORITATIVE_TABLE, id, { status: "CANCELLED" }))
+      gigIds.map(id => patchRecord(AUTHORITATIVE_TABLE, id, { status: "cancelled" }))
     );
-    publishTableChange(AUTHORITATIVE_TABLE, "update", { ids: gigIds, status: "CANCELLED" } as any);
+    publishTableChange(AUTHORITATIVE_TABLE, "update", { ids: gigIds, status: "cancelled" } as any);
     publishRiderRefresh();
     return results;
   } catch (error: any) {
