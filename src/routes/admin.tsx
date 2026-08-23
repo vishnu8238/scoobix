@@ -31,6 +31,7 @@ function AdminLayoutGuard() {
 
 const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/logistics", label: "Logistics Control", icon: Truck },
   { to: "/admin/operations", label: "Live Operations", icon: Gauge },
   { to: "/admin/live", label: "Logistics Map", icon: MapIcon },
   { to: "/admin/cms", label: "CMS Studio", icon: Sparkles },
