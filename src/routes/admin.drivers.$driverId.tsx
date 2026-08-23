@@ -107,8 +107,14 @@ function DriverProfilePage() {
           {activeTab === "orders" && <OrdersTab driverId={driverId} />}
           {activeTab === "payouts" && <PayoutsTab driverId={driverId} />}
           {activeTab === "payouts_ledger" && <PayoutLedgerTab driverId={driverId} />}
-          {activeTab !== "profile" && activeTab !== "orders" && activeTab !== "payouts" && (
-             <EmptyState label={`No ${PRIMARY_TABS.find(t => t.id === activeTab)?.label} records available.`} />
+          {activeTab === "attendance" && (
+             <EmptyState label="Attendance tracking is not configured. No shift or clock-in records exist on this platform." />
+          )}
+          {activeTab === "cod" && (
+             <EmptyState label="Cash-on-delivery settlement is not configured. No COD ledger exists on this platform." />
+          )}
+          {!["profile", "orders", "payouts", "payouts_ledger", "attendance", "cod"].includes(activeTab) && (
+             <EmptyState label={`No ${PRIMARY_TABS.find(t => t.id === activeTab)?.label ?? "record"} data available.`} />
           )}
         </div>
       </div>
