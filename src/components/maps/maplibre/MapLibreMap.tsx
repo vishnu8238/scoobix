@@ -97,12 +97,12 @@ export function MapLibreMap({
         map.addControl(draw as any);
         drawRef.current = draw;
 
-        map.on("draw.update", (e) => {
+        map.on("draw.update" as any, (e: any) => {
           const data = draw.getAll();
           if (data.features.length > 0) {
             const feat = data.features[0];
             if (feat.geometry.type === "Polygon") {
-              const coords = feat.geometry.coordinates[0].map(c => ({ lng: c[0], lat: c[1] }));
+              const coords = (feat.geometry as any).coordinates[0].map((c: any) => ({ lng: c[0], lat: c[1] }));
               onPolygonEdit("current", coords);
             }
           }
@@ -110,7 +110,7 @@ export function MapLibreMap({
       }
 
       // Add sources for polygons and polylines
-      map.addSource("scoobix-polygons", {
+      (map as any).addSource("scoobix-polygons", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] }
       });
