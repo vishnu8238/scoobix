@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, Plus, Map as MapIcon, Layers, Users, Store, Bike, ClipboardList, Ban, Check, Edit2, Trash2, X, Loader2, Database, ChevronDown, ChevronRight, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { updateZone, deleteZone, getZoneStats, type DeliveryZone, type Subzone } from "@/lib/zones-api";
 import { getZonesWithSubzones, seedVadodaraStructure } from "@/lib/zones.functions";
 import { useTableVersion } from "@/lib/realtime-hooks";
@@ -345,7 +345,7 @@ function ZoneDetailView({ zone, subzones, onBack }: { zone: DeliveryZone; subzon
             {activeTab === "overview" && (
               <div className="space-y-6">
                 <section className="h-[400px] rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
-                  <GoogleMap 
+                  <MapView 
                     className="h-full w-full" 
                     polygons={[
                       {
