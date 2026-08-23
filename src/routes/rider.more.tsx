@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { MapView } from "@/components/maps/MapView";
+import type { MapMarker } from "@/lib/maps/contracts";
 import { useDriver } from "@/lib/driver-store";
 import { useMemo, useState, useEffect } from "react";
 import { fetchZones, DeliveryZone } from "@/lib/zones-api";
