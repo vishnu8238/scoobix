@@ -362,7 +362,7 @@ function OrderDetailsModal({ order, onClose }: { order: any; onClose: () => void
            </div>
 
            <section className="h-[200px] rounded-2xl overflow-hidden ring-1 ring-border/60">
-             <GoogleMap 
+             <MapView 
                className="h-full w-full" 
                markers={[
                  { id: "pick", lat: order.lat || 12.9716, lng: order.lng || 77.5946, kind: "restaurant" },
