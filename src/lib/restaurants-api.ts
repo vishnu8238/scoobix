@@ -55,7 +55,7 @@ export async function fetchCustomerData() {
     }, { ttl: 120 });
 
     // 3. Normalize mapping & apply strict production eligibility filters
-    const normalizedRestaurants: Restaurant[] = restaurants
+    const normalizedRestaurants: Restaurant[] = (restaurants as any[])
       .filter(r => {
         // Requirement: Normalize statuses case-insensitively (approved, active, live)
         const status = String(r.status || "").toLowerCase();
@@ -65,7 +65,6 @@ export async function fetchCustomerData() {
         // Requirement: Canonical live/override flags (is_live OR go_live_override)
         const isLive = Boolean(r.is_live === true || r.is_live === "true" || r.go_live_override === true || r.go_live_override === "true");
         
-        // Note: archived and is_open are already filtered in the query above for efficiency
         return isApproved && isLive;
       })
       .map(r => {
@@ -87,7 +86,7 @@ export async function fetchCustomerData() {
 
         // Delivery time parsing: extract first positive numeric token or use fallback
         let deliveryMins = 25;
-        const rawTime = String(r.delivery_time || r.deliveryMins || "");
+        const rawTime = String(r.delivery_time || "");
         const match = rawTime.match(/\d+/);
         if (match) {
           deliveryMins = parseInt(match[0], 10);
@@ -101,20 +100,19 @@ export async function fetchCustomerData() {
           name: r.name || "Unnamed Restaurant",
           cuisine: r.cuisine || "Multi-cuisine",
           rating: Number(r.rating || 4.0),
-          reviews: Number(r.reviews_count || r.reviews || 0),
+          reviews: Number(r.reviews_count || 0),
           deliveryMins: deliveryMins,
-          distanceKm: Number(r.distance_km || r.distanceKm || 1.2),
-          priceLevel: (r.price_level || r.priceLevel || "₹₹") as any,
-          cover: r.cover_url || r.cover_image || r.cover || "",
+          distanceKm: 1.2,
+          priceLevel: (r.price_level || "₹₹") as any,
+          cover: r.cover_url || r.cover_image || "",
           logo: r.logo_url || r.logo || "",
-          offer: r.offer_text || r.offer || null,
+          offer: null,
           tags: Array.isArray(r.tags) ? r.tags : (r.tags ? String(r.tags).split(',') : []),
           menu: restaurantMenu,
           is_live: true,
           is_open: true,
           onboarding_status: r.onboarding_status,
           city: r.city,
-          rst_code: r.rst_code,
           latitude: isFinite(lat) ? lat : null,
           longitude: isFinite(lng) ? lng : null,
           delivery_radius: Number(r.delivery_radius || 5)
