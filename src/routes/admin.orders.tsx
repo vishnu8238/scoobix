@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { listTable } from "@/lib/insforge-crud";
+import { listTable, invalidateTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2, ExternalLink } from "lucide-react";
 
@@ -31,11 +31,16 @@ function AdminOrders() {
   const [filter, setFilter] = useState<string>("ALL");
   const version = useTableVersion(["orders"]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { fresh?: boolean }) => {
+    if (opts?.fresh) {
+      invalidateTable("orders");
+      invalidateTable("restaurants");
+      invalidateTable("users");
+    }
     const [o, r, u] = await Promise.all([
-      listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }),
-      listTable<NamedRow>("restaurants", { limit: 500 }),
-      listTable<NamedRow>("users", { limit: 1000 }),
+      listTable<OrderRow>("orders", { order: "created_at.desc", limit: 300 }, { fresh: opts?.fresh }),
+      listTable<NamedRow>("restaurants", { limit: 500 }, { fresh: opts?.fresh }),
+      listTable<NamedRow>("users", { limit: 1000 }, { fresh: opts?.fresh }),
     ]);
     setOrders(o); setRestaurants(r); setUsers(u); setLoading(false);
   }, []);
@@ -78,7 +83,10 @@ function AdminOrders() {
         {stats.map((s) => (
           <button
             key={s.key}
-            onClick={() => setFilter(s.key)}
+            onClick={() => {
+              setFilter(s.key);
+              if (s.key === filter) load({ fresh: true });
+            }}
             className={`rounded-3xl p-5 text-left shadow-soft ring-1 transition ${filter === s.key ? "bg-primary/5 ring-primary/40" : "bg-card ring-border/60"}`}
           >
             <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{s.label}</p>

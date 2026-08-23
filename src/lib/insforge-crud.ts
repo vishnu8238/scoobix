@@ -15,7 +15,11 @@ import { sanitizeRecord } from "./api-guard";
 // Any realtime change — from this client or another one — drops the cached
 // reads for that table so the next fetch is authoritative.
 if (typeof window !== "undefined") {
-  onAnyChange((p) => { if (p?.table) cacheDrop(`db:${p.table}?`); });
+  onAnyChange((p) => { 
+    if (p?.table) {
+      invalidateTable(p.table);
+    }
+  });
 }
 
 /** Announce a write so every other open client updates without polling. */
@@ -341,7 +345,11 @@ export function listPage<T = Record<string, unknown>>(
 
 /** Drop cached reads for a table (called automatically after every write). */
 export function invalidateTable(table: string) {
-  cacheDrop(`db:${table}:`); // Drop all variations starting with table
+  // Drop memory cache for all variations starting with table
+  cacheDrop(`db:${table}:`);
+  
+  // Also drop by prefix to catch query string variations (e.g. db:orders?...)
+  cacheDrop(`db:${table}?`);
 }
 
 export function createRecord<T = Record<string, unknown>>(
