@@ -432,6 +432,33 @@ export async function updateManagerProfile(patch: {
   }
 }
 
+/**
+ * Invokes the database RPC to grant Partner portal access to an onboarded restaurant owner.
+ * Does NOT call createPortalAccess; uses the specific grant_partner_portal_access_for_onboarded_restaurant function.
+ */
+export async function grantPartnerPortalAccess(restaurantId: string): Promise<{ ok: boolean; message?: string }> {
+  if (!restaurantId) throw new Error("Restaurant identifier is required for access grant");
+
+  try {
+    const { data, error } = await insforge.rpc("grant_partner_portal_access_for_onboarded_restaurant", {
+      p_restaurant_id: restaurantId,
+    });
+
+    if (error) {
+      console.error("[PARTNER_GRANT_FAILED]", error);
+      return { ok: false, message: "The database could not complete the portal admission request." };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    console.error("[PARTNER_GRANT_ERROR]", err);
+    return { 
+      ok: false, 
+      message: err instanceof Error ? err.message : "An unexpected error occurred during portal admission." 
+    };
+  }
+}
+
 
 export async function logOnboardingEvent(input: {
   restaurantId: string;

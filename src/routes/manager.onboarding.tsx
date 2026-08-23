@@ -18,6 +18,7 @@ import {
   logOnboardingEvent,
   nextRstCode,
   provisionAccount,
+  grantPartnerPortalAccess,
   onboardingStatus,
   ONBOARDING_LABEL,
   ONBOARDING_TONE,
@@ -465,15 +466,22 @@ function OnboardingFlow() {
       );
 
 
-      if (!saved || !saved.id) {
-        console.error("[ONBOARDING_SUBMIT] Final persist failed or returned no ID");
+      // Authoritative Partner portal grant sequence
+      console.info("[ONBOARDING_SUBMIT] Granting Partner portal access for restaurant:", saved.id);
+      const grant = await grantPartnerPortalAccess(saved.id);
+      
+      if (!grant.ok) {
+        console.error("[ONBOARDING_SUBMIT] Partner grant failed:", grant.message);
+        toast.error(`Restaurant saved as ${saved.rst_code}, but Partner access could not be completed automatically.`, {
+          description: "Please notify support to manually activate this owner's portal admission.",
+          duration: 10000
+        });
         return;
       }
 
-
       console.info("[ONBOARDING_SUBMIT] Success:", saved.rst_code);
       toast.success(`Submitted · ${saved.rst_code}`, {
-        description: `Your application has been submitted successfully for admin approval. Owner login: ${form.owner_email} · temporary password ${account.password}`,
+        description: `Restaurant application submitted. The owner (${form.owner_email}) can now sign in to the Partner portal.`,
         duration: 12000,
       });
       navigate({ to: "/manager/restaurants", search: { id: saved.id } });
