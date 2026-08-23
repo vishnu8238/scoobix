@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, MessageSquare, Phone, Star, MapPin, Clock, ShieldCheck, StickyNote, X } from "lucide-react";
 import { useOrders, useAppUI, STATUS_LABEL } from "@/lib/stores";
-import { GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { TimelineStepper } from "@/components/cravio/TimelineStepper";
 import { Button } from "@/components/ui/button";
 import { currency } from "@/lib/format";
@@ -153,7 +153,7 @@ function TrackPage() {
 
       <div className="space-y-4 p-4">
         <div className="rounded-3xl bg-card shadow-card ring-1 ring-border/60 overflow-hidden">
-          <GoogleMap
+          <MapView
             height={260}
             interactive={false}
             route={routePath.length > 1 ? undefined : { 
@@ -177,7 +177,7 @@ function TrackPage() {
               { id: "c", kind: "customer", label: "Delivery here", ...drop },
               ...(driverCoords ? [{ id: "d", kind: "rider" as const, label: order.driver.name, ...driverCoords }] : [])
             ]}
-          />
+            />
 
           <div className="p-4">
             <div className="text-xs font-bold uppercase tracking-wider text-primary">{STATUS_LABEL[order.status]}</div>

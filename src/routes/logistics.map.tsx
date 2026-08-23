@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { fetchZones, type DeliveryZone } from "@/lib/zones-api";
 import { listTable } from "@/lib/insforge-crud";
 import { toast } from "sonner";
@@ -56,7 +56,7 @@ function LogisticsMap() {
       </header>
 
       <div className="h-full w-full rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
-        <GoogleMap 
+        <MapView 
           className="h-full w-full"
           polygons={zones.map(z => ({
             id: z.id,
@@ -71,7 +71,7 @@ function LogisticsMap() {
             label: r.name,
             kind: "rider"
           }))}
-        />
+          />
       </div>
     </div>
   );

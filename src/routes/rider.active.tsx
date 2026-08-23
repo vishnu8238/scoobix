@@ -8,7 +8,7 @@ import {
   Camera, FileCheck, CreditCard, AlertTriangle, MessageSquare,
   Bike, ArrowRight, RefreshCcw
 } from "lucide-react";
-import { GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { toast } from "sonner";
 import { onTableChange } from "@/lib/realtime-bus";
 import { acceptOrderOffer, rejectOrderOffer, cancelAssignment } from "@/lib/logistics-engine.functions";
@@ -289,7 +289,7 @@ function RiderActive() {
       <div className="-mt-6 space-y-4 px-4">
         {/* Map Preview with Pathing */}
         <section className="h-64 overflow-hidden rounded-[2.5rem] bg-muted shadow-card ring-1 ring-border/60 relative">
-           <GoogleMap 
+           <MapView 
              className="h-full w-full"
              center={order.pickup_latitude && order.pickup_longitude ? { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) } : undefined}
              zoom={14}
@@ -322,7 +322,7 @@ function RiderActive() {
                  }
                ] : undefined
              }
-           />
+          />
            {eta && (
              <div className="absolute bottom-4 left-4 rounded-2xl bg-white/90 backdrop-blur-sm px-4 py-2 shadow-pop border border-white/20 animate-in slide-in-from-bottom-2">
                 <p className="text-[8px] font-black uppercase tracking-widest text-primary">Est. Arrival</p>
