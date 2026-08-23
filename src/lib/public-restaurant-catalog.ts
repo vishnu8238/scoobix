@@ -47,10 +47,9 @@ export async function getPublicRestaurantCatalog(params?: Record<string, string 
  * Fetches a single restaurant by ID using the safe public projection.
  */
 export async function getPublicRestaurantDetail(id: string): Promise<PublicRestaurant | null> {
-  const results = await listTable<PublicRestaurant>("restaurants", { id: `eq.${id}` }, {
+  const results = await listTable<PublicRestaurant>("restaurants", { id: `eq.${id}`, limit: 1 }, {
     select: PUBLIC_CATALOG_FIELDS,
-    public: true,
-    limit: 1
+    public: true
   });
   return results[0] || null;
 }

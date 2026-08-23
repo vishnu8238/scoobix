@@ -1,4 +1,5 @@
 import { listTable } from "./insforge-crud";
+import { getPublicRestaurantCatalog } from "./public-restaurant-catalog";
 
 export type Restaurant = {
   id: string;
@@ -41,13 +42,12 @@ export type Dish = {
  */
 export async function fetchCustomerData() {
   try {
-    // 1. Fetch all restaurants that have potential to be live
-    // We fetch a broader set and filter in JS to handle case-insensitivity and complex flags
-    const restaurants = await listTable<any>("restaurants", {
+    // 1. Fetch all restaurants that have potential to be live via the safe public catalog helper
+    const restaurants = await getPublicRestaurantCatalog({
       limit: 100,
       archived: "eq.false",
       is_open: "eq.true"
-    }, { ttl: 60 });
+    });
 
     // 2. Fetch all menu items for these restaurants
     const menuItems = await listTable<any>("menu_items", {
