@@ -4,7 +4,7 @@ import {
   CreditCard, BarChart3, Settings, Bell, Search, Sparkles, 
   Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, 
   LifeBuoy, Copy, Gauge, ShieldCheck, Crown, Map as MapIcon, 
-  Navigation, History, LogOut 
+  Navigation, History, LogOut, Truck 
 } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { APPS, appHead } from "@/lib/apps";
