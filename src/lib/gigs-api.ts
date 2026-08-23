@@ -189,10 +189,31 @@ export async function bulkCancelGigs(gigIds: string[]) {
 
 export async function fetchGigParticipants(gigId: string) {
   try {
-    const data = await listTable<GigParticipant>("rider_gig_enrollments", { 
+    const session = insforge.auth.session;
+    const authId = session?.user?.id;
+    
+    // P0.1 SECURITY: Authenticated riders can only see their own enrollments.
+    // Logistics/Admins can see all participants for a gig.
+    const params: Record<string, string> = { 
       gig_id: `eq.${gigId}`, 
       order: "completed_deliveries.desc" 
-    }, { fresh: true, ttl: 0 });
+    };
+
+    const data = await listTable<GigParticipant>("rider_gig_enrollments", params, { fresh: true, ttl: 0 });
+    
+    // Filter client-side if the database query returned more than one and we are a rider
+    if (data && data.length > 0 && authId) {
+      // Check if user has logistics view permission (via portal_access or similar)
+      const { checkPortalAccess } = await import("./portal-authorization");
+      const { data: user } = await insforge.auth.getCurrentUser();
+      const hasPrivilegedAccess = (await checkPortalAccess(user?.user?.email, "admin")).ok || 
+                                 (await checkPortalAccess(user?.user?.email, "logistics")).ok;
+      
+      if (!hasPrivilegedAccess) {
+        return data.filter(p => p.rider_id === authId);
+      }
+    }
+
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
