@@ -466,6 +466,12 @@ function OnboardingFlow() {
       );
 
 
+      if (!saved || !saved.id) {
+        console.error("[ONBOARDING_SUBMIT] Final persist failed or returned no ID");
+        toast.error("Restaurant details could not be saved. Please try again.");
+        return;
+      }
+
       // Authoritative Partner portal grant sequence
       console.info("[ONBOARDING_SUBMIT] Granting Partner portal access for restaurant:", saved.id);
       const grant = await grantPartnerPortalAccess(saved.id);
