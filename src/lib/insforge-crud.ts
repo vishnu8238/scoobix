@@ -374,7 +374,7 @@ export function createRecord<T = Record<string, unknown>>(
     // Explicit client-side enforcement of RLS conventions: if the table has an owner_id or user_id column,
     // and we have an authenticated user, we ensure it's set correctly.
     const securedRecord = { ...sanitized };
-    const authRestrictedTables = ['merchant_managers', 'platform_admins', 'logistics_staff', 'user_roles', 'auth_users', 'portal_access', 'ownership_transfers'];
+    const authRestrictedTables = ['merchant_managers', 'platform_admins', 'logistics_staff', 'auth_users', 'portal_access', 'ownership_transfers'];
     if (authId && !authRestrictedTables.includes(table)) {
       if ('owner_id' in securedRecord && !['rider_profiles', 'notification_campaigns', 'notification_deliveries', 'notifications', 'restaurant_kyc'].includes(table)) securedRecord.owner_id = authId;
       if ('user_id' in securedRecord && !['rider_profiles', 'notification_campaigns', 'notification_deliveries', 'notifications', 'restaurant_kyc'].includes(table)) securedRecord.user_id = authId;
