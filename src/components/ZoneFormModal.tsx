@@ -182,7 +182,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                           onChange={e => setManualInput(prev => ({ ...prev, lat: e.target.value }))}
                           className="w-full rounded-xl bg-background/50 px-3 py-2 text-xs outline-none ring-1 ring-border/60 focus:ring-primary/40 transition"
                           placeholder="22.3072"
-                        />
+          />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-muted-foreground block mb-1">Longitude</label>
@@ -309,7 +309,7 @@ export function ZoneFormModal({ isOpen, onClose, onSuccess, initialData }: ZoneF
                 </div>
 
                 <div className="relative min-h-[200px] lg:min-h-[300px] rounded-3xl overflow-hidden ring-1 ring-border/60">
-                  <GoogleMap 
+                  <MapView 
                     className="h-full w-full absolute inset-0"
                     interactive={true}
                     center={points[0] ? { lat: points[0][1], lng: points[0][0] } : { lat: 22.3072, lng: 73.1812 }}

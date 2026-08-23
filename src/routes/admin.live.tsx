@@ -170,7 +170,7 @@ function AdminZonesDashboard() {
                 onChange={(e) => setQ(e.target.value)} 
                 placeholder="Search zones by name or city..."
                 className="w-full bg-transparent text-sm outline-none"
-              />
+          />
             </div>
           </div>
 
@@ -245,7 +245,7 @@ function AdminZonesDashboard() {
         </section>
       ) : (
         <section className="h-[600px] rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
-           <GoogleMap 
+          <MapView
              className="h-full w-full" 
              polygons={zones.map(z => ({
                id: z.id,
