@@ -53,7 +53,7 @@ function RiderWorkArea() {
     return zones.find(z => z.status === "ACTIVE") || null;
   }, [zones, driver]);
 
-  const mapMarkers = useMemo((): any[] => {
+  const mapMarkers = useMemo((): MapMarker[] => {
     const ms: MapMarker[] = [];
     if (location) {
       ms.push({ id: "me", lat: location.lat, lng: location.lng, kind: "rider", label: "You" });
