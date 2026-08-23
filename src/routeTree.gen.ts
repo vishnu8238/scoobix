@@ -156,6 +156,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminOperationsRouteImport } from './routes/admin.operations'
 import { Route as AdminManagersRouteImport } from './routes/admin.managers'
+import { Route as AdminLogisticsRouteImport } from './routes/admin.logistics'
 import { Route as AdminLiveRouteImport } from './routes/admin.live'
 import { Route as AdminGigsRouteImport } from './routes/admin.gigs'
 import { Route as AdminDuplicatesRouteImport } from './routes/admin.duplicates'
@@ -914,6 +915,11 @@ const AdminManagersRoute = AdminManagersRouteImport.update({
   path: '/managers',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLogisticsRoute = AdminLogisticsRouteImport.update({
+  id: '/logistics',
+  path: '/logistics',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLiveRoute = AdminLiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -1048,6 +1054,7 @@ export interface FileRoutesByFullPath {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRouteWithChildren
@@ -1212,6 +1219,7 @@ export interface FileRoutesByTo {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRouteWithChildren
@@ -1383,6 +1391,7 @@ export interface FileRoutesById {
   '/admin/duplicates': typeof AdminDuplicatesRoute
   '/admin/gigs': typeof AdminGigsRoute
   '/admin/live': typeof AdminLiveRoute
+  '/admin/logistics': typeof AdminLogisticsRoute
   '/admin/managers': typeof AdminManagersRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/orders': typeof AdminOrdersRouteWithChildren
@@ -1555,6 +1564,7 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/gigs'
     | '/admin/live'
+    | '/admin/logistics'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -1719,6 +1729,7 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/gigs'
     | '/admin/live'
+    | '/admin/logistics'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -1889,6 +1900,7 @@ export interface FileRouteTypes {
     | '/admin/duplicates'
     | '/admin/gigs'
     | '/admin/live'
+    | '/admin/logistics'
     | '/admin/managers'
     | '/admin/operations'
     | '/admin/orders'
@@ -3083,6 +3095,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminManagersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/logistics': {
+      id: '/admin/logistics'
+      path: '/logistics'
+      fullPath: '/admin/logistics'
+      preLoaderRoute: typeof AdminLogisticsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/live': {
       id: '/admin/live'
       path: '/live'
@@ -3271,6 +3290,7 @@ interface AdminRouteChildren {
   AdminDuplicatesRoute: typeof AdminDuplicatesRoute
   AdminGigsRoute: typeof AdminGigsRoute
   AdminLiveRoute: typeof AdminLiveRoute
+  AdminLogisticsRoute: typeof AdminLogisticsRoute
   AdminManagersRoute: typeof AdminManagersRoute
   AdminOperationsRoute: typeof AdminOperationsRoute
   AdminOrdersRoute: typeof AdminOrdersRouteWithChildren
@@ -3308,6 +3328,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDuplicatesRoute: AdminDuplicatesRoute,
   AdminGigsRoute: AdminGigsRoute,
   AdminLiveRoute: AdminLiveRoute,
+  AdminLogisticsRoute: AdminLogisticsRoute,
   AdminManagersRoute: AdminManagersRoute,
   AdminOperationsRoute: AdminOperationsRoute,
   AdminOrdersRoute: AdminOrdersRouteWithChildren,

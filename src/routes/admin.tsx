@@ -4,7 +4,7 @@ import {
   CreditCard, BarChart3, Settings, Bell, Search, Sparkles, 
   Megaphone, Building2, Wallet, Gift, Compass, TrendingUp, 
   LifeBuoy, Copy, Gauge, ShieldCheck, Crown, Map as MapIcon, 
-  Navigation, History, LogOut 
+  Navigation, History, LogOut, Truck 
 } from "lucide-react";
 import { ScoobixMark } from "@/components/cravio/ScoobixLogo";
 import { APPS, appHead } from "@/lib/apps";
@@ -31,6 +31,7 @@ function AdminLayoutGuard() {
 
 const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/logistics", label: "Logistics Control", icon: Truck },
   { to: "/admin/operations", label: "Live Operations", icon: Gauge },
   { to: "/admin/live", label: "Logistics Map", icon: MapIcon },
   { to: "/admin/cms", label: "CMS Studio", icon: Sparkles },
