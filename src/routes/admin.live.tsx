@@ -345,7 +345,7 @@ function ZoneDetailView({ zone, subzones, onBack }: { zone: DeliveryZone; subzon
             {activeTab === "overview" && (
               <div className="space-y-6">
                 <section className="h-[400px] rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
-                  <GoogleMap 
+                  <MapView 
                     className="h-full w-full" 
                     polygons={[
                       {
