@@ -71,7 +71,7 @@ export async function fetchGigs(params?: Record<string, any>) {
       capacity: typeof r.capacity === "number" ? r.capacity : null,
       city_id: r.city_id ?? null,
       completion_pct: typeof r.completion_pct === "number" ? r.completion_pct : null,
-      status: r.status
+      status: r.status?.toLowerCase() // Normalize status to lower-case
     }));
 
   } catch (err: any) {
