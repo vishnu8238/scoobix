@@ -190,3 +190,11 @@ export class GoogleMapsAdapter implements MapsServiceAdapter {
 }
 
 export const googleMapsAdapter = new GoogleMapsAdapter();
+
+// We will implement the LiveTracking implementation in a component file to keep this a clean logic adapter.
+// But we add the symbols and paths here if needed for shared logic.
+export const GoogleSymbolPaths = {
+  CIRCLE: 0, // google.maps.SymbolPath.CIRCLE
+  FORWARD_CLOSED_ARROW: 1, // google.maps.SymbolPath.FORWARD_CLOSED_ARROW
+  BACKWARD_CLOSED_ARROW: 2, // google.maps.SymbolPath.BACKWARD_CLOSED_ARROW
+};
