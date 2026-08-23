@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Save, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { createNewZone, createNewSubzone } from "@/lib/zones.functions";
-import { GoogleMap as GoogleMap } from "./maps/GoogleMap";
+import { MapView } from "./maps/MapView";
 import type { DeliveryZone, Subzone } from "@/lib/zones-api";
 
 type ZoneFormProps = {
