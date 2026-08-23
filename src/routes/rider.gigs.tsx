@@ -44,7 +44,7 @@ function RiderGigsPage() {
     try {
       // Authoritative parallel fetch
       const [gigsData, participantsData] = await Promise.all([
-        fetchGigs({ status: "in.(ACTIVE,SCHEDULED,COMPLETED)" }),
+        fetchGigs(),
         riderEnrollmentIdentityId 
           ? listTable<any>("rider_gig_enrollments", { rider_id: `eq.${riderEnrollmentIdentityId}` }, { fresh: true, ttl: 0 })
           : Promise.resolve([])
