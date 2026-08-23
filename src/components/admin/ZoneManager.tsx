@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Search, Plus, Map as MapIcon, RotateCcw, List, ListFilter, LayoutGrid, Layers, ChevronRight, X } from "lucide-react";
 import { fetchZones, type DeliveryZone, type Subzone, fetchSubzones } from "@/lib/zones-api";
 import { ZoneFormModal } from "@/components/ZoneFormModal";
-import { GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { ZoneDirectoryItem } from "./ZoneDirectoryItem";
 import { cn } from "@/lib/format";
 import type { LatLng } from "@/lib/geo";
@@ -168,7 +168,7 @@ export function ZoneManager() {
 
       {/* Main Map Area */}
       <div className="relative flex-1">
-        <GoogleMap 
+        <MapView 
           className="h-full w-full"
           center={mapCenter}
           zoom={mapZoom}

@@ -72,3 +72,16 @@ export interface MapPolyline {
   weight?: number;
   dash?: boolean;
 }
+
+export interface LiveTrackingViewProps {
+  restaurant: any;
+  customer: any;
+  rider: any;
+  order: any;
+  showAllRiders?: boolean;
+  className?: string;
+}
+
+export interface MapRendererAdapter {
+  renderLiveTracking(props: LiveTrackingViewProps): React.ReactNode;
+}

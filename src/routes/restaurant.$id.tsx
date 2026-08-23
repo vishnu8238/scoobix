@@ -6,7 +6,7 @@ import { fetchCustomerData } from "@/lib/restaurants-api";
 import { useCart, useFavorites } from "@/lib/stores";
 import { useCms } from "@/lib/cms-store";
 import { DishCard } from "@/components/cravio/DishCard";
-import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { Button } from "@/components/ui/button";
 import { currency, cn } from "@/lib/format";
 import { restaurantCoords } from "@/lib/geo";
@@ -119,7 +119,7 @@ function RestaurantPage() {
           <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Location</h3>
           <span className="flex items-center gap-1 text-[11px] font-bold text-primary"><MapPin className="h-3 w-3" /> {r.distanceKm} km away</span>
         </div>
-        <GoogleMap
+        <MapView
           height={160}
           interactive={false}
           zoom={15}
