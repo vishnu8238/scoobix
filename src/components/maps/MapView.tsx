@@ -1,8 +1,8 @@
 /**
  * Phase 2 map-provider abstraction: Google remains the active implementation; preserve provider-neutral consumer contracts.
  */
-import { GoogleMap } from "./GoogleMap";
-import { GoogleOrderTracking } from "./GoogleOrderTracking";
+import { MapLibreMap } from "./maplibre/MapLibreMap";
+import { MapLibreOrderTracking } from "./maplibre/MapLibreOrderTracking";
 import type { MapMarker, MapPolygon, MapPolyline, Coordinate, LiveTrackingViewProps } from "@/lib/maps/contracts";
 
 interface MapViewProps {
@@ -23,11 +23,11 @@ interface MapViewProps {
 }
 
 export function MapView(props: MapViewProps) {
-  // Delegate to existing Google implementation
-  return <GoogleMap {...props} />;
+  // Switch to MapLibre renderer
+  return <MapLibreMap {...props} />;
 }
 
 export function LiveTrackingView(props: LiveTrackingViewProps) {
-  // Delegate to existing Google implementation
-  return <GoogleOrderTracking {...props} />;
+  // Switch to MapLibre renderer
+  return <MapLibreOrderTracking {...props} />;
 }

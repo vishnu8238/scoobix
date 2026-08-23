@@ -1,5 +1,6 @@
 /**
- * Phase 2 map-provider abstraction: Google remains the active implementation; preserve provider-neutral consumer contracts.
+ * Phase 3 map-provider abstraction: MapLibre is the active renderer; 
+ * Google remains the active provider for geocoding and routing services.
  */
 import { ReactNode } from "react";
 import { GoogleMapsProvider } from "./GoogleMapsProvider";
@@ -11,7 +12,10 @@ interface MapProviderProps {
 }
 
 export function MapProvider({ children, fallback, onStatusChange }: MapProviderProps) {
-  // Delegate to existing Google implementation
+  /**
+   * We still mount GoogleMapsProvider globally because our Geo services (search, routing) 
+   * in maps-service.ts still depend on the Google Maps JS SDK being initialized.
+   */
   return (
     <GoogleMapsProvider fallback={fallback} onStatusChange={onStatusChange}>
       {children}
