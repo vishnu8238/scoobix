@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
 import { PageHeader } from "@/components/cravio/PageHeader";
-import { GoogleMap, MapMarker } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { useDriver } from "@/lib/driver-store";
 import { useMemo, useState, useEffect } from "react";
 import { fetchZones, DeliveryZone } from "@/lib/zones-api";
@@ -52,7 +52,7 @@ function RiderWorkArea() {
     return zones.find(z => z.status === "ACTIVE") || null;
   }, [zones, driver]);
 
-  const mapMarkers = useMemo((): MapMarker[] => {
+  const mapMarkers = useMemo((): any[] => {
     const ms: MapMarker[] = [];
     if (location) {
       ms.push({ id: "me", lat: location.lat, lng: location.lng, kind: "rider", label: "You" });
@@ -76,7 +76,7 @@ function RiderWorkArea() {
 
       <div className="mt-6 space-y-6">
         <section className="relative">
-          <GoogleMap 
+          <MapView 
             height={360}
             markers={mapMarkers}
             polygons={polygons}

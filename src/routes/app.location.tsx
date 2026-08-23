@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search, MapPin, Navigation, Plus, Check, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/cravio/PageHeader";
-import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAddresses } from "@/lib/addresses-store";
@@ -77,7 +77,7 @@ function LocationPicker() {
       <PageHeader title="Delivery location" subtitle={location} />
 
       <div className="relative mx-4 mt-3">
-        <GoogleMap
+        <MapView
           height={200}
           zoom={14}
           center={picked ?? userCoords ?? DEFAULT_CUSTOMER}

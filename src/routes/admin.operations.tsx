@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { GoogleMap as GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 import { 
   fetchZones, fetchSubzones, getZoneStats, fetchZoneOrderBreakdown, 
   fetchZoneDemandAnalytics, type DeliveryZone, type Subzone 
@@ -283,7 +283,7 @@ function AdminOperationsDashboard() {
 
       {activeTab === "map" && (
         <section className="h-[700px] rounded-3xl overflow-hidden shadow-card ring-1 ring-border/60">
-           <GoogleMap 
+           <MapView 
              className="h-full w-full" 
              polygons={zones.map(z => ({
                id: z.id,

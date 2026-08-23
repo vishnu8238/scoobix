@@ -5,7 +5,7 @@ import { fetchSubzones, type Subzone, fetchZones, type DeliveryZone } from "@/li
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
 import { Plus, Edit2, Trash2, Search, Map as MapIcon, Layers } from "lucide-react";
 import { SubzoneFormModal } from "@/components/ZoneFormModal";
-import { GoogleMap } from "@/components/maps/GoogleMap";
+import { MapView } from "@/components/maps/MapView";
 
 export const Route = createFileRoute("/admin/subzones")({
   head: () => ({ meta: [{ title: "Scoobix Admin · Subzones" }] }),
@@ -88,7 +88,7 @@ function SubzonesPage() {
               <MapIcon className="h-5 w-5" /> Local Map
             </h3>
             <div className="h-full w-full rounded-2xl overflow-hidden bg-muted">
-               <GoogleMap 
+               <MapView 
                  className="h-full w-full"
                  polygons={subzones.map(s => ({
                    id: s.id,
