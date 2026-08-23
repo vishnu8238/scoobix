@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { Users, Store, Bike, ClipboardList, DollarSign, TrendingUp, Loader2, Map as MapIcon, ShieldAlert, LifeBuoy, AlertTriangle } from "lucide-react";
