@@ -238,19 +238,6 @@ function RiderGigsPage() {
 }
 
 function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolean; onAction: (a: 'enroll' | 'cancel') => void; busy: boolean }) {
-  const [participantCount, setParticipantCount] = useState<number>(0);
-  const version = useTableVersion(["rider_gig_enrollments"]);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const rows = await listTable("rider_gig_enrollments", { gig_id: `eq.${gig.id}` });
-        setParticipantCount(rows.length);
-      } catch (e) {}
-    };
-    void load();
-  }, [gig.id, version]);
-
   const startStr = gig.start_time || new Date().toISOString();
   const endStr = gig.end_time || new Date().toISOString();
   const start = new Date(startStr);
