@@ -16,8 +16,8 @@ const CATS = ["Starters", "Main Course", "Drinks", "Desserts"] as const;
 
 export const Route = createFileRoute("/restaurant/$id")({
   loader: async ({ params }) => {
-    const data = await fetchCustomerData();
-    const r = data?.restaurants.find(res => res.id === params.id);
+    const { getPublicRestaurantDetail } = await import("@/lib/public-restaurant-catalog");
+    const r = await getPublicRestaurantDetail(params.id);
     if (!r) throw notFound();
     return r;
   },
