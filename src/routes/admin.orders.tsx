@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { DataTable, StatusBadge } from "@/components/cravio/AdminTable";
-import { listTable } from "@/lib/insforge-crud";
+import { listTable, invalidateTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { Loader2, ExternalLink } from "lucide-react";
 
