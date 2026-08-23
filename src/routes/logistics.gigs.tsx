@@ -31,7 +31,6 @@ import { ImportGigsModal } from "@/components/admin/ImportGigsModal";
 
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { performProductionGigTest } from "@/lib/logistics-ops.functions";
 import { exportExcel } from "@/lib/export-utils";
 import { createRecord, listTable } from "@/lib/insforge-crud";
 import { newUuid } from "@/lib/orders-api";
@@ -184,101 +183,6 @@ function LogisticsGigs() {
 
 
 
-  const runGigTest = async () => {
-    setIsTesting(true);
-    try {
-      const { newUuid } = await import("@/lib/orders-api");
-      const { createRecord } = await import("@/lib/insforge-crud");
-      const testId = newUuid();
-      const now = new Date();
-      
-      const testGig = {
-        id: testId,
-        title: `Production Verification Gig - ${now.toISOString()}`,
-        description: "Automated verification record for production persistence check (Client-side)",
-        reward_amount: 1,
-        target_deliveries: 1,
-        start_time: now.toISOString(),
-        end_time: new Date(now.getTime() + 86400000).toISOString(),
-        status: "ACTIVE" as const,
-        city_id: "c1110000-0000-0000-0000-000000000001",
-        zone_id: "z1110000-0000-0000-0000-000000000001",
-        capacity: 1,
-        metadata: { is_test: true, timestamp: now.toISOString() },
-        created_at: now.toISOString()
-      };
-
-      console.log("[GIG_TEST_CLIENT] Starting authoritative persistence test on 'gigs'...");
-      
-      const TABLE = "gigs";
-      let successRes: any = null;
-
-      try {
-        console.log(`[GIG_TEST_CLIENT] Authoritative INSERT on "${TABLE}"...`);
-        successRes = await createRecord(TABLE, testGig);
-      } catch (e: any) {
-        console.error(`[GIG_TEST_CLIENT] INSERT failed for "${TABLE}":`, e.message);
-        throw e;
-      }
-
-      if (successRes) {
-        console.log(`[GIG_TEST_CLIENT] Row persisted to "${TABLE}". Verifying via direct UUID query...`);
-        
-        await new Promise(r => setTimeout(r, 1500));
-        
-        const verifyRows = await fetchGigs({ id: testId });
-        const foundGig = verifyRows.find((g: any) => g.id === testId);
-        
-        const authUser = await insforge.auth.getCurrentUser();
-        
-        if (foundGig || successRes) {
-          toast.success(`Production Gig Test Passed: Row persisted and verified in "${TABLE}".`);
-          
-          const finalGig = foundGig || testGig;
-          
-          setGigs(prev => {
-            const exists = prev.some(g => g.id === finalGig.id);
-            if (exists) return prev;
-            return [finalGig as Gig, ...prev];
-          });
-          setAllGigsCount(prev => (prev || 0) + 1);
-
-          setDiagnostics((prev: any) => ({ 
-            ...prev, 
-            activeTable: TABLE,
-            testError: { 
-              success: true, 
-              testRecordId: testId, 
-              userId: authUser.data?.user?.id || "unknown",
-              listCount: foundGig ? verifyRows.length : 1,
-              confirmedTable: TABLE
-            } 
-          }));
-        } else {
-          throw new Error("Persistence verification failed: row not returned in read-back");
-        }
-
-        setTimeout(() => void load(), 1000);
-
-      } else {
-        throw new Error(`createRecord returned null/empty for '${TABLE}'`);
-      }
-    } catch (err: any) {
-      console.error("[GIG_TEST_CLIENT] FAILED:", err);
-      toast.error(`Test execution failed: ${err.message}`);
-      setDiagnostics((prev: any) => ({ 
-        ...prev, 
-        testError: { 
-          success: false, 
-          error: err.message, 
-          details: err.status,
-          rawError: err.rawMessage || err.message
-        } 
-      }));
-    } finally {
-      setIsTesting(false);
-    }
-  };
 
   useEffect(() => { void load(); }, [load, version]);
 
@@ -883,6 +787,39 @@ function SlotsDetailsView({ gigs, citiesMap, zonesMap, city, setCity, zone, setZ
 
 function CapacityChangeView({ gigs, citiesMap, city, setCity, zone, setZone, date }: any) {
   const [mode, setMode] = useState<"view" | "create">("view");
+  const [drafts, setDrafts] = useState<Record<string, number>>({});
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleCapacityChange = (gigId: string, value: string) => {
+    const val = parseInt(value);
+    if (!isNaN(val) && val > 0) {
+      setDrafts(prev => ({ ...prev, [gigId]: val }));
+    }
+  };
+
+  const handleSave = async () => {
+    const changedIds = Object.keys(drafts);
+    if (changedIds.length === 0) {
+      toast.info("No capacity changes to save.");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { updateGigCapacity } = await import("@/lib/gigs-api");
+      const results = await Promise.all(
+        changedIds.map(id => updateGigCapacity(id, drafts[id]))
+      );
+      
+      toast.success(`Successfully updated capacity for ${results.length} gig(s)`);
+      setDrafts({});
+      setMode("view");
+    } catch (err: any) {
+      toast.error(`Failed to update capacity: ${err.message}`);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -932,37 +869,44 @@ function CapacityChangeView({ gigs, citiesMap, city, setCity, zone, setZone, dat
 
         <div className="space-y-4">
           {gigs.length > 0 ? (
-            gigs.map((g: Gig) => (
-              <div key={g.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs uppercase">{g.id.slice(0, 2)}</div>
-                  <div>
-                    <p className="text-xs font-black">{g.title || "Unavailable"}</p>
-                    <p className="text-[10px] font-medium text-muted-foreground">Persisted Capacity: {typeof g.capacity === "number" ? g.capacity : "Unavailable"}</p>
-
+            gigs.map((g: Gig) => {
+              const currentCapacity = typeof g.capacity === "number" ? g.capacity : 0;
+              const newCapacity = drafts[g.id] ?? currentCapacity;
+              
+              return (
+                <div key={g.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 ring-1 ring-border/40">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-card font-black text-xs uppercase">{g.id.slice(0, 2)}</div>
+                    <div>
+                      <p className="text-xs font-black">{g.title || "Unavailable"}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground">Persisted Capacity: {currentCapacity || "Unavailable"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">Update Capacity</span>
+                      <input 
+                        type="number" 
+                        min="1"
+                        value={newCapacity || ""}
+                        onChange={(e) => handleCapacityChange(g.id, e.target.value)}
+                        className="w-20 h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 text-xs font-black text-center outline-none focus:ring-primary/40"
+                        disabled={mode === "view" || isUpdating}
+                      />
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Total</span>
+                      <span className={cn(
+                        "h-10 px-4 flex items-center font-black",
+                        newCapacity !== currentCapacity ? "text-primary" : "text-emerald-600"
+                      )}>
+                        {newCapacity || "Unavailable"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">Update Capacity</span>
-                    <input 
-                      type="number" 
-                      min="1"
-                      defaultValue={typeof g.capacity === "number" ? g.capacity : ""}
-                      onChange={(e) => {
-                         // UI only update logic can go here if needed, but per request it only updates on submit
-                      }}
-                      className="w-20 h-10 px-3 bg-card rounded-xl ring-1 ring-border/60 text-xs font-black text-center outline-none focus:ring-primary/40"
-                      disabled={mode === "view"}
-                    />
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 mb-1">New Total</span>
-                    <span className="h-10 px-4 flex items-center font-black text-emerald-600">{typeof g.capacity === "number" ? g.capacity : "Unavailable"}</span>
-                  </div>
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="py-12 text-center text-xs font-black text-muted-foreground">No eligible gigs found for capacity adjustment.</div>
           )}
@@ -970,14 +914,28 @@ function CapacityChangeView({ gigs, citiesMap, city, setCity, zone, setZone, dat
 
         {mode === "create" && (
           <div className="mt-8 flex justify-end gap-3 border-t border-border/40 pt-6">
-            <button className="px-6 py-2.5 rounded-xl text-xs font-black bg-muted hover:bg-muted/80 transition active:scale-95">Reset</button>
-            <button onClick={() => toast.success("Capacity updated successfully")} className="px-8 py-2.5 rounded-xl text-xs font-black bg-primary text-white shadow-glow hover:opacity-90 transition active:scale-95">Save Changes</button>
+            <button 
+              onClick={() => { setDrafts({}); setMode("view"); }}
+              className="px-6 py-2.5 rounded-xl text-xs font-black bg-muted hover:bg-muted/80 transition active:scale-95"
+              disabled={isUpdating}
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSave} 
+              disabled={isUpdating || Object.keys(drafts).length === 0}
+              className="px-8 py-2.5 rounded-xl text-xs font-black bg-primary text-white shadow-glow hover:opacity-90 transition active:scale-95 flex items-center gap-2"
+            >
+              {isUpdating && <Loader2 className="h-3 w-3 animate-spin" />}
+              Save Changes
+            </button>
           </div>
         )}
       </div>
     </div>
   );
 }
+
 
 function FilterSelect({ label, value, onChange, options }: any) {
   const allLabel = label === "Zone" ? "All zones" : "All cities";
