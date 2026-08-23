@@ -300,23 +300,24 @@ function GigCard({ gig, isBooked, onAction, busy }: { gig: Gig; isBooked: boolea
             <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center">
                <MapPin className="h-3.5 w-3.5" />
             </div>
-            <span className="font-bold">{gig.zone_id ? "Vadodara Central" : "Any Zone"}</span>
+            <span className="font-bold">{gig.zone_id ? "Zone details unavailable" : "Zone not specified"}</span>
           </div>
         </div>
 
         <div className="mt-6 flex items-center justify-between">
           <div className="flex -space-x-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-7 w-7 rounded-full border-2 border-background bg-muted flex items-center justify-center overflow-hidden shadow-sm">
-                <div className="h-full w-full bg-primary/10 text-[8px] font-black flex items-center justify-center">R</div>
+            {isBooked ? (
+              <div className="h-7 w-7 rounded-full border-2 border-background bg-primary/10 flex items-center justify-center overflow-hidden shadow-sm">
+                <div className="h-full w-full text-[8px] font-black flex items-center justify-center text-primary">YOU</div>
               </div>
-            ))}
-            <div className="h-7 px-2 rounded-full border-2 border-background bg-muted text-[8px] font-black flex items-center justify-center shadow-sm">
-              +12
-            </div>
+            ) : (
+              <div className="h-7 px-3 rounded-full border-2 border-background bg-muted text-[8px] font-black flex items-center justify-center shadow-sm text-muted-foreground">
+                OPEN
+              </div>
+            )}
           </div>
           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-            {gig.capacity ? `${participantCount}/${gig.capacity} Slots Booked` : `${participantCount} Enrolled`}
+            {isBooked ? "Slot Booked" : (gig.capacity ? "Slot Available" : "Enrollment Open")}
           </span>
         </div>
       </div>
