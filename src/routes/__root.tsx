@@ -81,7 +81,7 @@ function RootComponent() {
 
 function AppShellContent() {
   const location = useLocation();
-  const isLogistics = location.pathname === '/logistics' || location.pathname.startsWith('/logistics/');
+  const isDesktopPortal = location.pathname.startsWith('/logistics') || location.pathname.startsWith('/admin');
 
   const catalogVersion = useSyncExternalStore(
     (cb) => (subscribeCatalog as any)(cb), 
@@ -93,7 +93,7 @@ function AppShellContent() {
 
   return (
     <div key={catalogVersion}>
-      {isLogistics ? (
+      {isDesktopPortal ? (
         <div className="min-h-svh w-full bg-background">
           {content}
         </div>
