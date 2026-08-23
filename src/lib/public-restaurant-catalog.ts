@@ -7,7 +7,7 @@ import { listTable } from "./insforge-crud";
  * Defines the strict whitelist of fields accessible to public/unauthenticated discovery.
  * Prevents exposure of banking, PII, KYC, and commercial settlement data.
  */
-export const PUBLIC_CATALOG_FIELDS = "id, name, logo, logo_url, cover_image, cover_url, address, latitude, longitude, rating, status, is_open, veg_status, delivery_time, cuisine, city, delivery_radius, featured, sponsored, is_live" as const;
+export const PUBLIC_CATALOG_FIELDS = "id, name, logo, logo_url, cover_image, cover_url, address, latitude, longitude, rating, status, is_open, veg_status, delivery_time, cuisine, city, delivery_radius, featured, sponsored, is_live, onboarding_status, reviews_count, price_level, tags, go_live_override" as const;
 
 export interface PublicRestaurant {
   id: string;
@@ -30,6 +30,11 @@ export interface PublicRestaurant {
   featured?: boolean;
   sponsored?: boolean;
   is_live: boolean;
+  onboarding_status?: string;
+  reviews_count?: number;
+  price_level?: string;
+  tags?: string[] | string;
+  go_live_override?: boolean;
 }
 
 /**
