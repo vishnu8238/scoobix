@@ -646,14 +646,14 @@ function LogisticsGigs() {
 
                 <div className="mt-6 flex items-center gap-3">
                   <button 
-                    onClick={runGigTest}
-                    disabled={isTesting}
+                    onClick={() => void load()}
+                    disabled={loading}
                     className="flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-1.5 text-[9px] font-black text-white hover:bg-slate-800 disabled:opacity-50"
                   >
-                    {isTesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                    Run Persistence Test
+                    {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    Retry Load
                   </button>
-                  <p className="text-[9px] font-bold text-muted-foreground/60 italic">Performs Auth Discovery → Insert → Read-back verification</p>
+                  <p className="text-[9px] font-bold text-muted-foreground/60 italic">Refreshing operational data from authoritative tables</p>
                 </div>
 
                 {diagnostics.testError && (
