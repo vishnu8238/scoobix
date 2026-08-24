@@ -417,7 +417,7 @@ function LogisticsGigs() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-2xl bg-muted/30 p-1 w-fit ring-1 ring-border/40">
+      <div className="flex gap-1 rounded-2xl bg-muted/30 p-1 w-fit ring-1 ring-border/40 mx-8 mb-6">
         {[
           { id: "fleet", label: "Fleet Gigs" },
           { id: "slots", label: "Slots Details" },
