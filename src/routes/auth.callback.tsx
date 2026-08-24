@@ -57,6 +57,8 @@ function AuthCallback() {
         // Portal mapping
         const portalMap: Record<string, string> = {
           admin: "/admin",
+        const portalMap: Record<string, string> = {
+          admin: "/admin",
           logistics: "/logistics",
           manager: "/manager",
           partner: "/partner",
@@ -64,7 +66,8 @@ function AuthCallback() {
           customer: "/app",
         };
 
-        const destPath = portalMap[portalRef.current] || "/app";
+        const currentPortal = portalRef.current || "customer";
+        const destPath = portalMap[currentPortal] || "/app";
 
         localStorage.removeItem("scoobix_return_to");
 
