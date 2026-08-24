@@ -418,7 +418,7 @@ function LogisticsGigs() {
         {activeTab === "fleet" && (
           <div className="flex items-center gap-4 py-2 border-t border-border/40">
             <div className="flex items-center gap-3">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter by date</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Choose Gig date</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button 
