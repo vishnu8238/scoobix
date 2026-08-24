@@ -15,12 +15,6 @@ function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. Resolve requested portal via validated pop helper
-    const portal = popPortalIntent();
-    portalRef.current = portal;
-
-
-
     const handleCallback = async () => {
       if (exchangeAttemptedRef.current) return;
       exchangeAttemptedRef.current = true;
