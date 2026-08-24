@@ -437,7 +437,7 @@ function LogisticsGigs() {
       </div>
 
       {activeTab === "fleet" ? (
-        <>
+        <div className="px-8 pb-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1 ring-1 ring-border/60 dark:bg-slate-800/50">
