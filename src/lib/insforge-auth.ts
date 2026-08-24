@@ -6,61 +6,77 @@ import { insforge } from "./insforge";
 
 /**
  * Generates the canonical OAuth callback URL using the ACTUAL browser origin.
- * @param portal Optional portal to persist in the callback URL
+ * The redirect URL is strictly allowlisted to the base callback path.
  */
-export function getOAuthCallbackUrl(portal?: string): string {
+export function getOAuthCallbackUrl(): string {
   if (typeof window === "undefined") return "http://localhost:8080/auth/callback";
-  const origin = window.location.origin;
-  const baseUrl = `${origin}/auth/callback`;
-  
-  if (portal && ["customer", "partner", "rider", "manager", "admin", "logistics"].includes(portal)) {
-    return `${baseUrl}?portal=${portal}`;
-  }
-  
-  return baseUrl;
+  return `${window.location.origin}/auth/callback`;
 }
 
 const PORTAL_INTENT_KEY = "scoobix_oauth_portal_intent";
+const ALLOWED_PORTALS = ["customer", "partner", "rider", "manager", "admin", "logistics"];
 
 /**
- * Persists the portal intent before starting OAuth.
- * Uses both localStorage and sessionStorage for maximum reliability across browsers.
+ * Validates a portal identifier against allowlisted values.
  */
-export function setPortalIntent(portal: string) {
-  if (typeof window !== "undefined") {
-    console.log("[AUTH_DEBUG] Setting portal intent:", portal);
-    localStorage.setItem(PORTAL_INTENT_KEY, portal);
-    try {
-      sessionStorage.setItem(PORTAL_INTENT_KEY, portal);
-    } catch (e) {
-      // Ignore sessionStorage errors (e.g. private mode)
-    }
+export function validatePortal(portal: string | null): string {
+  if (portal && ALLOWED_PORTALS.includes(portal)) {
+    return portal;
   }
+  return "customer";
 }
 
 /**
- * Retrieves and clears the portal intent.
+ * Persists the portal intent before starting OAuth.
+ * Uses a short-lived cookie for cross-origin reliability and storage for fallback.
+ */
+export function setPortalIntent(portal: string) {
+  if (typeof window === "undefined") return;
+  
+  const validated = validatePortal(portal);
+  console.log("[AUTH_DEBUG] Setting portal intent:", validated);
+
+  // 1. Storage intent (fallback)
+  localStorage.setItem(PORTAL_INTENT_KEY, validated);
+  try {
+    sessionStorage.setItem(PORTAL_INTENT_KEY, validated);
+  } catch (e) {}
+
+  // 2. Cookie intent (cross-origin reliability)
+  // Max-Age: 600 (10 mins), SameSite: Lax for OAuth redirect compatibility
+  const isSecure = window.location.protocol === 'https:';
+  document.cookie = `${PORTAL_INTENT_KEY}=${validated}; Path=/; Max-Age=600; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+}
+
+/**
+ * Retrieves and clears the portal intent from all intent carriers.
  */
 export function popPortalIntent(): string {
   if (typeof window === "undefined") return "customer";
   
-  // Priority: URL Param > sessionStorage > localStorage
-  const params = new URLSearchParams(window.location.search);
-  const portalParam = params.get("portal");
-  if (portalParam) return portalParam;
+  // 1. Check Cookie first (most reliable for cross-origin)
+  let intent: string | null = null;
+  const cookieMatch = document.cookie.match(new RegExp('(^| )' + PORTAL_INTENT_KEY + '=([^;]+)'));
+  if (cookieMatch) {
+    intent = cookieMatch[2];
+  }
 
-  const sessionIntent = sessionStorage.getItem(PORTAL_INTENT_KEY);
-  const localIntent = localStorage.getItem(PORTAL_INTENT_KEY);
-  const intent = sessionIntent || localIntent || "customer";
+  // 2. Fallback to storage
+  if (!intent) {
+    intent = sessionStorage.getItem(PORTAL_INTENT_KEY) || localStorage.getItem(PORTAL_INTENT_KEY);
+  }
+
+  const validated = validatePortal(intent);
+  console.log("[AUTH_DEBUG] Popped portal intent:", validated);
   
-  console.log("[AUTH_DEBUG] Popped portal intent:", intent, { source: sessionIntent ? 'session' : localIntent ? 'local' : 'default' });
-  
+  // 3. Clear all carriers
   localStorage.removeItem(PORTAL_INTENT_KEY);
   try {
     sessionStorage.removeItem(PORTAL_INTENT_KEY);
   } catch (e) {}
+  document.cookie = `${PORTAL_INTENT_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
   
-  return intent;
+  return validated;
 }
 
 /**
@@ -82,7 +98,7 @@ export async function loginWithGoogle(
 
   // 2. Canonical Callback URL (real browser origin)
   // Carry validated portal through round-trip as a query parameter
-  const callbackUrl = getOAuthCallbackUrl(portalIntent);
+  const callbackUrl = getOAuthCallbackUrl();
   console.log("[AUTH_DEBUG] OAUTH_CALLBACK_URL", callbackUrl);
 
   // 3. Ask the SDK for the authorization URL instead of letting it navigate

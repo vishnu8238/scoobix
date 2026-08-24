@@ -15,22 +15,9 @@ function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. Prefer persisted portal intent
-    let portal: string | null = popPortalIntent();
-    
-    // 2. Fallback to query param
-    const params = new URLSearchParams(window.location.search);
-    if (!portal) {
-      const p = params.get("portal");
-      if (p && ["customer", "partner", "rider", "manager", "admin", "logistics"].includes(p)) {
-        portal = p;
-      }
-    }
-    
-    // 3. Last resort fallback
-    portal = portal || "customer";
-    
-    portalRef.current = portal as string;
+    // 1. Resolve requested portal via validated pop helper
+    const portal = popPortalIntent();
+    portalRef.current = portal;
 
 
 
@@ -39,6 +26,7 @@ function AuthCallback() {
       exchangeAttemptedRef.current = true;
 
       try {
+        const params = new URLSearchParams(window.location.search);
         const code = params.get("insforge_code") || params.get("code");
         const error = params.get("error");
         const errorDescription = params.get("error_description");
@@ -76,9 +64,8 @@ function AuthCallback() {
           customer: "/app",
         };
 
-        const destPath = portalMap[portal] || "/app";
+        const destPath = portalMap[portalRef.current] || "/app";
 
-        localStorage.removeItem("scoobix_oauth_portal_intent");
         localStorage.removeItem("scoobix_return_to");
 
         await navigate({ to: destPath as any, replace: true });
