@@ -680,7 +680,7 @@ function LogisticsGigs() {
               </div>
             )}
           </section>
-        </>
+        </div>
       ) : activeTab === "slots" ? (
         <SlotsDetailsView 
           gigs={gigs}
