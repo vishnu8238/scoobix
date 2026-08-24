@@ -7,10 +7,19 @@ try {
   // -l returns only filenames, -r is recursive
   // We use grep -r because it's standard and available.
   // We exclude the script itself and node_modules.
-  const cmd = "grep -rnE '@supabase/supabase-js' src/ package.json --exclude=scripts/prebuild.js --exclude=src/routes/auth.callback.tsx";
+  const cmd = "grep -rnE '@supabase/supabase-js' src/ package.json --exclude=scripts/prebuild.js";
   
   try {
-    const results = execSync(cmd).toString().trim();
+    let results = execSync(cmd).toString().trim();
+    
+    // Filter out matches that are within JSX strings in auth.callback.tsx
+    results = results.split('\n').filter(line => {
+      if (line.includes('src/routes/auth.callback.tsx')) {
+        // Only allow if it's inside a quoted string (visual edit)
+        return !line.includes('{"\'\'\'') && !line.includes('"}');
+      }
+      return true;
+    }).join('\n');
     
     if (results) {
       console.error('\x1b[31m[ERROR] FORBIDDEN REFERENCES FOUND:\x1b[0m');
