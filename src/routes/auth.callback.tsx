@@ -57,8 +57,6 @@ function AuthCallback() {
         // Portal mapping
         const portalMap: Record<string, string> = {
           admin: "/admin",
-        const portalMap: Record<string, string> = {
-          admin: "/admin",
           logistics: "/logistics",
           manager: "/manager",
           partner: "/partner",
