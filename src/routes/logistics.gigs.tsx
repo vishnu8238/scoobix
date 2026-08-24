@@ -508,15 +508,7 @@ function LogisticsGigs() {
                 </button>
               </div>
               
-              <input 
-                type="date"
-                value={selectedDateKey}
-                onChange={(e) => {
-                  setSelectedDateKey(e.target.value);
-                  setDateFilterMode("selected");
-                }}
-                className="h-10 px-4 rounded-xl border border-border/60 bg-card text-[10px] font-black transition-all hover:bg-muted active:scale-95 outline-none focus:ring-2 focus:ring-emerald-500/20"
-              />
+              {/* Raw input removed for P3.1 accessibility fix */}
 
               <div className="h-6 w-px bg-border/60 mx-1 hidden sm:block" />
 
