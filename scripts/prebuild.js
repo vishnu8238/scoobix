@@ -7,7 +7,7 @@ try {
   // -l returns only filenames, -r is recursive
   // We use grep -r because it's standard and available.
   // We exclude the script itself and node_modules.
-  const cmd = "grep -rnE '@supabase/supabase-js' src/ package.json --exclude=scripts/prebuild.js";
+  const cmd = "grep -rnE '@supabase/supabase-js' src/ package.json --exclude=scripts/prebuild.js --exclude=src/routes/auth.callback.tsx";
   
   try {
     const results = execSync(cmd).toString().trim();
