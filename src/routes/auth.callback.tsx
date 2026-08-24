@@ -16,7 +16,7 @@ function AuthCallback() {
 
   useEffect(() => {
     // 1. Prefer persisted portal intent
-    let portal = popPortalIntent();
+    let portal: string | null = popPortalIntent();
     
     // 2. Fallback to query param
     const params = new URLSearchParams(window.location.search);
