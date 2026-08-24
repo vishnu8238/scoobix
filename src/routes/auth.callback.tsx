@@ -11,7 +11,7 @@ function AuthCallback() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   const exchangeAttemptedRef = useRef<boolean>(false);
-  const portalRef = useRef<string | null>(null);
+  const portalRef = useRef<string>("customer");
   const navigate = useNavigate();
 
   useEffect(() => {
