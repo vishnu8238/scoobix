@@ -21,7 +21,10 @@ function AuthCallback() {
     // 2. Fallback to query param
     const params = new URLSearchParams(window.location.search);
     if (!portal) {
-      portal = params.get("portal");
+      const p = params.get("portal");
+      if (p && ["customer", "partner", "rider", "manager", "admin", "logistics"].includes(p)) {
+        portal = p;
+      }
     }
     
     // 3. Last resort fallback
