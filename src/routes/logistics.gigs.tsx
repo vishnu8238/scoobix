@@ -423,6 +423,8 @@ function LogisticsGigs() {
                 <PopoverTrigger asChild>
                   <Button 
                     variant="outline" 
+                    aria-label="Choose Gig date"
+                    title="Choose Gig date"
                     className="h-10 px-4 rounded-xl border-border/60 bg-card text-xs font-black transition-all hover:bg-muted"
                   >
                     <Calendar className="h-4 w-4 mr-2 text-emerald-600" />
