@@ -36,6 +36,9 @@ import { createRecord, listTable } from "@/lib/insforge-crud";
 import { newUuid } from "@/lib/orders-api";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { PortalErrorBoundary } from "@/components/cravio/PortalErrorBoundary";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
@@ -361,7 +364,7 @@ function LogisticsGigs() {
       <div>
 
 
-      <div className="min-h-screen space-y-8 bg-slate-50/50 p-8 dark:bg-transparent">
+      <div className="space-y-6 bg-slate-50/50 p-8 dark:bg-transparent">
         <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">
@@ -414,7 +417,7 @@ function LogisticsGigs() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-2xl bg-muted/30 p-1 w-fit ring-1 ring-border/40">
+      <div className="flex gap-1 rounded-2xl bg-muted/30 p-1 w-fit ring-1 ring-border/40 mx-8 mb-6">
         {[
           { id: "fleet", label: "Fleet Gigs" },
           { id: "slots", label: "Slots Details" },
@@ -434,7 +437,7 @@ function LogisticsGigs() {
       </div>
 
       {activeTab === "fleet" ? (
-        <>
+        <div className="px-8 pb-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1 ring-1 ring-border/60 dark:bg-slate-800/50">
@@ -461,6 +464,34 @@ function LogisticsGigs() {
                   Last 2 Months
                 </button>
               </div>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={cn(
+                      "h-10 px-4 rounded-xl border-border/60 bg-card text-[10px] font-black transition-all hover:bg-muted active:scale-95",
+                      dateFilterMode === "selected" && "ring-2 ring-emerald-500/20 border-emerald-500/50 text-emerald-600"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {selectedDateKey ? format(parseISO(selectedDateKey), "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarUI
+                    mode="single"
+                    selected={parseISO(selectedDateKey)}
+                    onSelect={(date) => {
+                      if (date) {
+                        setSelectedDateKey(format(date, "yyyy-MM-dd"));
+                        setDateFilterMode("selected");
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
 
               <div className="h-6 w-px bg-border/60 mx-1 hidden sm:block" />
 
@@ -677,7 +708,7 @@ function LogisticsGigs() {
               </div>
             )}
           </section>
-        </>
+        </div>
       ) : activeTab === "slots" ? (
         <SlotsDetailsView 
           gigs={gigs}
