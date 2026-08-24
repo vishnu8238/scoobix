@@ -27,7 +27,8 @@ function AuthCallback() {
     // 3. Last resort fallback
     portal = portal || "customer";
     
-    portalRef.current = portal;
+    portalRef.current = portal as string;
+
 
 
     const handleCallback = async () => {
