@@ -6,10 +6,18 @@ import { insforge } from "./insforge";
 
 /**
  * Generates the canonical OAuth callback URL using the ACTUAL browser origin.
+ * @param portal Optional portal to persist in the callback URL
  */
-export function getOAuthCallbackUrl(): string {
+export function getOAuthCallbackUrl(portal?: string): string {
   if (typeof window === "undefined") return "http://localhost:8080/auth/callback";
-  return `${window.location.origin}/auth/callback`;
+  const origin = window.location.origin;
+  const baseUrl = `${origin}/auth/callback`;
+  
+  if (portal && ["customer", "partner", "rider", "manager", "admin", "logistics"].includes(portal)) {
+    return `${baseUrl}?portal=${portal}`;
+  }
+  
+  return baseUrl;
 }
 
 const PORTAL_INTENT_KEY = "scoobix_oauth_portal_intent";
