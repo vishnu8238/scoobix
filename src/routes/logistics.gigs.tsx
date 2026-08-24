@@ -36,6 +36,9 @@ import { createRecord, listTable } from "@/lib/insforge-crud";
 import { newUuid } from "@/lib/orders-api";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { PortalErrorBoundary } from "@/components/cravio/PortalErrorBoundary";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/logistics/gigs")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
