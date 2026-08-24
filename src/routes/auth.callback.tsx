@@ -15,12 +15,6 @@ function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. Resolve requested portal via validated pop helper
-    const portal = popPortalIntent();
-    portalRef.current = portal;
-
-
-
     const handleCallback = async () => {
       if (exchangeAttemptedRef.current) return;
       exchangeAttemptedRef.current = true;
@@ -64,7 +58,11 @@ function AuthCallback() {
           customer: "/app",
         };
 
-        const currentPortal = portalRef.current || "customer";
+        // 1. Resolve requested portal via validated pop helper ONLY when ready to redirect
+        // This prevents remounts from consuming and clearing the intent prematurely.
+        const currentPortal = popPortalIntent();
+        portalRef.current = currentPortal;
+        
         const destPath = portalMap[currentPortal] || "/app";
 
         localStorage.removeItem("scoobix_return_to");
