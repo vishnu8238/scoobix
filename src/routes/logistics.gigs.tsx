@@ -419,15 +419,31 @@ function LogisticsGigs() {
           <div className="flex items-center gap-4 py-2 border-t border-border/40">
             <div className="flex items-center gap-3">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter by date</label>
-              <input 
-                type="date"
-                value={selectedDateKey}
-                onChange={(e) => {
-                  setSelectedDateKey(e.target.value);
-                  setDateFilterMode("selected");
-                }}
-                className="h-10 px-4 rounded-xl border border-border/60 bg-card text-xs font-black transition-all hover:bg-muted outline-none focus:ring-2 focus:ring-emerald-500/20"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="h-10 px-4 rounded-xl border-border/60 bg-card text-xs font-black transition-all hover:bg-muted"
+                  >
+                    <Calendar className="h-4 w-4 mr-2 text-emerald-600" />
+                    {format(parseISO(selectedDateKey), "PPP")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarUI
+                    mode="single"
+                    selected={parseISO(selectedDateKey)}
+                    onSelect={(date) => {
+                      if (date) {
+                        setSelectedDateKey(format(date, "yyyy-MM-dd"));
+                        setDateFilterMode("selected");
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
             </div>
             {dateFilterMode !== "all" && (
               <button
