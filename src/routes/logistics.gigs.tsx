@@ -465,33 +465,15 @@ function LogisticsGigs() {
                 </button>
               </div>
               
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className={cn(
-                      "h-10 px-4 rounded-xl border-border/60 bg-card text-[10px] font-black transition-all hover:bg-muted active:scale-95",
-                      dateFilterMode === "selected" && "ring-2 ring-emerald-500/20 border-emerald-500/50 text-emerald-600"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {selectedDateKey ? format(parseISO(selectedDateKey), "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarUI
-                    mode="single"
-                    selected={parseISO(selectedDateKey)}
-                    onSelect={(date) => {
-                      if (date) {
-                        setSelectedDateKey(format(date, "yyyy-MM-dd"));
-                        setDateFilterMode("selected");
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <input 
+                type="date"
+                value={selectedDateKey}
+                onChange={(e) => {
+                  setSelectedDateKey(e.target.value);
+                  setDateFilterMode("selected");
+                }}
+                className="h-10 px-4 rounded-xl border border-border/60 bg-card text-[10px] font-black transition-all hover:bg-muted active:scale-95 outline-none focus:ring-2 focus:ring-emerald-500/20"
+              />
 
               <div className="h-6 w-px bg-border/60 mx-1 hidden sm:block" />
 
