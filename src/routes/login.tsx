@@ -48,12 +48,14 @@ function ConsolidatedLogin() {
   }, []);
 
   useEffect(() => {
-    if (!loading && user && user.membershipsResolved) {
+    // Wait for hydration and authorization resolution
+    if (!loading && hydrationComplete && user && user.membershipsResolved) {
       const params = new URLSearchParams(window.location.search);
       const returnTo = params.get("returnTo");
       
-      // If logged in and admitted to the selected portal, go there
-      if (user.roles.includes(selectedPortal)) {
+      const isAuthorizedForSelected = user.roles.includes(selectedPortal);
+      
+      if (isAuthorizedForSelected) {
         // Special case: returnTo for Customer portal
         if (selectedPortal === "customer" && returnTo && returnTo.startsWith("/app")) {
           console.log(`[AUTH_DEBUG] Login: Returning to ${returnTo}`);
@@ -63,19 +65,18 @@ function ConsolidatedLogin() {
 
         const dest = selectedPortal === "customer" ? "/app" : `/${selectedPortal}`;
         console.log(`[AUTH_DEBUG] Login: User authorized for ${selectedPortal}, navigating to ${dest}`);
-        // Use window.location.replace to ensure a clean portal load and prevent back-button loops
         window.location.replace(new URL(dest, window.location.origin).href);
       } else if (selectedPortal === "customer") {
         // Normal customers go to /app
         const dest = (returnTo && returnTo.startsWith("/app")) ? returnTo : "/app";
         window.location.replace(new URL(dest, window.location.origin).href);
       } else {
-        // If they chose a privileged portal but aren't authorized, 
-        // they stay here and see the error message (already handled via URL params)
+        // If they requested a privileged portal but aren't authorized (e.g. status='denied' in portal_access)
+        // STAY HERE to show the error. Do not fall back to /app.
         console.warn(`[AUTH_DEBUG] Login: User NOT authorized for ${selectedPortal}. Roles:`, user.roles);
       }
     }
-  }, [user, loading, selectedPortal]);
+  }, [user, loading, hydrationComplete, selectedPortal]);
 
   const handleLogin = async () => {
     try {

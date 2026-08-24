@@ -15,12 +15,21 @@ function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!portalRef.current) {
-      portalRef.current = popPortalIntent();
+    // 1. Prefer persisted portal intent
+    let portal: string | null = popPortalIntent();
+    
+    // 2. Fallback to query param
+    const params = new URLSearchParams(window.location.search);
+    if (!portal) {
+      portal = params.get("portal");
     }
     
-    const portal = portalRef.current || "customer";
-    const params = new URLSearchParams(window.location.search);
+    // 3. Last resort fallback
+    portal = portal || "customer";
+    
+    portalRef.current = portal as string;
+
+
 
     const handleCallback = async () => {
       if (exchangeAttemptedRef.current) return;
