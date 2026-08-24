@@ -414,6 +414,32 @@ function LogisticsGigs() {
             </button>
           </div>
         </div>
+
+        {activeTab === "fleet" && (
+          <div className="flex items-center gap-4 py-2 border-t border-border/40">
+            <div className="flex items-center gap-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filter by date</label>
+              <input 
+                type="date"
+                value={selectedDateKey}
+                onChange={(e) => {
+                  setSelectedDateKey(e.target.value);
+                  setDateFilterMode("selected");
+                }}
+                className="h-10 px-4 rounded-xl border border-border/60 bg-card text-xs font-black transition-all hover:bg-muted outline-none focus:ring-2 focus:ring-emerald-500/20"
+              />
+            </div>
+            {dateFilterMode !== "all" && (
+              <button
+                onClick={() => setDateFilterMode("all")}
+                className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-black text-slate-500 hover:text-rose-600 transition-colors"
+              >
+                <History className="h-3.5 w-3.5" />
+                Clear date / Show all
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -438,9 +464,10 @@ function LogisticsGigs() {
 
       {activeTab === "fleet" ? (
         <div className="px-8 pb-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-6">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 rounded-2xl bg-slate-100 p-1 ring-1 ring-border/60 dark:bg-slate-800/50">
+
                 <button
                   onClick={() => setDateFilterMode("all")}
                   className={cn(
