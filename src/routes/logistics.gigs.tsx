@@ -364,7 +364,7 @@ function LogisticsGigs() {
       <div>
 
 
-      <div className="min-h-screen space-y-8 bg-slate-50/50 p-8 dark:bg-transparent">
+      <div className="space-y-6 bg-slate-50/50 p-8 dark:bg-transparent">
         <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">
