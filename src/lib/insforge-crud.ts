@@ -534,9 +534,12 @@ export function patchWhereIn<T = Record<string, unknown>>(
   table: string,
   ids: string[],
   patch: Record<string, unknown>,
-): Promise<T | null> {
-  if (!ids.length) return Promise.resolve(null);
-  invalidateTable(table);
+ ): Promise<T | null> {
+   if (table === "user_roles") {
+     throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
+   }
+   if (!ids.length) return Promise.resolve(null);
+   invalidateTable(table);
   return withRetry<T[] | null>(table, () => {
     const query = insforge.database.from(table).update(patch).in("id", ids).select();
     return handleResponse<T[]>(query, "PATCH", table);
