@@ -515,7 +515,10 @@ export function patchRecord<T = Record<string, unknown>>(
   table: string,
   id: string,
   patch: Record<string, unknown>,
-): Promise<T | null> {
+ ): Promise<T | null> {
+  if (table === "user_roles") {
+    throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
+  }
   invalidateTable(table);
   return withRetry<T | null>(table, () => {
     const query = insforge.database.from(table).update(patch).eq("id", id).select();
@@ -546,6 +549,9 @@ export function patchWhereIn<T = Record<string, unknown>>(
 }
 
 export function deleteRecord(table: string, id: string): Promise<null> {
+  if (table === "user_roles") {
+    throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
+  }
   invalidateTable(table);
   return withRetry<null>(table, () => {
     const query = insforge.database.from(table).delete().eq("id", id);
