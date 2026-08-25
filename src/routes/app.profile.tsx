@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-store";
+import { isAuthResolving } from "@/lib/auth-utils";
 import { PageHeader } from "@/components/cravio/PageHeader";
 import { getInitials } from "@/lib/identity-utils";
 import { RoleGuard } from "@/components/cravio/RoleGuard";
