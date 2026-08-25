@@ -356,6 +356,9 @@ export function createRecord<T = Record<string, unknown>>(
   table: string,
   record: Record<string, unknown>,
 ): Promise<T | null> {
+  if (table === "user_roles") {
+    throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
+  }
   invalidateTable(table);
   return withRetry<T | null>(table, async () => {
     // SECURITY: Sanitise input and enforce owner scope for user-owned tables
