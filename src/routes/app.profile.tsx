@@ -21,7 +21,7 @@ export const Route = createFileRoute("/app/profile")({
 });
 
 function AppProfile() {
-  const { user } = useAuth();
+  const { user, loading, authState } = useAuth();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone || "");
@@ -36,6 +36,12 @@ function AppProfile() {
       loadAddresses();
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!loading && !isAuthResolving(authState) && !user) {
+      window.location.replace("/login?portal=customer");
+    }
+  }, [user, loading, authState]);
 
   const loadAddresses = async () => {
     if (!user?.id) return;
