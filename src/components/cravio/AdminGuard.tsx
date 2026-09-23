@@ -15,22 +15,32 @@ interface AdminGuardProps {
 }
 
 export function AdminGuard({ children }: AdminGuardProps) {
-  const { user, loading: authLoading, authState } = useAuth();
+  const { user, loading: authLoading, authState, hydrationComplete } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [timedOut, setTimedOut] = useState(false);
 
+  const resolving = authLoading || !hydrationComplete || isAuthResolving(authState);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (authLoading || isAuthResolving(authState)) {
+      if (resolving) {
         setTimedOut(true);
       }
     }, 15000);
 
     return () => clearTimeout(timer);
-  }, [authLoading, authState]);
+  }, [resolving]);
+
+  // Signed-out redirect must be a side effect, never a render-time navigation.
+  useEffect(() => {
+    if (resolving) return;
+    if (!user && pathname !== "/login") {
+      window.location.replace(`/login?portal=admin`);
+    }
+  }, [resolving, user, pathname]);
 
   // Auth Hydration / Resolution State
-  if ((authLoading || isAuthResolving(authState)) && pathname !== "/login") {
+  if (resolving && pathname !== "/login") {
     return (
       <div className="flex min-h-svh items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-4">
