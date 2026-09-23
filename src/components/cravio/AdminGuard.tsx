@@ -72,10 +72,13 @@ export function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  // Signed out?
+  // Signed out? The redirect above handles navigation; render a blank shell.
   if (!user && pathname !== "/login") {
-    // Already handled by RoleGuard if nested, but this provides a fallback
-    window.location.replace(`/login?portal=admin`);
+    return <div className="min-h-svh bg-zinc-950" />;
+  }
+
+  // Wait for memberships before deciding access.
+  if (user && !user.membershipsResolved && pathname !== "/login") {
     return <div className="min-h-svh bg-zinc-950" />;
   }
 
