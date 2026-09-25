@@ -340,7 +340,7 @@ export function useOrders() {
     let stop = false;
     const tick = async () => {
       if (stop) return;
-      if (id) {
+      if (id && id !== customerId) {
         const api = await import("./orders-api");
         const o = await api.fetchOrder(id);
         if (!stop && o) setOrders((prev) => [o, ...prev.filter((x) => x.id !== o.id)]);
@@ -352,7 +352,7 @@ export function useOrders() {
     void tick();
     const t = setInterval(tick, 8000);
     return () => { stop = true; clearInterval(t); };
-  }, [refresh]);
+  }, [refresh, customerId]);
 
   const reorder = useCallback((id: string) => {
     const o = orders.find((x) => x.id === id);
