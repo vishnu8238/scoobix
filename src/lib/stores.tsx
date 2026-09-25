@@ -208,6 +208,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [appliedCampaign],
   );
 
+  const appliedCoupon = useMemo<Coupon | null>(() => {
+    if (!manualCampaignId || !appliedCampaign || appliedCampaign.campaign.id !== manualCampaignId) return null;
+    const c = appliedCampaign.campaign;
+    const kind: Coupon["kind"] = appliedCampaign.freeDelivery ? "freeship"
+      : appliedCampaign.cashback ? "cashback" : appliedCampaign.walletCredit ? "wallet" : "flat";
+    return {
+      code: (c.promo_code ?? c.name ?? "").toString().toUpperCase(),
+      label: c.name ?? "Coupon applied",
+      kind,
+      value: appliedCampaign.discount ?? 0,
+      campaignId: c.id,
+    };
+  }, [manualCampaignId, appliedCampaign]);
+
   const applyCoupon = useCallback((code: string) => {
     const res = matchPromoCode(campaigns, code, ctx);
     if ("error" in res) return { ok: false, message: res.error };
@@ -219,12 +233,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return (
     <CartContext.Provider value={{
       items, restaurantId, addItem, removeItem: (id) => setItems(prev => prev.filter(p => p.lineId !== id)),
-      setQty: (id, q) => setItems(prev => prev.map(p => p.lineId === id ? { ...p, qty: q } : p)),
+      setQty: (id, q) => setItems(prev => q <= 0 ? prev.filter(p => p.lineId !== id) : prev.map(p => p.lineId === id ? { ...p, qty: Math.floor(q) } : p)),
       clear: () => { setItems([]); setRestaurantId(null); },
       totals, campaigns, coupons, appliedCampaign, eligibleOffers, pendingRewards,
       setPaymentMethod, restaurant: restaurantId ? findRestaurant(restaurantId) ?? null : null,
       pendingConflict, confirmReplaceCart, dismissConflict: () => setPendingConflict(null),
-      coupon: null, applyCoupon, removeCoupon: () => setManualCampaignId(null)
+      coupon: appliedCoupon, applyCoupon, removeCoupon: () => setManualCampaignId(null)
     }}>
       {children}
     </CartContext.Provider>
@@ -305,15 +319,92 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
 export const STATUS_FLOW: OrderStatus[] = ["PLACED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED"];
 
 export function useOrders() {
-  return {
-    orders: [] as Order[],
-    reorder: (id: string) => [] as CartItem[],
-    cancelOrder: async (id: string) => ({ ok: true, message: "Cancelled" }),
-    getOrder: (id: string) => null as Order | null,
-    subscribeToOrders: (id?: string) => () => {},
-    loading: false,
-    placeOrder: async (data: any) => ({ ok: true, orderId: "123", message: "Order placed" })
-  };
+  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const customerId = user?.id;
+
+  const refresh = useCallback(async () => {
+    if (!customerId) { setOrders([]); setLoading(false); return; }
+    const api = await import("./orders-api");
+    const list = await api.fetchCustomerOrders(customerId);
+    setOrders(list);
+    setLoading(false);
+  }, [customerId]);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const getOrder = useCallback((id: string) => orders.find((o) => o.id === id) ?? null, [orders]);
+
+  const subscribeToOrders = useCallback((id?: string) => {
+    let stop = false;
+    const tick = async () => {
+      if (stop) return;
+      if (id && id !== customerId) {
+        const api = await import("./orders-api");
+        const o = await api.fetchOrder(id);
+        if (!stop && o) setOrders((prev) => [o, ...prev.filter((x) => x.id !== o.id)]);
+        if (!stop) setLoading(false);
+      } else {
+        await refresh();
+      }
+    };
+    void tick();
+    const t = setInterval(tick, 8000);
+    return () => { stop = true; clearInterval(t); };
+  }, [refresh, customerId]);
+
+  const reorder = useCallback((id: string) => {
+    const o = orders.find((x) => x.id === id);
+    return o ? o.items.map((i) => ({ ...i })) : ([] as CartItem[]);
+  }, [orders]);
+
+  const cancelOrder = useCallback(async (id: string) => {
+    const api = await import("./orders-api");
+    const o = orders.find((x) => x.id === id);
+    if (o && !["PLACED", "ACCEPTED", "PREPARING"].includes(o.status)) {
+      return { ok: false, message: "This order can no longer be cancelled" };
+    }
+    const ok = await api.patchOrder(id, { status: "CANCELLED" });
+    if (ok) setOrders((prev) => prev.map((x) => x.id === id ? { ...x, status: "CANCELLED" } : x));
+    return { ok, message: ok ? "Order cancelled" : "Could not cancel the order" };
+  }, [orders]);
+
+  const placeOrder = useCallback(async (data: any): Promise<{ ok: boolean; orderId?: string; message?: string }> => {
+    if (!customerId) return { ok: false, message: "Please sign in to place your order" };
+    const r = data.restaurant;
+    if (!r?.id || !data.items?.length) return { ok: false, message: "Your cart is empty" };
+    const api = await import("./orders-api");
+    try {
+      const order = await api.createOrder({
+        customerId,
+        restaurantId: r.id,
+        restaurantName: r.name ?? "",
+        restaurantImage: r.cover ?? r.image ?? "",
+        items: data.items,
+        totals: data.totals,
+        addressLabel: data.addressLabel,
+        addressLine: data.addressLine,
+        paymentMethod: data.paymentMethod,
+        paymentLabel: data.paymentLabel,
+        deliveryInstructions: data.deliveryInstructions,
+        contactless: data.contactless,
+        notes: data.notes,
+        couponCode: data.couponCode,
+        etaMins: r.deliveryMins,
+        delivery_latitude: data.delivery_latitude ?? null,
+        delivery_longitude: data.delivery_longitude ?? null,
+      });
+      if (!order) return { ok: false, message: "Could not place the order. Please try again." };
+      setOrders((prev) => [order, ...prev]);
+      return { ok: true, orderId: order.id, message: "Order placed" };
+    } catch (e) {
+      console.error("[placeOrder]", e);
+      return { ok: false, message: "Could not place the order. Please try again." };
+    }
+  }, [customerId]);
+
+  return { orders, reorder, cancelOrder, getOrder, subscribeToOrders, loading, placeOrder, refresh };
 }
 
 
