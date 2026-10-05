@@ -117,8 +117,19 @@ export const updateOrderStatus = async (id: string, patch: Record<string, any>) 
   const { patchRecord } = await import("./insforge-crud");
   return patchRecord("orders", id, patch);
 };
-export const pingDriverLocation = async (...args: any[]) => {};
-export const setDriverOnline = async (...args: any[]) => {};
+/** Persists the rider's latest position on their `drivers` row (latest-only, no history rows). */
+export const pingDriverLocation = async (driverId: string, lat: number, lng: number) => {
+  if (!driverId) throw new Error("Rider profile not found.");
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error("Invalid location.");
+  const { patchRecord } = await import("./insforge-crud");
+  return patchRecord("drivers", driverId, { latitude: lat, longitude: lng, updated_at: new Date().toISOString() });
+};
+/** Persists rider availability on `drivers.is_online`. Throws on backend failure. */
+export const setDriverOnline = async (driverId: string, online: boolean) => {
+  if (!driverId) throw new Error("Rider profile not found.");
+  const { patchRecord } = await import("./insforge-crud");
+  return patchRecord("drivers", driverId, { is_online: online, updated_at: new Date().toISOString() });
+};
 export const acceptDeliveryRequest = async (...args: any[]) => {
   const { patchRecord } = await import("./insforge-crud");
   const [id] = args;
