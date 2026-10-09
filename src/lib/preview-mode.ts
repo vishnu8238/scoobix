@@ -1,17 +1,29 @@
 /**
- * TEMPORARY development-only Portal Preview Mode.
+ * TEMPORARY Portal Preview Mode (frontend-only identity simulation).
  *
  * Enabled ONLY when BOTH are true:
- *   - the app runs on the Vite dev server (import.meta.env.DEV) — production builds hard-code this to false
- *   - VITE_ENABLE_PORTAL_PREVIEW_MODE === "true"
+ *   - VITE_ENABLE_PORTAL_PREVIEW_MODE === "true" (set in `.env.local`)
+ *   - the page runs in a verified non-production environment: the Vite dev server, localhost,
+ *     or a Lovable editor preview host (id-preview--*.lovable.app / *.lovableproject.com).
+ *     Any other host — including the published site and custom domains — fails closed.
  *
- * It simulates a portal identity in the frontend only (routing/guards). It never creates an
- * InsForge session, never sends tokens, and all writes are blocked in insforge-crud.
- * Remove `.env.development.local` (or set the flag to false) to restore normal behaviour.
+ * It never creates an InsForge session, never sends tokens, and all writes are blocked in insforge-crud.
+ * Delete `.env.local` (or set the flag to false) to restore normal behaviour.
  */
+function isVerifiedPreviewHost(): boolean {
+  if (typeof window === "undefined") return false; // SSR: fail closed
+  const h = window.location.hostname;
+  return (
+    h === "localhost" ||
+    h === "127.0.0.1" ||
+    /^id-preview--[a-z0-9-]+\.lovable\.app$/i.test(h) ||
+    /\.lovableproject\.com$/i.test(h)
+  );
+}
+
 export const PREVIEW_MODE_ENABLED: boolean =
-  import.meta.env.DEV === true &&
-  (import.meta.env as any).VITE_ENABLE_PORTAL_PREVIEW_MODE === "true";
+  (import.meta.env as any).VITE_ENABLE_PORTAL_PREVIEW_MODE === "true" &&
+  (import.meta.env.DEV === true ? typeof window !== "undefined" : isVerifiedPreviewHost());
 
 export const PREVIEW_USER_ID = "preview-unauthenticated";
 export const PREVIEW_BLOCKED_MESSAGE = "Sign in with an authorized account to perform this action.";
