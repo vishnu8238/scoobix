@@ -88,6 +88,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lastPortalRef = useRef<Role | null>(null);
   const resolutionActiveRef = useRef<boolean>(false);
 
+  // Preview Mode only: frontend-only simulated identity (no InsForge session, writes blocked).
+  const applyPreviewUser = useCallback(() => {
+    const portal = getRequestedPortal();
+    setPreviewIdentityActive(true);
+    setUser({
+      id: PREVIEW_USER_ID,
+      name: "Preview (not signed in)",
+      email: "",
+      phone: "",
+      avatar: "",
+      role: portal,
+      roles: PREVIEW_PORTALS.map((p) => p.id as Role),
+      membershipsResolved: true,
+      pendingPortal: portal,
+      isPreview: true,
+    } as User);
+    lastPortalRef.current = portal;
+    setAuthState("authenticated");
+  }, []);
+
   const resolveUser = useCallback(async (isInitial: boolean = false) => {
     if (resolutionActiveRef.current) return;
     resolutionActiveRef.current = true;
@@ -105,26 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!sessionUser) {
         setCacheAuthScope(null);
-        if (PREVIEW_MODE_ENABLED) {
-          // Dev-only frontend simulation: no InsForge session/token is created.
-          const portal = getRequestedPortal();
-          setPreviewIdentityActive(true);
-          setUser({
-            id: PREVIEW_USER_ID,
-            name: "Preview (not signed in)",
-            email: "",
-            phone: "",
-            avatar: "",
-            role: portal,
-            roles: PREVIEW_PORTALS.map((p) => p.id as Role),
-            membershipsResolved: true,
-            pendingPortal: portal,
-            isPreview: true,
-          } as User);
-          lastPortalRef.current = portal;
-          setAuthState("authenticated");
-          return;
-        }
+        if (PREVIEW_MODE_ENABLED) { applyPreviewUser(); return; }
         setUser(null);
         setAuthState("unauthenticated");
         return;
@@ -158,6 +159,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // P0.1: If unauthenticated or permission denied during profile sync, exit gracefully
         if (e?.isAuthError || e?.insforge_status === 401 || e?.insforge_status === 403) {
           console.warn("[AUTH_TRACE] Profile resolution stopped (Unauthenticated).");
+          setCacheAuthScope(null);
+          if (PREVIEW_MODE_ENABLED) {
+            applyPreviewUser();
+            resolutionActiveRef.current = false;
+            if (isInitial) { setLoading(false); setHydrationComplete(true); }
+            return;
+          }
           setUser(null);
           setAuthState("unauthenticated");
           setCacheAuthScope(null);
@@ -204,7 +212,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pendingPortal: currentPortal,
       });
 
-      if (!hasAccess && (currentPortal as string) !== "customer") {
+      if (!hasAccess && (currentPortal as string) !== "customer" && PREVIEW_MODE_ENABLED) {
+        // Preview Mode: signed-in account lacks this portal → frontend-only preview identity.
+        applyPreviewUser();
+      } else if (!hasAccess && (currentPortal as string) !== "customer") {
         setAuthState("denied");
       } else {
         setAuthState("authenticated");
@@ -230,6 +241,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'signedIn' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         resolveUser(false);
       } else if (event === 'signedOut') {
+        if (PREVIEW_MODE_ENABLED) {
+          setCacheAuthScope(null); applyPreviewUser(); setLoading(false); setHydrationComplete(true);
+          return;
+        }
         setUser(null);
         setAuthState("unauthenticated");
         setLoading(false);
@@ -239,7 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     
     return () => unsubscribe();
-  }, [resolveUser]);
+  }, [resolveUser, applyPreviewUser]);
 
   // Handle portal changes within a session
   useEffect(() => {
@@ -251,10 +266,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(prev => prev ? { ...prev, role: currentPortal } : null);
         setAuthState("authenticated");
       } else if ((currentPortal as string) !== "customer") {
-        setAuthState("denied");
+        if (PREVIEW_MODE_ENABLED) applyPreviewUser();
+        else setAuthState("denied");
       }
     }
-  }, [user]);
+  }, [user, applyPreviewUser]);
 
   const login = async (provider: 'google', portal: string = "customer", options: { prompt?: 'select_account' | 'consent' | 'none' } = {}) => {
     if (provider === 'google') {
