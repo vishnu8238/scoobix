@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import * as maplibregl from "maplibre-gl";
+// Vite's dependency pre-bundling breaks maplibre's relative worker URL (404 on
+// maplibre-gl-worker.mjs → blank map). Bundle the worker explicitly and register it.
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "maplibre-gl/dist/maplibre-gl.css";
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import type { MapMarker, MapPolygon, MapPolyline, Coordinate } from "@/lib/maps/contracts";
 import { interpolate, LOGISTICS_DEFAULT_CENTER } from "@/lib/geo";

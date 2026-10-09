@@ -46,22 +46,29 @@ export type SubzoneRider = {
 
 export async function fetchCities() {
   const tables = ["cities", "logistics_cities", "delivery_cities"];
+  let lastError: unknown = null;
+  let anySucceeded = false;
   for (const table of tables) {
     try {
       const cities = await listTable<any>(table, { 
         select: "id,name,status", 
         order: "name.asc" 
       });
+      anySucceeded = true;
       if (cities && cities.length > 0) return cities;
-    } catch (err) {}
+    } catch (err) {
+      lastError = err;
+    }
   }
-  
-  // Deterministic local fallback for seeded data if tables are empty/locked
-  return [{ id: "c1110000-0000-0000-0000-000000000001", name: "Vadodara", status: "ACTIVE" }];
+  // No fabricated fallback records: surface the real failure, or an honest empty list.
+  if (!anySucceeded && lastError) throw lastError;
+  return [];
 }
 
 export async function fetchZones(params?: Record<string, any>) {
   const tables = ["logistics_zones", "delivery_zones", "zones"];
+  let lastError: unknown = null;
+  let anySucceeded = false;
   for (const table of tables) {
     try {
       const zones = await listTable<DeliveryZone>(table, { 
@@ -69,17 +76,15 @@ export async function fetchZones(params?: Record<string, any>) {
         order: "name.asc", 
         ...params 
       });
+      anySucceeded = true;
       if (zones && zones.length > 0) return zones;
-    } catch (err) {}
+    } catch (err) {
+      lastError = err;
+    }
   }
-  
-  // Deterministic local fallback for seeded data
-  return [{ 
-    id: "z1110000-0000-0000-0000-000000000001", 
-    city_id: "c1110000-0000-0000-0000-000000000001", 
-    name: "Main Zone", 
-    status: "ACTIVE" 
-  }] as DeliveryZone[];
+  // No fabricated fallback records: surface the real failure, or an honest empty list.
+  if (!anySucceeded && lastError) throw lastError;
+  return [] as DeliveryZone[];
 }
 
 export async function createZone(zone: Omit<DeliveryZone, "id" | "created_at">) {

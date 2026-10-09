@@ -71,10 +71,10 @@ function LogisticsDriverProfilePage() {
   const { user, hydrationComplete } = useAuth();
   
   // SSR SAFETY: Query is enabled only on the client after auth hydration.
-  const { data: driver, isLoading } = useQuery({
+  const { data: driver, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["logistics", "driver-profile", driverId],
     queryFn: () => fetchDriverDetails(driverId),
-    enabled: typeof window !== "undefined" && hydrationComplete && !!user,
+    enabled: typeof window !== "undefined" && hydrationComplete && !!user && !!driverId,
   });
 
   const [activeTab, setActiveTab] = useState("profile");
@@ -82,6 +82,18 @@ function LogisticsDriverProfilePage() {
 
   if (!hydrationComplete || isLoading) {
     return <div className="p-8 max-w-[1600px] mx-auto"><PortalShellSkeleton /></div>;
+  }
+
+  if (!driverId) return <div className="p-8 text-center font-display font-bold">No driver selected</div>;
+
+  if (isError) {
+    return (
+      <div className="p-8 text-center space-y-3">
+        <p className="font-display font-bold">Couldn't load driver</p>
+        <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
+        <button onClick={() => void refetch()} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Retry</button>
+      </div>
+    );
   }
 
   if (!driver) return <div className="p-8 text-center font-display font-bold">Driver not found</div>;
