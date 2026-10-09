@@ -25,7 +25,7 @@ export const Route = createFileRoute("/logistics/subscriptions")({
 const AUDIENCES: Audience[] = ["customer", "restaurant", "manager", "rider"];
 
 function LogisticsSubscriptions() {
-  const { plans, subs, analytics, loading, refresh } = useSubscriptionAdmin();
+  const { plans, subs, analytics, loading, error, refresh } = useSubscriptionAdmin();
   const [audience, setAudience] = useState<Audience>("customer");
   const [busy, setBusy] = useState("");
 
@@ -40,16 +40,31 @@ function LogisticsSubscriptions() {
 
   const run = async (key: string, fn: () => Promise<unknown>, msg: string) => {
     setBusy(key);
-    await fn();
-    setBusy("");
-    toast.success(msg);
-    void refresh();
+    try {
+      await fn();
+      toast.success(msg);
+      void refresh();
+    } catch (err) {
+      toast.error(`Couldn't complete action: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setBusy("");
+    }
   };
 
   if (loading) {
     return (
       <div className="flex min-h-svh items-center justify-center text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center gap-3 text-center">
+        <p className="font-display text-lg font-bold">Couldn't load subscriptions</p>
+        <p className="max-w-md text-sm text-muted-foreground">{error}</p>
+        <button onClick={() => void refresh()} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Retry</button>
       </div>
     );
   }

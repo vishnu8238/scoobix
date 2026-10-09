@@ -31,24 +31,12 @@ export function ZoneManager() {
         }), 
         fetchSubzones().catch(err => {
           console.error("[ZONE_MANAGER] Subzones failed:", err);
+          toast.error(`Failed to load subzones: ${err?.message || "Check permissions"}`);
           return [];
         })
       ]);
-      setZones(z.length > 0 ? z : [{ 
-        id: "z1110000-0000-0000-0000-000000000001", 
-        city_id: "c1110000-0000-0000-0000-000000000001", 
-        name: "Main Zone (DEMO)", 
-        status: "ACTIVE",
-        boundary: { type: "Polygon", coordinates: [[[73.15, 22.28], [73.22, 22.28], [73.22, 22.35], [73.15, 22.35], [73.15, 22.28]]] },
-        center_lat: 22.3072,
-        center_lng: 73.1812,
-        description: "Primary delivery zone for Central Vadodara. claramente marcada como DEMO DATA.",
-        pickup_radius_km: 5,
-        max_delivery_distance_km: 10,
-        max_orders_per_rider: 3,
-        assignment_timeout_sec: 60,
-        created_at: new Date().toISOString()
-      } as DeliveryZone]);
+      // Show only real InsForge zones — no fabricated demo fallback.
+      setZones(z);
 
       setSubzones(sz);
       console.log(`[ZONE_MANAGER] Loaded ${z.length} zones, ${sz.length} subzones`);

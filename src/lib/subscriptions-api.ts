@@ -1215,18 +1215,26 @@ export function useSubscriptionAdmin() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const [p, s, h, i, u] = await Promise.all([
-      listAllPlans(), listSubscriptions({ limit: 200 }), listHistory(undefined, 200),
-      listInvoices(undefined, 200), listUsage(),
-    ]);
-    setPlans(p); setSubs(s); setHistory(h); setInvoices(i); setUsage(u);
-    setLoading(false);
+    try {
+      const [p, s, h, i, u] = await Promise.all([
+        listAllPlans(), listSubscriptions({ limit: 200 }), listHistory(undefined, 200),
+        listInvoices(undefined, 200), listUsage(),
+      ]);
+      setPlans(p); setSubs(s); setHistory(h); setInvoices(i); setUsage(u);
+      setError(null);
+    } catch (err) {
+      console.error("[SUBSCRIPTIONS] load failed", err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh, version]);
 
   const analytics = subscriptionAnalytics(subs, plans, history, invoices, usage);
-  return { plans, subs, history, invoices, usage, analytics, loading, refresh };
+  return { plans, subs, history, invoices, usage, analytics, loading, error, refresh };
 }

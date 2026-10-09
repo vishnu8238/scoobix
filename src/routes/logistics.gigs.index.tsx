@@ -40,7 +40,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/logistics/gigs")({
+export const Route = createFileRoute("/logistics/gigs/")({
   head: () => ({ meta: [{ title: "Scoobix Logistics · Gig Management" }] }),
   component: LogisticsGigs,
 });
