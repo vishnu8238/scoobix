@@ -10,6 +10,7 @@ import { cached, cacheDrop, cacheGet } from "./request-cache";
 import { recordMetric } from "./perf-metrics";
 import { publishTableChange, onAnyChange } from "./realtime-bus";
 import { sanitizeRecord } from "./api-guard";
+import { assertNotPreviewMutation } from "./preview-mode";
 
 
 // Any realtime change — from this client or another one — drops the cached
@@ -356,6 +357,7 @@ export function createRecord<T = Record<string, unknown>>(
   table: string,
   record: Record<string, unknown>,
 ): Promise<T | null> {
+  assertNotPreviewMutation();
   if (table === "user_roles") {
     throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
   }
@@ -455,6 +457,7 @@ export function createRecordExact<T = Record<string, unknown>>(
   table: string,
   record: Record<string, unknown>,
 ): Promise<T | null> {
+  assertNotPreviewMutation();
   invalidateTable(table);
   return withRetry<T | null>(table, async () => {
     const query = (insforge.database.from(table) as any).insert(sanitizeRecord(record)).select();
@@ -470,6 +473,7 @@ export function createRecords<T = Record<string, unknown>>(
   table: string,
   records: Record<string, unknown>[],
 ): Promise<T[] | null> {
+  assertNotPreviewMutation();
   if (table === "user_roles") {
     throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
   }
@@ -516,6 +520,7 @@ export function patchRecord<T = Record<string, unknown>>(
   id: string,
   patch: Record<string, unknown>,
  ): Promise<T | null> {
+  assertNotPreviewMutation();
   if (table === "user_roles") {
     throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
   }
@@ -535,6 +540,7 @@ export function patchWhereIn<T = Record<string, unknown>>(
   ids: string[],
   patch: Record<string, unknown>,
  ): Promise<T | null> {
+   assertNotPreviewMutation();
    if (table === "user_roles") {
      throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
    }
@@ -552,6 +558,7 @@ export function patchWhereIn<T = Record<string, unknown>>(
 }
 
 export function deleteRecord(table: string, id: string): Promise<null> {
+  assertNotPreviewMutation();
   if (table === "user_roles") {
     throw new Error("Direct client mutations of user_roles are forbidden; use a server-authorized role-management path.");
   }
