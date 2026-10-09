@@ -15,9 +15,14 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: [
-        // InsForge realtime pulls engine.io-client; its Node build requires node:fs/child_process,
-        // which the published worker runtime does not provide (every page 500s). Use the browser build.
-        { find: /^engine\.io-client$/, replacement: "engine.io-client/dist/engine.io.esm.min.js" },
+        // InsForge realtime pulls engine.io-client; its Node-only files require node:fs/child_process,
+        // which the published worker runtime lacks (every page 500s). Swap just those files for their
+        // browser equivalents (same mapping as the package's "browser" field), keeping the same version
+        // as socket.io-client. Do NOT alias to the minified dist build — it breaks socket.io-client.
+        {
+          find: /^(\.\.?\/(?:transports\/)?)(globals|polling-xhr|websocket)\.node\.js$/,
+          replacement: "$1$2.js",
+        },
       ],
     },
   },
