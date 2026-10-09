@@ -5,6 +5,7 @@ import { listTable } from "./insforge-crud";
 import { getDisplayName } from "./identity-utils";
 import { isAuthResolving } from "./auth-utils";
 import { setCacheAuthScope } from "./request-cache";
+import { PREVIEW_MODE_ENABLED, PREVIEW_PORTALS, PREVIEW_USER_ID, setPreviewIdentityActive } from "./preview-mode";
 
 export type Role = "customer" | "partner" | "rider" | "admin" | "manager" | "logistics" | "dispatcher" | "zone_manager" | "logistics_admin";
 
@@ -18,6 +19,8 @@ export type User = {
   roles: Role[];
   membershipsResolved: boolean;
   pendingPortal?: Role;
+  /** Dev-only simulated identity (Preview Mode). Never a real session. */
+  isPreview?: boolean;
 };
 
 export type AuthState = 
@@ -101,11 +104,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionUser = sdkUser || hydratedUser;
 
       if (!sessionUser) {
+        setCacheAuthScope(null);
+        if (PREVIEW_MODE_ENABLED) {
+          // Dev-only frontend simulation: no InsForge session/token is created.
+          const portal = getRequestedPortal();
+          setPreviewIdentityActive(true);
+          setUser({
+            id: PREVIEW_USER_ID,
+            name: "Preview (not signed in)",
+            email: "",
+            phone: "",
+            avatar: "",
+            role: portal,
+            roles: PREVIEW_PORTALS.map((p) => p.id as Role),
+            membershipsResolved: true,
+            pendingPortal: portal,
+            isPreview: true,
+          } as User);
+          lastPortalRef.current = portal;
+          setAuthState("authenticated");
+          return;
+        }
         setUser(null);
         setAuthState("unauthenticated");
-        setCacheAuthScope(null);
         return;
       }
+      setPreviewIdentityActive(false);
 
       const authId = sessionUser.id;
       const userEmail = normalizeEmail(sessionUser.email);

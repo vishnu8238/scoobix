@@ -19,6 +19,7 @@ import { InsForgeBootstrap } from "@/components/cravio/InsForgeBootstrap";
 import { subscribeCatalog, getCatalogVersion } from "@/lib/insforge";
 import { registerServiceWorker, prefetchResources } from "@/lib/sw-register";
 import { AuthProvider } from "@/lib/auth-store";
+import { PreviewModeBanner } from "@/components/cravio/PreviewModeBanner";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -73,6 +74,7 @@ function RootComponent() {
           <NetworkBanner />
           <PWAInstallPrompt />
           <InsForgeBootstrap />
+          <PreviewModeBanner />
         </ScoobixProviders>
       </AuthProvider>
     </QueryClientProvider>
