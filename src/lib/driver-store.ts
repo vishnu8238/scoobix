@@ -44,7 +44,7 @@ export async function getDriverForUser(userId: string): Promise<DriverRow | null
   const rows = await listTable<DriverRow>("drivers", { 
     user_id: `eq.${userId}`, 
     limit: 1,
-    select: "id,user_id"
+    select: "id,user_id,is_online"
   });
   const row: DriverRow | null = rows[0] ?? null;
   

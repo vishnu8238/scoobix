@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { listTable } from "@/lib/insforge-crud";
 import { useTableVersion } from "@/lib/realtime-hooks";
 import { getDisplayName } from "@/lib/identity-utils";
-import { setRiderAvailability } from "@/lib/rider-api";
+import { setDriverOnline } from "@/lib/insforge";
 
 type OrderRow = {
   id: string;
@@ -74,6 +74,7 @@ function RiderHomeContent() {
   const { user } = useAuth();
   const { driver, driverId, update } = useDriver();
   const [online, setOnline] = useState(false);
+  const [savingOnline, setSavingOnline] = useState(false);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [offers, setOffers] = useState<OrderRow[]>([]);
   const [locationState, setLocationState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
@@ -162,18 +163,27 @@ function RiderHomeContent() {
       return;
     }
 
-    try {
-      setOnline(next);
-      if (driverId) {
-        await setRiderAvailability(driverId, next);
-        // Best-effort local state update
-        await update({ is_online: next });
+    if (savingOnline) return;
+    if (!driverId) {
+      toast.error("Rider profile not found. Please sign in again.");
+      return;
+    }
 
-        toast.success(next ? "You are now ONLINE" : "You are now OFFLINE");
-      }
-    } catch (err) {
-      setOnline(!next); // Revert
-      toast.error("Failed to sync availability. Try again.");
+    const prev = online;
+    setSavingOnline(true);
+    try {
+      const saved: any = await setDriverOnline(driverId, next);
+      const savedState = saved && typeof saved.is_online === "boolean" ? saved.is_online : next;
+      setOnline(savedState);
+      // Sync local driver cache with the saved backend value (no extra write).
+      await update({ is_online: savedState });
+      toast.success(savedState ? "You are now ONLINE" : "You are now OFFLINE");
+    } catch (err: any) {
+      console.error("[RIDER_ONLINE] Failed to save availability:", err);
+      setOnline(prev);
+      toast.error(err?.message ? `Couldn't update status: ${err.message}` : "Couldn't update status. Try again.");
+    } finally {
+      setSavingOnline(false);
     }
   };
 
