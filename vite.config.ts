@@ -12,4 +12,13 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    resolve: {
+      alias: [
+        // InsForge realtime pulls engine.io-client; its Node build requires node:fs/child_process,
+        // which the published worker runtime does not provide (every page 500s). Use the browser build.
+        { find: /^engine\.io-client$/, replacement: "engine.io-client/dist/engine.io.esm.min.js" },
+      ],
+    },
+  },
 });
