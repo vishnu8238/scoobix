@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth-store";
 import { useState } from "react";
 import { 
   fetchDriverDetails, 
@@ -27,7 +28,6 @@ import { format } from "date-fns";
 
 export const Route = createFileRoute("/admin/drivers/$driverId")({
   component: DriverProfilePage,
-  loader: ({ params }) => fetchDriverDetails(params.driverId),
 });
 
 const PRIMARY_TABS = [
@@ -42,6 +42,20 @@ const PRIMARY_TABS = [
   { id: "cod", label: "COD Transactions", icon: CreditCard },
 ];
 
+// Data loads only on the client after auth hydration (same approach as the Logistics driver page).
+function useAuthReady() {
+  const { user, hydrationComplete } = useAuth();
+  return typeof window !== "undefined" && hydrationComplete && !!user;
+}
+
+function TabLoading() {
+  return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+}
+
+function TabError({ error }: { error: unknown }) {
+  return <div className="p-8 text-center text-sm font-medium text-destructive">Couldn't load data: {(error as any)?.message || "Unknown error"}</div>;
+}
+
 const SECONDARY_TABS = [
   { id: "personal", label: "Personal", icon: User },
   { id: "documents", label: "Documents", icon: FileText },
@@ -51,14 +65,19 @@ const SECONDARY_TABS = [
 
 function DriverProfilePage() {
   const { driverId } = Route.useParams();
-  const { data: driver } = useSuspenseQuery({
+  const ready = useAuthReady();
+  const { data: driver, isLoading, isError, error } = useQuery({
     queryKey: ["admin", "driver-profile", driverId],
     queryFn: () => fetchDriverDetails(driverId),
+    enabled: ready && !!driverId,
   });
 
   const [activeTab, setActiveTab] = useState("profile");
   const [activeSubTab, setActiveSubTab] = useState("personal");
 
+  if (!driverId) return <div className="p-8 text-center font-display font-bold">No driver selected</div>;
+  if (!ready || isLoading) return <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (isError) return <TabError error={error} />;
   if (!driver) return <div className="p-8 text-center font-display font-bold">Driver not found</div>;
 
   return (
@@ -123,12 +142,15 @@ function DriverProfilePage() {
 }
 
 function OrdersTab({ driverId }: { driverId: string }) {
-  const { data: orders, isLoading } = useSuspenseQuery({
+  const ready = useAuthReady();
+  const { data: orders, isLoading, isError, error } = useQuery({
     queryKey: ["admin", "driver-orders", driverId],
     queryFn: () => fetchDriverOrders(driverId),
+    enabled: ready && !!driverId,
   });
+  if (!ready || isLoading) return <TabLoading />;
+  if (isError) return <TabError error={error} />;
 
-  if (isLoading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!orders?.length) return <EmptyState label="No order history found for this driver" />;
 
   return (
@@ -146,10 +168,14 @@ function OrdersTab({ driverId }: { driverId: string }) {
 }
 
 function PayoutsTab({ driverId }: { driverId: string }) {
-  const { data: payouts } = useSuspenseQuery({
+  const ready = useAuthReady();
+  const { data: payouts, isLoading, isError, error } = useQuery({
     queryKey: ["admin", "driver-payouts", driverId],
     queryFn: () => fetchDriverPayouts(driverId),
+    enabled: ready && !!driverId,
   });
+  if (!ready || isLoading) return <TabLoading />;
+  if (isError) return <TabError error={error} />;
 
   if (!payouts?.length) return <EmptyState label="No payout records available." />;
 
@@ -168,10 +194,14 @@ function PayoutsTab({ driverId }: { driverId: string }) {
 }
 
 function PayoutLedgerTab({ driverId }: { driverId: string }) {
-  const { data: payouts } = useSuspenseQuery({
+  const ready = useAuthReady();
+  const { data: payouts, isLoading, isError, error } = useQuery({
     queryKey: ["admin", "driver-payout-ledger", driverId],
     queryFn: () => getPayoutPeriods({ driver_id: `eq.${driverId}` }),
+    enabled: ready && !!driverId,
   });
+  if (!ready || isLoading) return <TabLoading />;
+  if (isError) return <TabError error={error} />;
 
   if (!payouts?.length) return <EmptyState label="No payout ledger records found." />;
 
