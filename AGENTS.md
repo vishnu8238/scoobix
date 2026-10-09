@@ -9,4 +9,4 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Portal Preview Mode (src/lib/preview-mode.ts) is dev-server-only (import.meta.env.DEV && VITE_ENABLE_PORTAL_PREVIEW_MODE) and blocks all insforge-crud writes; why: lets portals be inspected unauthenticated without ever weakening production auth.
+- Portal Preview Mode (src/lib/preview-mode.ts) activates only when its flag is on AND the host is the dev server, localhost or a Lovable editor preview host (published/custom domains fail closed); it blocks all insforge-crud writes; why: lets portals be inspected unauthenticated without weakening production auth.
