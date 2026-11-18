@@ -91,12 +91,16 @@ export const deleteRestaurantComplete = async (id: string): Promise<any> => {
   return deleteRecord("restaurants", id);
 };
 export const scheduleOrder = async (...args: any[]) => {};
+/** Temporary client-side IDs look like `n1700000000000` / `a1700000000000`; real IDs are UUIDs. */
+const isTempId = (id: unknown, prefix: string) =>
+  typeof id === "string" && new RegExp(`^${prefix}\\d+$`).test(id);
 export const upsertMenuItem = async (item: any): Promise<any> => {
   const { createRecord, patchRecord } = await import("./insforge-crud");
-  if (item.id && !item.id.startsWith('n')) {
+  if (item.id && !isTempId(item.id, "n")) {
     return patchRecord("menu_items", item.id, item);
   }
-  return createRecord("menu_items", item);
+  const { id: _tmp, ...fields } = item;
+  return createRecord("menu_items", fields);
 };
 export const deleteMenuItem = async (id: string) => {
   const { deleteRecord } = await import("./insforge-crud");
@@ -104,10 +108,11 @@ export const deleteMenuItem = async (id: string) => {
 };
 export const upsertAddon = async (addon: any) => {
   const { createRecord, patchRecord } = await import("./insforge-crud");
-  if (addon.id && !addon.id.startsWith('a')) {
+  if (addon.id && !isTempId(addon.id, "a")) {
     return patchRecord("menu_addons", addon.id, addon);
   }
-  return createRecord("menu_addons", addon);
+  const { id: _tmp, ...fields } = addon;
+  return createRecord("menu_addons", fields);
 };
 export const deleteAddon = async (id: string) => {
   const { deleteRecord } = await import("./insforge-crud");
